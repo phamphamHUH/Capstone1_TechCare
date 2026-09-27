@@ -20,6 +20,7 @@ import {
   updateUser,
   updateUserStatus,
 } from "../controllers/admin/updateRequests.controller.js";
+import { deleteTemplate } from "../controllers/admin/deleteRequest.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import authMiddleware from "../middlewares/auth.middleware.js";
 import adminMiddleware from "../middlewares/admin.middleware.js";
@@ -27,7 +28,7 @@ const router = Router();
 
 // if (ENV.IS_PRODUCTION) {
 //   router.use(authMiddleware, adminMiddleware);
-//   console.log("Lab Staff routes enabled");
+//   console.log("Admin routes enabled");
 // }
 
 router.use(authMiddleware, adminMiddleware);
@@ -50,4 +51,5 @@ router.put("/form-templates/:form_id", updateFormTemplate);
 router.patch("/users/:user_id", upload.single("image"), updateUser);
 router.patch("/users/:user_id/status", updateUserStatus);
 
+router.delete("/form-templates/:form_id", deleteTemplate);
 export default router;

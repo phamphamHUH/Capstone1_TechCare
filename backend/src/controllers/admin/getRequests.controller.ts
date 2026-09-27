@@ -55,46 +55,28 @@ export async function getAllActivities(req: Request, res: Response) {
   // get /api/admin/activities
   try {
     const activities = await sql`
-      SELECT
-          sa.*,
-          u.username
-      FROM system_activity sa
-      JOIN users u
-      ON sa.user_id = u.user_id;
+      SELECT 
+        al.id,
+        al.user_id,
+        a.action_name,
+        a.action_description,
+        a.module,
+        a.is_sensitive,
+        al.status,
+        al.target_type,
+        al.target_id, 
+        al.metadata,
+        al.created_at
+      FROM activity_logs al
+      JOIN actions a on a.action_id = al.action_id
 `;
-    if (!activities) {
-      res.json({ message: "there are no activities" });
-      {
-      }
+    if (activities.length === 0) {
+      return res
+        .status(200)
+        .json({ activities: [], message: "there are no activities" });
     }
 
     res.status(200).json({ activities });
-    // {
-    //     "activities": [
-    //         {
-    //             "activity_id": 1,
-    //             "user_id": 11,
-    //             "service_name": "pakalbo",
-    //             "details": {
-    //                 "kalbo": "panot",
-    //                 "semiKal": "utot"
-    //             },
-    //             "created_at": "2026-06-28T20:19:10.904Z",
-    //             "username": "testing"
-    //         },
-    //         {
-    //             "activity_id": 2,
-    //             "user_id": 11,
-    //             "service_name": "pakalbo",
-    //             "details": {
-    //                 "kalbo": "panot",
-    //                 "semiKal": "utot"
-    //             },
-    //             "created_at": "2026-06-28T20:19:22.051Z",
-    //             "username": "testing"
-    //         }
-    //     ]
-    // }
   } catch (error) {
     res.status(500).json({ error: "error on get acts controller" });
   }
