@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type {FormTemplate} from "../../../../interface/FormTemplate";
+import type { FormTemplate } from "../../../../interface/FormTemplate";
 import {
   Search,
   Clock,
@@ -9,7 +9,6 @@ import {
   X,
   Plus,
 } from "lucide-react";
-import type { ReportTemplate } from "./types";
 import TemplatePreview from "./TemplatePreview";
 
 interface TemplateLibraryProps {
@@ -79,8 +78,6 @@ export default function TemplateLibrary({
       {/* Breadcrumbs */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-xs font-semibold text-gray-500">
-          <span>Report Builder</span>
-          <span>&gt;</span>
           <span className="text-gray-900">Templates</span>
         </div>
       </div>
@@ -91,7 +88,7 @@ export default function TemplateLibrary({
           <div className="w-14 h-14 rounded-2xl bg-sky-200/80 flex-shrink-0" />
           <div>
             <h2 className="text-xl font-bold text-gray-900">
-              Report Templates
+              Form Template Library
             </h2>
             <p className="text-xs text-gray-500 mt-0.5">
               Add, Edit, or Preview Templates
@@ -416,14 +413,14 @@ export default function TemplateLibrary({
       )}
 
       {/* Live Preview Modal */}
-      {/* {previewTemplate && (
+      {previewTemplate && (
         <TemplatePreview
           templateName={previewTemplate.form_name}
           category={previewTemplate.service_id || "Uncategorized"}
           components={previewTemplate.components}
           onClose={() => setPreviewTemplate(null)}
         />
-      )} */}
+      )}
     </div>
   );
 }

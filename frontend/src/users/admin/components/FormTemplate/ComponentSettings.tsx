@@ -5,7 +5,7 @@ import type {
   ComponentType,
   FieldWidth,
   TextAlignment,
-} from "./types";
+} from "../../../../interface/FormTemplate";
 
 interface ComponentSettingsProps {
   component: BuilderComponent | null;

@@ -12,7 +12,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import SideBar from "../../components/SideBar";
 import ServicePricingManagement from "./pages/ServicePricing";
 import ActivityMonitoring from "./pages/ActivityMonitoring";
-import ReportBuilder from "./pages/ReportBuilder";
+import FormTemplate from "./pages/FormTemplate";
 import api from "../../lib/axios";
 import type { User } from "../../interface/User";
 import type { Service } from "../../interface/Service";
@@ -56,8 +56,8 @@ function Admin() {
       icon: <SquareActivityIcon size={20} />,
     },
     {
-      page: "report-builder",
-      label: "Report Builder",
+      page: "form-template",
+      label: "Form Template",
       icon: <FileText size={20} />,
     },
   ];
@@ -128,8 +128,8 @@ function Admin() {
           loadData={loadData}
         />
       )}
-      {page === "report-builder" && (
-        <ReportBuilder
+      {page === "form-template" && (
+        <FormTemplate
           loading={loading}
           open={open}
           setOpen={setOpen}

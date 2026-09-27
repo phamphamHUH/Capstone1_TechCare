@@ -1,30 +1,29 @@
 import { useEffect, useState, useCallback } from "react";
 import api from "#lib/axios";
 import Header from "../../../components/Header";
-import type { ReportTemplate } from "../components/ReportBuilder/types";
-import { INITIAL_TEMPLATES_LIST } from "../components/ReportBuilder/sampleTemplates";
-import TemplateLibrary from "../components/ReportBuilder/TemplateLibrary";
-import TemplateBuilder from "../components/ReportBuilder/TemplateBuilder";
+import { INITIAL_TEMPLATES_LIST } from "../components/FormTemplate/sampleTemplates";
+import TemplateLibrary from "../components/FormTemplate/TemplateLibrary";
+import TemplateBuilder from "../components/FormTemplate/TemplateBuilder";
 import type { FormTemplate } from "../../../interface/FormTemplate";
 import { Loader2 } from "lucide-react"; // loader icon for fetching feedback
 
-interface ReportBuilderProps {
+interface FormTemplateProps {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   loading: boolean;
   loadData: () => Promise<void>;
 }
 
-export default function ReportBuilder({
+export default function FormTemplate({
   open,
   setOpen,
   loading,
   loadData,
-}: ReportBuilderProps) {
+}: FormTemplateProps) {
   const [viewMode, setViewMode] = useState<"library" | "builder">("library");
   
   // Initialized with an empty array instead of local dummy data (INITIAL_TEMPLATES_LIST)
-  const [templates, setTemplates] = useState<ReportTemplate[]>([]);
+  const [templates, setTemplates] = useState<FormTemplate[]>([]);
   
   // Added state for managing asynchronous API fetch loading and error feedback
   const [fetching, setFetching] = useState<boolean>(true);
@@ -95,7 +94,7 @@ export default function ReportBuilder({
   };
 
   const handleDeleteTemplate = (fixtureId: string) => {
-    setTemplates((prev) => prev.filter((t) => t.fixtureId !== fixtureId));
+    setTemplates((prev) => prev.filter((t) => t.form_id !== fixtureId));
   };
 
   const handleBackToLibrary = () => {
@@ -111,7 +110,7 @@ export default function ReportBuilder({
         loading={loading}
         setOpen={setOpen}
         loadData={loadData}
-        page="Report Builder"
+        page="Form Templates"
       />
 
       <div className="mt-4 px-6">

@@ -3,15 +3,15 @@ import { Eye, CheckCircle2, AlertCircle } from "lucide-react";
 import type {
   BuilderComponent,
   ComponentType,
-  ReportTemplate,
-} from "./types";
+  FormTemplate,
+} from "../../../../interface/FormTemplate";
 import ComponentPalette from "./ComponentPalette";
 import BuilderCanvas from "./BuilderCanvas";
 import ComponentSettings from "./ComponentSettings";
 import TemplatePreview from "./TemplatePreview";
 
 interface TemplateBuilderProps {
-  initialTemplate?: ReportTemplate | null;
+  initialTemplate?: FormTemplate | null;
   onBackToLibrary: () => void;
 }
 
@@ -37,10 +37,10 @@ export default function TemplateBuilder({
   onBackToLibrary,
 }: TemplateBuilderProps) {
   const [templateName, setTemplateName] = useState(
-    initialTemplate?.name || ""
+    initialTemplate?.form_name || ""
   );
   const [category, setCategory] = useState(
-    initialTemplate?.category || "Hematology"
+    initialTemplate?.service_id || "Hematology"
   );
   const [components, setComponents] = useState<BuilderComponent[]>(
     initialTemplate?.components
@@ -202,19 +202,11 @@ export default function TemplateBuilder({
             onClick={onBackToLibrary}
             className="hover:text-gray-900 transition-colors cursor-pointer"
           >
-            Report Builder
-          </button>
-          <span>&gt;</span>
-          <button
-            type="button"
-            onClick={onBackToLibrary}
-            className="hover:text-gray-900 transition-colors cursor-pointer"
-          >
             Templates
           </button>
           <span>&gt;</span>
           <span className="text-gray-900">
-            {isEditMode ? initialTemplate?.name || "Edit Template" : "New Template"}
+            {isEditMode ? initialTemplate?.form_name || "Edit Template" : "New Template"}
           </span>
         </div>
 
@@ -284,7 +276,7 @@ export default function TemplateBuilder({
               type="text"
               disabled
               value={
-                initialTemplate?.fixtureId || "Generated after saving"
+                initialTemplate?.form_id || "Generated after saving"
               }
               className="w-44 px-3 py-2 border border-gray-200 bg-gray-50 text-gray-400 rounded-xl text-xs font-mono select-none"
             />

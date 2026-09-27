@@ -1,5 +1,5 @@
 import { Printer, X } from "lucide-react";
-import type { BuilderComponent } from "./types";
+import type { BuilderComponent } from "../../../../interface/FormTemplate";
 
 interface TemplatePreviewProps {
   templateName: string;
@@ -28,8 +28,8 @@ export default function TemplatePreview({
     }
   };
 
-  const previewableComponents = components.filter(
-    (c) => c.settings.showInPreview !== false
+  const previewableComponents = (components ?? []).filter(
+  (c) => c.settings?.showInPreview !== false
   );
 
   return (
@@ -134,24 +134,25 @@ export default function TemplatePreview({
           {/* Rendered Template Components */}
           <div className="flex flex-wrap gap-4 py-2">
             {previewableComponents.map((comp) => {
-              const align = comp.settings.alignment || "left";
+              const settings = comp.settings ?? {};
+              const align = settings.alignment || "left";
 
               return (
                 <div
                   key={comp.id}
                   className={`${getWidthClass(
-                    comp.settings.width
+                    settings.width
                   )} text-${align}`}
                 >
                   {comp.type === "section_header" && (
                     <div className="w-full bg-sky-100 text-sky-900 font-bold text-xs uppercase px-3 py-1.5 rounded-md tracking-wider border-l-4 border-sky-500 my-1">
-                      {comp.settings.sectionHeader || comp.label}
+                      {settings.sectionHeader || comp.label}
                     </div>
                   )}
 
                   {comp.type === "static_text" && (
                     <p className="text-xs text-gray-700 leading-relaxed italic my-1">
-                      {comp.settings.staticText || comp.label}
+                      {settings.staticText || comp.label}
                     </p>
                   )}
 
@@ -165,7 +166,7 @@ export default function TemplatePreview({
                         {comp.label}:
                       </span>
                       <span className="text-gray-900 font-medium">
-                        {comp.settings.defaultValue || "—"}
+                        {settings.defaultValue || "—"}
                       </span>
                     </div>
                   )}
@@ -177,16 +178,16 @@ export default function TemplatePreview({
                       </span>
                       <div className="flex items-center gap-3">
                         <span className="font-bold text-gray-900">
-                          {comp.settings.defaultValue || "14.2"}
+                          {settings.defaultValue || "14.2"}
                         </span>
-                        {comp.settings.unit && (
+                        {settings.unit && (
                           <span className="text-gray-500 font-medium">
-                            {comp.settings.unit}
+                            {settings.unit}
                           </span>
                         )}
-                        {comp.settings.referenceRange && (
+                        {settings.referenceRange && (
                           <span className="text-[11px] text-gray-400 bg-gray-50 px-2 py-0.5 rounded">
-                            (Normal: {comp.settings.referenceRange})
+                            (Normal: {settings.referenceRange})
                           </span>
                         )}
                       </div>
@@ -199,7 +200,7 @@ export default function TemplatePreview({
                         {comp.label}:
                       </span>
                       <div className="flex flex-wrap gap-3">
-                        {(comp.settings.checkboxOptions || ["Option 1"]).map(
+                        {(settings.checkboxOptions || ["Option 1"]).map(
                           (opt, idx) => (
                             <span
                               key={idx}
@@ -220,7 +221,7 @@ export default function TemplatePreview({
                         <thead className="bg-sky-50 text-sky-900 font-bold border-b border-gray-200">
                           <tr>
                             {(
-                              comp.settings.tableColumns || [
+                              settings.tableColumns || [
                                 { id: "1", header: "Parameter" },
                                 { id: "2", header: "Result" },
                               ]
@@ -233,7 +234,7 @@ export default function TemplatePreview({
                         </thead>
                         <tbody>
                           <tr className="border-b border-gray-100 text-gray-700">
-                            {(comp.settings.tableColumns || [1, 2]).map(
+                            {(settings.tableColumns || [1, 2]).map(
                               (_, idx) => (
                                 <td key={idx} className="p-2">
                                   {idx === 0 ? "Sample Test 1" : "Normal"}
