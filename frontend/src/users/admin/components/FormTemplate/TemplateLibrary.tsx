@@ -1,5 +1,8 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import api from "#lib/axios";
 import type { FormTemplate } from "../../../../interface/FormTemplate";
+import { dbComponentToBuilderComponent } from "../../../../interface/FormTemplate";
+import type { ServiceOption } from "../../pages/FormTemplate"; 
 import {
   Search,
   Clock,
@@ -8,69 +11,108 @@ import {
   Trash2,
   X,
   Plus,
+  Loader2,
 } from "lucide-react";
 import TemplatePreview from "./TemplatePreview";
 
 interface TemplateLibraryProps {
   templates: FormTemplate[];
+  services: ServiceOption[];
   onCreateNew: () => void;
   onEditTemplate: (template: FormTemplate) => void;
   onDeleteTemplate: (fixtureId: string) => void;
 }
 
-const CATEGORIES = [
-  "All Templates",
-  "Hematology",
-  "Consultations",
-  "Urinalysis",
-  "Fecalysis",
-  "Radiology",
-  "Others",
-];
+type SortOption = "recently_updated" | "name_asc" | "name_desc";
+
+const UNCATEGORIZED = "Others";
 
 export default function TemplateLibrary({
   templates,
+  services,
   onCreateNew,
   onEditTemplate,
   onDeleteTemplate,
 }: TemplateLibraryProps) {
   const [selectedCategory, setSelectedCategory] = useState("All Templates");
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState("most_used");
+  const [sortBy, setSortBy] = useState<SortOption>("recently_updated");
   const [selectedTemplate, setSelectedTemplate] =
     useState<FormTemplate | null>(templates[0] || null);
   const [previewTemplate, setPreviewTemplate] =
     useState<FormTemplate | null>(null);
+  const [previewLoadingId, setPreviewLoadingId] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // Filter templates
-  const filteredTemplates = templates.filter((tpl) => {
-    const matchesCat =
-      selectedCategory === "All Templates" ||
-      tpl.service_id.toLowerCase() === selectedCategory.toLowerCase();
+  const serviceIdToName = useMemo(() => {
+    const map: Record<string, string> = {};
+    services.forEach((s) => {
+      map[s.service_id] = s.service_name;
+    });
+    return map;
+  }, [services]);
 
+  const getCategoryName = (serviceId: string) =>
+    serviceIdToName[serviceId] || UNCATEGORIZED;
+
+  const categories = useMemo(() => {
+    const names = new Set(services.map((s) => s.service_name));
+    return ["All Templates", ...Array.from(names).sort(), UNCATEGORIZED];
+  }, [services]);
+
+  const filteredTemplates = templates.filter((tpl) => {
+    const tplCategory = getCategoryName(tpl.service_id);
+    const matchesCat =
+      selectedCategory === "All Templates" || tplCategory === selectedCategory;
+
+    const q = searchQuery.toLowerCase();
     const matchesSearch =
-      tpl.form_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tpl.service_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (tpl.form_description &&
-        tpl.form_description.toLowerCase().includes(searchQuery.toLowerCase()));
+      tpl.form_name.toLowerCase().includes(q) ||
+      tplCategory.toLowerCase().includes(q) ||
+      (tpl.form_description && tpl.form_description.toLowerCase().includes(q));
 
     return matchesCat && matchesSearch;
   });
 
-  // Sort templates
-  // const sortedTemplates = [...filteredTemplates].sort((a, b) => {
-  //   if (sortBy === "name_asc") return a.form_name.localeCompare(b.form_name);
-  //   if (sortBy === "name_desc") return b.form_name.localeCompare(a.form_name);
-  //  if (sortBy === "recently_updated") return 0;
-  //  return (b.usageCount || 0) - (a.usageCount || 0);
-  //});
+  const sortedTemplates = useMemo(() => {
+    return [...filteredTemplates].sort((a, b) => {
+      if (sortBy === "name_asc") return a.form_name.localeCompare(b.form_name);
+      if (sortBy === "name_desc") return b.form_name.localeCompare(a.form_name);
+      return (
+        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+      );
+    });
+  }, [filteredTemplates, sortBy]);
 
   const getCategoryCount = (cat: string) => {
     if (cat === "All Templates") return templates.length;
-    return templates.filter(
-      (t) => t.service_id.toLowerCase() === cat.toLowerCase()
-    ).length;
+    return templates.filter((t) => getCategoryName(t.service_id) === cat)
+      .length;
+  };
+
+  const handlePreviewClick = async (tpl: FormTemplate) => {
+    setPreviewLoadingId(tpl.form_id);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await api.get(
+        `api/admin/form-templates/${tpl.form_id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const fullTemplate: FormTemplate = {
+        ...response.data.formTemplate,
+        components: (response.data.components ?? []).map(
+          dbComponentToBuilderComponent
+        ),
+      };
+
+      setPreviewTemplate(fullTemplate);
+    } catch (error) {
+      console.error("Error fetching template for preview:", error);
+      setPreviewTemplate(tpl);
+    } finally {
+      setPreviewLoadingId(null);
+    }
   };
 
   return (
@@ -115,7 +157,7 @@ export default function TemplateLibrary({
           {/* Sort dropdown */}
           <select
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
+            onChange={(e) => setSortBy(e.target.value as SortOption)}
             className="px-3.5 py-2 border border-gray-300 rounded-xl text-xs font-medium text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-sky-400"
           >
             <option value="most_used">Sort by: Most Used</option>
@@ -135,7 +177,7 @@ export default function TemplateLibrary({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            {CATEGORIES.map((cat) => {
+            {categories.map((cat) => {
               const isActive = selectedCategory === cat;
               return (
                 <button
@@ -182,7 +224,7 @@ export default function TemplateLibrary({
                 : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4"
             }`}
           >
-            {filteredTemplates.map((tpl) => {
+            {sortedTemplates.map((tpl) => {
               const isSelected = selectedTemplate?.form_id === tpl.form_id;
               return (
                 <div
@@ -201,14 +243,14 @@ export default function TemplateLibrary({
                       {tpl.form_name}
                     </h4>
                     <span className="text-[10px] text-gray-400 font-mono block mt-0.5">
-                      S-123-456-789
+                      {tpl.service_id}
                     </span>
                   </div>
 
                   <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-[11px] text-gray-500">
                     <div className="flex items-center gap-1">
                       <Clock size={12} className="text-gray-400" />
-                      {/* <span>{tpl.usageCount || 0} times</span> */}
+                      <span>{getCategoryName(tpl.service_id)}</span>
                     </div>
                     <button
                       type="button"
@@ -225,9 +267,8 @@ export default function TemplateLibrary({
               );
             })}
 
-      
             {Array.from({
-              length: Math.max(0, 11 - filteredTemplates.length),
+              length: Math.max(0, 11 - sortedTemplates.length),
             }).map((_, i) => (
               <div
                 key={`placeholder-${i}`}
@@ -236,13 +277,10 @@ export default function TemplateLibrary({
             ))}
           </div>
 
-          {/* PAALIS LANG NG LINE 231 TO 239 PAG GUSTO ALISIN YUNG PLACEHOLDERS */}
-        
-
-  
           <div className="flex items-center justify-between mt-8 text-xs text-gray-500">
             <span>
-              Showing 1 - {filteredTemplates.length} of {templates.length} templates
+              Showing 1 - {sortedTemplates.length} of {templates.length}{" "}
+              templates
             </span>
             <div className="flex items-center gap-1.5">
               <button
@@ -297,7 +335,7 @@ export default function TemplateLibrary({
                     {selectedTemplate.form_name}
                   </h4>
                   <span className="text-xs text-gray-500">
-                    {selectedTemplate.service_id || "No Service ID"}
+                    {getCategoryName(selectedTemplate.service_id)}
                   </span>
                 </div>
               </div>
@@ -311,13 +349,7 @@ export default function TemplateLibrary({
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400">Category:</span>
                   <span className="font-medium text-gray-800">
-                    {selectedTemplate.service_id || "Uncategorized"}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Components:</span>
-                  <span className="font-medium text-gray-800">
-                    {/* {selectedTemplate.components.length} Fields */}
+                    {getCategoryName(selectedTemplate.service_id)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -332,12 +364,6 @@ export default function TemplateLibrary({
                     {selectedTemplate.created_by || "Administrator"}
                   </span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Usage:</span>
-                  <span className="font-medium text-gray-800">
-                    {/* {selectedTemplate.usageCount || 0} times */}
-                  </span>
-                </div>
               </div>
             </div>
 
@@ -345,11 +371,20 @@ export default function TemplateLibrary({
             <div className="flex flex-col gap-2 pt-6">
               <button
                 type="button"
-                onClick={() => setPreviewTemplate(selectedTemplate)}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-sky-300 text-sky-600 hover:bg-sky-50 text-xs font-bold transition-colors cursor-pointer"
+                onClick={() => handlePreviewClick(selectedTemplate)}
+                disabled={previewLoadingId === selectedTemplate.form_id}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-sky-300 text-sky-600 hover:bg-sky-50 text-xs font-bold transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Eye size={14} />
-                <span>Preview Template</span>
+                {previewLoadingId === selectedTemplate.form_id ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Eye size={14} />
+                )}
+                <span>
+                  {previewLoadingId === selectedTemplate.form_id
+                    ? "Loading Preview..."
+                    : "Preview Template"}
+                </span>
               </button>
 
               <button
@@ -386,7 +421,7 @@ export default function TemplateLibrary({
               <span className="font-bold text-gray-700">
                 "{selectedTemplate.form_name}"
               </span>
-              ? This action will remove it from the library during this session.
+              ? This action cannot be undone.
             </p>
             <div className="flex items-center gap-3">
               <button
@@ -416,7 +451,7 @@ export default function TemplateLibrary({
       {previewTemplate && (
         <TemplatePreview
           templateName={previewTemplate.form_name}
-          category={previewTemplate.service_id || "Uncategorized"}
+          category={getCategoryName(previewTemplate.service_id)}
           components={previewTemplate.components}
           onClose={() => setPreviewTemplate(null)}
         />
@@ -424,4 +459,3 @@ export default function TemplateLibrary({
     </div>
   );
 }
-

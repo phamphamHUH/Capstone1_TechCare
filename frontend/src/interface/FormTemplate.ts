@@ -90,3 +90,15 @@ export interface BuilderComponent {
   settings: ComponentSettings;
   validation: ValidationRules;
 }
+
+export function dbComponentToBuilderComponent(row: any): BuilderComponent {
+  return {
+    id: row.form_component_id,
+    type: row.type_id as ComponentType,
+    label: row.label,
+    fieldKey: row.field_key,
+    order: row.display_order,
+    settings: row.settings ?? {},
+    validation: row.validation ?? {},
+  };
+}

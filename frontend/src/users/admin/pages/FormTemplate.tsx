@@ -1,17 +1,43 @@
 import { useEffect, useState, useCallback } from "react";
 import api from "#lib/axios";
 import Header from "../../../components/Header";
-import { INITIAL_TEMPLATES_LIST } from "../components/FormTemplate/sampleTemplates";
 import TemplateLibrary from "../components/FormTemplate/TemplateLibrary";
 import TemplateBuilder from "../components/FormTemplate/TemplateBuilder";
-import type { FormTemplate } from "../../../interface/FormTemplate";
-import { Loader2 } from "lucide-react"; // loader icon for fetching feedback
+import {
+  dbComponentToBuilderComponent,
+  type FormTemplate,
+} from "../../../interface/FormTemplate";
+import { Loader2 } from "lucide-react";
+
+export interface ServiceOption {
+  service_id: string;
+  service_name: string;
+  service_type?: string;
+}
 
 interface FormTemplateProps {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   loading: boolean;
   loadData: () => Promise<void>;
+}
+
+function isValidFormTemplate(rec: any): rec is FormTemplate {
+  return (
+    rec &&
+    typeof rec.form_id === "string" &&
+    typeof rec.form_name === "string" &&
+    typeof rec.service_id === "string" &&
+    rec.service_id.length > 0
+  );
+}
+
+function isValidService(rec: any): rec is ServiceOption {
+  return (
+    rec &&
+    typeof rec.service_id === "string" &&
+    typeof rec.service_name === "string"
+  );
 }
 
 export default function FormTemplate({
@@ -21,14 +47,12 @@ export default function FormTemplate({
   loadData,
 }: FormTemplateProps) {
   const [viewMode, setViewMode] = useState<"library" | "builder">("library");
-  
-  // Initialized with an empty array instead of local dummy data (INITIAL_TEMPLATES_LIST)
-  const [templates, setTemplates] = useState<FormTemplate[]>([]);
-  
-  // Added state for managing asynchronous API fetch loading and error feedback
+
+  const [formTemplates, setFormTemplates] = useState<FormTemplate[]>([]);
+  const [services, setServices] = useState<ServiceOption[]>([]);
+
   const [fetching, setFetching] = useState<boolean>(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  const [formtemplates, setFormTemplates] = useState<FormTemplate[]>([]);
 
   const [editingTemplate, setEditingTemplate] = useState<FormTemplate | null>(
     null
@@ -41,16 +65,34 @@ export default function FormTemplate({
 
     try {
       const token = localStorage.getItem("token");
-      const response = await api.get("api/admin/form-templates", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setFormTemplates(response.data.formTemplates || []);
+      const headers = { Authorization: `Bearer ${token}` };
 
+      const [templatesRes, servicesRes] = await Promise.all([
+        api.get("api/admin/form-templates", { headers }),
+        api.get("api/admin/services", { headers }),
+      ]);
+
+      const rawTemplates = templatesRes.data.formTemplates ?? [];
+      const validTemplates = rawTemplates.filter(isValidFormTemplate);
+      if (validTemplates.length !== rawTemplates.length) {
+        console.warn(
+          `Dropped ${rawTemplates.length - validTemplates.length} malformed template record(s).`
+        );
+      }
+      setFormTemplates(validTemplates);
+
+      const rawServices = servicesRes.data.services ?? [];
+      const validServices = rawServices.filter(isValidService);
+      if (validServices.length !== rawServices.length) {
+        console.warn(
+          `Dropped ${rawServices.length - validServices.length} malformed service record(s).`
+        );
+      }
+      setServices(validServices);
     } catch (error) {
-      // IF API FAILS, ALSO FALLBACK TO SAMPLE DATA FOR TESTING
-      setTemplates(INITIAL_TEMPLATES_LIST);
-    }
-    finally {
+      console.error("Error fetching form templates / services:", error);
+      setFetchError("Failed to load form templates. Please try again.");
+    } finally {
       setFetching(false);
     }
   }, []);
@@ -69,18 +111,16 @@ export default function FormTemplate({
   const handleEditTemplate = async (template: FormTemplate) => {
     try {
       const token = localStorage.getItem("token");
-      const formId = (template as unknown as Record<string, unknown>).form_id || template.form_id; // Ensure we have the correct form_id
+      const response = await api.get(
+        `api/admin/form-templates/${template.form_id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-      const response = await api.get(`api/admin/form-templates/${formId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      // Combine metadata and components before opening the builder
-      const fullTemplate = {
+      const fullTemplate: FormTemplate = {
         ...response.data.formTemplate,
-        components: response.data.components,
+        components: (response.data.components ?? []).map(
+          dbComponentToBuilderComponent
+        ),
       };
 
       setEditingTemplate(fullTemplate);
@@ -93,14 +133,26 @@ export default function FormTemplate({
     }
   };
 
-  const handleDeleteTemplate = (fixtureId: string) => {
-    setTemplates((prev) => prev.filter((t) => t.form_id !== fixtureId));
+  const handleDeleteTemplate = async (formId: string) => {
+    const previous = formTemplates;
+    setFormTemplates((prev) => prev.filter((t) => t.form_id !== formId));
+
+    try {
+      const token = localStorage.getItem("token");
+      await api.delete(`api/admin/form-templates/${formId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch (error) {
+      console.error("Error deleting template:", error);
+      setFormTemplates(previous); // roll back
+      setFetchError("Failed to delete template. Please try again.");
+    }
   };
 
   const handleBackToLibrary = () => {
     setViewMode("library");
     setEditingTemplate(null);
-    fetchFormTemplates(); // Re-fetch templates list when exiting builder to get latest updates
+    fetchFormTemplates();
   };
 
   return (
@@ -134,14 +186,17 @@ export default function FormTemplate({
           </div>
         ) : viewMode === "library" ? (
           <TemplateLibrary
-            templates={formtemplates}
+            templates={formTemplates}
+            services={services}
             onCreateNew={handleCreateNew}
             onEditTemplate={handleEditTemplate}
             onDeleteTemplate={handleDeleteTemplate}
           />
         ) : (
           <TemplateBuilder
-            //initialTemplate={editingTemplate}
+            key={editingTemplate?.form_id ?? "new"}
+            initialTemplate={editingTemplate}
+            services={services}
             onBackToLibrary={handleBackToLibrary}
           />
         )}
