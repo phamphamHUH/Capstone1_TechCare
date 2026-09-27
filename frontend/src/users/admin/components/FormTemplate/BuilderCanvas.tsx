@@ -6,7 +6,7 @@ import {
   ChevronDown,
   GripVertical,
 } from "lucide-react";
-import type { BuilderComponent, ComponentType } from "./types";
+import type { BuilderComponent, ComponentType } from "../../../../interface/FormTemplate";
 
 interface BuilderCanvasProps {
   components: BuilderComponent[];

@@ -9,7 +9,7 @@ import {
   Minus,
   Image as ImageIcon,
 } from "lucide-react";
-import type { ComponentType } from "./types";
+import type { ComponentType } from "../../../../interface/FormTemplate";
 
 interface PaletteItem {
   type: ComponentType;
