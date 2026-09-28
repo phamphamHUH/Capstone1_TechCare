@@ -44,7 +44,7 @@ function FrontdeskStaff() {
             const serviceResponse = await api.get("/api/fdstaff/services");
             const patientsResponse = await api.get("/api/fdstaff/patients");
             const queuesResponse = await api.get("/api/fdstaff/queues");
-
+            
             setServices(serviceResponse.data.services);
             setPatients(patientsResponse.data.patients);
             setQueues(queuesResponse.data.queueEntries);
