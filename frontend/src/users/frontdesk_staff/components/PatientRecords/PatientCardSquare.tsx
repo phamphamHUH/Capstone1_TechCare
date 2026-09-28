@@ -1,5 +1,6 @@
+import { useSearchParams } from "react-router";
 import type { Patient } from "../../../../interface/Patient";
-import { Phone, Pencil, Trash2 } from "lucide-react";
+import { Phone, Pencil, Trash2, History } from "lucide-react";
 
 type Props = {
   patient: Patient;
@@ -24,6 +25,8 @@ function calculateAge(birthdate: string): number {
 }
 
 function PatientCardSquare({ patient, onEdit, onDelete }: Props) {
+  const [, setSearchParams] = useSearchParams();
+
   const fullName = [
     patient.first_name,
     patient.middle_name,
@@ -38,6 +41,10 @@ function PatientCardSquare({ patient, onEdit, onDelete }: Props) {
   }`;
 
   const age = calculateAge(patient.birthdate);
+
+  const handleViewHistory = () => {
+    setSearchParams({ page: "patient-medical-history", patient_id: patient.patient_id });
+  };
 
   return (
     <div className="w-full max-w-sm rounded-3xl bg-white p-2 shadow-md">
@@ -84,20 +91,28 @@ function PatientCardSquare({ patient, onEdit, onDelete }: Props) {
         {/* Actions */}
         <div className="mt-4 flex gap-2 border-t border-gray-100 pt-3">
           <button
+            onClick={handleViewHistory}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100"
+          >
+            <History className="h-4 w-4" />
+            History
+          </button>
+          <button
             onClick={() => onEdit(patient)}
             className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-gray-200 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
           >
             <Pencil className="h-4 w-4" />
             Edit
           </button>
-          <button
-            onClick={() => onDelete(patient.patient_id)}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-gray-200 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-          >
-            <Trash2 className="h-4 w-4" />
-            Delete
-          </button>
         </div>
+
+        <button
+          onClick={() => onDelete(patient.patient_id)}
+          className="mt-2 w-full flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+        >
+          <Trash2 className="h-4 w-4" />
+          Delete
+        </button>
       </div>
     </div>
   );
