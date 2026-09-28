@@ -1,3 +1,15 @@
+export interface FormTemplate {
+    form_id: string;
+    form_name: string;
+    form_description?: string;
+    service_id: string;
+    status: string;
+    created_by: string;
+    created_at: string;
+    updated_at: string;
+    components: BuilderComponent[];
+}
+
 export type ComponentType =
   | "text_field"
   | "number_field"
@@ -79,15 +91,14 @@ export interface BuilderComponent {
   validation: ValidationRules;
 }
 
-export interface ReportTemplate {
-  fixtureId: string;
-  name: string;
-  description?: string;
-  category: string;
-  status: TemplateStatus;
-  components: BuilderComponent[];
-  createdBy?: string;
-  usageCount?: number;
-  lastUpdated?: string;
+export function dbComponentToBuilderComponent(row: any): BuilderComponent {
+  return {
+    id: row.form_component_id,
+    type: row.type_id as ComponentType,
+    label: row.label,
+    fieldKey: row.field_key,
+    order: row.display_order,
+    settings: row.settings ?? {},
+    validation: row.validation ?? {},
+  };
 }
-

@@ -1,29 +1,32 @@
 import { useState } from "react";
 import { Eye, CheckCircle2, AlertCircle } from "lucide-react";
+import api from "#lib/axios";
 import type {
   BuilderComponent,
   ComponentType,
-  ReportTemplate,
-} from "./types";
+  FormTemplate,
+} from "../../../../interface/FormTemplate";
+import type { ServiceOption } from "../../pages/FormTemplate";
 import ComponentPalette from "./ComponentPalette";
 import BuilderCanvas from "./BuilderCanvas";
 import ComponentSettings from "./ComponentSettings";
 import TemplatePreview from "./TemplatePreview";
 
 interface TemplateBuilderProps {
-  initialTemplate?: ReportTemplate | null;
+  initialTemplate?: FormTemplate | null;
+  services: ServiceOption[];
   onBackToLibrary: () => void;
 }
 
 const DEFAULT_NEW_COMPONENTS: BuilderComponent[] = [
   {
-    id: "comp_header_hematology",
+    id: "comp_header_default",
     type: "section_header",
-    label: "HEMATOLOGY",
-    fieldKey: "hematology_section",
+    label: "SECTION",
+    fieldKey: "default_section",
     order: 1,
     settings: {
-      sectionHeader: "HEMATOLOGY",
+      sectionHeader: "SECTION",
       width: "FULL",
       alignment: "left",
       showInPreview: true,
@@ -34,16 +37,21 @@ const DEFAULT_NEW_COMPONENTS: BuilderComponent[] = [
 
 export default function TemplateBuilder({
   initialTemplate,
+  services,
   onBackToLibrary,
 }: TemplateBuilderProps) {
   const [templateName, setTemplateName] = useState(
-    initialTemplate?.name || ""
+    initialTemplate?.form_name || ""
   );
+  const [description, setDescription] = useState(
+    initialTemplate?.form_description || ""
+  );
+  // category stores the real service_id directly
   const [category, setCategory] = useState(
-    initialTemplate?.category || "Hematology"
+    initialTemplate?.service_id || services[0]?.service_id || ""
   );
   const [components, setComponents] = useState<BuilderComponent[]>(
-    initialTemplate?.components
+    initialTemplate?.components && initialTemplate.components.length > 0
       ? [...initialTemplate.components]
       : DEFAULT_NEW_COMPONENTS
   );
@@ -52,6 +60,7 @@ export default function TemplateBuilder({
   );
   const [showPreview, setShowPreview] = useState(false);
   const [noticeMessage, setNoticeMessage] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const isEditMode = Boolean(initialTemplate);
 
@@ -111,9 +120,7 @@ export default function TemplateBuilder({
   };
 
   const handleUpdateComponent = (updated: BuilderComponent) => {
-    setComponents(
-      components.map((c) => (c.id === updated.id ? updated : c))
-    );
+    setComponents(components.map((c) => (c.id === updated.id ? updated : c)));
   };
 
   const handleDeleteComponent = (id: string) => {
@@ -165,11 +172,85 @@ export default function TemplateBuilder({
     setComponents(updated.map((c, i) => ({ ...c, order: i + 1 })));
   };
 
-  const triggerPrototypeNotice = (action: string) => {
-    setNoticeMessage(
-      `Prototype only — ${action} is not connected to the database yet.`
-    );
-    setTimeout(() => setNoticeMessage(null), 4000);
+  const getCurrentUserId = (): string | null => {
+    try {
+      const raw = sessionStorage.getItem("user");
+      if (!raw) return null;
+      return JSON.parse(raw)?.user_id ?? null;
+    } catch {
+      return null;
+    }
+  };
+
+  const handleSave = async (status: "Draft" | "Published") => {
+    if (!templateName.trim()) {
+      setNoticeMessage("Please give the template a name before saving.");
+      return;
+    }
+    if (components.length === 0) {
+      setNoticeMessage("Add at least one component before saving.");
+      return;
+    }
+    if (!category) {
+      setNoticeMessage("Please select a category before saving.");
+      return;
+    }
+
+    const createdBy = initialTemplate?.created_by || getCurrentUserId();
+    if (!createdBy) {
+      setNoticeMessage("Could not determine current user. Please log in again.");
+      return;
+    }
+
+    const payload = {
+      form_name: templateName,
+      form_description: description,
+      status,
+      service_id: category,
+      created_by: createdBy,
+      form_components: components.map((c, index) => ({
+        type_id: c.type,
+        label: c.label,
+        field_key: c.fieldKey,
+        display_order: index + 1,
+        settings: c.settings,
+        validation: c.validation,
+      })),
+    };
+
+    setIsSaving(true);
+    try {
+      const token = localStorage.getItem("token");
+
+      if (isEditMode && initialTemplate?.form_id) {
+        // Uses PUT /api/admin/form-templates/:form_id.
+        await api.put(
+          `api/admin/form-templates/${initialTemplate.form_id}`,
+          payload,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setNoticeMessage("Template updated successfully.");
+      } else {
+        await api.post("api/admin/form-templates", payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setNoticeMessage(
+          status === "Published"
+            ? "Template published successfully."
+            : "Draft saved successfully."
+        );
+      }
+
+      onBackToLibrary();
+    } catch (error: any) {
+      console.error("Error saving template:", error);
+      const message =
+        error?.response?.data?.message ||
+        "Failed to save template. Please try again.";
+      setNoticeMessage(message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const selectedComponent =
@@ -202,19 +283,11 @@ export default function TemplateBuilder({
             onClick={onBackToLibrary}
             className="hover:text-gray-900 transition-colors cursor-pointer"
           >
-            Report Builder
-          </button>
-          <span>&gt;</span>
-          <button
-            type="button"
-            onClick={onBackToLibrary}
-            className="hover:text-gray-900 transition-colors cursor-pointer"
-          >
             Templates
           </button>
           <span>&gt;</span>
           <span className="text-gray-900">
-            {isEditMode ? initialTemplate?.name || "Edit Template" : "New Template"}
+            {isEditMode ? initialTemplate?.form_name || "Edit Template" : "New Template"}
           </span>
         </div>
 
@@ -234,17 +307,31 @@ export default function TemplateBuilder({
           {/* Blue placeholder square */}
           <div className="w-12 h-12 rounded-2xl bg-sky-400 flex-shrink-0" />
 
-          <div className="flex-1 min-w-0">
-            <label className="block text-[11px] font-semibold text-gray-400 uppercase mb-1">
-              Template Name
-            </label>
-            <input
-              type="text"
-              value={templateName}
-              onChange={(e) => setTemplateName(e.target.value)}
-              placeholder="e.g. Complete Blood Count"
-              className="w-full px-4 py-2 border border-gray-300 rounded-xl text-xs font-medium text-gray-900 focus:outline-none focus:ring-1 focus:ring-sky-400"
-            />
+          <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[11px] font-semibold text-gray-400 uppercase mb-1">
+                Template Name
+              </label>
+              <input
+                type="text"
+                value={templateName}
+                onChange={(e) => setTemplateName(e.target.value)}
+                placeholder="e.g. Complete Blood Count"
+                className="w-full px-4 py-2 border border-gray-300 rounded-xl text-xs font-medium text-gray-900 focus:outline-none focus:ring-1 focus:ring-sky-400"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-gray-400 uppercase mb-1">
+                Description
+              </label>
+              <input
+                type="text"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Optional short description"
+                className="w-full px-4 py-2 border border-gray-300 rounded-xl text-xs font-medium text-gray-900 focus:outline-none focus:ring-1 focus:ring-sky-400"
+              />
+            </div>
           </div>
         </div>
 
@@ -258,12 +345,14 @@ export default function TemplateBuilder({
               onChange={(e) => setCategory(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-xl text-xs font-medium text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-sky-400"
             >
-              <option value="Hematology">Hematology</option>
-              <option value="Consultations">Consultations</option>
-              <option value="Urinalysis">Urinalysis</option>
-              <option value="Fecalysis">Fecalysis</option>
-              <option value="Radiology">Radiology</option>
-              <option value="Others">Others</option>
+              {services.length === 0 && (
+                <option value="">No services available</option>
+              )}
+              {services.map((s) => (
+                <option key={s.service_id} value={s.service_id}>
+                  {s.service_name}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -284,7 +373,7 @@ export default function TemplateBuilder({
               type="text"
               disabled
               value={
-                initialTemplate?.fixtureId || "Generated after saving"
+                initialTemplate?.form_id || "Generated after saving"
               }
               className="w-44 px-3 py-2 border border-gray-200 bg-gray-50 text-gray-400 rounded-xl text-xs font-mono select-none"
             />
@@ -334,17 +423,19 @@ export default function TemplateBuilder({
           </button>
           <button
             type="button"
-            onClick={() => triggerPrototypeNotice("template saving")}
-            className="px-5 py-2.5 rounded-xl border border-sky-300 hover:bg-sky-50 text-sky-700 text-xs font-semibold transition-colors cursor-pointer"
+            onClick={() => handleSave("Draft")}
+            disabled={isSaving}
+            className="px-5 py-2.5 rounded-xl border border-sky-300 hover:bg-sky-50 text-sky-700 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Save Draft
+            {isSaving ? "Saving..." : "Save Draft"}
           </button>
           <button
             type="button"
-            onClick={() => triggerPrototypeNotice("publishing template")}
-            className="px-5 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 active:bg-sky-700 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
+            onClick={() => handleSave("Published")}
+            disabled={isSaving}
+            className="px-5 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 active:bg-sky-700 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Publish Template
+            {isSaving ? "Saving..." : "Publish Template"}
           </button>
         </div>
       </div>
@@ -353,7 +444,10 @@ export default function TemplateBuilder({
       {showPreview && (
         <TemplatePreview
           templateName={templateName}
-          category={category}
+          category={
+            services.find((s) => s.service_id === category)?.service_name ||
+            "Uncategorized"
+          }
           components={components}
           onClose={() => setShowPreview(false)}
         />
@@ -361,4 +455,3 @@ export default function TemplateBuilder({
     </div>
   );
 }
-

@@ -1,15 +1,15 @@
-import type { ReportTemplate } from "./types";
+import type { FormTemplate } from "../../../../interface/FormTemplate";
 
-export const SAMPLE_CBC_TEMPLATE: ReportTemplate = {
-  fixtureId: "sample-cbc",
-  name: "Complete Blood Count",
-  description:
+export const SAMPLE_CBC_TEMPLATE: FormTemplate = {
+  form_id: "sample-cbc",
+  form_name: "Complete Blood Count",
+  form_description:
     "Routine automated hematology examination measuring red and white blood cells, hemoglobin, hematocrit, and platelet indices.",
-  category: "Hematology",
+  service_id: "Hematology",
   status: "Published",
-  createdBy: "Dr. LeBron R. James",
-  usageCount: 123,
-  lastUpdated: "5 mins ago",
+  created_by: "Dr. LeBron R. James",
+  created_at: "5 mins ago",
+  updated_at: "5 mins ago",
   components: [
     {
       id: "comp-cbc-1",
@@ -183,4 +183,4 @@ export const SAMPLE_CBC_TEMPLATE: ReportTemplate = {
   ],
 };
 
-export const INITIAL_TEMPLATES_LIST: ReportTemplate[] = [SAMPLE_CBC_TEMPLATE];
+export const INITIAL_TEMPLATES_LIST: FormTemplate[] = [SAMPLE_CBC_TEMPLATE];
