@@ -9,6 +9,7 @@ import authRoutes from "./routes/auth.route.js";
 import testRoutes from "./routes/test.routes.js";
 import fdstaffRoutes from "./routes/fdstaff.route.js";
 import labstaffRoutes from "./routes/labstaff.route.js";
+import doctorRoutes from "./routes/doctor.route.js";
 
 const upload = multer({
   dest: "uploads/",
@@ -38,6 +39,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/fdstaff", fdstaffRoutes);
 app.use("/api/labstaff", labstaffRoutes);
+app.use("/api/doctor", doctorRoutes);
 
 // Serve frontend build
 const frontendPath = path.resolve(__dirname, "../../frontend/dist");

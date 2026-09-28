@@ -171,7 +171,7 @@ export async function generateLaboratoryItemID() {
   const prefix = `${year}-${month}${day}`;
   const labItemsCreatedToday = await sql`
     SELECT lab_item_id
-    FROM request_items
+    FROM laboratory_request_items
     WHERE DATE(created_at) = CURRENT_DATE
     ORDER BY lab_item_id DESC
   `;

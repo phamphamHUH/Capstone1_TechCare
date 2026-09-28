@@ -17,7 +17,6 @@ export async function addLaboratoryRequest(req: Request, res: Response) {
     }
 
     const request_id = await generateLaboratoryRequestID();
-
     const laboratory_request_result = await sql`
       INSERT INTO lab_requests (
         request_id,
@@ -42,7 +41,7 @@ export async function addLaboratoryRequest(req: Request, res: Response) {
     for (const service of services) {
       const lab_item_id = await generateLaboratoryItemID();
       const result = await sql`
-        INSERT INTO request_items (lab_item_id, request_id, service_id, status)
+        INSERT INTO laboratory_request_items (lab_item_id, request_id, service_id, status)
         VALUES (${lab_item_id}, ${request_id}, ${service.service_id}, 'Requested')
         RETURNING *
       `;
@@ -56,7 +55,6 @@ export async function addLaboratoryRequest(req: Request, res: Response) {
     });
   } catch (error) {
     console.error(error);
-
     return res.status(500).json({
       message: "Internal server error.",
     });
