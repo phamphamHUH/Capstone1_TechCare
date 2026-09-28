@@ -71,7 +71,7 @@ export async function login(req: Request, res: Response) {
       },
       ENV.JWT_SECRET,
       {
-        expiresIn: "5min",
+        expiresIn: ENV.JWT_EXPIRES_IN,
       }
     );
 
@@ -87,7 +87,7 @@ export async function login(req: Request, res: Response) {
       },
       ENV.JWT_REFRESH_TOKEN,
       {
-        expiresIn: "1d",
+        expiresIn: ENV.JWT_REFRESH_EXPIRES_IN,
       }
     );
 
