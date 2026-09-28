@@ -1,4 +1,5 @@
 import { sql } from "../config/db.js";
+import type { PoolClient } from "@neondatabase/serverless";
 
 export async function generateUserId() {
   const now = new Date();
@@ -136,7 +137,7 @@ export async function generateActivityId() {
   return `ACT-${prefix}-${sequence}`;
 }
 
-export async function generateLaboratoryRequestID() {
+export async function generateLaboratoryRequestID(client: PoolClient) {
   const now = new Date();
 
   const year = String(now.getFullYear()).slice(-2);
@@ -144,24 +145,22 @@ export async function generateLaboratoryRequestID() {
   const day = String(now.getDate()).padStart(2, "0");
 
   const prefix = `${year}-${month}${day}`;
-  const labRequestsCreatedToday = await sql`
-        SELECT request_id
-        FROM lab_requests
-        WHERE DATE(requested_at) = CURRENT_DATE
-        ORDER BY request_id DESC
-      `;
-
-  let nextNumber = 1;
-
-  if (labRequestsCreatedToday.length > 0) {
-    const lastId = labRequestsCreatedToday[0].request_id;
-    nextNumber = Number(lastId.slice(-4)) + 1;
-  }
-  const sequence = String(nextNumber).padStart(4, "0");
-  return `LR-${prefix}-${sequence}`;
+  const { rows: labRequestsCreatedToday } = await client.query(
+    `SELECT request_id
+     FROM lab_requests
+     WHERE request_id LIKE $1
+     ORDER BY request_id DESC
+     LIMIT 1`,
+    [`LR-${prefix}-%`],
+  );
+  const nextNumber =
+    labRequestsCreatedToday.length > 0
+      ? Number(labRequestsCreatedToday[0].request_id.slice(-4)) + 1
+      : 1;
+  return `LR-${prefix}-${String(nextNumber).padStart(4, "0")}`;
 }
 
-export async function generateLaboratoryItemID() {
+export async function generateLaboratoryItemID(client: PoolClient) {
   const now = new Date();
 
   const year = String(now.getFullYear()).slice(-2);
@@ -169,23 +168,20 @@ export async function generateLaboratoryItemID() {
   const day = String(now.getDate()).padStart(2, "0");
 
   const prefix = `${year}-${month}${day}`;
-  const labItemsCreatedToday = await sql`
-    SELECT lab_item_id
-    FROM laboratory_request_items
-    WHERE DATE(created_at) = CURRENT_DATE
-    ORDER BY lab_item_id DESC
-  `;
+  const { rows: labItemsCreatedToday } = await client.query(
+    `SELECT lab_item_id
+     FROM laboratory_request_items
+     WHERE lab_item_id LIKE $1
+     ORDER BY lab_item_id DESC
+     LIMIT 1`,
+    [`LI-${prefix}-%`],
+  );
 
-  let nextNumber = 1;
-
-  if (labItemsCreatedToday.length > 0) {
-    const lastId = labItemsCreatedToday[0].lab_item_id;
-    console.log(lastId);
-    nextNumber = Number(lastId.slice(-4)) + 1;
-  }
-
-  const sequence = String(nextNumber).padStart(4, "0");
-  return `LI-${prefix}-${sequence}`;
+  const nextNumber =
+    labItemsCreatedToday.length > 0
+      ? Number(labItemsCreatedToday[0].lab_item_id.slice(-4)) + 1
+      : 1;
+  return `LI-${prefix}-${String(nextNumber).padStart(4, "0")}`;
 }
 
 /////////=================================== QUQUE ID GENERATOR =========================================
