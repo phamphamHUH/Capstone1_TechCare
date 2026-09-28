@@ -1,28 +1,23 @@
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router";
 import { Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
+import axios from "axios";
 import api from "../lib/axios";
 import ClinicSlideshow from "./components/ClinicSlideshow";
 
 function LoginPage() {
-  const [identifier, setIdentifier] = useState("");
+  const [identifier, setIdentifier] = useState(
+    () => localStorage.getItem("remembered_user") ?? ""
+  );
   const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(
+    () => localStorage.getItem("remembered_user") !== null
+  );
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const savedUser = localStorage.getItem("remembered_user");
-    if (savedUser) {
-      setIdentifier(savedUser);
-      setRememberMe(true);
-    }
-
-    api.get("/api/test/ping").catch(() => {});
-  }, []);
 
   const handleLogin = async (e?: FormEvent) => {
     if (e) e.preventDefault();
@@ -60,13 +55,20 @@ function LoginPage() {
       sessionStorage.setItem("role", role);
 
       navigate(`/${role}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Login error:", error);
-      setErrorMessage(
-        error.response?.data?.message ||
-          error.response?.data?.error ||
+
+      if (axios.isAxiosError(error)) {
+        setErrorMessage(
+          error.response?.data?.message ||
+            error.response?.data?.error ||
+            "Failed to log in. Please check your connection or credentials."
+        );
+      } else {
+        setErrorMessage(
           "Failed to log in. Please check your connection or credentials."
-      );
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -75,21 +77,21 @@ function LoginPage() {
   return (
     <div className="min-h-screen w-full bg-[#f8fafc] flex items-center justify-center p-4 sm:p-6 lg:p-10 font-sans">
       <div className="w-full max-w-6xl bg-white rounded-[32px] shadow-xl border border-gray-100 p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
-        
+
         <div className="w-full h-full flex flex-col justify-center">
           <ClinicSlideshow />
         </div>
 
         <div className="w-full flex items-center justify-center py-4 sm:py-8 px-4 sm:px-8 lg:px-12">
           <div className="w-full max-w-md">
-            
+
             <div className="flex flex-col items-center justify-center mb-6">
               <img
                 src="/assets/reyna-g-logo.png"
                 alt="Reyna G Diagnostic Laboratory"
                 className="h-20 sm:h-24 object-contain mb-1"
                 onError={(e) => {
-                  (e.target as HTMLElement).style.display = "none";
+                  e.currentTarget.style.display = "none";
                 }}
               />
             </div>
@@ -110,15 +112,17 @@ function LoginPage() {
             )}
 
             <form onSubmit={handleLogin} className="space-y-5">
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Email
                 </label>
+
                 <div className="relative flex items-center">
                   <div className="absolute left-4 text-gray-400 pointer-events-none">
                     <Mail size={20} strokeWidth={1.5} />
                   </div>
+
                   <input
                     type="text"
                     value={identifier}
@@ -134,10 +138,12 @@ function LoginPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Password
                 </label>
+
                 <div className="relative flex items-center">
                   <div className="absolute left-4 text-gray-400 pointer-events-none">
                     <Lock size={20} strokeWidth={1.5} />
                   </div>
+
                   <input
                     type={showPassword ? "text" : "password"}
                     value={password}
@@ -146,11 +152,14 @@ function LoginPage() {
                     required
                     className="w-full pl-12 pr-12 py-3.5 bg-white border border-gray-300 rounded-2xl text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition-all text-sm sm:text-base"
                   />
+
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-4 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
                   >
                     {showPassword ? (
                       <EyeOff size={20} strokeWidth={1.5} />
@@ -169,6 +178,7 @@ function LoginPage() {
                     onChange={(e) => setRememberMe(e.target.checked)}
                     className="w-5 h-5 rounded-md border-gray-300 text-sky-500 focus:ring-sky-400 cursor-pointer accent-sky-500"
                   />
+
                   <span className="text-sm font-medium text-gray-700">
                     Remember Me
                   </span>
@@ -177,7 +187,9 @@ function LoginPage() {
                 <button
                   type="button"
                   onClick={() =>
-                    alert("Please contact the administrator or front desk to reset your password.")
+                    alert(
+                      "Please contact the administrator or front desk to reset your password."
+                    )
                   }
                   className="text-sm font-semibold text-gray-800 hover:text-sky-600 hover:underline transition-colors cursor-pointer"
                 >
