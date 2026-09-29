@@ -1,4 +1,4 @@
-import { neon } from "@neondatabase/serverless";
+import { neon, Pool } from "@neondatabase/serverless";
 import { ENV } from "./env.js";
 
 if (!ENV.DATABASE_URL) {
@@ -6,6 +6,7 @@ if (!ENV.DATABASE_URL) {
 }
 
 export const sql = neon(ENV.DATABASE_URL);
+export const pool = new Pool({ connectionString: ENV.DATABASE_URL });
 
 // =======================================================================
 // TABLE DEFINITIONS
