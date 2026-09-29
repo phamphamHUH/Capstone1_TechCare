@@ -14,6 +14,7 @@ import FrontdeskDashboard from "./pages/FrontdeskDashboard";
 import PatientRecords from "./pages/PatientRecords";
 import PatientRegistration from "./pages/PatientRegistration";
 import QueueManagement from "./pages/QueueManagement";
+import PatientMedicalHistory from "./pages/PatientMedicalHistory";
 
 function FrontdeskStaff() {
     const [patients, setPatients] = useState([]);
@@ -44,7 +45,7 @@ function FrontdeskStaff() {
             const serviceResponse = await api.get("/api/fdstaff/services");
             const patientsResponse = await api.get("/api/fdstaff/patients");
             const queuesResponse = await api.get("/api/fdstaff/queues");
-
+            
             setServices(serviceResponse.data.services);
             setPatients(patientsResponse.data.patients);
             setQueues(queuesResponse.data.queueEntries);
@@ -144,6 +145,15 @@ function FrontdeskStaff() {
             {page === "billing" && (
                 <Billing
                     billing={billing}
+                    open={open}
+                    setOpen={setOpen}
+                    loadData={loadData}
+                    loading={loading}
+                />
+            )}
+
+            {page === "patient-medical-history" && (
+                <PatientMedicalHistory
                     open={open}
                     setOpen={setOpen}
                     loadData={loadData}
