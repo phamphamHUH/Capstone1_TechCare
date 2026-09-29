@@ -11,6 +11,7 @@ import {
   getAllQueueEntries,
   getLaboratoryRequest,
 } from "../controllers/fdstaff/getRequests.controller.js";
+import { getPatientMedicalHistory } from "../controllers/fdstaff/getMedicalHistory.controller.js";
 import {
   addBills,
   addLaboratoryRequest,
@@ -40,6 +41,7 @@ router.get("/billing", getAllBilling);
 router.get("/services", getAllservices);
 router.get("/queues", getAllQueueEntries);
 router.get("/patients/:patient_id/laboratory-requests", getLaboratoryRequest);
+router.get("/patients/:patient_id/medical-history", getPatientMedicalHistory);
 
 // POST requests
 router.post("/patients", upload.single("image"), addPatient);
