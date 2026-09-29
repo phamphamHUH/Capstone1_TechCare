@@ -7,7 +7,7 @@ export async function getAllConsultations(req: Request, res: Response) {
     const { doctor_id, consultation_type } = req.query;
 
     if (!patient_id) {
-      return res.status(400).json("Patient ID is required!");
+      return res.status(400).json("Patient ID is required.");
     }
 
     // const consultations = await sql`
@@ -60,4 +60,27 @@ export async function getAllConsultations(req: Request, res: Response) {
   }
 }
 
-export async function getCurrentPrescriptions(req: Request, res: Response) {}
+export async function getCurrentPrescriptions(req: Request, res: Response) {
+  try {
+    const { patient_id } = req.params;
+
+    if (!patient_id) {
+      return res.status(400).json("Patient ID is required.");
+    }
+
+    const prescriptions = await sql`
+      SELECT * FROM prescription_records
+      WHERE patient_id = ${patient_id}
+        AND status = 'Active'
+        AND (valid_until IS NULL OR valid_until >= CURRENT_DATE)
+      ORDER BY prescribed_at DESC
+    `;
+
+    return res
+      .status(200)
+      .json({ message: "Prescriptions successfully fetched.", prescriptions });
+  } catch (error) {
+    console.error("Error fetching current prescriptions:", error);
+    return res.status(500).json({ message: "Failed to fetch prescriptions" });
+  }
+}
