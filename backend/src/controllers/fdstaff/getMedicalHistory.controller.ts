@@ -68,17 +68,17 @@ type MedicalHistoryLabResultRow = {
 };
 
 async function resolveLabItemsTable() {
-  const laboratoryRequestItems = await sql<{ table_name: string | null }[]>`
+  const laboratoryRequestItems = (await sql`
     SELECT to_regclass('public.laboratory_request_items') AS table_name
-  `;
+  `) as { table_name: string | null }[];
 
   if (laboratoryRequestItems[0]?.table_name) {
     return "laboratory_request_items" as const;
   }
 
-  const requestItems = await sql<{ table_name: string | null }[]>`
+  const requestItems = (await sql`
     SELECT to_regclass('public.request_items') AS table_name
-  `;
+  `) as { table_name: string | null }[];
 
   if (requestItems[0]?.table_name) {
     return "request_items" as const;
@@ -112,7 +112,7 @@ export async function getPatientMedicalHistory(req: Request, res: Response) {
       return res.status(404).json({ message: "Patient not found." });
     }
 
-    const consultations = await sql<MedicalHistoryConsultationRow[]>`
+    const consultations = (await sql`
       SELECT
         cr.consultation_record_id,
         cr.queue_id,
@@ -140,9 +140,9 @@ export async function getPatientMedicalHistory(req: Request, res: Response) {
       LEFT JOIN services s ON s.service_id = q.service_id
       WHERE cr.patient_id = ${patient_id}
       ORDER BY cr.consulted_at DESC, cr.updated_at DESC
-    `;
+    `) as MedicalHistoryConsultationRow[];
 
-    const labRequests = await sql<MedicalHistoryLabRequestRow[]>`
+    const labRequests = (await sql`
       SELECT
         lr.request_id,
         lr.consultation_record_id,
@@ -161,7 +161,7 @@ export async function getPatientMedicalHistory(req: Request, res: Response) {
       LEFT JOIN users u ON u.user_id = lr.doctor_id
       WHERE lr.patient_id = ${patient_id}
       ORDER BY lr.requested_at DESC, lr.updated_at DESC
-    `;
+    `) as MedicalHistoryLabRequestRow[];
 
     const labItemsTable = await resolveLabItemsTable();
 
@@ -169,7 +169,7 @@ export async function getPatientMedicalHistory(req: Request, res: Response) {
     let labResults: MedicalHistoryLabResultRow[] = [];
 
     if (labItemsTable === "laboratory_request_items") {
-      labItems = await sql<MedicalHistoryLabItemRow[]>`
+      labItems = (await sql`
         SELECT
           li.lab_item_id,
           li.request_id,
@@ -186,9 +186,9 @@ export async function getPatientMedicalHistory(req: Request, res: Response) {
         JOIN lab_requests lr ON lr.request_id = li.request_id
         WHERE lr.patient_id = ${patient_id}
         ORDER BY li.created_at DESC, li.updated_at DESC
-      `;
+      `) as MedicalHistoryLabItemRow[];
 
-      labResults = await sql<MedicalHistoryLabResultRow[]>`
+      labResults = (await sql`
         SELECT
           r.result_id,
           r.lab_item_id,
@@ -206,9 +206,9 @@ export async function getPatientMedicalHistory(req: Request, res: Response) {
         JOIN lab_requests lr ON lr.request_id = li.request_id
         WHERE lr.patient_id = ${patient_id}
         ORDER BY r.created_at DESC
-      `;
+      `) as MedicalHistoryLabResultRow[];
     } else if (labItemsTable === "request_items") {
-      labItems = await sql<MedicalHistoryLabItemRow[]>`
+      labItems = (await sql`
         SELECT
           li.lab_item_id,
           li.request_id,
@@ -224,9 +224,9 @@ export async function getPatientMedicalHistory(req: Request, res: Response) {
         JOIN lab_requests lr ON lr.request_id = li.request_id
         WHERE lr.patient_id = ${patient_id}
         ORDER BY li.created_at DESC, li.updated_at DESC
-      `;
+      `) as MedicalHistoryLabItemRow[];
 
-      labResults = await sql<MedicalHistoryLabResultRow[]>`
+      labResults = (await sql`
         SELECT
           r.result_id,
           r.lab_item_id,
@@ -244,7 +244,7 @@ export async function getPatientMedicalHistory(req: Request, res: Response) {
         JOIN lab_requests lr ON lr.request_id = li.request_id
         WHERE lr.patient_id = ${patient_id}
         ORDER BY r.created_at DESC
-      `;
+      `) as MedicalHistoryLabResultRow[];
     }
 
     const resultsByLabItemId = new Map<string, MedicalHistoryLabResultRow[]>();
