@@ -3,6 +3,102 @@ import bcrypt from "bcryptjs";
 import { json, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 
+function calculateAge(dateOfBirth: string | Date): number | "Invalid Age" {
+  const birthDate = new Date(dateOfBirth);
+  const today = new Date();
+
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const hasHadBirthday =
+    today.getMonth() > birthDate.getMonth() ||
+    (today.getMonth() === birthDate.getMonth() &&
+      today.getDate() >= birthDate.getDate());
+
+  if (!hasHadBirthday) {
+    age--;
+  }
+
+  if (age < 0) {
+    return "Invalid Age";
+  }
+
+  return age;
+}
+
+export function buildPrintablePatientRecord(
+  patient: Record<string, any>,
+  queueEntries: Record<string, any>[] = [],
+  labRequests: Record<string, any>[] = [],
+  billing: Record<string, any>[] = [],
+) {
+  const fullName = [
+    patient.first_name,
+    patient.middle_name,
+    patient.last_name,
+    patient.suffix,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const summary = {
+    age: calculateAge(patient.birthdate ?? patient.date_of_birth),
+    sex: patient.sex ?? "N/A",
+    blood_type: patient.blood_type ?? "N/A",
+    civil_status: patient.civil_status ?? "N/A",
+    total_visits: Array.isArray(queueEntries) ? queueEntries.length : 0,
+    total_lab_requests: Array.isArray(labRequests) ? labRequests.length : 0,
+    total_billing: billing
+      .reduce((sum, item) => sum + Number(item.total_amount ?? 0), 0)
+      .toFixed(2),
+    pending_balance: billing
+      .filter((item) => String(item.status ?? "").toLowerCase() !== "paid")
+      .reduce((sum, item) => sum + Number(item.total_amount ?? 0), 0)
+      .toFixed(2),
+  };
+
+  return {
+    patient: {
+      patient_id: patient.patient_id,
+      full_name: fullName,
+      first_name: patient.first_name,
+      middle_name: patient.middle_name,
+      last_name: patient.last_name,
+      suffix: patient.suffix,
+      sex: patient.sex,
+      email: patient.email,
+      address: patient.address,
+      contact_number: patient.contact_number,
+      birthdate: patient.birthdate ?? patient.date_of_birth,
+      blood_type: patient.blood_type,
+      civil_status: patient.civil_status,
+      image_url: patient.image_url,
+      created_at: patient.created_at,
+      updated_at: patient.updated_at,
+    },
+    summary,
+    visits: queueEntries.map((visit) => ({
+      queue_id: visit.queue_id,
+      service_id: visit.service_id,
+      status: visit.status,
+      created_at: visit.created_at,
+      updated_at: visit.updated_at,
+    })),
+    labRequests: labRequests.map((request) => ({
+      request_id: request.request_id,
+      status: request.status,
+      is_paid: request.is_paid,
+      requested_at: request.requested_at,
+      updated_at: request.updated_at,
+    })),
+    billing: billing.map((bill) => ({
+      bill_id: bill.bill_id,
+      total_amount: Number(bill.total_amount ?? 0).toFixed(2),
+      status: bill.status,
+      payment_method: bill.payment_method,
+      billed_at: bill.billed_at,
+    })),
+  };
+}
+
 export async function getAllPatients(req: Request, res: Response) {
   // get /api/fdstaff/patients
   try {
@@ -39,6 +135,62 @@ export async function getAllPatients(req: Request, res: Response) {
   } catch (error) {
     console.error("Error fetching patients:", error);
     res.status(500).json({ error: "error on fetching patients" });
+  }
+}
+
+export async function getPrintablePatientRecord(req: Request, res: Response) {
+  try {
+    const { patient_id } = req.params;
+
+    if (!patient_id) {
+      return res.status(400).json({ message: "Patient ID is required." });
+    }
+
+    const patientRows = await sql`
+      SELECT *
+      FROM patients
+      WHERE patient_id = ${patient_id}
+      LIMIT 1
+    `;
+
+    if (!patientRows.length) {
+      return res.status(404).json({ message: "Patient not found." });
+    }
+
+    const patient = patientRows[0];
+
+    const queueEntries = await sql`
+      SELECT *
+      FROM queue_entries
+      WHERE patient_id = ${patient_id}
+      ORDER BY created_at DESC
+    `;
+
+    const labRequests = await sql`
+      SELECT *
+      FROM lab_requests
+      WHERE patient_id = ${patient_id}
+      ORDER BY requested_at DESC
+    `;
+
+    const billing = await sql`
+      SELECT *
+      FROM bills
+      WHERE patient_id = ${patient_id}
+      ORDER BY billed_at DESC
+    `;
+
+    const printableRecord = buildPrintablePatientRecord(
+      patient,
+      queueEntries,
+      labRequests,
+      billing,
+    );
+
+    return res.status(200).json({ patientRecord: printableRecord });
+  } catch (error) {
+    console.error("Error fetching printable patient record:", error);
+    return res.status(500).json({ error: "Error fetching printable patient record." });
   }
 }
 

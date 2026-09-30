@@ -1,11 +1,12 @@
 import { useSearchParams } from "react-router";
 import type { Patient } from "../../../../interface/Patient";
-import { Phone, Pencil, Trash2, History } from "lucide-react";
+import { Phone, Pencil, Trash2, History, Printer } from "lucide-react";
 
 type Props = {
   patient: Patient;
   onEdit: (patient: Patient) => void;
   onDelete: (patientId: string) => void;
+  onPrint: (patient: Patient) => void;
 };
 
 function calculateAge(birthdate: string): number {
@@ -24,7 +25,7 @@ function calculateAge(birthdate: string): number {
   return age;
 }
 
-function PatientCardSquare({ patient, onEdit, onDelete }: Props) {
+function PatientCardSquare({ patient, onEdit, onDelete, onPrint }: Props) {
   const [, setSearchParams] = useSearchParams();
 
   const fullName = [
@@ -89,20 +90,27 @@ function PatientCardSquare({ patient, onEdit, onDelete }: Props) {
         </div>
 
         {/* Actions */}
-        <div className="mt-4 flex gap-2 border-t border-gray-100 pt-3">
+        <div className="mt-4 grid grid-cols-3 gap-2 border-t border-gray-100 pt-3">
           <button
             onClick={handleViewHistory}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100"
+            className="flex items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 py-2 text-xs font-medium text-blue-700 hover:bg-blue-100"
           >
-            <History className="h-4 w-4" />
+            <History className="h-3.5 w-3.5" />
             History
           </button>
           <button
             onClick={() => onEdit(patient)}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-gray-200 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
           >
-            <Pencil className="h-4 w-4" />
+            <Pencil className="h-3.5 w-3.5" />
             Edit
+          </button>
+          <button
+            onClick={() => onPrint(patient)}
+            className="flex items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 py-2 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
+          >
+            <Printer className="h-3.5 w-3.5" />
+            Print
           </button>
         </div>
 

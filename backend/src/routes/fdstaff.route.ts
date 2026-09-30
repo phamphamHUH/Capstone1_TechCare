@@ -10,6 +10,7 @@ import {
   getAllPatients,
   getAllQueueEntries,
   getLaboratoryRequest,
+  getPrintablePatientRecord,
 } from "../controllers/fdstaff/getRequests.controller.js";
 import { getPatientMedicalHistory } from "../controllers/fdstaff/getMedicalHistory.controller.js";
 import {
@@ -40,6 +41,7 @@ router.get("/patients", getAllPatients);
 router.get("/billing", getAllBilling);
 router.get("/services", getAllservices);
 router.get("/queues", getAllQueueEntries);
+router.get("/patients/:patient_id/print", getPrintablePatientRecord);
 router.get("/patients/:patient_id/laboratory-requests", getLaboratoryRequest);
 router.get("/patients/:patient_id/medical-history", getPatientMedicalHistory);
 

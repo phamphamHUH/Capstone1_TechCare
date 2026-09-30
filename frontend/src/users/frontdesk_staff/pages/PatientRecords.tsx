@@ -2,9 +2,10 @@ import { useState } from "react";
 import type { Patient } from "../../../interface/Patient";
 
 import api from "../../../lib/axios";
+import Header from "../../../components/Header";
+import { buildPatientRecordPrintHtml } from "../../../utils/patientRecordPrintTemplate";
 import EditPatientRecord from "../components/PatientRecords/EditPatientRecord";
 import PatientCardSquare from "../components/PatientRecords/PatientCardSquare";
-import Header from "../../../components/Header";
 
 type PatientRecordProps = {
   patients: Patient[];
@@ -51,6 +52,33 @@ function PatientRecords({
     }
   }
 
+  async function handlePrint(patient: Patient) {
+    try {
+      const response = await api.get(
+        `/api/fdstaff/patients/${patient.patient_id}/print`,
+      );
+      const record = response.data.patientRecord;
+
+      const printWindow = window.open("", "_blank", "width=900,height=700");
+
+      if (!printWindow) {
+        window.alert("Please allow pop-ups to print the patient record.");
+        return;
+      }
+
+      printWindow.document.write(buildPatientRecordPrintHtml(record));
+      printWindow.document.close();
+      printWindow.focus();
+
+      setTimeout(() => {
+        printWindow.print();
+      }, 250);
+    } catch (error) {
+      console.error("Error printing patient record:", error);
+      window.alert("Unable to generate the patient print preview right now.");
+    }
+  }
+
   return (
     <main className="flex-1 min-w-0">
       <Header
@@ -86,6 +114,7 @@ function PatientRecords({
               setShowEditPatient(true);
             }}
             onDelete={handleDelete}
+            onPrint={handlePrint}
           />
         ))}
 
