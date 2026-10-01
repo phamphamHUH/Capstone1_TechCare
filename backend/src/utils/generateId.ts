@@ -147,7 +147,7 @@ export async function generateLaboratoryRequestID(client: PoolClient) {
   const prefix = `${year}-${month}${day}`;
   const { rows: labRequestsCreatedToday } = await client.query(
     `SELECT request_id
-     FROM lab_requests
+     FROM laboratory_requests
      WHERE request_id LIKE $1
      ORDER BY request_id DESC
      LIMIT 1`,
