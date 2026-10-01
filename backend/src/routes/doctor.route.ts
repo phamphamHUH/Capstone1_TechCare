@@ -21,5 +21,9 @@ router.get(
   "/medical-history/:record_type/:record_id",
   getMedicalHistoryDetails,
 );
+router.get(
+  "/medical-history/:record_type/:record_id/full",
+  getMedicalHistoryDetails,
+);
 
 export default router;
