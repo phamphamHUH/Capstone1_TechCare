@@ -22,7 +22,7 @@ export async function addLaboratoryRequest(req: Request, res: Response) {
 
     const request_id = await generateLaboratoryRequestID(client);
     const { rows: laboratory_request_result } = await client.query(
-      `INSERT INTO lab_requests (request_id, patient_id, is_paid)
+      `INSERT INTO laboratory_requests (request_id, patient_id, is_paid)
        VALUES ($1, $2, TRUE)
        RETURNING *`,
       [request_id, patient_id],
