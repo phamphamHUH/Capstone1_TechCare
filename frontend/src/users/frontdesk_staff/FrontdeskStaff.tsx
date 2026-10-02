@@ -145,6 +145,7 @@ function FrontdeskStaff() {
 
       {page === "service-request" && (
         <ServiceRequest
+          services={services}
           open={open}
           setOpen={setOpen}
           loadData={loadData}

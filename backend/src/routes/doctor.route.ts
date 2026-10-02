@@ -23,8 +23,8 @@ router.get(
   getMedicalHistoryDetails
 );
 router.get(
-  "/medical-history/:record_type/:record_id/full", 
-  getMedicalHistoryFull
+  "/medical-history/:record_type/:record_id/full",
+  getMedicalHistoryFull,
 );
 
 export default router;
