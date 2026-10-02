@@ -207,12 +207,14 @@ export async function addUser(req: Request, res: Response) {
 export async function addService(req: Request, res: Response) {
   // post /api/admin/services
   try {
-    const { service_name, price, service_type, room } = req.body;
+    const { service_name, price, service_type, service_category, room } =
+      req.body;
     if (
       !service_name ||
       price === undefined ||
       price === null ||
       !service_type ||
+      !service_category ||
       !room
     ) {
       return res.status(400).json({ message: "All fields are required" });
@@ -233,6 +235,7 @@ export async function addService(req: Request, res: Response) {
         service_id,
         service_type, 
         service_name, 
+        service_category, 
         price, 
         room
       )
@@ -240,6 +243,7 @@ export async function addService(req: Request, res: Response) {
         ${serviceId},
         ${service_type},  
         ${service_name}, 
+        ${service_category}, 
         ${price}, 
         ${room}
       )
