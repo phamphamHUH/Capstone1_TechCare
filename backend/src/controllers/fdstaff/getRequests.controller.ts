@@ -270,44 +270,20 @@ export async function getAllQueueEntries(req: Request, res: Response) {
     res.status(500).json({ error: "error on fetching queue entries" });
   }
 }
-export async function getAllservices(req: Request, res: Response) {
-  // get /api/fdstaff/services
+
+export async function getAllServices(req: Request, res: Response) {
   try {
     const services = await sql`
-        SELECT service_id, service_name, price, service_type, room
-        FROM services
-        WHERE active = TRUE
+      SELECT service_id, service_name, price, service_type, room
+      FROM services
+      WHERE active = TRUE
+      ORDER BY service_type, service_name
     `;
-    if (!services) {
-      res.json({ message: "there are no services" });
-    }
-    res.status(200).json({ services });
 
-    // {
-    //   "services": [
-    //   {
-    //     "service_id": 1,
-    //     "service_name": "Haircut",
-    //     "price": "250.00",
-    //     "discount_pct": "0.00",
-    //     "deleted": false,
-    //     "created_at": "2026-07-02T08:00:00.000Z",
-    //     "updated_at": "2026-07-02T08:00:00.000Z"
-    //   },
-    //   {
-    //     "service_id": 2,
-    //     "service_name": "Hair Coloring",
-    //     "price": "1200.00",
-    //     "discount_pct": "10.00",
-    //     "deleted": false,
-    //     "created_at": "2026-07-02T08:05:00.000Z",
-    //     "updated_at": "2026-07-02T08:05:00.000Z"
-    //   }
-    // ]
-    // }
+    return res.status(200).json({ services });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error("Error fetching services:", error);
+    return res.status(500).json({ message: "Failed to fetch services" });
   }
 }
 
