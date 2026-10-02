@@ -1,5 +1,6 @@
 import Header from "#components/Header";
 import React from "react";
+import ConsultationWorkspace from "../components/Consultation/ConsultationWorkspace";
 
 type LaboratoryRequestProps = {
   loadData: () => Promise<void>;
@@ -23,7 +24,9 @@ function LaboratoryRequest({
         loadData={loadData}
         page="Laboratory Request"
       />
-      Laboratory Request
+      <div className="p-6 md:p-8">
+        <ConsultationWorkspace initialTab="laboratory-request" />
+      </div>
     </main>
   );
 }
