@@ -13,10 +13,7 @@ import type {
   Prescription,
   DoctorInfo,
 } from "./types";
-import {
-  SAMPLE_PATIENTS,
-  DEFAULT_DOCTOR,
-} from "./mockData";
+import { SAMPLE_PATIENTS, DEFAULT_DOCTOR } from "./mockData";
 import PatientPrescriptionCard from "./PatientPrescriptionCard";
 import CreatePrescriptionView from "./CreatePrescriptionView";
 import PrescriptionPreviewView from "./PrescriptionPreviewView";
@@ -67,12 +64,12 @@ export default function PrescriptionManager({
 }: PrescriptionManagerProps) {
   // Active patient
   const [currentPatient, setCurrentPatient] = useState<PatientInfo>(
-    initialPatient || SAMPLE_PATIENTS[0]
+    initialPatient || SAMPLE_PATIENTS[0],
   );
 
   // Active view: 'overview' | 'create' | 'preview'
   const [viewMode, setViewMode] = useState<"overview" | "create" | "preview">(
-    "overview"
+    "overview",
   );
 
   // Active consultation tab (for visual reference tabs)
@@ -103,11 +100,13 @@ export default function PrescriptionManager({
   ]);
 
   const [additionalNotes, setAdditionalNotes] = useState(
-    "Take medication regularly and complete the full course. Drink plenty of water and rest. Return for follow-up consultation in 7 days if symptoms persist."
+    "Take medication regularly and complete the full course. Drink plenty of water and rest. Return for follow-up consultation in 7 days if symptoms persist.",
   );
 
   // Saved prescriptions in this session
-  const [savedPrescriptions, setSavedPrescriptions] = useState<Prescription[]>([]);
+  const [savedPrescriptions, setSavedPrescriptions] = useState<Prescription[]>(
+    [],
+  );
 
   // Modals state
   const [showSavedModal, setShowSavedModal] = useState(false);
@@ -145,7 +144,7 @@ export default function PrescriptionManager({
 
   const handleUpdateMedication = (updated: Medication) => {
     setMedications((prev) =>
-      prev.map((m) => (m.id === updated.id ? updated : m))
+      prev.map((m) => (m.id === updated.id ? updated : m)),
     );
   };
 
@@ -170,7 +169,7 @@ export default function PrescriptionManager({
     setShowSavedModal(false);
     setMedications([]);
     setAdditionalNotes(
-      "Take medication regularly and complete the full course. Drink plenty of water and rest."
+      "Take medication regularly and complete the full course. Drink plenty of water and rest.",
     );
     setViewMode("create");
   };
@@ -474,7 +473,9 @@ export default function PrescriptionManager({
                   {activeTab.replace("-", " ")} Section
                 </p>
                 <p className="text-xs text-gray-400 mt-1 max-w-sm mx-auto">
-                  This section is part of the consultation records workflow. Click on the <strong>Prescription</strong> tab above to manage patient prescriptions.
+                  This section is part of the consultation records workflow.
+                  Click on the <strong>Prescription</strong> tab above to manage
+                  patient prescriptions.
                 </p>
               </div>
             )}

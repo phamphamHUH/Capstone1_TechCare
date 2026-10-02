@@ -17,11 +17,14 @@ import PatientRegistration from "./pages/PatientRegistration";
 import QueueManagement from "./pages/QueueManagement";
 import PatientMedicalHistory from "./pages/PatientMedicalHistory";
 import ServiceRequest from "./pages/ServiceRequest";
+import Queues from "./pages/Queues";
+import type { QueueRequests } from "../../interface/Queue";
 
 function FrontdeskStaff() {
   const [patients, setPatients] = useState([]);
   const [billing] = useState([]);
   const [queues, setQueues] = useState([]);
+  const [queueRequests, setQueueRequests] = useState<QueueRequests[]>([]);
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(true);
@@ -47,7 +50,11 @@ function FrontdeskStaff() {
       const serviceResponse = await api.get("/api/fdstaff/services");
       const patientsResponse = await api.get("/api/fdstaff/patients");
       const queuesResponse = await api.get("/api/fdstaff/queues");
+      const queueRequestsResponse = await api.get(
+        "/api/fdstaff/queue-requests",
+      );
 
+      setQueueRequests(queueRequestsResponse.data.requests);
       setServices(serviceResponse.data.services);
       setPatients(patientsResponse.data.patients);
       setQueues(queuesResponse.data.queueEntries);
@@ -81,6 +88,11 @@ function FrontdeskStaff() {
     {
       page: "queue-management",
       label: "Queue Management",
+      icon: <ListOrdered size={20} />,
+    },
+    {
+      page: "queues",
+      label: "Queues",
       icon: <ListOrdered size={20} />,
     },
     {
@@ -136,6 +148,17 @@ function FrontdeskStaff() {
           patients={patients}
           services={services}
           queues={queues}
+          open={open}
+          setOpen={setOpen}
+          loadData={loadData}
+          loading={loading}
+        />
+      )}
+
+      {page === "queues" && (
+        <Queues
+          queues={queues}
+          queueRequests={queueRequests}
           open={open}
           setOpen={setOpen}
           loadData={loadData}
