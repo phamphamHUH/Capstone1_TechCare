@@ -1,5 +1,5 @@
 import SideBar from "#components/SideBar";
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { LayoutGrid, ListOrdered, FileText, FileClock, Stethoscope } from "lucide-react";
 import { useSearchParams } from "react-router";
 import DigitizedDocument from "./pages/DigitizedDocument";
@@ -8,13 +8,10 @@ import MedicalHistory from "./pages/MedicalHistory";
 import LaboratoryRequest from "./pages/LaboratoryRequest";
 import DoctorDashboard from "./pages/DoctorDashboard";
 import Consultation from "./pages/Consultation";
-import api from "../../lib/axios";
-import type { Service } from "../../interface/Service";
 
 function Doctor() {
-  const [, setServices] = useState<Service[]>([]);
   const [open, setOpen] = useState(true);
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const page = searchParams.get("page") ?? "dashboard";
   function setPage(newPage: string) {
@@ -53,24 +50,7 @@ function Doctor() {
     },
   ];
 
-  const loadData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const serviceResponse = await api.get("/api/admin/services");
-
-      setServices(serviceResponse.data.services);
-      console.log("services data:", serviceResponse.data);
-    } catch (error) {
-      console.log("Error fetching services:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-  useEffect(() => {
-    (async () => {
-      await loadData();
-    })();
-  }, [loadData]);
+  const loadData = useCallback(async () => {}, []);
 
   return (
     <div className="flex min-h-screen">

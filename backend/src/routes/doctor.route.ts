@@ -6,6 +6,7 @@ import { addLaboratoryRequest } from "../controllers/doctor/postRequests.control
 import {
   getMedicalHistory,
   getMedicalHistoryDetails,
+  getMedicalHistoryFull,
 } from "../controllers/doctor/getRequests.controller.js";
 const router = Router();
 
@@ -18,12 +19,12 @@ router.post("/laboratory-requests", addLaboratoryRequest);
 // GET requests
 router.get("/medical-history/:patient_id", getMedicalHistory);
 router.get(
-  "/medical-history/:record_type/:record_id",
-  getMedicalHistoryDetails,
+  "/medical-history/:record_type/:record_id", 
+  getMedicalHistoryDetails
 );
 router.get(
-  "/medical-history/:record_type/:record_id/full",
-  getMedicalHistoryDetails,
+  "/medical-history/:record_type/:record_id/full", 
+  getMedicalHistoryFull
 );
 
 export default router;
