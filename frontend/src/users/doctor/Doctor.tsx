@@ -1,6 +1,12 @@
 import SideBar from "#components/SideBar";
 import { useCallback, useState } from "react";
-import { LayoutGrid, ListOrdered, FileText, FileClock, Stethoscope } from "lucide-react";
+import {
+  LayoutGrid,
+  ListOrdered,
+  FileText,
+  FileClock,
+  Stethoscope,
+} from "lucide-react";
 import { useSearchParams } from "react-router";
 import DigitizedDocument from "./pages/DigitizedDocument";
 import ConsultationQueue from "./pages/ConsultationQueue";

@@ -84,8 +84,8 @@ function ServiceRequest({
   const categoryOptions = Array.from(
     new Set(
       services
-        .filter((s) => s.service_type.toLowerCase() === activeTab.toLowerCase())
-        .map((s) => s.service_category),
+        .filter((q) => q.service_type.toLowerCase() === activeTab.toLowerCase())
+        .map((q) => q.service_category),
     ),
   ).filter(Boolean);
 

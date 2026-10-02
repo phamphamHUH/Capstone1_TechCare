@@ -20,17 +20,20 @@ function SideBar({ open, page, setPage, navItems }: SideBarProps) {
               alt="Logo"
               className="w-20 h-20 object-contain"
             />
-            <p className="font-extrabold text-3xl tracking-wider">Reyna G</p>
+            <div className="flex flex-col text-sky-400">
+              <p className="font-extrabold text-2xl tracking-wide">Reyna G</p>
+              <p className="font-bold text-xs tracking-wider">
+                Diagnostic Laboratory
+              </p>
+            </div>
           </div>
 
-          <nav className="flex flex-col gap-3 px-5">
+          <nav className="flex flex-col px-5 gap-1">
             {navItems.map((item) => (
               <a
                 key={item.page}
-                className={`hover:scale-101 active:scale-99 active:border-red-800 border rounded-[20px] py-5 px-2 ${
-                  page === item.page
-                    ? "bg-red-800 text-white border-red-800"
-                    : ""
+                className={`hover:scale-101 active:scale-100 active:bg-sky-200 active:text-sky-700 rounded-xl py-2 px-3 transition-all cursor-pointer ${
+                  page === item.page ? "bg-sky-100 text-sky-600 " : ""
                 }`}
                 onClick={() => setPage(item.page)}
               >

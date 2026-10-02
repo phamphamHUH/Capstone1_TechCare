@@ -190,7 +190,9 @@ export async function getPrintablePatientRecord(req: Request, res: Response) {
     return res.status(200).json({ patientRecord: printableRecord });
   } catch (error) {
     console.error("Error fetching printable patient record:", error);
-    return res.status(500).json({ error: "Error fetching printable patient record." });
+    return res
+      .status(500)
+      .json({ error: "Error fetching printable patient record." });
   }
 }
 
@@ -230,44 +232,34 @@ export async function getAllBilling(req: Request, res: Response) {
 }
 
 export async function getAllQueueEntries(req: Request, res: Response) {
-  // get /api/fdstaff/queues
-  // get /api/fdstaff/queue
   try {
     const queueEntries = await sql`
-    SELECT * 
-    FROM queue_entries
-    ORDER BY queue_number ASC
+      SELECT
+        qe.id,
+        qe.queue_id,
+        qe.patient_id,
+        CONCAT_WS(' ', p.first_name, p.middle_name, p.last_name) AS patient_name,
+        to_char(p.birthdate, 'YYYY-MM-DD')                       AS birthdate,
+        qe.queue_number,
+        qe.service_id,
+        s.service_name,
+        s.service_type,
+        s.service_category,
+        s.room,
+        qe.is_priority,
+        qe.status,
+        qe.created_at,
+        qe.updated_at
+      FROM queue_entries qe
+      JOIN patients p ON p.patient_id = qe.patient_id
+      JOIN services s ON s.service_id = qe.service_id
+      ORDER BY qe.queue_number ASC, qe.id ASC
     `;
-    if (!queueEntries) {
-      res.json({ message: "there are no queue entries" });
-    }
-    res.status(200).json({ queueEntries });
-    // {
-    //     "queueEntries": [
-    //         {
-    //             "queue_id": 1,
-    //             "patient_id": 1,
-    //             "doctor_id": 1,
-    //             "queue_number": 1,
-    //             "service_type": "General Consultation",
-    //             "status": "Waiting",
-    //             "created_at": "2026-07-02T00:00:00.000Z",
-    //             "updated_at": "2026-07-02T00:00:00.000Z"
-    //         },
-    //         {
-    //             "queue_id": 2,
-    //             "patient_id": 2,
-    //             "doctor_id": 1,
-    //             "queue_number": 2,
-    //             "service_type": "General Consultation",
-    //             "status": "Waiting",
-    //             "created_at": "2026-07-02T00:00:00.000Z",
-    //             "updated_at": "2026-07-02T00:00:00.000Z"
-    //         },
-    //     ]
-    // }
+
+    return res.status(200).json({ queueEntries });
   } catch (error) {
-    res.status(500).json({ error: "error on fetching queue entries" });
+    console.error("Error fetching queue entries:", error);
+    return res.status(500).json({ message: "Failed to fetch queue entries" });
   }
 }
 
@@ -305,5 +297,55 @@ export async function getLaboratoryRequest(req: Request, res: Response) {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
+  }
+}
+
+export async function getQueueRequests(req: Request, res: Response) {
+  try {
+    const rows = await sql`
+      SELECT * FROM (
+        SELECT
+          'laboratory'::text                          AS record_type,
+          lri.lab_item_id                             AS record_id,
+          lr.patient_id,
+          CONCAT_WS(' ', p.first_name, p.last_name)   AS patient_name,
+          s.service_id,
+          s.service_name,
+          CONCAT_WS(' ', u.first_name, u.last_name)   AS created_by,
+          lr.requested_at                             AS created_at
+        FROM laboratory_request_items lri
+        JOIN laboratory_requests lr ON lr.request_id = lri.request_id
+        JOIN patients p             ON p.patient_id = lr.patient_id
+        JOIN services s             ON s.service_id = lri.service_id
+        LEFT JOIN users u           ON u.user_id = lr.requested_by
+        WHERE lr.is_paid = TRUE
+          AND lri.status = 'Paid'
+          AND lri.queue_id IS NULL
+
+        UNION ALL
+
+        SELECT
+          'consultation'::text,
+          cr.consultation_record_id,
+          cr.patient_id,
+          CONCAT_WS(' ', p.first_name, p.last_name),
+          s.service_id,
+          s.service_name,
+          CONCAT_WS(' ', u.first_name, u.last_name),
+          cr.consulted_at
+        FROM consultation_records cr
+        JOIN patients p   ON p.patient_id = cr.patient_id
+        JOIN services s   ON s.service_id = cr.service_id
+        LEFT JOIN users u ON u.user_id = cr.doctor_id
+        WHERE cr.status = 'Created'
+          AND cr.queue_id IS NULL
+      ) requests
+      ORDER BY created_at DESC
+    `;
+
+    return res.status(200).json({ requests: rows });
+  } catch (error) {
+    console.error("Error fetching queue requests:", error);
+    return res.status(500).json({ message: "Failed to fetch queue requests" });
   }
 }
