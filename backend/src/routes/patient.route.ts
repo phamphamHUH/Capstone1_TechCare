@@ -1,11 +1,14 @@
 import { Router } from "express";
 import {
-  getAllConsultations,
+  //getAllConsultations,
   getCurrentPrescriptions,
 } from "../controllers/patient/getRequest.controller.js";
 const router = Router();
 
-router.get("/consultations/:patient_id", getAllConsultations);
+//router.get("/consultations/:patient_id", getAllConsultations);
+import { getCurrentPrescriptions } from "../controllers/patient/getRequest.controller.js";
+const router = Router();
+
 router.get("/prescriptions/:patient_id", getCurrentPrescriptions);
 
 export default router;

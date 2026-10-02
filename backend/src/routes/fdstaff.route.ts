@@ -11,13 +11,14 @@ import {
   getAllQueueEntries,
   getLaboratoryRequest,
   getPrintablePatientRecord,
+  getQueueRequests,
 } from "../controllers/fdstaff/getRequests.controller.js";
 import { getPatientMedicalHistory } from "../controllers/fdstaff/getMedicalHistory.controller.js";
 import {
   addBills,
   addLaboratoryRequest,
   addPatient,
-  addQueueEntry,
+  addToQueue,
 } from "../controllers/fdstaff/postRequests.controller.js";
 import {
   confirmLabRequestPayment,
@@ -44,6 +45,7 @@ router.get("/queues", getAllQueueEntries);
 router.get("/patients/:patient_id/print", getPrintablePatientRecord);
 router.get("/patients/:patient_id/laboratory-requests", getLaboratoryRequest);
 router.get("/patients/:patient_id/medical-history", getPatientMedicalHistory);
+router.get("/queue-requests", getQueueRequests);
 
 // POST requests
 router.post("/patients", upload.single("image"), addPatient);
@@ -54,7 +56,7 @@ router.post("/patients", upload.single("image"), addPatient);
 //   addPatient,
 // );
 router.post("/billing", addBills);
-router.post("/queues", addQueueEntry);
+router.post("/queues", addToQueue);
 router.post("/laboratory-requests", addLaboratoryRequest);
 //UPDATE requests
 router.put("/queues/:queue_id", serveQueueEntry);

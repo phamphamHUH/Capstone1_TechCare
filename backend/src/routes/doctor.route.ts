@@ -2,10 +2,19 @@ import { Router } from "express";
 import { ENV } from "../config/env.js";
 import authMiddleware from "../middlewares/auth.middleware.js";
 import doctorMiddleware from "../middlewares/doctor.middleware.js";
-import { addLaboratoryRequest } from "../controllers/doctor/postRequests.controller.js";
+import {
+  addLaboratoryRequest,
+  addPrescriptions,
+} from "../controllers/doctor/postRequests.controller.js";
+import {
+  addConsultationFindings,
+  getLaboratoryServices,
+  getConsultationPatient,
+} from "../controllers/doctor/consultationFindings.controller.js";
 import {
   getMedicalHistory,
   getMedicalHistoryDetails,
+  getMedicalHistoryFull,
 } from "../controllers/doctor/getRequests.controller.js";
 const router = Router();
 
@@ -15,7 +24,11 @@ if (ENV.IS_PRODUCTION) {
 }
 // POST requests
 router.post("/laboratory-requests", addLaboratoryRequest);
+router.post("/consultations", addConsultationFindings);
+router.post("/prescriptions/:consultation_record_id", addPrescriptions);
 // GET requests
+router.get("/laboratory-services", getLaboratoryServices);
+router.get("/consultation-patients/:patient_id", getConsultationPatient);
 router.get("/medical-history/:patient_id", getMedicalHistory);
 router.get(
   "/medical-history/:record_type/:record_id",
@@ -23,7 +36,7 @@ router.get(
 );
 router.get(
   "/medical-history/:record_type/:record_id/full",
-  getMedicalHistoryDetails,
+  getMedicalHistoryFull,
 );
 
 export default router;

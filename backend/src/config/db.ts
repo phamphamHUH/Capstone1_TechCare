@@ -130,15 +130,16 @@ const TABLES: {
   {
     table: "services",
     createSQL: `CREATE TABLE IF NOT EXISTS services (
-      id           SERIAL PRIMARY KEY,
-      service_id   VARCHAR(255) UNIQUE NOT NULL,
-      service_type VARCHAR(50) NOT NULL,
-      service_name VARCHAR(255) NOT NULL UNIQUE,
-      price        DECIMAL(10,2) NOT NULL,
-      active       BOOLEAN NOT NULL DEFAULT TRUE,
-      room         VARCHAR(255) NOT NULL,
-      created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      id               SERIAL PRIMARY KEY,
+      service_id       VARCHAR(255) UNIQUE NOT NULL,
+      service_type     VARCHAR(50) NOT NULL,
+      service_name     VARCHAR(255) NOT NULL UNIQUE,
+      price            DECIMAL(10,2) NOT NULL,
+      active           BOOLEAN NOT NULL DEFAULT TRUE,
+      room             VARCHAR(255) NOT NULL,
+      service_category VARCHAR(255) NOT NULL,
+      created_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     )`,
     columns: {
       id: "SERIAL PRIMARY KEY",
@@ -148,6 +149,7 @@ const TABLES: {
       price: "DECIMAL(10,2) NOT NULL",
       active: "BOOLEAN NOT NULL DEFAULT TRUE",
       room: "VARCHAR(255) NOT NULL",
+      service_category: "VARCHAR(255)",
       created_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
       updated_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
     },
@@ -274,6 +276,9 @@ const TABLES: {
       requested_by            VARCHAR(255) NOT NULL REFERENCES users(user_id),
       status                  VARCHAR(20) NOT NULL DEFAULT 'Requested',
       is_paid                 BOOLEAN NOT NULL DEFAULT FALSE,
+      is_priority             BOOLEAN NOT NULL DEFAULT FALSE,
+      request_date            DATE NOT NULL DEFAULT CURRENT_DATE,
+      estimated_release_date  DATE,
       requested_at            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at              TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     )`,
@@ -286,6 +291,9 @@ const TABLES: {
       requested_by: "VARCHAR(255) NOT NULL REFERENCES users(user_id)",
       status: "VARCHAR(20) NOT NULL DEFAULT 'Requested'",
       is_paid: "BOOLEAN NOT NULL DEFAULT FALSE",
+      is_priority: "BOOLEAN NOT NULL DEFAULT FALSE",
+      request_date: "DATE NOT NULL DEFAULT CURRENT_DATE",
+      estimated_release_date: "DATE",
       requested_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
       updated_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
     },
