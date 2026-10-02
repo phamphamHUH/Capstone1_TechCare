@@ -19,8 +19,8 @@ router.post("/laboratory-requests", addLaboratoryRequest);
 // GET requests
 router.get("/medical-history/:patient_id", getMedicalHistory);
 router.get(
-  "/medical-history/:record_type/:record_id",
-  getMedicalHistoryDetails,
+  "/medical-history/:record_type/:record_id", 
+  getMedicalHistoryDetails
 );
 router.get(
   "/medical-history/:record_type/:record_id/full",

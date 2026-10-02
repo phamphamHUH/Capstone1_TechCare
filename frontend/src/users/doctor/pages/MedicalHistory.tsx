@@ -1,595 +1,720 @@
-import { useEffect, useMemo, useState } from "react";
-import { CalendarDays, FlaskConical, Search, Stethoscope } from "lucide-react";
+import { useEffect, useState } from "react";
+import type { Dispatch, ReactNode, SetStateAction } from "react";
+import {
+  CalendarDays, ChevronLeft, ChevronRight, FlaskConical, Search, Stethoscope, X,
+} from "lucide-react";
 import api from "../../../lib/axios";
 import Header from "../../../components/Header";
 
-type MedicalHistoryProps = {
+const PAGE_SIZE = 10;
+const API = "/api/doctor/medical-history";
+const CATEGORIES = ["Consultation", "Laboratory"];
+// Must match the status strings stored in the DB.
+const STATUSES = ["Requested", "Processing", "Completed", "Released"];
+const STATUS_COLORS: Record<string, string> = {
+  released: "bg-green-100 text-green-700",
+  completed: "bg-sky-100 text-sky-700",
+  processing: "bg-indigo-100 text-indigo-700",
+  requested: "bg-amber-100 text-amber-700",
+  pending: "bg-slate-200 text-slate-700",
+};
+
+type Props = {
   loadData: () => Promise<void>;
   open: boolean;
-  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  setOpen: Dispatch<SetStateAction<boolean>>;
   loading: boolean;
+  patient_id?: string;
+};
+type RecordType = "consultation" | "laboratory";
+type Rec = {
+  record_type: RecordType; record_id: string; service_name: string;
+  service_category: string; status: string; occurred_at: string; room?: string | null;
+};
+type Pagination = { page: number; limit: number; total: number; total_pages: number };
+type ListResponse = { records: Rec[]; pagination?: Pagination };
+type Rx = {
+  prescription_id: string; prescription_items: unknown; notes: unknown;
+  valid_until: string | null; prescribed_at: string; prescribed_by: string | null;
+};
+type LabRow = {
+  result_id: string; result_value: unknown; unit: string | null; reference_range: string | null;
+  flag: string | null; remarks: unknown; verified_by: string | null; verified_at: string | null;
+};
+type Details = {
+  service_name: string; room: string | null; results?: LabRow[]; prescription?: Rx[];
+} & Partial<Record<
+  | "lab_item_id" | "status" | "updated_at" | "requested_by" | "requested_by_role"
+  | "processed_by" | "processed_by_role" | "consultation_record_id" | "consultation_type"
+  | "consulted_at" | "consulted_by", string | null
+>> & Partial<Record<
+  "diagnosis" | "notes" | "presenting_complaint" | "vital_signs" | "physical_examination", unknown
+>>;
+type Row = [label: string, value: unknown, sub?: unknown];
+
+/* ---------- helpers ---------- */
+const toDate = (v?: string | null) => {
+  const d = v ? new Date(v) : null;
+  return d && !Number.isNaN(d.getTime()) ? d : null;
+};
+const fmtDate = (v?: string | null) =>
+  toDate(v)?.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) ?? "N/A";
+const fmtTime = (v?: string | null) =>
+  toDate(v)?.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) ?? "";
+const fmtDateTime = (v?: string | null) => (v ? `${fmtDate(v)} ${fmtTime(v)}`.trim() : "N/A");
+const humanize = (k: string) => k.replace(/_/g, " ").trim().replace(/^./, (c) => c.toUpperCase());
+const same = (a?: Rec | null, b?: Rec | null) =>
+  !!a && !!b && a.record_id === b.record_id && a.record_type === b.record_type;
+const isObj = (d: unknown) => !!d && typeof d === "object";
+const isList = (d: unknown) => isObj(d) && Array.isArray((d as ListResponse).records);
+
+/** Parses JSON-looking strings, with a lenient regex fallback for malformed ones. */
+function parseLooseJson(value: unknown): unknown {
+  if (typeof value !== "string") return value;
+  const text = value.trim();
+  if (!/^[{[]/.test(text)) return value;
+  try {
+    return JSON.parse(text);
+  } catch {
+    /* fall through to the lenient parser */
+  }
+  const result: Record<string, string> = {};
+  const pattern = /"([^"]+)"\s*:\s*"([\s\S]*?)"+\s*(?=,\s*"[^"]+"\s*:|\}\s*$)/g;
+  for (let m; (m = pattern.exec(text)); ) result[m[1]] = m[2];
+  return Object.keys(result).length ? result : text.replace(/^[{[]\s*/, "").replace(/\s*[}\]]$/, "");
+}
+
+/** Flatten any value to text. `readable` keeps line breaks and labels (notes, complaints). */
+function toText(value: unknown, readable = false): string {
+  const v = parseLooseJson(value);
+  if (v == null || v === "") return "";
+  if (typeof v !== "object") return String(v);
+  if (Array.isArray(v)) {
+    return v.map((x) => toText(x, readable)).filter(Boolean).join(readable ? "\n" : ", ");
+  }
+  const entries = Object.entries(v)
+    .map(([k, x]) => [k, toText(x, readable)] as const)
+    .filter(([, x]) => x);
+  if (!readable) return entries.map(([, x]) => x).join(" · ");
+  return entries.length === 1 ? entries[0][1] : entries.map(([k, x]) => `${humanize(k)}: ${x}`).join("\n");
+}
+const display = (v: unknown) => toText(v);
+const readable = (v: unknown) => toText(v, true);
+
+const asList = (v: unknown): unknown[] => {
+  const p = parseLooseJson(v);
+  return p == null || p === "" ? [] : Array.isArray(p) ? p : [p];
 };
 
-type PatientRecord = {
-  id: number;
-  patient_id: string;
-  username: string;
-  first_name: string;
-  middle_name?: string | null;
-  last_name: string;
-  suffix?: string | null;
-  sex: string;
-  email: string;
-  address: string;
-  contact_number: string;
-  civil_status: string;
-  blood_type?: string | null;
-  birthdate: string;
-  emergency_contact_name?: string | null;
-  emergency_contact?: string | null;
-  image_url?: string | null;
-  created_at: string;
-  updated_at: string;
-};
+/** Non-empty [key, value] pairs if the value is an object, else null. */
+function entriesOf(value: unknown) {
+  const p = parseLooseJson(value);
+  if (!p || typeof p !== "object" || Array.isArray(p)) return null;
+  return Object.entries(p).filter(([, v]) => display(v));
+}
 
-type ConsultationRecord = {
-  consultation_record_id: string;
-  queue_id: string | null;
-  findings: Record<string, string | null> | null;
-  status: string;
-  consulted_at: string;
-  updated_at: string;
-  doctor: {
-    user_id: string | null;
-    full_name: string;
-    department: string | null;
-    role: string | null;
-  };
-  visit: {
-    queue_id: string | null;
-    queue_number: number | null;
-    is_priority: boolean | null;
-    status: string | null;
-    service: {
-      service_id: string | null;
-      service_name: string | null;
-      service_type: string | null;
-      room: string | null;
-    };
-  };
-};
+function describeError(err: any, fallback: string) {
+  const status = err?.response?.status;
+  const msg = err?.response?.data?.detail ?? err?.response?.data?.message ?? err?.message;
+  return !status && !msg ? fallback : `${fallback} (${status ?? "no response"}${msg ? `: ${msg}` : ""})`;
+}
 
-type LabResult = {
-  result_id: string;
-  lab_item_id: string;
-  result_value: string;
-  unit: string | null;
-  reference_range: string | null;
-  flag: string | null;
-  remarks: string | null;
-  verified_by: string | null;
-  image_url: string | null;
-  verified_at: string | null;
-  created_at: string;
-};
-
-type LabItem = {
-  lab_item_id: string;
-  request_id: string;
-  service_id: string;
-  status: string;
-  created_at: string;
-  updated_at: string;
-  queue_id?: string | null;
-  service_name: string;
-  service_type: string;
-  room: string;
-  results: LabResult[];
-};
-
-type LabRequest = {
-  request_id: string;
-  consultation_record_id: string | null;
-  doctor_id: string | null;
-  status: string;
-  is_paid: boolean;
-  requested_at: string;
-  updated_at: string;
-  doctor: {
-    user_id: string | null;
-    full_name: string;
-    department: string | null;
-    role: string | null;
-  };
-  items: LabItem[];
-};
-
-type MedicalHistoryResponse = {
-  patient: PatientRecord;
-  consultations: ConsultationRecord[];
-  labRequests: LabRequest[];
-  summary: {
-    consultations: number;
-    labRequests: number;
-    labItems: number;
-  };
-};
-
-function MedicalHistory({
-  loadData,
-  open,
-  setOpen,
-  loading,
-}: MedicalHistoryProps) {
-  const [patientIdInput, setPatientIdInput] = useState("");
-  const [activePatientId, setActivePatientId] = useState("");
-  const [history, setHistory] = useState<MedicalHistoryResponse | null>(null);
-  const [historyLoading, setHistoryLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+/** GET `url` when it or `params` change (null = idle). Aborts stale requests. */
+function useApiGet<T>(
+  url: string | null,
+  label: string,
+  { params, validate = isObj, keep = false }: {
+    params?: Record<string, unknown>; validate?: (d: unknown) => boolean; keep?: boolean;
+  } = {},
+) {
+  const paramsJson = JSON.stringify(params ?? {});
+  const key = url && `${url}?${paramsJson}`;
+  const [state, setState] = useState<{ key: string | null; data: T | null; error: string | null }>({
+    key: null, data: null, error: null,
+  });
 
   useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const patientId = searchParams.get("patient_id") ?? "";
+    if (!url || !key) return;
+    const controller = new AbortController();
+    api
+      .get(url, { signal: controller.signal, params: JSON.parse(paramsJson) })
+      .then(({ data }) => {
+        if (!validate(data)) throw new Error("Unexpected response from the server. Check the API path.");
+        setState({ key, data, error: null });
+      })
+      .catch((err) => {
+        if (err?.code === "ERR_CANCELED") return;
+        console.error(label, err);
+        setState({ key, data: null, error: describeError(err, label) });
+      });
+    return () => controller.abort();
+  }, [url, key, paramsJson, label, validate]);
 
-    setPatientIdInput(patientId);
-    setActivePatientId(patientId);
-  }, []);
+  const current = state.key === key;
+  return {
+    data: key && (current || keep) ? state.data : null,
+    error: key && current ? state.error : null,
+    loading: !!key && !current,
+  };
+}
 
-  useEffect(() => {
-    if (!activePatientId) {
-      setHistory(null);
-      setError(null);
-      return;
-    }
+/* ---------- small pieces ---------- */
 
-    const loadHistory = async () => {
-      try {
-        setHistoryLoading(true);
-        setError(null);
+const NoData = ({ children = "No data" }: { children?: ReactNode }) => (
+  <span className="text-slate-400">{children}</span>
+);
 
-        const response = await api.get<MedicalHistoryResponse>(
-          `/api/fdstaff/patients/${activePatientId}/medical-history`,
+const ErrorBox = ({ message }: { message: string }) => (
+  <p className="break-words rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700">{message}</p>
+);
+
+const StatusPill = ({ status }: { status?: string | null }) =>
+  status ? (
+    <span
+      className={`inline-flex w-fit items-center rounded-full px-3 py-1 text-xs font-semibold ${
+        STATUS_COLORS[status.toLowerCase()] ?? "bg-red-50 text-red-700"
+      }`}
+    >
+      {status}
+    </span>
+  ) : null;
+
+const RecordIcon = ({ type }: { type: RecordType }) =>
+  type === "laboratory" ? (
+    <FlaskConical size={18} className="text-slate-600" />
+  ) : (
+    <Stethoscope size={18} className="text-red-800" />
+  );
+
+const DetailRow = ({ label, value, sub }: { label: string; value?: unknown; sub?: unknown }) => (
+  <div className="flex items-start justify-between gap-4 text-xs">
+    <span className="text-slate-500">{label}</span>
+    <span className="text-right">
+      <span className="block break-words font-semibold text-slate-900">{display(value) || "N/A"}</span>
+      {display(sub) && <span className="block text-[11px] capitalize text-slate-500">{display(sub)}</span>}
+    </span>
+  </div>
+);
+
+const TextBlock = ({ title, action, children }: { title: string; action?: ReactNode; children: ReactNode }) => (
+  <div className="space-y-2">
+    <div className="flex items-center justify-between">
+      <h5 className="text-sm font-semibold text-slate-900">{title}</h5>
+      {action}
+    </div>
+    <div className="whitespace-pre-line break-words rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800">
+      {children}
+    </div>
+  </div>
+);
+
+const LinkButton = ({ onClick, children }: { onClick: () => void; children: ReactNode }) => (
+  <button type="button" onClick={onClick} className="text-xs text-sky-600 underline hover:text-sky-800">
+    {children}
+  </button>
+);
+
+function KeyValueOrText({ value }: { value: unknown }) {
+  const entries = entriesOf(value);
+  if (!entries) return <>{readable(value) || <NoData />}</>;
+  if (!entries.length) return <NoData />;
+  return (
+    <dl className="grid gap-2 sm:grid-cols-2">
+      {entries.map(([k, v]) => (
+        <div key={k} className="rounded-lg bg-white p-2">
+          <dt className="text-[11px] uppercase tracking-wide text-slate-500">{k.replace(/_/g, " ")}</dt>
+          <dd className="text-sm font-medium text-slate-900">{display(v)}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function PrescriptionItems({ items }: { items: unknown[] }) {
+  return (
+    <div className="divide-y divide-slate-200">
+      {items.map((item, i) => {
+        const entries = entriesOf(item);
+        const name = entries?.find(([k]) => /name|medic|drug/i.test(k));
+        return (
+          <div key={i} className="space-y-0.5 py-2 text-xs first:pt-0 last:pb-0">
+            {!entries ? (
+              <p className="text-slate-800">{display(item)}</p>
+            ) : (
+              <>
+                {name && <p className="font-semibold text-slate-900">{display(name[1])}</p>}
+                {entries.filter((e) => e !== name).map(([k, v]) => (
+                  <p key={k} className="text-slate-700">
+                    <span className="text-slate-500">{humanize(k)}:</span> {display(v)}
+                  </p>
+                ))}
+              </>
+            )}
+          </div>
         );
+      })}
+    </div>
+  );
+}
 
-        setHistory(response.data);
-      } catch (requestError) {
-        console.error("Unable to load patient medical history:", requestError);
-        setHistory(null);
-        setError("Unable to load patient medical history.");
-      } finally {
-        setHistoryLoading(false);
-      }
-    };
+function LabResults({ results }: { results: LabRow[] }) {
+  return (
+    <div className="divide-y divide-slate-200">
+      {results.map((r, i) => {
+        const remarks = readable(r.remarks);
+        const abnormal = !!r.flag && !/^(normal|n)$/i.test(r.flag);
+        return (
+          <div key={r.result_id ?? i} className="space-y-0.5 py-2 first:pt-0 last:pb-0">
+            <p className="text-xs font-semibold text-slate-900">
+              {display(r.result_value) || "N/A"}
+              {r.unit ? ` ${r.unit}` : ""}
+              {r.flag && (
+                <span className={`ml-2 text-[11px] ${abnormal ? "text-red-600" : "text-green-600"}`}>{r.flag}</span>
+              )}
+            </p>
+            {r.reference_range && <p className="text-xs text-slate-500">Reference: {r.reference_range}</p>}
+            {remarks && <p className="text-xs text-slate-600">{remarks}</p>}
+            {r.verified_by && (
+              <p className="text-[11px] text-slate-400">
+                Verified by {r.verified_by}
+                {r.verified_at ? ` · ${fmtDateTime(r.verified_at)}` : ""}
+              </p>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
-    void loadHistory();
-  }, [activePatientId]);
+/* ---------- right panel ---------- */
 
-  const patientAge = useMemo(() => {
-    if (!history?.patient.birthdate) {
-      return null;
-    }
+function VisitDetails({ sel, d, loading, error, onViewFull }: {
+  sel: Rec | null; d: Details | null; loading: boolean; error: string | null; onViewFull: () => void;
+}) {
+  const isLab = sel?.record_type === "laboratory";
+  const labResults = d?.results ?? [];
+  const rxItems = (d?.prescription ?? []).flatMap((p) => asList(p.prescription_items));
 
-    const birthdate = new Date(history.patient.birthdate);
-    const today = new Date();
-    let age = today.getFullYear() - birthdate.getFullYear();
-    const hasHadBirthdayThisYear =
-      today.getMonth() > birthdate.getMonth() ||
-      (today.getMonth() === birthdate.getMonth() &&
-        today.getDate() >= birthdate.getDate());
-
-    if (!hasHadBirthdayThisYear) {
-      age -= 1;
-    }
-
-    return age;
-  }, [history?.patient.birthdate]);
-
-  function formatDate(value: string) {
-    return new Date(value).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  }
-
-  function formatDateTime(value: string) {
-    return new Date(value).toLocaleString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
-
-  function getPatientName(patient: PatientRecord | undefined) {
-    if (!patient) {
-      return "Patient medical history";
-    }
-
-    return [
-      patient.first_name,
-      patient.middle_name,
-      patient.last_name,
-      patient.suffix,
-    ]
-      .filter(Boolean)
-      .join(" ");
-  }
-
-  function handleSearch(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const nextPatientId = patientIdInput.trim();
-    setActivePatientId(nextPatientId);
-
-    const url = new URL(window.location.href);
-    if (nextPatientId) {
-      url.searchParams.set("patient_id", nextPatientId);
-    } else {
-      url.searchParams.delete("patient_id");
-    }
-    window.history.replaceState({}, "", `${url.pathname}${url.search}`);
+  let rows: Row[] = [];
+  if (sel) {
+    const extra: Row[] = !d ? [] : isLab
+      ? [["Requested By", d.requested_by, d.requested_by_role], ["Processed By", d.processed_by, d.processed_by_role]]
+      : [["Consulted By", d.consulted_by]];
+    rows = [
+      isLab ? ["Lab Item ID", d?.lab_item_id ?? sel.record_id] : ["Consultation ID", d?.consultation_record_id ?? sel.record_id],
+      ["Date & Time", fmtDateTime(isLab ? sel.occurred_at : (d?.consulted_at ?? sel.occurred_at))],
+      ...extra,
+      ["Room", d?.room ?? sel.room],
+      ["Status", sel.status],
+    ];
   }
 
   return (
-    <main className="flex-1 min-w-0 bg-slate-50">
-      <Header
-        open={open}
-        loading={loading}
-        setOpen={setOpen}
-        loadData={loadData}
-        page="Medical History"
-      />
+    <aside className="h-fit rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-slate-900">Visit Details</h3>
+        <StatusPill status={sel?.status} />
+      </div>
 
-      <div className="px-6 py-6 space-y-6">
-        <form
-          onSubmit={handleSearch}
-          className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
-        >
-          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div className="space-y-2">
-              <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-                Search patient history
-              </p>
-              <h2 className="text-2xl font-semibold text-slate-900">
-                Lookup consultations and laboratory records
-              </h2>
-              <p className="text-sm text-slate-600">
-                Enter a patient ID to pull the full clinical timeline.
+      {!sel || loading ? (
+        <p className="py-10 text-center text-xs text-slate-500">
+          {!sel ? "Select a record to see its details." : "Loading details..."}
+        </p>
+      ) : (
+        <div className="mt-4 space-y-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100">
+              <RecordIcon type={sel.record_type} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-slate-900">{display(d?.service_name) || display(sel.service_name)}</p>
+              <p className="text-xs capitalize text-slate-500">
+                {isLab ? "Laboratory" : display(d?.consultation_type) || "Consultation"}
               </p>
             </div>
+          </div>
 
-            <div className="flex w-full flex-col gap-3 md:w-[28rem] md:flex-row">
-              <input
-                value={patientIdInput}
-                onChange={(event) => setPatientIdInput(event.target.value)}
-                placeholder="P-26-0929-0001"
-                className="h-12 w-full rounded-xl border border-slate-300 px-4 text-sm outline-none transition focus:border-red-500"
-              />
-              <button
-                type="submit"
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-red-800 px-5 text-sm font-semibold text-white transition hover:bg-red-900"
-              >
-                <Search size={18} />
-                Load History
-              </button>
+          <div className="space-y-3 border-t border-slate-100 pt-4">
+            {rows.map(([label, value, sub]) => <DetailRow key={label} label={label} value={value} sub={sub} />)}
+          </div>
+
+          {error && <ErrorBox message={error} />}
+
+          {d && (
+            <div className="space-y-4 border-t border-slate-100 pt-4">
+              {isLab ? (
+                <TextBlock
+                  title="Result"
+                  action={labResults.length > 0 && <LinkButton onClick={onViewFull}>View Full Result</LinkButton>}
+                >
+                  {labResults.length > 0 ? (
+                    <LabResults results={labResults} />
+                  ) : (
+                    <NoData>
+                      {sel.status === "Requested"
+                        ? "Awaiting laboratory processing. No result has been recorded yet."
+                        : "No result has been recorded yet."}
+                    </NoData>
+                  )}
+                </TextBlock>
+              ) : (
+                <>
+                  <TextBlock title="Diagnosis">{display(d.diagnosis) || <NoData />}</TextBlock>
+                  <TextBlock
+                    title="Prescription"
+                    action={<LinkButton onClick={onViewFull}>View Full Prescription</LinkButton>}
+                  >
+                    {rxItems.length ? <PrescriptionItems items={rxItems} /> : <NoData>No prescription</NoData>}
+                  </TextBlock>
+                  <TextBlock title="Doctor's Notes">{readable(d.notes) || <NoData />}</TextBlock>
+                </>
+              )}
             </div>
+          )}
+        </div>
+      )}
+    </aside>
+  );
+}
+
+/* ---------- full record modal ---------- */
+
+function FullRecordModal({ type, full, loading, error, onClose }: {
+  type: RecordType; full: Details | null; loading: boolean; error: string | null; onClose: () => void;
+}) {
+  const isLab = type === "laboratory";
+  const rows: Row[] = !full ? [] : isLab
+    ? [
+        ["Lab Item ID", full.lab_item_id], ["Status", full.status], ["Room", full.room],
+        ["Last updated", fmtDateTime(full.updated_at)],
+        ["Requested By", full.requested_by, full.requested_by_role],
+        ["Processed By", full.processed_by, full.processed_by_role],
+      ]
+    : [
+        ["Consultation ID", full.consultation_record_id], ["Type", full.consultation_type],
+        ["Room", full.room], ["Consulted By", full.consulted_by],
+        ["Date & Time", fmtDateTime(full.consulted_at)],
+      ];
+  const results = full?.results ?? [];
+  const prescriptions = full?.prescription ?? [];
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
+      role="dialog"
+      aria-modal="true"
+      onClick={onClose}
+    >
+      <div
+        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900">
+              {isLab ? "Full laboratory result" : "Full consultation record"}
+            </h3>
+            {full && <p className="text-xs text-slate-500">{display(full.service_name)}</p>}
           </div>
-        </form>
+          <button type="button" onClick={onClose} aria-label="Close" className="rounded-lg p-1 text-slate-500 hover:bg-slate-100">
+            <X size={18} />
+          </button>
+        </div>
 
-        {historyLoading && (
-          <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-slate-500 shadow-sm">
-            Loading medical history...
-          </div>
-        )}
+        {loading && <p className="py-10 text-center text-sm text-slate-500">Loading record...</p>}
+        {error && <div className="mt-4"><ErrorBox message={error} /></div>}
 
-        {error && !historyLoading && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-            {error}
-          </div>
-        )}
+        {full && (
+          <div className="mt-5 space-y-5">
+            <div className="grid gap-3 sm:grid-cols-2">
+              {rows.map(([label, value, sub]) => <DetailRow key={label} label={label} value={value} sub={sub} />)}
+            </div>
 
-        {history && !historyLoading && (
-          <>
-            <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-              <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-red-900 px-6 py-8 text-white">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                  <div className="flex items-center gap-5">
-                    <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-white/10 text-2xl font-semibold uppercase">
-                      {history.patient.image_url ? (
-                        <img
-                          src={history.patient.image_url}
-                          alt={getPatientName(history.patient)}
-                          className="h-full w-full rounded-2xl object-cover"
-                        />
-                      ) : (
-                        `${history.patient.first_name?.charAt(0) ?? ""}${history.patient.last_name?.charAt(0) ?? ""}`
-                      )}
-                    </div>
+            {isLab ? (
+              <TextBlock title="Results">
+                {results.length ? <LabResults results={results} /> : <NoData>No result has been recorded yet.</NoData>}
+              </TextBlock>
+            ) : (
+              <>
+                <TextBlock title="Vital signs"><KeyValueOrText value={full.vital_signs} /></TextBlock>
+                <TextBlock title="Chief complaint">{readable(full.presenting_complaint) || <NoData />}</TextBlock>
+                <TextBlock title="Physical examination"><KeyValueOrText value={full.physical_examination} /></TextBlock>
+                <TextBlock title="Diagnosis">{display(full.diagnosis) || <NoData />}</TextBlock>
+                <TextBlock title="Doctor's notes">{readable(full.notes) || <NoData />}</TextBlock>
 
-                    <div>
-                      <p className="text-sm uppercase tracking-[0.2em] text-white/70">
-                        Patient profile
-                      </p>
-                      <h3 className="mt-2 text-3xl font-semibold">
-                        {getPatientName(history.patient)}
-                      </h3>
-                      <p className="mt-2 text-sm text-white/80">
-                        Patient ID {history.patient.patient_id}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <div className="rounded-2xl bg-white/10 p-4">
-                      <p className="text-xs uppercase tracking-wide text-white/70">
-                        Consultations
-                      </p>
-                      <p className="mt-2 text-3xl font-semibold">
-                        {history.summary.consultations}
-                      </p>
-                    </div>
-                    <div className="rounded-2xl bg-white/10 p-4">
-                      <p className="text-xs uppercase tracking-wide text-white/70">
-                        Lab requests
-                      </p>
-                      <p className="mt-2 text-3xl font-semibold">
-                        {history.summary.labRequests}
-                      </p>
-                    </div>
-                    <div className="rounded-2xl bg-white/10 p-4">
-                      <p className="text-xs uppercase tracking-wide text-white/70">
-                        Lab items
-                      </p>
-                      <p className="mt-2 text-3xl font-semibold">
-                        {history.summary.labItems}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid gap-6 px-6 py-6 lg:grid-cols-3">
-                <div className="rounded-2xl bg-slate-50 p-4">
-                  <p className="text-sm text-slate-500">Age</p>
-                  <p className="mt-1 text-lg font-semibold text-slate-900">
-                    {patientAge ?? "N/A"}
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-slate-50 p-4">
-                  <p className="text-sm text-slate-500">Sex</p>
-                  <p className="mt-1 text-lg font-semibold text-slate-900">
-                    {history.patient.sex}
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-slate-50 p-4">
-                  <p className="text-sm text-slate-500">Blood type</p>
-                  <p className="mt-1 text-lg font-semibold text-slate-900">
-                    {history.patient.blood_type || "N/A"}
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-slate-50 p-4 lg:col-span-2">
-                  <p className="text-sm text-slate-500">Contact</p>
-                  <p className="mt-1 text-lg font-semibold text-slate-900">
-                    {history.patient.contact_number}
-                  </p>
-                  <p className="mt-1 text-sm text-slate-600 break-all">
-                    {history.patient.email}
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-slate-50 p-4">
-                  <p className="text-sm text-slate-500">Birthdate</p>
-                  <p className="mt-1 text-lg font-semibold text-slate-900">
-                    {formatDate(history.patient.birthdate)}
-                  </p>
-                </div>
-              </div>
-            </section>
-
-            <section className="grid gap-6 lg:grid-cols-2">
-              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="flex items-center gap-2 text-slate-900">
-                  <Stethoscope size={18} className="text-red-800" />
-                  <h4 className="text-lg font-semibold">Consultation history</h4>
-                </div>
-
-                <div className="mt-5 space-y-4">
-                  {history.consultations.length === 0 ? (
-                    <p className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500">
-                      No consultation records found for this patient.
+                <div className="space-y-2">
+                  <h5 className="text-sm font-semibold text-slate-900">Prescriptions</h5>
+                  {prescriptions.length === 0 && (
+                    <p className="rounded-lg border border-dashed border-slate-200 p-3 text-xs text-slate-500">
+                      No prescriptions for this consultation.
                     </p>
-                  ) : (
-                    history.consultations.map((consultation) => (
-                      <article
-                        key={consultation.consultation_record_id}
-                        className="rounded-2xl border border-slate-200 p-5 transition hover:border-red-200 hover:shadow-sm"
-                      >
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                          <div>
-                            <p className="text-sm font-semibold text-slate-900">
-                              {consultation.visit.service.service_name || "Consultation"}
-                            </p>
-                            <p className="mt-1 text-sm text-slate-600">
-                              {consultation.doctor.full_name || "Unassigned doctor"}
-                              {consultation.doctor.department
-                                ? ` • ${consultation.doctor.department}`
-                                : ""}
-                            </p>
-                            <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
-                              <span className="rounded-full bg-slate-100 px-3 py-1">
-                                {formatDateTime(consultation.consulted_at)}
-                              </span>
-                              {consultation.visit.queue_number !== null && (
-                                <span className="rounded-full bg-slate-100 px-3 py-1">
-                                  Queue #{consultation.visit.queue_number}
-                                </span>
-                              )}
-                              {consultation.visit.service.service_type && (
-                                <span className="rounded-full bg-slate-100 px-3 py-1 capitalize">
-                                  {consultation.visit.service.service_type}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          <span className="inline-flex w-fit rounded-full bg-red-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-red-700">
-                            {consultation.status}
-                          </span>
-                        </div>
-
-                        {consultation.findings && (
-                          <dl className="mt-4 grid gap-3 sm:grid-cols-2">
-                            {Object.entries(consultation.findings).map(([label, value]) =>
-                              value ? (
-                                <div
-                                  key={`${consultation.consultation_record_id}-${label}`}
-                                  className="rounded-xl bg-slate-50 p-3"
-                                >
-                                  <dt className="text-xs uppercase tracking-wide text-slate-500">
-                                    {label.replace(/_/g, " ")}
-                                  </dt>
-                                  <dd className="mt-1 text-sm font-medium text-slate-900">
-                                    {value}
-                                  </dd>
-                                </div>
-                              ) : null,
-                            )}
-                          </dl>
-                        )}
-                      </article>
-                    ))
                   )}
-                </div>
-              </div>
-
-              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="flex items-center gap-2 text-slate-900">
-                  <FlaskConical size={18} className="text-red-800" />
-                  <h4 className="text-lg font-semibold">Laboratory requests</h4>
-                </div>
-
-                <div className="mt-5 space-y-4">
-                  {history.labRequests.length === 0 ? (
-                    <p className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500">
-                      No laboratory requests found for this patient.
-                    </p>
-                  ) : (
-                    history.labRequests.map((request) => (
-                      <article
-                        key={request.request_id}
-                        className="rounded-2xl border border-slate-200 p-5 transition hover:border-red-200 hover:shadow-sm"
-                      >
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                          <div>
-                            <p className="text-sm font-semibold text-slate-900">
-                              Laboratory request {request.request_id}
-                            </p>
-                            <p className="mt-1 text-sm text-slate-600">
-                              {request.doctor.full_name || "Unassigned doctor"}
-                              {request.doctor.department
-                                ? ` • ${request.doctor.department}`
-                                : ""}
-                            </p>
-                            <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
-                              <span className="rounded-full bg-slate-100 px-3 py-1">
-                                <CalendarDays size={12} className="mr-1 inline-block" />
-                                {formatDateTime(request.requested_at)}
-                              </span>
-                              <span className="rounded-full bg-slate-100 px-3 py-1 capitalize">
-                                {request.is_paid ? "Paid" : "Unpaid"}
-                              </span>
-                            </div>
-                          </div>
-
-                          <span className="inline-flex w-fit rounded-full bg-red-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-red-700">
-                            {request.status}
-                          </span>
+                  {prescriptions.map((p, i) => {
+                    const items = asList(p.prescription_items);
+                    const notes = readable(p.notes);
+                    return (
+                      <div key={p.prescription_id ?? i} className="rounded-lg border border-slate-200 p-3 text-xs">
+                        <p className="font-semibold text-slate-900">
+                          Prescribed {fmtDateTime(p.prescribed_at)}
+                          {p.prescribed_by ? ` by ${display(p.prescribed_by)}` : ""}
+                        </p>
+                        {p.valid_until && <p className="text-slate-500">Valid until {fmtDate(p.valid_until)}</p>}
+                        <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2">
+                          {items.length ? <PrescriptionItems items={items} /> : <NoData>No items</NoData>}
                         </div>
-
-                        <div className="mt-4 space-y-3">
-                          {request.items.length === 0 ? (
-                            <p className="text-sm text-slate-500">
-                              No lab items were attached to this request.
-                            </p>
-                          ) : (
-                            request.items.map((item) => (
-                              <div
-                                key={item.lab_item_id}
-                                className="rounded-2xl bg-slate-50 p-4"
-                              >
-                                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                  <div>
-                                    <p className="text-sm font-semibold text-slate-900">
-                                      {item.service_name}
-                                    </p>
-                                    <p className="text-xs text-slate-500">
-                                      Item {item.lab_item_id}
-                                    </p>
-                                  </div>
-                                  <span className="inline-flex w-fit rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700">
-                                    {item.status}
-                                  </span>
-                                </div>
-
-                                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                                  <p className="text-xs text-slate-500">
-                                    Requested: {formatDateTime(item.created_at)}
-                                  </p>
-                                  <p className="text-xs text-slate-500">
-                                    Updated: {formatDateTime(item.updated_at)}
-                                  </p>
-                                </div>
-
-                                {item.results.length > 0 && (
-                                  <div className="mt-4 space-y-3 border-t border-slate-200 pt-4">
-                                    {item.results.map((result) => (
-                                      <div
-                                        key={result.result_id}
-                                        className="rounded-xl bg-white p-3"
-                                      >
-                                        <p className="text-sm font-medium text-slate-900">
-                                          {result.result_value}
-                                          {result.unit ? ` ${result.unit}` : ""}
-                                        </p>
-                                        <div className="mt-1 flex flex-wrap gap-2 text-xs text-slate-500">
-                                          {result.reference_range && (
-                                            <span>{result.reference_range}</span>
-                                          )}
-                                          {result.flag && <span>Flag: {result.flag}</span>}
-                                          {result.verified_by && (
-                                            <span>Verified by {result.verified_by}</span>
-                                          )}
-                                        </div>
-                                        {result.remarks && (
-                                          <p className="mt-2 text-xs text-slate-600">
-                                            {result.remarks}
-                                          </p>
-                                        )}
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </article>
-                    ))
-                  )}
+                        {notes && <p className="mt-2 whitespace-pre-line text-slate-600">{notes}</p>}
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
-            </section>
-          </>
-        )}
-
-        {!history && !historyLoading && !error && (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">
-            Enter a patient ID to view medical history.
+              </>
+            )}
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/* ---------- page ---------- */
+
+const FIELD = "h-9 rounded-lg border border-slate-200 text-xs outline-none focus:border-red-500";
+const EMPTY_FILTERS = { category: "", status: "", startDate: "", endDate: "" };
+type Filters = typeof EMPTY_FILTERS;
+
+function MedicalHistoryContent({ loadData, open, setOpen, loading, patient_id: patientIdProp }: Props) {
+  const initialId = patientIdProp ?? new URLSearchParams(window.location.search).get("patient_id") ?? "";
+
+  // `patientInput` is the text box; `patientId` is what's actually loaded.
+  const [patientInput, setPatientInput] = useState(initialId);
+  const [patientId, setPatientId] = useState(initialId);
+  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
+  const [page, setPage] = useState(1);
+  const [selected, setSelected] = useState<Rec | null>(null);
+  const [fullOpen, setFullOpen] = useState(false);
+
+  function commitPatientId(value: string) {
+    const next = value.trim();
+    if (next === patientId) return;
+    setPatientId(next);
+    setPage(1);
+    setSelected(null);
+    const url = new URL(window.location.href);
+    if (next) url.searchParams.set("patient_id", next);
+    else url.searchParams.delete("patient_id");
+    window.history.replaceState({}, "", `${url.pathname}${url.search}`);
+  }
+
+  const setFilter = (key: keyof Filters, value: string) => {
+    setFilters((f) => ({ ...f, [key]: value }));
+    setPage(1);
+  };
+
+  useEffect(() => {
+    const t = setTimeout(() => commitPatientId(patientInput), 500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [patientInput]);
+
+  const list = useApiGet<ListResponse>(
+    patientId ? `${API}/${encodeURIComponent(patientId)}` : null,
+    "Unable to load medical history",
+    {
+      params: {
+        service_category: filters.category || undefined,
+        status: filters.status || undefined,
+        start_date: filters.startDate || undefined,
+        end_date: filters.endDate || undefined,
+        page,
+        limit: PAGE_SIZE,
+      },
+      validate: isList,
+      keep: true,
+    },
+  );
+  const records = list.data?.records ?? [];
+  const pagination = list.data?.pagination ?? null;
+
+  // Keep the selection if it's still on the page, otherwise pick the first row.
+  useEffect(() => {
+    const recs = list.data?.records;
+    setSelected((prev) => (recs ? (recs.find((r) => same(r, prev)) ?? recs[0] ?? null) : null));
+  }, [list.data]);
+
+  const recordUrl = selected ? `${API}/${selected.record_type}/${encodeURIComponent(selected.record_id)}` : null;
+  const details = useApiGet<Details>(recordUrl, "Unable to load the full visit details");
+  const full = useApiGet<Details>(fullOpen && recordUrl ? `${recordUrl}/full` : null, "Unable to load the full record");
+
+  const totalPages = Math.max(pagination?.total_pages ?? 1, 1);
+  const first = Math.max(1, Math.min(page - 2, totalPages - 4));
+  const pageNumbers = Array.from({ length: Math.min(totalPages, first + 4) - first + 1 }, (_, i) => first + i);
+  const hasRecords = !!pagination && pagination.total > 0;
+  const arrow = "flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 disabled:opacity-40";
+  const empty = "rounded-xl border border-dashed border-slate-300 p-10 text-center text-sm text-slate-500";
+
+  const selects: [keyof Filters, string, string[]][] = [
+    ["category", "All Services", CATEGORIES],
+    ["status", "All Status", STATUSES],
+  ];
+  const dates: [keyof Filters, string, { min?: string; max?: string }][] = [
+    ["startDate", "Start date", { max: filters.endDate || undefined }],
+    ["endDate", "End date", { min: filters.startDate || undefined }],
+  ];
+
+  return (
+    <main className="min-w-0 flex-1 bg-slate-50">
+      <Header open={open} loading={loading} setOpen={setOpen} loadData={loadData} page="Medical History" />
+
+      <div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_21rem]">
+        <section className="flex min-h-[32rem] flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-lg font-semibold text-slate-900">Medical History</h2>
+          <p className="text-xs text-slate-500">View the patient&apos;s past visits, services, and records.</p>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <form
+              className="relative min-w-[11rem] flex-1 sm:max-w-[16rem]"
+              onSubmit={(e) => { e.preventDefault(); commitPatientId(patientInput); }}
+            >
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                value={patientInput}
+                onChange={(e) => setPatientInput(e.target.value)}
+                placeholder="Search by patient ID..."
+                aria-label="Patient ID"
+                className={`${FIELD} w-full pl-8 pr-8`}
+              />
+              {patientInput && (
+                <button
+                  type="button"
+                  aria-label="Clear patient ID"
+                  onClick={() => { setPatientInput(""); commitPatientId(""); }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-slate-400 hover:text-slate-600"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </form>
+
+            {selects.map(([key, all, options]) => (
+              <select key={key} value={filters[key]} onChange={(e) => setFilter(key, e.target.value)} className={`${FIELD} bg-white px-3`}>
+                <option value="">{all}</option>
+                {options.map((o) => <option key={o} value={o}>{o}</option>)}
+              </select>
+            ))}
+
+            {dates.map(([key, label, limits]) => (
+              <label key={key} className={`${FIELD} flex items-center gap-2 px-3 text-slate-500`}>
+                <CalendarDays size={14} />
+                <input
+                  type="date"
+                  aria-label={label}
+                  value={filters[key]}
+                  {...limits}
+                  onChange={(e) => setFilter(key, e.target.value)}
+                  className="bg-transparent outline-none"
+                />
+              </label>
+            ))}
+          </div>
+
+          <div className="mt-4 flex-1">
+            {!patientId ? (
+              <p className={empty}>Enter a patient ID to view their medical history.</p>
+            ) : list.loading ? (
+              <p className="p-10 text-center text-sm text-slate-500">Loading medical history...</p>
+            ) : list.error ? (
+              <ErrorBox message={list.error} />
+            ) : records.length === 0 ? (
+              <p className={empty}>No records found for this patient with the current filters.</p>
+            ) : (
+              <ol className="relative">
+                {records.map((r, i) => (
+                  <li key={`${r.record_type}-${r.record_id}`} className="relative flex gap-4">
+                    <div className="relative flex w-3 flex-col items-center">
+                      <span className="mt-8 h-2.5 w-2.5 shrink-0 rounded-full bg-sky-500" />
+                      {i < records.length - 1 && (
+                        <span className="absolute bottom-[-2rem] top-[2.6rem] w-px bg-sky-300" />
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSelected(r)}
+                      className={`flex flex-1 items-center gap-4 border-b border-slate-100 px-2 py-3 text-left transition hover:bg-slate-50 ${
+                        same(selected, r) ? "bg-slate-50" : ""
+                      }`}
+                    >
+                      <div className="w-24 shrink-0">
+                        <p className="text-xs font-semibold text-slate-900">{fmtDate(r.occurred_at)}</p>
+                        <p className="text-[11px] text-slate-400">{fmtTime(r.occurred_at)}</p>
+                      </div>
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100">
+                        <RecordIcon type={r.record_type} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-slate-900">{display(r.service_name)}</p>
+                        <p className="text-xs text-slate-500">
+                          {display(r.service_category)}
+                          {r.room ? ` • ${display(r.room)}` : ""}
+                        </p>
+                      </div>
+                      <StatusPill status={r.status} />
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </div>
+
+          <div className="mt-4 flex items-center justify-between text-xs text-slate-500">
+            <span>
+              {hasRecords
+                ? `Showing ${(pagination.page - 1) * pagination.limit + 1}-${Math.min(pagination.page * pagination.limit, pagination.total)} of ${pagination.total} records`
+                : "Showing 0 records"}
+            </span>
+            <div className="flex items-center gap-1">
+              <button type="button" disabled={page <= 1} onClick={() => setPage(page - 1)} aria-label="Previous page" className={arrow}>
+                <ChevronLeft size={14} />
+              </button>
+              {pageNumbers.map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setPage(n)}
+                  className={`h-7 min-w-7 rounded-md px-2 font-semibold ${
+                    n === page ? "bg-red-800 text-white" : "border border-slate-200 text-slate-600"
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+              <button type="button" disabled={page >= totalPages} onClick={() => setPage(page + 1)} aria-label="Next page" className={arrow}>
+                <ChevronRight size={14} />
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <VisitDetails
+          sel={selected}
+          d={details.data}
+          loading={details.loading}
+          error={details.error}
+          onViewFull={() => setFullOpen(true)}
+        />
+      </div>
+
+      {fullOpen && selected && (
+        <FullRecordModal
+          type={selected.record_type}
+          full={full.data}
+          loading={full.loading}
+          error={full.error}
+          onClose={() => setFullOpen(false)}
+        />
+      )}
     </main>
   );
 }
 
-export default MedicalHistory;
+export default MedicalHistoryContent;
