@@ -145,7 +145,7 @@ export async function addLaboratoryRequest(req: Request, res: Response) {
     client.release();
   }
 }
-}
+
 
 export async function addPrescriptions(req: Request, res: Response) {
   const { consultation_record_id } = req.params;
