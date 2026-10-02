@@ -415,9 +415,6 @@ export async function addLaboratoryRequest(req: Request, res: Response) {
   const { patient_id, services } = req.body;
   const user_id = req.user?.user_id;
 
-  if (!user_id) {
-    return res.status(401).json({ message: "Unauthorized." });
-  }
   if (
     !patient_id ||
     !user_id ||

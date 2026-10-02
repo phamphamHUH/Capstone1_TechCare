@@ -184,6 +184,30 @@ export async function generateLaboratoryItemID(client: PoolClient) {
   return `LI-${prefix}-${String(nextNumber).padStart(4, "0")}`;
 }
 
+export async function generatePrescriptionId(client: PoolClient) {
+  const now = new Date();
+
+  const year = String(now.getFullYear()).slice(-2);
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+
+  const prefix = `${year}-${month}${day}`;
+  const { rows: prescriptionCreatedToday } = await client.query(
+    `SELECT prescription_id
+     FROM prescription_records
+     WHERE prescription_id LIKE $1
+     ORDER BY lab_item_id DESC
+     LIMIT 1`,
+    [`RX-${prefix}-%`],
+  );
+
+  const nextNumber =
+    prescriptionCreatedToday.length > 0
+      ? Number(prescriptionCreatedToday[0].prescription_id.slice(-4)) + 1
+      : 1;
+  return `RX-${prefix}-${String(nextNumber).padStart(4, "0")}`;
+}
+
 /////////=================================== QUQUE ID GENERATOR =========================================
 export async function generateConsultationQueueId() {
   const queue = await sql`
