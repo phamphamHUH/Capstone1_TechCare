@@ -209,74 +209,110 @@ export async function generatePrescriptionId(client: PoolClient) {
 }
 
 /////////=================================== QUQUE ID GENERATOR =========================================
-export async function generateConsultationQueueId() {
-  const queue = await sql`
-    SELECT queue_id 
-    FROM queue_entries
-    WHERE queue_id LIKE 'CONS-%'
-    ORDER BY queue_id DESC
-    LIMIT 1
-  `;
-  let nextNumber = 1;
-  const last = queue[0]?.queue_id;
+// export async function generateConsultationQueueId() {
+//   const queue = await sql`
+//     SELECT queue_id
+//     FROM queue_entries
+//     WHERE queue_id LIKE 'CONS-%'
+//     ORDER BY queue_id DESC
+//     LIMIT 1
+//   `;
+//   let nextNumber = 1;
+//   const last = queue[0]?.queue_id;
 
-  if (last) {
-    nextNumber = Number(last.slice(-4)) + 1;
-  }
-  const sequence = String(nextNumber).padStart(4, "0");
-  return `CONS-${sequence}`;
-}
-export async function generateLaboratoryQueueId() {
-  const queue = await sql`
-    SELECT queue_id 
-    FROM queue_entries
-    WHERE queue_id LIKE 'LAB-%'
-    ORDER BY queue_id DESC
-    LIMIT 1
-  `;
-  let nextNumber = 1;
-  const last = queue[0]?.queue_id;
+//   if (last) {
+//     nextNumber = Number(last.slice(-4)) + 1;
+//   }
+//   const sequence = String(nextNumber).padStart(4, "0");
+//   return `CONS-${sequence}`;
+// }
+// export async function generateLaboratoryQueueId() {
+//   const queue = await sql`
+//     SELECT queue_id
+//     FROM queue_entries
+//     WHERE queue_id LIKE 'LAB-%'
+//     ORDER BY queue_id DESC
+//     LIMIT 1
+//   `;
+//   let nextNumber = 1;
+//   const last = queue[0]?.queue_id;
 
-  if (last) {
-    nextNumber = Number(last.slice(-4)) + 1;
-  }
-  const sequence = String(nextNumber).padStart(4, "0");
-  return `LAB-${sequence}`;
-}
-//LAB-0017
+//   if (last) {
+//     nextNumber = Number(last.slice(-4)) + 1;
+//   }
+//   const sequence = String(nextNumber).padStart(4, "0");
+//   return `LAB-${sequence}`;
+// }
+// //LAB-0017
 
-export async function generateQueueNumberConsultation() {
-  const queue = await sql`
-    SELECT queue_number
-    FROM queue_entries
-    WHERE queue_id LIKE 'CONS-%'
-    ORDER BY queue_number DESC
-    LIMIT 1
-    `;
-  let nextNumber = 1;
-  const last = queue[0]?.queue_number;
+// export async function generateQueueNumberConsultation() {
+//   const queue = await sql`
+//     SELECT queue_number
+//     FROM queue_entries
+//     WHERE queue_id LIKE 'CONS-%'
+//     ORDER BY queue_number DESC
+//     LIMIT 1
+//     `;
+//   let nextNumber = 1;
+//   const last = queue[0]?.queue_number;
 
-  if (last) {
-    nextNumber = Number(last) + 1;
-  }
+//   if (last) {
+//     nextNumber = Number(last) + 1;
+//   }
 
-  return nextNumber;
-}
-export async function generateQueueNumberLaboratory() {
-  const queue = await sql`
-    SELECT queue_number
-    FROM queue_entries
-    WHERE queue_id LIKE 'LAB-%'
-    ORDER BY queue_number DESC
-    LIMIT 1
-    `;
-  let nextNumber = 1;
-  const last = queue[0]?.queue_number;
+//   return nextNumber;
+// }
+// export async function generateQueueNumberLaboratory() {
+//   const queue = await sql`
+//     SELECT queue_number
+//     FROM queue_entries
+//     WHERE queue_id LIKE 'LAB-%'
+//     ORDER BY queue_number DESC
+//     LIMIT 1
+//     `;
+//   let nextNumber = 1;
+//   const last = queue[0]?.queue_number;
 
-  if (last) {
-    nextNumber = Number(last) + 1;
-  }
+//   if (last) {
+//     nextNumber = Number(last) + 1;
+//   }
 
-  return nextNumber;
-}
+//   return nextNumber;
+// }
 ///=======================================================================================
+
+async function nextQueueId(client: PoolClient, prefix: "CONS" | "LAB") {
+  const { rows } = await client.query(
+    `SELECT queue_id
+     FROM queue_entries
+     WHERE queue_id LIKE $1
+     ORDER BY queue_id DESC
+     LIMIT 1`,
+    [`${prefix}-%`],
+  );
+  const last = rows[0]?.queue_id as string | undefined;
+  const next = last ? Number(last.split("-")[1]) + 1 : 1;
+  return `${prefix}-${String(next).padStart(4, "0")}`;
+}
+
+async function nextQueueNumber(client: PoolClient, prefix: "CONS" | "LAB") {
+  const { rows } = await client.query(
+    `SELECT COALESCE(MAX(queue_number), 0) + 1 AS next
+     FROM queue_entries
+     WHERE queue_id LIKE $1   
+     AND (created_at AT TIME ZONE 'Asia/Manila')::date =
+      (NOW() AT TIME ZONE 'Asia/Manila')::date`,
+
+    [`${prefix}-%`],
+  );
+  return Number(rows[0].next);
+}
+
+export const generateConsultationQueueId = (c: PoolClient) =>
+  nextQueueId(c, "CONS");
+export const generateLaboratoryQueueId = (c: PoolClient) =>
+  nextQueueId(c, "LAB");
+export const generateQueueNumberConsultation = (c: PoolClient) =>
+  nextQueueNumber(c, "CONS");
+export const generateQueueNumberLaboratory = (c: PoolClient) =>
+  nextQueueNumber(c, "LAB");

@@ -335,79 +335,184 @@ export async function addBills(req: Request, res: Response) {
 //   }
 // }
 
-export async function addQueueEntry(req: Request, res: Response) {
+// export async function addQueueEntry(req: Request, res: Response) {
+//   try {
+//     // Get the data sent by the frontend
+//     const { patient_id, service_id, is_priority } = req.body;
+
+//     // Make sure a service was selected
+//     if (!service_id || !patient_id) {
+//       return res.status(400).json({
+//         message: "service_id and patient_id are required.",
+//       });
+//     }
+
+//     // Retrieve the service type (consultation or laboratory)
+//     // based on the selected service_id
+//     const serviceType = await sql`
+//       SELECT service_type
+//       FROM services
+//       WHERE service_id = ${service_id}
+//     `;
+
+//     // Variables that will store the generated queue ID
+//     // and queue number
+//     let queueId;
+//     let queueNumber;
+
+//     // Generate consultation queue ID and number
+//     if (
+//       serviceType[0].service_type.split(" ")[0].toLowerCase() === "consultation"
+//     ) {
+//       queueId = await generateConsultationQueueId();
+//       queueNumber = await generateQueueNumberConsultation(); // Exammple return : CONS-0017
+//     }
+
+//     // Generate laboratory queue ID and number
+//     if (
+//       serviceType[0].service_type.split(" ")[0].toLowerCase() === "laboratory"
+//     ) {
+//       queueId = await generateLaboratoryQueueId();
+//       queueNumber = await generateQueueNumberLaboratory(); // Example return: LAB-0017
+//     }
+
+//     // Insert the new queue entry into the database
+//     const newQueue = await sql`
+//       INSERT INTO queue_entries (
+//         queue_id,
+//         patient_id,
+//         queue_number,
+//         service_id,
+//         is_priority,
+//         status
+//       )
+//       VALUES (
+//         ${queueId},
+//         ${patient_id},
+//         ${queueNumber},
+//         ${service_id},
+//         ${is_priority},
+//         'Waiting'
+//       )
+//       RETURNING *;
+//     `;
+
+//     // Send the newly created queue entry back to the client
+//     res.status(200).json({
+//       newQueue,
+//       message: "Added to queue",
+//     });
+//   } catch (error) {
+//     // Log unexpected server/database errors
+//     console.log(error);
+//     res.status(500).json({
+//       message: "Internal server error",
+//     });
+//   }
+// }
+
+export async function addToQueue(req: Request, res: Response) {
+  const { record_type, record_id, is_priority } = req.body as {
+    record_type?: string;
+    record_id?: string;
+    is_priority?: boolean;
+  };
+
+  if (
+    (record_type !== "laboratory" && record_type !== "consultation") ||
+    !record_id ||
+    typeof is_priority !== "boolean"
+  ) {
+    return res.status(400).json({
+      message: "record_type, record_id and is_priority are required.",
+    });
+  }
+
+  const client = await pool.connect();
   try {
-    // Get the data sent by the frontend
-    const { patient_id, service_id, is_priority } = req.body;
+    await client.query("BEGIN");
+    await client.query("SELECT pg_advisory_xact_lock(hashtext('queue_ids'))");
 
-    // Make sure a service was selected
-    if (!service_id || !patient_id) {
-      return res.status(400).json({
-        message: "service_id and patient_id are required.",
-      });
+    // 1. load the source record (patient, service, current queue_id)
+    const { rows } =
+      record_type === "laboratory"
+        ? await client.query(
+            `SELECT lr.patient_id, lri.service_id, lri.queue_id
+             FROM laboratory_request_items lri
+             JOIN laboratory_requests lr ON lr.request_id = lri.request_id
+             WHERE lri.lab_item_id = $1
+             FOR UPDATE OF lri`,
+            [record_id],
+          )
+        : await client.query(
+            `SELECT patient_id, service_id, queue_id
+             FROM consultation_records
+             WHERE consultation_record_id = $1
+             FOR UPDATE`,
+            [record_id],
+          );
+
+    if (rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ message: "Record not found." });
+    }
+    if (rows[0].queue_id) {
+      await client.query("ROLLBACK");
+      return res.status(409).json({ message: "Already added to the queue." });
     }
 
-    // Retrieve the service type (consultation or laboratory)
-    // based on the selected service_id
-    const serviceType = await sql`
-      SELECT service_type
-      FROM services
-      WHERE service_id = ${service_id}
-    `;
+    const { patient_id, service_id } = rows[0];
 
-    // Variables that will store the generated queue ID
-    // and queue number
-    let queueId;
-    let queueNumber;
+    // 2. generate the queue ID and number (same transaction, after the lock)
+    const isLab = record_type === "laboratory";
 
-    // Generate consultation queue ID and number
-    if (
-      serviceType[0].service_type.split(" ")[0].toLowerCase() === "consultation"
-    ) {
-      queueId = await generateConsultationQueueId();
-      queueNumber = await generateQueueNumberConsultation(); // Exammple return : CONS-0017
+    const queue_id = isLab
+      ? await generateLaboratoryQueueId(client)
+      : await generateConsultationQueueId(client);
+
+    const queue_number = isLab
+      ? await generateQueueNumberLaboratory(client)
+      : await generateQueueNumberConsultation(client);
+
+    // 3. create the queue entry
+    const { rows: queueRows } = await client.query(
+      `INSERT INTO queue_entries
+         (queue_id, patient_id, service_id, queue_number, is_priority, status)
+       VALUES ($1, $2, $3, $4, $5, 'Waiting')
+       RETURNING *`,
+      [queue_id, patient_id, service_id, queue_number, is_priority],
+    );
+
+    // 4. link it back to the source record
+    if (isLab) {
+      await client.query(
+        `UPDATE laboratory_request_items
+         SET queue_id = $1, updated_at = NOW(), status = 'Waiting'
+         WHERE lab_item_id = $2`,
+        [queue_id, record_id],
+      );
+    } else {
+      await client.query(
+        `UPDATE consultation_records
+         SET queue_id = $1, status = 'Waiting'
+         WHERE consultation_record_id = $2`,
+        [queue_id, record_id],
+      );
     }
 
-    // Generate laboratory queue ID and number
-    if (
-      serviceType[0].service_type.split(" ")[0].toLowerCase() === "laboratory"
-    ) {
-      queueId = await generateLaboratoryQueueId();
-      queueNumber = await generateQueueNumberLaboratory(); // Example return: LAB-0017
-    }
-
-    // Insert the new queue entry into the database
-    const newQueue = await sql`
-      INSERT INTO queue_entries (
-        queue_id,
-        patient_id,
-        queue_number,
-        service_id,
-        is_priority,
-        status
-      )
-      VALUES (
-        ${queueId},
-        ${patient_id},
-        ${queueNumber},
-        ${service_id},
-        ${is_priority},
-        'Waiting'
-      )
-      RETURNING *;
-    `;
-
-    // Send the newly created queue entry back to the client
-    res.status(200).json({
-      newQueue,
-      message: "Added to queue",
-    });
+    await client.query("COMMIT");
+    return res
+      .status(201)
+      .json({ message: "Added to queue.", queue: queueRows[0] });
   } catch (error) {
-    // Log unexpected server/database errors
-    console.log(error);
-    res.status(500).json({
-      message: "Internal server error",
-    });
+    await client.query("ROLLBACK").catch(console.error);
+    console.error("Error adding to queue:", error);
+    if ((error as { code?: string }).code === "23503") {
+      return res.status(400).json({ message: "Invalid patient or service." });
+    }
+    return res.status(500).json({ message: "Internal server error." });
+  } finally {
+    client.release();
   }
 }
 
