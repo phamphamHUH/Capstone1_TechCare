@@ -21,7 +21,15 @@ function Doctor() {
   const [searchParams, setSearchParams] = useSearchParams();
   const page = searchParams.get("page") ?? "dashboard";
   function setPage(newPage: string) {
-    setSearchParams({ page: newPage });
+    setSearchParams((prev) => {
+    const next =
+      new URLSearchParams(prev);
+
+    next.set("page", newPage);
+
+    return next;
+  });
+
   }
   const navItems = [
     {

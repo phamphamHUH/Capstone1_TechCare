@@ -17,6 +17,43 @@ export async function login(req: Request, res: Response) {
         .json({ message: "Username and password are required" });
     }
 
+    // Explicitly enabled local development shortcut. Never used in production.
+    if (
+      ENV.NODE_ENV === "development" && !ENV.IS_PRODUCTION &&
+      ENV.DEV_DOCTOR_LOGIN &&
+      ["localhost", "127.0.0.1", "::1", "[::1]"].includes(req.hostname) &&
+      username === "doctor.dev@techcare.local" && password === "DoctorDev123!"
+    ) {
+      // Create a real user row so consultation/lab-request foreign keys are valid.
+      // Never overwrite an existing account or its password.
+      const passwordHash = await bcrypt.hash("DoctorDev123!", 10);
+      await sql`
+        INSERT INTO users (
+          user_id, username, password_hash, first_name, last_name, sex,
+          email, contact_number, address, birthdate, role, date_hired
+        ) VALUES (
+          'DEV-DOCTOR-LOCAL', 'doctor.dev', ${passwordHash}, 'Development',
+          'Doctor', 'Male', 'doctor.dev@techcare.local', '00000000000',
+          'Local development only', '1990-01-01', 'doctor', CURRENT_DATE
+        ) ON CONFLICT DO NOTHING
+      `;
+      const doctors = await sql`
+        SELECT * FROM users WHERE user_id = 'DEV-DOCTOR-LOCAL'
+          AND username = 'doctor.dev' AND email = 'doctor.dev@techcare.local'
+          AND role = 'doctor' AND account_status = TRUE
+      `;
+      if (!doctors[0]) {
+        return res.status(409).json({
+          message: "Development doctor conflicts with an existing or disabled account. Ask an administrator to check DEV-DOCTOR-LOCAL and doctor.dev@techcare.local.",
+        });
+      }
+      const { password_hash: _passwordHash, ...safeDoctor } = doctors[0];
+      // Development doctor routes already accept body.doctor_id without a JWT.
+      return res.status(200).json({
+        message: "Login successful", user: safeDoctor, token: "", refreshToken: "",
+      });
+    }
+
     // =========================
     // FIND USER
     // =========================

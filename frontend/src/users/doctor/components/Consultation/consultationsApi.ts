@@ -32,8 +32,11 @@ function currentDoctorId(): string | undefined {
   try {
     const stored = sessionStorage.getItem("user");
     if (stored) {
-      const user = JSON.parse(stored) as { user_id?: string };
-      return user.user_id || undefined;
+      const user = JSON.parse(stored) as { user_id?: string | number; role?: string };
+      if (user.role !== "doctor") return undefined;
+      return user.user_id === undefined || user.user_id === null
+        ? undefined
+        : String(user.user_id).trim() || undefined;
     }
   } catch {
     /* ignore */
