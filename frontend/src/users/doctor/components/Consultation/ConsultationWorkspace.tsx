@@ -161,10 +161,6 @@ export default function ConsultationWorkspace({ initialTab = "consultation" }: P
       setView("prescription");
       return true;
     }
-    if (!serviceId) {
-      setSubmitError("No consultation service selected. Open this page with ?service_id=<service ID> to save findings.");
-      return false;
-    }
     setSaving(true);
     setSubmitError(null);
     setServerErrors({});
@@ -248,7 +244,11 @@ export default function ConsultationWorkspace({ initialTab = "consultation" }: P
       {tab === "consultation" && (
         <ConsultationFindingsForm
           value={form}
-          onChange={setForm}
+          onChange={(nextForm) => {
+            setForm(nextForm);
+            setServerErrors({});
+            setSubmitError(null);
+}}
           onSubmit={submitFindings}
           onBack={changePatient}
           saving={saving}

@@ -38,25 +38,38 @@ export async function addConsultationFindings(req: Request, res: Response) {
   try {
     // consultation_records.service_id is NOT NULL. For now the caller supplies it
     // directly; queue linking can be added later (queue_id stays NULL).
-    const service_id =
+    let service_id =
       typeof req.body?.service_id === "string" ? req.body.service_id.trim() : "";
-    if (!service_id) {
-      return res.status(400).json({
-        message: "Validation failed.",
-        errors: { service_id: "A consultation service_id is required." },
-      });
-    }
 
-    const service = await sql`
-      SELECT service_type FROM services WHERE service_id = ${service_id}
-    `;
-    if (service.length === 0) {
-      return res.status(400).json({ message: "Invalid service ID." });
-    }
-    if (!String(service[0].service_type).toLowerCase().startsWith("consultation")) {
-      return res
-        .status(400)
-        .json({ message: "Service is not a consultation service." });
+    if (service_id) {
+      const service = await sql`
+        SELECT service_type FROM services WHERE service_id = ${service_id}
+      `;
+      if (service.length === 0) {
+        return res.status(400).json({ message: "Invalid service ID." });
+      }
+      if (!String(service[0].service_type).toLowerCase().startsWith("consultation")) {
+        return res
+          .status(400)
+          .json({ message: "Service is not a consultation service." });
+      }
+    } else {
+      const fallback = await sql`
+        SELECT service_id
+        FROM services
+        WHERE active = TRUE
+          AND LOWER(service_type) LIKE 'consultation%'
+        ORDER BY id ASC
+        LIMIT 1
+      `;
+      if (fallback.length === 0) {
+        return res.status(400).json({
+          message:
+            "No active Consultation service exists. Ask an admin to add one under Service Pricing (service type: Consultation).",
+          errors: { service_id: "No active consultation service is available." },
+        });
+      }
+      service_id = fallback[0].service_id as string;
     }
 
     const patient = await sql`SELECT 1 FROM patients WHERE patient_id = ${patient_id}`;
