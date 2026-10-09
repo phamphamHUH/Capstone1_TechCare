@@ -10,8 +10,11 @@ import {
   getAllPatients,
   getAllQueueEntries,
   getLaboratoryRequest,
+  getMedicalHistory,
+  getMedicalHistoryDetails,
   getPrintablePatientRecord,
   getQueueRequests,
+  getUnpaidRequests,
 } from "../controllers/fdstaff/getRequests.controller.js";
 import { getPatientMedicalHistory } from "../controllers/fdstaff/getMedicalHistory.controller.js";
 import {
@@ -40,12 +43,19 @@ if (ENV.IS_PRODUCTION) {
 // GET requests
 router.get("/patients", getAllPatients);
 router.get("/billing", getAllBilling);
+router.get("/billing/unpaid-lab", getUnpaidRequests);
 router.get("/services", getAllservices);
 router.get("/queues", getAllQueueEntries);
 router.get("/patients/:patient_id/print", getPrintablePatientRecord);
 router.get("/patients/:patient_id/laboratory-requests", getLaboratoryRequest);
 router.get("/patients/:patient_id/medical-history", getPatientMedicalHistory);
 router.get("/queue-requests", getQueueRequests);
+
+router.get("/patients/medical-history/:patient_id", getMedicalHistory);
+router.get(
+  "/patients/medical-history/details/:record_type/:record_id",
+  getMedicalHistoryDetails,
+);
 
 // POST requests
 router.post("/patients", upload.single("image"), addPatient);

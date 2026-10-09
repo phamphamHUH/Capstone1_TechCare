@@ -231,10 +231,11 @@ export async function confirmLabRequestPayment(req: Request, res: Response) {
     const { request_id } = req.params;
 
     const updatedLabRequest = await sql`
-    UPDATE lab_requests
+    UPDATE laboratory_requests
     SET is_paid = true,
-        status = 'In Queue'
+        status = 'Paid'
     WHERE request_id = ${request_id}
+        AND is_paid = FALSE
     RETURNING *;
     `;
 

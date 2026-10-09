@@ -518,7 +518,7 @@ export async function addToQueue(req: Request, res: Response) {
 
 export async function addLaboratoryRequest(req: Request, res: Response) {
   const { patient_id, services } = req.body;
-  const user_id = req.user?.user_id;
+  const user_id = "U-26-1001-0002";
 
   if (
     !patient_id ||
@@ -540,7 +540,7 @@ export async function addLaboratoryRequest(req: Request, res: Response) {
     const request_id = await generateLaboratoryRequestID(client);
     const { rows: laboratory_request_result } = await client.query(
       `INSERT INTO laboratory_requests (request_id, patient_id, requested_by, is_paid)
-       VALUES ($1, $2, $3, TRUE)
+       VALUES ($1, $2, $3, FALSE)
        RETURNING *`,
       [request_id, patient_id, user_id],
     );
