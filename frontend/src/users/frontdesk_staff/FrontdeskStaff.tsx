@@ -15,21 +15,26 @@ import FrontdeskDashboard from "./pages/FrontdeskDashboard";
 import PatientRecords from "./pages/PatientRecords";
 import PatientRegistration from "./pages/PatientRegistration";
 import QueueManagement from "./pages/QueueManagement";
-import PatientMedicalHistory from "./pages/PatientMedicalHistory";
 import ServiceRequest from "./pages/ServiceRequest";
 import Queues from "./pages/Queues";
 import type { QueueRequests } from "../../interface/Queue";
+import type { UnpaidRequests } from "../../interface/Billing";
+import MedicalHistory from "./pages/MedicalHistory";
+import type { Patient } from "../../interface/Patient";
 
 function FrontdeskStaff() {
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [patients, setPatients] = useState([]);
   const [billing] = useState([]);
   const [queues, setQueues] = useState([]);
   const [queueRequests, setQueueRequests] = useState<QueueRequests[]>([]);
+  const [unpaidRequests, setUnpaidRequests] = useState<UnpaidRequests[]>([]);
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(true);
 
   const [searchParams, setSearchParams] = useSearchParams();
+  const patientIdParam = searchParams.get("patient_id");
 
   const page = searchParams.get("page") ?? "dashboard"; // this  looks at the URL
   // "Look at the URL and check if there is a page value.
@@ -53,8 +58,11 @@ function FrontdeskStaff() {
       const queueRequestsResponse = await api.get(
         "/api/fdstaff/queue-requests",
       );
+      const unpaidRequests = await api.get("/api/fdstaff/billing/unpaid-lab");
 
+      console.log(unpaidRequests);
       setQueueRequests(queueRequestsResponse.data.requests);
+      setUnpaidRequests(unpaidRequests.data.unpaidLabRequests);
       setServices(serviceResponse.data.services);
       setPatients(patientsResponse.data.patients);
       setQueues(queuesResponse.data.queueEntries);
@@ -136,6 +144,8 @@ function FrontdeskStaff() {
       {page === "patient-records" && (
         <PatientRecords
           patients={patients}
+          selectedPatient={selectedPatient}
+          setSelectedPatient={setSelectedPatient}
           open={open}
           setOpen={setOpen}
           loadData={loadData}
@@ -178,7 +188,7 @@ function FrontdeskStaff() {
 
       {page === "billing" && (
         <Billing
-          billing={billing}
+          unpaidRequests={unpaidRequests}
           open={open}
           setOpen={setOpen}
           loadData={loadData}
@@ -187,8 +197,10 @@ function FrontdeskStaff() {
       )}
 
       {page === "patient-medical-history" && (
-        <PatientMedicalHistory
+        <MedicalHistory
           open={open}
+          patients={patients}
+          selectedPatient={patientIdParam}
           setOpen={setOpen}
           loadData={loadData}
           loading={loading}

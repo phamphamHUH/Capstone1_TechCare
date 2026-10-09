@@ -76,9 +76,9 @@ function Queues({
     const q = search.trim().toLowerCase();
 
     return queues.filter((entry) => {
-      if (activeTab !== "all" && entry.status.toLowerCase() !== activeTab)
+      if (activeTab !== "all" && entry.service_type.toLowerCase() !== activeTab)
         return false;
-      if (serviceFilter !== "all" && entry.service_name !== serviceFilter)
+      if (serviceFilter !== "all" && entry.service_category !== serviceFilter)
         return false;
       if (priority === "yes" && !entry.is_priority) return false;
       if (priority === "none" && entry.is_priority) return false;

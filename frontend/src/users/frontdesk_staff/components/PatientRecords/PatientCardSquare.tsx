@@ -44,7 +44,10 @@ function PatientCardSquare({ patient, onEdit, onDelete, onPrint }: Props) {
   const age = calculateAge(patient.birthdate);
 
   const handleViewHistory = () => {
-    setSearchParams({ page: "patient-medical-history", patient_id: patient.patient_id });
+    setSearchParams({
+      page: "patient-medical-history",
+      patient_id: patient.patient_id,
+    });
   };
 
   return (

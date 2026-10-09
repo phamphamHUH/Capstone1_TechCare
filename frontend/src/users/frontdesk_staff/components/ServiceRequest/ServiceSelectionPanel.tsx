@@ -81,10 +81,12 @@ function ServiceSelectionPanel({
                 htmlFor={service.service_id}
                 className="flex items-center justify-between border border-gray-200 px-4 py-2 rounded-2xl cursor-pointer transition-all
                 hover:border-blue-300 hover:scale-101 active:scale-100 active:bg-gray-50
-               has-checked:border-sky-500 has-checked:bg-sky-50 has-checked:text-blue-600"
+               has-checked:border-sky-500 has-checked:bg-sky-50 has-checked:text-blue-500"
               >
                 <div className="flex items-center gap-3">
-                  <Syringe size={20} />
+                  <div className="p-2 bg-sky-100 rounded-xl">
+                    <Syringe size={20} />
+                  </div>
                   <div className="text-xs">
                     <h1 className="font-bold">{service.service_name}</h1>
                     <h2>{service.service_category}</h2>

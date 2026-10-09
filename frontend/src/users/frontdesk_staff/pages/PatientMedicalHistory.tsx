@@ -51,13 +51,15 @@ function PatientMedicalHistory({
 }: PatientMedicalHistoryProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const patientId = searchParams.get("patient_id");
-  
+
   const [patient, setPatient] = useState<Patient | null>(null);
   const [queueHistory, setQueueHistory] = useState<QueueEntry[]>([]);
   const [labRequests, setLabRequests] = useState<LaboratoryRequest[]>([]);
   const [billingRecords, setBillingRecords] = useState<BillingRecord[]>([]);
   const [pageLoading, setPageLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"overview" | "visits" | "labs" | "billing">("overview");
+  const [activeTab, setActiveTab] = useState<
+    "overview" | "visits" | "labs" | "billing"
+  >("overview");
 
   useEffect(() => {
     if (patientId) {
@@ -68,40 +70,44 @@ function PatientMedicalHistory({
   async function fetchPatientHistory() {
     try {
       setPageLoading(true);
-      
+
       // Fetch patient info using the API - you may need to adjust this endpoint
       const patientResponse = await api.get(`/api/fdstaff/patients`);
       const patients = patientResponse.data.patients;
-      const selectedPatient = patients.find((p: Patient) => p.patient_id === patientId);
-      
+      const selectedPatient = patients.find(
+        (p: Patient) => p.patient_id === patientId,
+      );
+
       if (selectedPatient) {
         setPatient(selectedPatient);
       }
-      
+
       // Fetch laboratory requests for the patient
       try {
-        const labResponse = await api.get(`/api/fdstaff/patients/${patientId}/laboratory-requests`);
+        const labResponse = await api.get(
+          `/api/fdstaff/patients/${patientId}/laboratory-requests`,
+        );
         setLabRequests(labResponse.data.laboratoryRequests || []);
       } catch (error) {
         console.log("Lab requests not available:", error);
       }
-      
+
       // Fetch all queue entries and filter for this patient
       try {
         const queueResponse = await api.get(`/api/fdstaff/queues`);
         const patientQueues = queueResponse.data.queueEntries.filter(
-          (queue: QueueEntry) => queue.patient_id === patientId
+          (queue: QueueEntry) => queue.patient_id === patientId,
         );
         setQueueHistory(patientQueues);
       } catch (error) {
         console.log("Queue history not available:", error);
       }
-      
+
       // Fetch all billing records and filter for this patient
       try {
         const billingResponse = await api.get(`/api/fdstaff/billing`);
         const patientBilling = billingResponse.data.billing.filter(
-          (bill: BillingRecord) => bill.patient_id === patientId
+          (bill: BillingRecord) => bill.patient_id === patientId,
         );
         setBillingRecords(patientBilling);
       } catch (error) {
@@ -200,41 +206,58 @@ function PatientMedicalHistory({
           {/* Patient Info */}
           <div className="flex-1">
             <h1 className="text-3xl font-bold text-gray-900">{fullName}</h1>
-            <p className="mt-2 text-gray-600">Patient ID: <span className="font-semibold">{patient.patient_id}</span></p>
-            
+            <p className="mt-2 text-gray-600">
+              Patient ID:{" "}
+              <span className="font-semibold">{patient.patient_id}</span>
+            </p>
+
             <div className="mt-4 grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-500">Age</p>
-                <p className="text-lg font-semibold text-gray-900">{age} years</p>
+                <p className="text-lg font-semibold text-gray-900">
+                  {age} years
+                </p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Sex</p>
-                <p className="text-lg font-semibold text-gray-900">{patient.sex}</p>
+                <p className="text-lg font-semibold text-gray-900">
+                  {patient.sex}
+                </p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Blood Type</p>
-                <p className="text-lg font-semibold text-gray-900">{patient.blood_type || "N/A"}</p>
+                <p className="text-lg font-semibold text-gray-900">
+                  {patient.blood_type || "N/A"}
+                </p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Civil Status</p>
-                <p className="text-lg font-semibold text-gray-900">{patient.civil_status}</p>
+                <p className="text-lg font-semibold text-gray-900">
+                  {patient.civil_status}
+                </p>
               </div>
             </div>
 
             <div className="mt-4 grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-500">Email</p>
-                <p className="text-sm font-medium text-gray-900 break-all">{patient.email}</p>
+                <p className="text-sm font-medium text-gray-900 break-all">
+                  {patient.email}
+                </p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Contact Number</p>
-                <p className="text-sm font-medium text-gray-900">{patient.contact_number}</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {patient.contact_number}
+                </p>
               </div>
             </div>
 
             <div className="mt-4">
               <p className="text-sm text-gray-500">Address</p>
-              <p className="text-sm font-medium text-gray-900">{patient.address}</p>
+              <p className="text-sm font-medium text-gray-900">
+                {patient.address}
+              </p>
             </div>
           </div>
         </div>
@@ -293,15 +316,21 @@ function PatientMedicalHistory({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="p-6 bg-blue-50 rounded-lg">
               <p className="text-gray-600 text-sm">Total Visits</p>
-              <p className="text-3xl font-bold text-blue-600 mt-2">{queueHistory.length}</p>
+              <p className="text-3xl font-bold text-blue-600 mt-2">
+                {queueHistory.length}
+              </p>
             </div>
             <div className="p-6 bg-green-50 rounded-lg">
               <p className="text-gray-600 text-sm">Lab Requests</p>
-              <p className="text-3xl font-bold text-green-600 mt-2">{labRequests.length}</p>
+              <p className="text-3xl font-bold text-green-600 mt-2">
+                {labRequests.length}
+              </p>
             </div>
             <div className="p-6 bg-orange-50 rounded-lg">
               <p className="text-gray-600 text-sm">Billing Records</p>
-              <p className="text-3xl font-bold text-orange-600 mt-2">{billingRecords.length}</p>
+              <p className="text-3xl font-bold text-orange-600 mt-2">
+                {billingRecords.length}
+              </p>
             </div>
           </div>
         )}
@@ -315,7 +344,7 @@ function PatientMedicalHistory({
                   .sort(
                     (a, b) =>
                       new Date(b.created_at).getTime() -
-                      new Date(a.created_at).getTime()
+                      new Date(a.created_at).getTime(),
                   )
                   .map((queue) => (
                     <div
@@ -335,7 +364,7 @@ function PatientMedicalHistory({
                                 year: "numeric",
                                 month: "long",
                                 day: "numeric",
-                              }
+                              },
                             )}
                           </p>
                           <p className="text-sm text-gray-600">
@@ -345,7 +374,7 @@ function PatientMedicalHistory({
                               {
                                 hour: "2-digit",
                                 minute: "2-digit",
-                              }
+                              },
                             )}
                           </p>
                         </div>
@@ -355,10 +384,10 @@ function PatientMedicalHistory({
                               queue.status === "completed"
                                 ? "bg-green-100 text-green-800"
                                 : queue.status === "served"
-                                ? "bg-blue-100 text-blue-800"
-                                : queue.status === "skipped"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-gray-100 text-gray-800"
+                                  ? "bg-blue-100 text-blue-800"
+                                  : queue.status === "skipped"
+                                    ? "bg-yellow-100 text-yellow-800"
+                                    : "bg-gray-100 text-gray-800"
                             }`}
                           >
                             {queue.status}
@@ -385,7 +414,7 @@ function PatientMedicalHistory({
                   .sort(
                     (a, b) =>
                       new Date(b.created_at).getTime() -
-                      new Date(a.created_at).getTime()
+                      new Date(a.created_at).getTime(),
                   )
                   .map((lab) => (
                     <div
@@ -408,7 +437,7 @@ function PatientMedicalHistory({
                                 year: "numeric",
                                 month: "long",
                                 day: "numeric",
-                              }
+                              },
                             )}
                           </p>
                           {lab.notes && (
@@ -426,10 +455,10 @@ function PatientMedicalHistory({
                               lab.status === "completed"
                                 ? "bg-green-100 text-green-800"
                                 : lab.status === "pending"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : lab.status === "paid"
-                                ? "bg-blue-100 text-blue-800"
-                                : "bg-gray-100 text-gray-800"
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : lab.status === "paid"
+                                    ? "bg-blue-100 text-blue-800"
+                                    : "bg-gray-100 text-gray-800"
                             }`}
                           >
                             {lab.status}
@@ -456,7 +485,7 @@ function PatientMedicalHistory({
                   .sort(
                     (a, b) =>
                       new Date(b.created_at).getTime() -
-                      new Date(a.created_at).getTime()
+                      new Date(a.created_at).getTime(),
                   )
                   .map((bill) => (
                     <div
@@ -479,7 +508,7 @@ function PatientMedicalHistory({
                                 year: "numeric",
                                 month: "long",
                                 day: "numeric",
-                              }
+                              },
                             )}
                           </p>
                         </div>
@@ -492,8 +521,8 @@ function PatientMedicalHistory({
                               bill.status === "paid"
                                 ? "bg-green-100 text-green-800"
                                 : bill.status === "pending"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-gray-100 text-gray-800"
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : "bg-gray-100 text-gray-800"
                             }`}
                           >
                             {bill.status}

@@ -11,25 +11,31 @@ type Props = {
 
 function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
   const [firstName, setFirstName] = useState(selectedPatient?.first_name ?? "");
-  const [middleName, setMiddleName] = useState(selectedPatient?.middle_name ?? "");
+  const [middleName, setMiddleName] = useState(
+    selectedPatient?.middle_name ?? "",
+  );
   const [lastName, setLastName] = useState(selectedPatient?.last_name ?? "");
   const [suffix, setSuffix] = useState(selectedPatient?.suffix ?? "");
   const [sex, setSex] = useState(selectedPatient?.sex ?? "");
   const [birthdate, setBirthdate] = useState(
-    selectedPatient?.birthdate?.substring(0, 10) ?? ""
+    selectedPatient?.birthdate?.substring(0, 10) ?? "",
   );
-  const [civilStatus, setCivilStatus] = useState(selectedPatient?.civil_status ?? "");
+  const [civilStatus, setCivilStatus] = useState(
+    selectedPatient?.civil_status ?? "",
+  );
   const [bloodType, setBloodType] = useState(selectedPatient?.blood_type ?? "");
 
   const [email, setEmail] = useState(selectedPatient?.email ?? "");
-  const [contactNumber, setContactNumber] = useState(selectedPatient?.contact_number ?? "");
+  const [contactNumber, setContactNumber] = useState(
+    selectedPatient?.contact_number ?? "",
+  );
   const [address, setAddress] = useState(selectedPatient?.address ?? "");
 
   const [emergencyContactName, setEmergencyContactName] = useState(
-    selectedPatient?.emergency_contact_name ?? ""
+    selectedPatient?.emergency_contact_name ?? "",
   );
   const [emergencyContact, setEmergencyContact] = useState(
-    selectedPatient?.emergency_contact ?? ""
+    selectedPatient?.emergency_contact ?? "",
   );
 
   const [image, setImage] = useState<File | null>(null);
@@ -46,7 +52,9 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
   // (non-null) inside nested closures like handleSave below.
   const patient = selectedPatient;
 
-  const fullName = [firstName, middleName, lastName, suffix].filter(Boolean).join(" ");
+  const fullName = [firstName, middleName, lastName, suffix]
+    .filter(Boolean)
+    .join(" ");
   const initials = `${firstName?.charAt(0) || ""}${lastName?.charAt(0) || ""}`;
 
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -92,7 +100,7 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
 
       const response = await api.put(
         `/api/fdstaff/patients/${patient.patient_id}`,
-        formData
+        formData,
       );
       alert(response.data.message);
       await loadData();
@@ -159,7 +167,7 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
 
           {/* Profile Hero */}
           <div className="overflow-hidden rounded-3xl bg-white shadow-sm">
-            <div className="h-36 bg-gradient-to-r from-gray-100 via-gray-50 to-gray-100" />
+            <div className="h-36 bg-linear-to-r from-gray-100 via-gray-50 to-gray-100" />
 
             <div className="px-8 pb-8">
               <div className="-mt-16 flex items-end justify-between">

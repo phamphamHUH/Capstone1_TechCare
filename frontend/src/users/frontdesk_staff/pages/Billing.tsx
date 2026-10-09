@@ -1,24 +1,49 @@
+import { useState } from "react";
 import Header from "../../../components/Header";
-type Bill = {
-  id: number;
-  billing_id: string;
-  patient_id: string;
-  discount_pct: number;
-  total_amount: number;
-  payment_method: string;
-  status: string;
-  receipt_id: string;
-  billed_at: string;
-}[];
+import type { UnpaidRequests } from "../../../interface/Billing";
+import UnpaidRequestsTable from "../components/Billing/UnpaidRequestsTable";
+import api from "#lib/axios";
 
 type BillingProps = {
-  billing: Bill;
+  unpaidRequests: UnpaidRequests[];
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   loadData(): Promise<void>;
   loading: boolean;
 };
-function Billing({ billing, open, setOpen, loadData, loading }: BillingProps) {
+
+function Billing({
+  unpaidRequests,
+  open,
+  setOpen,
+  loadData,
+  loading,
+}: BillingProps) {
+  const [submittingId, setSubmittingId] = useState<string | number | null>(
+    null,
+  );
+  const [error, setError] = useState<string | null>(null);
+
+  const handleConfirmPayment = async (request: UnpaidRequests) => {
+    try {
+      setSubmittingId(request.lab_item_id);
+      setError(null);
+      console.log(request.request_id);
+
+      await api.patch(`/api/fdstaff/laboratory-requests/${request.request_id}`);
+
+      await loadData(); // row disappears from unpaid list, appears in queue list
+    } catch (err) {
+      console.error("Error confirming payment:", err);
+      setError(
+        (err as { response?: { data?: { message?: string } } }).response?.data
+          ?.message || "Failed to confirm payment.",
+      );
+    } finally {
+      setSubmittingId(null);
+    }
+  };
+
   return (
     <main className="flex-1 min-w-0">
       <Header
@@ -28,7 +53,20 @@ function Billing({ billing, open, setOpen, loadData, loading }: BillingProps) {
         page="Billing"
         loading={loading}
       />
+
+      {error && (
+        <p role="alert" className="mb-2 text-sm text-red-600">
+          {error}
+        </p>
+      )}
+
+      <UnpaidRequestsTable
+        unpaidRequests={unpaidRequests}
+        onConfirmPayment={handleConfirmPayment}
+        submittingId={submittingId}
+      />
     </main>
   );
 }
+
 export default Billing;
