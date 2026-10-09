@@ -10,7 +10,7 @@ import LaboratoryStaff from "./users/laboratory_staff/LaboratoryStaff";
 import ProtectedRoute from "./lib/ProtectedRoute";
 function App() {
   return (
-    <div>
+    <div className="select-none">
       <Routes>
         <Route path="/about" element={<div>About</div>} />
         <Route path="/" element={<Navigate to="/login" replace />} />

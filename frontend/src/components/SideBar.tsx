@@ -8,7 +8,7 @@ type SideBarProps = {
 function SideBar({ open, page, setPage, navItems }: SideBarProps) {
   return (
     <aside
-      className={`bg-white border-r border-gray-300 text-black h-screen overflow-hidden transition-all duration-300 ${
+      className={`select-none bg-white border-r border-gray-300 text-black  transition-all duration-300 ${
         open ? "w-64" : "w-0 p-0"
       }`}
     >

@@ -10,17 +10,13 @@ type HeaderProps = {
   loadData: () => void;
 };
 
-function Header({
-  page,
-  loading,
-  open,
-  setOpen,
-  loadData,
-}: HeaderProps) {
-  const role = sessionStorage.getItem("role")
+function Header({ page, loading, open, setOpen, loadData }: HeaderProps) {
+  const role = sessionStorage.getItem("role");
   const handleLogout = async () => {
     try {
-      const user_id = JSON.parse(sessionStorage.getItem("user") || "{}").user_id;
+      const user_id = JSON.parse(
+        sessionStorage.getItem("user") || "{}",
+      ).user_id;
       const result = await api.patch("/api/auth/logout", { user_id });
       console.log("LOGOUT RESULT:", result.data.message);
       sessionStorage.clear();
@@ -31,7 +27,7 @@ function Header({
   };
 
   return (
-    <div className="flex items-center justify-between h-24 gap-4 mb-6 px-6 border-b border-gray-300">
+    <div className="select-none flex items-center justify-between h-24 gap-4 mb-6 px-6 border-b border-gray-300">
       <div className="flex gap-5">
         <button
           onClick={() => setOpen(!open)}
@@ -49,7 +45,7 @@ function Header({
       <div className="flex gap-5 items-center">
         <div
           onClick={loadData}
-          className="bg-red-800 text-white py-2 px-4 cursor-pointer w-28 h-10 text-center transition-all duration-300 hover:bg-red-900 hover:rounded-lg hover:scale-110"
+          className="bg-sky-500 rounded-lg text-white py-2 px-4 cursor-pointer w-28 h-10 text-center transition-all hover:bg-sky-600 hover:scale-103 active:scale-100 active:bg-sky-700"
         >
           {loading ? "Loading..." : "Load Data"}
         </div>
