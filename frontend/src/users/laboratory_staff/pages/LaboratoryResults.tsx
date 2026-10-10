@@ -83,30 +83,39 @@ function LaboratoryResults({
   }, [releasingRequests, selectedRequest]);
 
   useEffect(() => {
-    if (!selectedRequest) {
-      function action(request: LabRequest){
-        setSelectedRequest(request);
+    function action() {
+      if (!selectedRequest && releasingRequests.length > 0) {
+        setSelectedRequest(releasingRequests[0]);
       }
-      action(releasingRequests[0]);
-      return;
     }
 
-    const savedResults = selectedRequest.results;
+    action();
+  }, [releasingRequests, selectedRequest]);
 
-    if (
-      savedResults &&
-      Array.isArray(savedResults.parameters)
-    ) {
-      const parameters =
-        savedResults.parameters as LaboratoryResult[];
+  useEffect(() => {
+    function action() {
+      if (!selectedRequest) {
+        setLaboratoryResults([]);
+        return;
+      }
 
-      setLaboratoryResults(parameters);
-      return;
+      const savedResults = selectedRequest.results;
+
+      if (
+        savedResults &&
+        Array.isArray(savedResults.parameters)
+      ) {
+        setLaboratoryResults(
+          savedResults.parameters as LaboratoryResult[],
+        );
+        return;
+      }
+
+      setLaboratoryResults(createDefaultResults());
     }
 
-    setLaboratoryResults(createDefaultResults());
+    action();
   }, [selectedRequest]);
-
   const handleResultChange = (
     parameter: string,
     field: "result" | "referenceRange" | "status",
@@ -116,9 +125,9 @@ function LaboratoryResults({
       currentResults.map((item) =>
         item.parameter === parameter
           ? {
-              ...item,
-              [field]: value,
-            }
+            ...item,
+            [field]: value,
+          }
           : item,
       ),
     );
@@ -167,14 +176,14 @@ function LaboratoryResults({
       setSelectedRequest((current) =>
         current
           ? {
-              ...current,
-              status,
-              results: {
-                testType: current.test_type,
-                parameters: laboratoryResults,
-                releasedAt,
-              },
-            }
+            ...current,
+            status,
+            results: {
+              testType: current.test_type,
+              parameters: laboratoryResults,
+              releasedAt,
+            },
+          }
           : null,
       );
     } finally {
