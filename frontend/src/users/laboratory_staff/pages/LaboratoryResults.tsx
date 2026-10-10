@@ -75,13 +75,19 @@ function LaboratoryResults({
 
   useEffect(() => {
     if (!selectedRequest && releasingRequests.length > 0) {
-      setSelectedRequest(releasingRequests[0]);
+      function action(request: LabRequest) {
+        setSelectedRequest(request);
+      }
+      action(releasingRequests[0]);
     }
   }, [releasingRequests, selectedRequest]);
 
   useEffect(() => {
     if (!selectedRequest) {
-      setLaboratoryResults([]);
+      function action(request: LabRequest){
+        setSelectedRequest(request);
+      }
+      action(releasingRequests[0]);
       return;
     }
 

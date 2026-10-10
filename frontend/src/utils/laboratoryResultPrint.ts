@@ -24,7 +24,7 @@ const escapeHtml = (value: unknown): string =>
     };
 
     return entities[character];
-  };
+  });
 
 export function generateLaboratoryResultHtml({
   request,
