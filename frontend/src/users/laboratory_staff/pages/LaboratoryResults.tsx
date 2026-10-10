@@ -1,3 +1,4 @@
+
 import { useEffect, useMemo, useState } from "react";
 import Header from "../../../components/Header";
 import ReleasingSide from "../components/LaboratoryResults/ReleasingSide";
@@ -5,6 +6,7 @@ import LaboratoryResultTable, {
   type LaboratoryResult,
 } from "../components/LaboratoryResults/LaboratoryResultTable";
 import api from "../../../lib/axios";
+import { printLaboratoryResult } from "../../../utils/laboratoryResultPrint";
 
 type LabRequest = {
   request_id: string;
@@ -65,7 +67,8 @@ function LaboratoryResults({
     () =>
       requests.filter(
         (request) =>
-          request.status === "Completed" || request.status === "Lab Result",
+          request.status === "Completed" ||
+          request.status === "Lab Result",
       ),
     [requests],
   );
@@ -83,8 +86,13 @@ function LaboratoryResults({
     }
 
     const savedResults = selectedRequest.results;
-    if (savedResults && Array.isArray(savedResults.parameters)) {
-      const parameters = savedResults.parameters as LaboratoryResult[];
+
+    if (
+      savedResults &&
+      Array.isArray(savedResults.parameters)
+    ) {
+      const parameters =
+        savedResults.parameters as LaboratoryResult[];
 
       setLaboratoryResults(parameters);
       return;
@@ -102,9 +110,9 @@ function LaboratoryResults({
       currentResults.map((item) =>
         item.parameter === parameter
           ? {
-            ...item,
-            [field]: value,
-          }
+              ...item,
+              [field]: value,
+            }
           : item,
       ),
     );
@@ -134,6 +142,8 @@ function LaboratoryResults({
     setSaving(true);
 
     try {
+      const releasedAt = new Date().toISOString();
+
       await api.patch(
         `/api/labstaff/laboratory-requests/${selectedRequest.request_id}`,
         {
@@ -141,7 +151,7 @@ function LaboratoryResults({
           results: {
             testType: selectedRequest.test_type,
             parameters: laboratoryResults,
-            releasedAt: new Date().toISOString(),
+            releasedAt,
           },
         },
       );
@@ -151,20 +161,20 @@ function LaboratoryResults({
       setSelectedRequest((current) =>
         current
           ? {
-            ...current,
-            status,
-            results: {
-              testType: current.test_type,
-              parameters: laboratoryResults,
-              releasedAt: new Date().toISOString(),
-            },
-          }
+              ...current,
+              status,
+              results: {
+                testType: current.test_type,
+                parameters: laboratoryResults,
+                releasedAt,
+              },
+            }
           : null,
       );
     } finally {
       setSaving(false);
     }
-  };
+  }
 
   const handleRelease = async () => {
     await saveResults("Released");
@@ -180,115 +190,10 @@ function LaboratoryResults({
       return;
     }
 
-    const printWindow = window.open("", "_blank", "width=900,height=700");
-
-    if (!printWindow) {
-      window.alert("Please allow pop-ups to print the laboratory result.");
-      return;
-    }
-
-    const rows = laboratoryResults
-      .map(
-        (item) => `
-          <tr>
-            <td>${item.parameter}</td>
-            <td>${item.result}</td>
-            <td>${item.referenceRange}</td>
-            <td>${item.status}</td>
-          </tr>
-        `,
-      )
-      .join("");
-
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Laboratory Result - ${selectedRequest.patient_id}</title>
-
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              padding: 40px;
-              color: #222;
-            }
-
-            h1 {
-              margin-bottom: 5px;
-            }
-
-            .information {
-              margin-bottom: 25px;
-              line-height: 1.7;
-            }
-
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-top: 20px;
-            }
-
-            th,
-            td {
-              border: 1px solid #ccc;
-              padding: 10px;
-              text-align: left;
-            }
-
-            th {
-              background: #f3f4f6;
-            }
-          </style>
-        </head>
-
-        <body>
-          <h1>Laboratory Result</h1>
-
-          <div class="information">
-            <strong>Patient ID:</strong>
-            ${selectedRequest.patient_id}
-            <br />
-
-            <strong>Doctor ID:</strong>
-            ${selectedRequest.doctor_id ?? "N/A"}
-            <br />
-
-            <strong>Test Type:</strong>
-            ${selectedRequest.test_type}
-            <br />
-
-            <strong>Request ID:</strong>
-            ${selectedRequest.request_id}
-            <br />
-
-            <strong>Date:</strong>
-            ${new Date().toLocaleDateString()}
-          </div>
-
-          <table>
-            <thead>
-              <tr>
-                <th>Parameter</th>
-                <th>Result</th>
-                <th>Reference Range</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              ${rows}
-            </tbody>
-          </table>
-        </body>
-      </html>
-    `);
-
-    printWindow.document.close();
-    printWindow.focus();
-
-    setTimeout(() => {
-      printWindow.print();
-    }, 250);
+    printLaboratoryResult({
+      request: selectedRequest,
+      results: laboratoryResults,
+    });
   };
 
   return (
@@ -302,7 +207,7 @@ function LaboratoryResults({
       />
 
       {/* Page heading */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between px-6">
+      <div className="mb-6 flex flex-col gap-4 px-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-xl font-semibold text-slate-900">
             Laboratory Results
@@ -321,21 +226,21 @@ function LaboratoryResults({
 
       {/* General error */}
       {error && (
-        <div className="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 mx-6">
+        <div className="mx-6 mb-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           {error}
         </div>
       )}
 
-      {/* MAIN LABORATORY RESULTS AREA */}
-      <div className="flex flex-col gap-5 xl:flex-row px-6">
-        {/* LEFT TABLE */}
+      {/* Main laboratory results area */}
+      <div className="flex flex-col gap-5 px-6 xl:flex-row">
+        {/* Left table */}
         <ReleasingSide
           requests={requests}
           selectedRequestId={selectedRequest?.request_id ?? null}
           onSelect={(request) => setSelectedRequest(request)}
         />
 
-        {/* RIGHT TABLE */}
+        {/* Right table */}
         <div className="min-w-0 flex-1">
           {selectedRequest ? (
             <>
