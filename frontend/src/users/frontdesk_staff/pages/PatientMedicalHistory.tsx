@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
 import { ArrowLeft } from "lucide-react";
 import type { Patient } from "../../../interface/Patient";
-import type { Activity } from "../../../interface/Activity";
 import api from "../../../lib/axios";
 import Header from "../../../components/Header";
 

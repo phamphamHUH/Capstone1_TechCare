@@ -102,9 +102,9 @@ function LaboratoryResults({
       currentResults.map((item) =>
         item.parameter === parameter
           ? {
-              ...item,
-              [field]: value,
-            }
+            ...item,
+            [field]: value,
+          }
           : item,
       ),
     );
@@ -124,7 +124,7 @@ function LaboratoryResults({
     }
   };
 
-  const saveResults = async (status: string) => {
+  async function saveResults(status: string) {
     if (!selectedRequest) {
       throw new Error("No laboratory request selected.");
     }
@@ -151,14 +151,14 @@ function LaboratoryResults({
       setSelectedRequest((current) =>
         current
           ? {
-              ...current,
-              status,
-              results: {
-                testType: current.test_type,
-                parameters: laboratoryResults,
-                releasedAt: new Date().toISOString(),
-              },
-            }
+            ...current,
+            status,
+            results: {
+              testType: current.test_type,
+              parameters: laboratoryResults,
+              releasedAt: new Date().toISOString(),
+            },
+          }
           : null,
       );
     } finally {
