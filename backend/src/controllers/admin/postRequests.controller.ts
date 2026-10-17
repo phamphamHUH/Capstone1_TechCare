@@ -4,7 +4,6 @@ import cloudinary from "../../config/cloudinary.js";
 import bcrypt from "bcryptjs";
 import { registerFormComponentTypes } from "../../utils/formComponentTypes.js";
 import { NextFunction, Request, Response } from "express";
-import { Request, Response } from "express";
 import {
   generateUserId,
   generateServiceId,

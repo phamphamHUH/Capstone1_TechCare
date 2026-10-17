@@ -1,6 +1,6 @@
 
 export namespace deleteTemplate {
-  export interface request {
+  export interface params {
     form_id: string;
   }
 

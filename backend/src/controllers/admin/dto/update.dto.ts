@@ -109,6 +109,7 @@ export namespace updateFormTemplate {
   export interface body {
     form_name: string;
     form_description?: string | null;
+    service_id: string;
     status: string;
     form_components: componentBody[];
   }
