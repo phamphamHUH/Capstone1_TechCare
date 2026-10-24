@@ -21,6 +21,7 @@ import type { QueueRequests } from "../../interface/Queue";
 import type { UnpaidRequests } from "../../interface/Billing";
 import MedicalHistory from "./pages/MedicalHistory";
 import type { Patient } from "../../interface/Patient";
+import "./frontdesk.css";
 
 function FrontdeskStaff() {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
@@ -31,7 +32,8 @@ function FrontdeskStaff() {
   const [unpaidRequests, setUnpaidRequests] = useState<UnpaidRequests[]>([]);
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(() => typeof window === "undefined" || window.innerWidth >= 1024);
+  const [loadError, setLoadError] = useState("");
 
   const [searchParams, setSearchParams] = useSearchParams();
   const patientIdParam = searchParams.get("patient_id");
@@ -52,20 +54,23 @@ function FrontdeskStaff() {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const serviceResponse = await api.get("/api/fdstaff/services");
-      const patientsResponse = await api.get("/api/fdstaff/patients");
-      const queuesResponse = await api.get("/api/fdstaff/queues");
-      const queueRequestsResponse = await api.get(
-        "/api/fdstaff/queue-requests",
-      );
-      const unpaidRequests = await api.get("/api/fdstaff/billing/unpaid-lab");
-
-      console.log(unpaidRequests);
-      setQueueRequests(queueRequestsResponse.data.requests);
-      setUnpaidRequests(unpaidRequests.data.unpaidLabRequests);
-      setServices(serviceResponse.data.services);
-      setPatients(patientsResponse.data.patients);
-      setQueues(queuesResponse.data.queueEntries);
+      setLoadError("");
+      const sources = [
+        { url: "/api/fdstaff/services", key: "services", label: "services", set: setServices },
+        { url: "/api/fdstaff/patients", key: "patients", label: "patients", set: setPatients },
+        { url: "/api/fdstaff/queues", key: "queueEntries", label: "queues", set: setQueues },
+        { url: "/api/fdstaff/queue-requests", key: "requests", label: "queue requests", set: setQueueRequests },
+        { url: "/api/fdstaff/billing/unpaid-lab", key: "unpaidLabRequests", label: "billing requests", set: setUnpaidRequests },
+      ];
+      const responses = await Promise.allSettled(sources.map((source) => api.get(source.url)));
+      const failed: string[] = [];
+      responses.forEach((response, index) => {
+        const source = sources[index];
+        if (response.status === "fulfilled" && Array.isArray(response.value.data?.[source.key])) {
+          source.set(response.value.data[source.key]);
+        } else failed.push(source.label);
+      });
+      if (failed.length) setLoadError(`Could not refresh ${failed.join(", ")}. Use Load Data to try again.`);
     } catch (error) {
       console.log("Error fetching queue entries data:", error);
     } finally {
@@ -115,15 +120,25 @@ function FrontdeskStaff() {
     })();
   }, [loadData]);
 
+  useEffect(() => {
+    const viewport = window.matchMedia("(min-width: 1024px)");
+    const closeMobileNavigation = (event: MediaQueryListEvent) => {
+      if (!event.matches) setOpen(false);
+    };
+    viewport.addEventListener("change", closeMobileNavigation);
+    return () => viewport.removeEventListener("change", closeMobileNavigation);
+  }, []);
+
   return (
-    <div className="flex min-h-screen">
+    <div className="frontdesk-shell flex min-h-screen">
+      {open && <button type="button" className="fixed inset-0 z-40 bg-black/30 lg:hidden" aria-label="Close navigation" onClick={() => setOpen(false)} />}
       <SideBar
         open={open}
         page={page}
         setPage={setPage} 
         navItems={navItems}
       />
-      <div className="flex-1 min-w-0">
+      <div className="frontdesk-workspace">
         <Header
           page={currentPage}
           loading={loading}
@@ -133,6 +148,7 @@ function FrontdeskStaff() {
         />
 
         <div className="pb-6">
+          {loadError && <p role="alert" className="mx-6 mb-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-base text-amber-900">{loadError}</p>}
           {page === "dashboard" && (
             <FrontdeskDashboard
               patients={patients}
@@ -190,6 +206,9 @@ function FrontdeskStaff() {
           {page === "billing" && (
             <Billing
               unpaidRequests={unpaidRequests}
+              queueRequests={queueRequests}
+              patients={patients}
+              services={services}
               open={open}
               setOpen={setOpen}
               loadData={loadData}

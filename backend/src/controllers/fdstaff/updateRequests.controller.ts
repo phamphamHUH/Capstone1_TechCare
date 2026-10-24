@@ -1,6 +1,9 @@
 import bcrypt from "bcryptjs";
 import cloudinary from "../../config/cloudinary.js";
-import { sql } from "../../config/db.js";
+import { sql, pool } from "../../config/db.js";
+import type { PoolClient } from "@neondatabase/serverless";
+import { generateLaboratoryQueueId, generateQueueNumberLaboratory } from "../../utils/generateId.js";
+import { publishQueueChange } from "../../services/queue-sse/index.js";
 import { calculateAge } from "../../utils/calculateAge.js";
 import type { Request, Response } from "express";
 import type {
@@ -222,33 +225,97 @@ export async function confirmLabRequestPayment(
   req: Request,
   res: Response<confirmLabRequestPayment.response | confirmLabRequestPayment.error>,
 ) {
+  const { request_id } = req.params;
+  if (typeof request_id !== "string" || !request_id.trim()) {
+    return res.status(400).json({ message: "Laboratory request ID is required." });
+  }
+  let client: PoolClient | undefined;
   try {
-    const { request_id } = req.params;
-
-    const updatedLabRequest = await sql`
-    UPDATE laboratory_requests
-    SET is_paid = true,
-        status = 'Paid'
-    WHERE request_id = ${request_id}
-        AND is_paid = FALSE
-    RETURNING *;
-    `;
-
-    if (updatedLabRequest.length === 0) {
-      return res.status(404).json({
-        message: "Laboratory request not found.",
-      } as confirmLabRequestPayment.error);
+    client = await pool.connect();
+    await client.query("BEGIN");
+    await client.query("SELECT pg_advisory_xact_lock(hashtext('queue_ids'))");
+    const { rows: [request] } = await client.query(
+      "SELECT * FROM laboratory_requests WHERE request_id = $1 FOR UPDATE",
+      [request_id],
+    );
+    if (!request) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ message: "Laboratory request not found." });
     }
-
+    if (["cancelled", "canceled", "rejected"].includes(String(request.status).trim().toLowerCase())) {
+      await client.query("ROLLBACK");
+      return res.status(409).json({ message: "A cancelled or rejected request cannot be confirmed or sent to the laboratory." });
+    }
+    const { rows: items } = await client.query(
+      `SELECT lri.lab_item_id, lri.queue_id, lri.status, s.room
+       FROM laboratory_request_items lri
+       JOIN services s ON s.service_id = lri.service_id
+       WHERE lri.request_id = $1
+       ORDER BY lri.lab_item_id
+       FOR UPDATE OF lri`,
+      [request_id],
+    );
+    const unsent = items.filter((item) => !item.queue_id);
+    if (!items.length || unsent.some((item) => item.status !== "Requested" || typeof item.room !== "string" || !item.room.trim())) {
+      await client.query("ROLLBACK");
+      return res.status(409).json({ message: "The request needs pending tests with assigned laboratory rooms before payment can be confirmed and forwarded." });
+    }
+    // One patient queue per room, with all of that room's tests linked to it.
+    // Retrying also repairs previously paid requests without duplicating queues.
+    const rooms = new Map<string, string[]>();
+    for (const item of unsent) {
+      const ids = rooms.get(item.room) ?? [];
+      ids.push(item.lab_item_id);
+      rooms.set(item.room, ids);
+    }
+    for (const [room, ids] of rooms) {
+      const queueId = await generateLaboratoryQueueId(client);
+      const queueNumber = await generateQueueNumberLaboratory(client, room);
+      await client.query(
+        `INSERT INTO queue_entries (queue_id, patient_id, queue_number, is_priority, status)
+         VALUES ($1, $2, $3, $4, 'Waiting')`,
+        [queueId, request.patient_id, queueNumber, request.is_priority === true],
+      );
+      const linked = await client.query(
+        `UPDATE laboratory_request_items
+         SET queue_id = $1, status = 'Waiting', updated_at = NOW()
+         WHERE request_id = $2 AND lab_item_id = ANY($3::text[])
+           AND queue_id IS NULL AND status = 'Requested'
+         RETURNING lab_item_id`,
+        [queueId, request_id, ids],
+      );
+      if (linked.rows.length !== ids.length) throw new Error("Some laboratory items changed while being forwarded.");
+    }
+    const { rows: updatedLabRequest } = await client.query(
+      `UPDATE laboratory_requests SET is_paid = TRUE, status = 'Paid',
+         updated_at = CASE WHEN is_paid = TRUE AND status = 'Paid' THEN updated_at ELSE NOW() END
+       WHERE request_id = $1 RETURNING *`,
+      [request_id],
+    );
+    const { rows: queues } = await client.query(
+      `SELECT DISTINCT q.*, s.room FROM queue_entries q
+       JOIN laboratory_request_items lri ON lri.queue_id = q.queue_id
+       JOIN services s ON s.service_id = lri.service_id
+       WHERE lri.request_id = $1 AND q.patient_id = $2
+       ORDER BY q.queue_id, s.room`,
+      [request_id, request.patient_id],
+    );
+    if (!updatedLabRequest.length || !queues.length) throw new Error("Laboratory forwarding could not be verified.");
+    await client.query("COMMIT");
+    if (rooms.size) publishQueueChange();
     return res.status(200).json({
-      message: "Laboratory request payment confirmed.",
+      message: "Laboratory request payment confirmed and forwarded to the laboratory.",
       request: updatedLabRequest,
+      queued: true,
+      queues,
     } as confirmLabRequestPayment.response);
   } catch (error) {
-    console.error(error);
-
+    if (client) await client.query("ROLLBACK").catch(console.error);
+    console.error("Unable to confirm payment and forward laboratory request:", error);
     return res.status(500).json({
-      message: "Error in Confirming Laboratory Request Payment",
+      message: "Unable to confirm payment and forward the request. Refresh its status before trying again.",
     } as confirmLabRequestPayment.error);
+  } finally {
+    client?.release();
   }
 }

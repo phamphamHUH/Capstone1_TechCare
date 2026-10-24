@@ -1,7 +1,7 @@
 import { sql } from "../../config/db.js";
 import type { Request, Response } from "express";
 import { skipQueueEntry } from "./dto/update.dto.js";
-import { publishQueueChange } from "../../utils/queueStream.js";
+import { publishQueueChange } from "../../services/queue-sse/index.js";
 
 export async function skipConsultationQueueEntry(
   req: Request,

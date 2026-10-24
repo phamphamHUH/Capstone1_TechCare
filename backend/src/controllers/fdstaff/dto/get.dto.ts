@@ -86,9 +86,11 @@ export namespace getAllBilling {
     bill_id: number | string;
     patient_id: string;
     services_ids?: number[];
-    discount_pct: number | string;
-    total_amount: number | string;
-    payment_method: string;
+    discount_pct: number | string | null;
+    total_amount: number | string | null;
+    payment_method: string | null;
+    record_type?: "bill" | "laboratory_confirmation";
+    request_id?: string;
     status: string;
     receipt_id?: string | null;
     receipt_issued_at?: string | null;
@@ -170,6 +172,10 @@ export namespace getLaboratoryRequest {
 
 export namespace getQueueRequests {
   export interface queueRequest {
+    request_id: string | null;
+    is_paid: boolean;
+    request_status: string;
+    room: string;
     record_type: "laboratory" | "consultation" | string;
     record_id: string;
     patient_id: string;

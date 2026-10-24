@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { LayoutGrid, ClipboardList, FileCheck } from "lucide-react";
 import api from "../../lib/axios";
 import LaboratoryRequests from "./pages/LaboratoryRequests";
@@ -17,6 +17,7 @@ function LaboratoryStaff() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const refreshing = useRef(false);
 
   const page = searchParams.get("page") ?? "dashboard";
   function setPage(newPage: string) {
@@ -25,8 +26,10 @@ function LaboratoryStaff() {
 
   const room = "Laboratory Room 2";
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  const loadData = useCallback(async (background = false) => {
+    if (refreshing.current) return;
+    refreshing.current = true;
+    if (!background) setLoading(true);
     setError(null);
 
     try {
@@ -41,10 +44,13 @@ function LaboratoryStaff() {
         (err as { response?: { data?: { message?: string } } })?.response?.data
           ?.message || "Unable to fetch data.";
       setError(message);
-      setQueues([]);
-      setServices([]);
+      if (!background) {
+        setQueues([]);
+        setServices([]);
+      }
     } finally {
-      setLoading(false);
+      refreshing.current = false;
+      if (!background) setLoading(false);
     }
   }, []);
   const navItems = [
@@ -71,6 +77,19 @@ function LaboratoryStaff() {
     (async () => {
       await loadData();
     })();
+  }, [loadData, page]);
+
+  useEffect(() => {
+    if (page !== "laboratory-requests") return;
+    const refresh = () => { if (document.visibilityState === "visible") void loadData(true); };
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    const timer = window.setInterval(refresh, 15000);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+      window.clearInterval(timer);
+    };
   }, [loadData, page]);
 
   return (

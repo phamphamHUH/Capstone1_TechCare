@@ -31,6 +31,10 @@ export interface QueueEntry {
 }
 
 export interface QueueRequests {
+  request_id?: string;
+  is_paid?: boolean;
+  request_status?: string;
+  room?: string;
   record_type: "laboratory" | "consultation";
   record_id: string;
   patient_id: string;

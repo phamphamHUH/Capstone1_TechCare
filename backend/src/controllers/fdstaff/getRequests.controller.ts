@@ -209,17 +209,56 @@ export async function getAllBilling(
 ) {
   // get /api/fdstaff/billing
   try {
-    const billing = await sql`SELECT * FROM billing`;
-    if (!billing) {
-      return res.json({
-        message: "there are no billing records",
-        billing: [],
-      } as getAllBilling.response);
-    }
+    // Confirming a lab payment persists is_paid on the request, even when no
+    // separate bill was issued. Include that saved fact without inventing an
+    // amount, payment method, receipt, or historical service price.
+    const history = await sql`
+      WITH payment_history AS (
+        SELECT to_jsonb(b) || jsonb_build_object('record_type', 'bill') AS record,
+          COALESCE(b.billed_at, b.created_at) AS sort_date
+        FROM bills b
+        UNION ALL
+        SELECT jsonb_build_object(
+          'bill_id', 'LAB-CONFIRM:' || lr.request_id,
+          'record_type', 'laboratory_confirmation',
+          'request_id', lr.request_id,
+          'patient_id', lr.patient_id,
+          'status', 'Paid',
+          'items', COALESCE((
+            SELECT jsonb_agg(jsonb_build_object(
+              'service_id', ri.service_id,
+              'service_name', s.service_name,
+              'service_category', s.service_category,
+              'quantity', 1
+            ) ORDER BY ri.lab_item_id)
+            FROM laboratory_request_items ri
+            JOIN services s ON s.service_id = ri.service_id
+            WHERE ri.request_id = lr.request_id
+          ), '[]'::jsonb),
+          'total_amount', NULL,
+          'discount_pct', NULL,
+          'payment_method', NULL,
+          'receipt_id', NULL,
+          'created_at', lr.requested_at,
+          'billed_at', NULL
+        ) AS record, lr.updated_at AS sort_date
+        FROM laboratory_requests lr
+        WHERE lr.is_paid = TRUE
+          AND NOT EXISTS (
+            SELECT 1 FROM bills b
+            WHERE LOWER(b.status) = 'paid'
+              AND b.patient_id = lr.patient_id
+              AND b.items @> jsonb_build_array(jsonb_build_object('request_id', lr.request_id))
+          )
+      )
+      SELECT record FROM payment_history
+      ORDER BY sort_date DESC NULLS LAST, record->>'bill_id' DESC
+    `;
     return res.status(200).json({
-      billing: billing as unknown as getAllBilling.bill[],
+      billing: history.map((row) => row.record) as getAllBilling.bill[],
     } as getAllBilling.response);
   } catch (error) {
+    console.error("Error fetching billing records:", error);
     return res.status(500).json({
       error: "error on fetching billing records",
     } as getAllBilling.error);
@@ -311,16 +350,20 @@ export async function getQueueRequests(
           s.service_id,
           s.service_name,
           CONCAT_WS(' ', u.first_name, u.last_name)   AS created_by,
-          lr.requested_at                             AS created_at
+          lr.requested_at                             AS created_at,
+          lr.request_id,
+          lr.is_paid,
+          lr.status AS request_status,
+          s.room
         FROM laboratory_request_items lri
         JOIN laboratory_requests lr ON lr.request_id = lri.request_id
         JOIN patients p             ON p.patient_id = lr.patient_id
         JOIN services s             ON s.service_id = lri.service_id
         LEFT JOIN users u           ON u.user_id = lr.requested_by
         WHERE lr.is_paid = TRUE
+          AND lr.status = 'Paid'
+          AND lri.status = 'Requested'
           AND lri.queue_id IS NULL
-          AND lr.requested_at >= CURRENT_DATE
-          AND lr.requested_at <  CURRENT_DATE + INTERVAL '1 day'
 
         UNION ALL
 
@@ -332,7 +375,11 @@ export async function getQueueRequests(
           s.service_id,
           s.service_name,
           CONCAT_WS(' ', u.first_name, u.last_name),
-          cr.consulted_at
+          cr.consulted_at,
+          NULL::text,
+          cr.is_paid,
+          cr.status,
+          s.room
         FROM consultation_records cr
         JOIN patients p   ON p.patient_id = cr.patient_id
         JOIN services s   ON s.service_id = cr.service_id
