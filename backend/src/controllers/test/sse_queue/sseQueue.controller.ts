@@ -56,7 +56,7 @@ export async function receiveQueueSSE(req: Request, res: Response) {
   }
 }
 
-export async function addQueue(req: Request, res: Response) {
+export async function sendQueueSSE(req: Request, res: Response) {
   try {
     const { message } = req.body;
 
