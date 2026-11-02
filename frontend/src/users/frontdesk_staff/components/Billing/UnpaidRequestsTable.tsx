@@ -12,21 +12,27 @@ function UnpaidRequestsTable({
   submittingId,
 }: UnpaidRequestsTableProps) {
   return (
-    <div className="max-h-105 overflow-auto rounded-xl border border-gray-200 bg-white">
-      <table className="w-full text-sm">
+    <div className="max-h-105 overflow-auto border border-gray-200 bg-white">
+      <table className="w-full text-xs">
         <colgroup>
-          <col className="w-3/30" />
-          <col className="w-8/30" />
-          <col className="w-8/30" />
-          <col className="w-6/30" />
-          <col className="w-5/30" />
+          <col className="w-4/40" />
+          <col className="w-5/40" />
+          <col className="w-5/40" />
+          <col className="w-5/40" />
+          <col className="w-3/40" />
+          <col className="w-6/40" />
+          <col className="w-5/40" />
+          <col className="w-7/40" />
         </colgroup>
-        <thead className="sticky top-0 z-10 bg-white text-gray-500">
+        <thead className="sticky top-0 z-10 bg-gray-100 text-gray-500">
           <tr className="border-b border-gray-100">
-            <th className="px-4 py-3 text-left font-medium">Type</th>
+            <th className="px-4 py-3 text-left font-medium">Date & Time</th>
             <th className="px-4 py-3 text-left font-medium">Patient</th>
-            <th className="px-4 py-3 text-left font-medium">Service</th>
-            <th className="px-4 py-3 text-left font-medium">Created By</th>
+            <th className="px-4 py-3 text-left font-medium">Request ID</th>
+            <th className="px-4 py-3 text-left font-medium">Service(s)</th>
+            <th className="px-4 py-3 text-left font-medium">Amount</th>
+            <th className="px-4 py-3 text-left font-medium">Payment Method</th>
+            <th className="px-4 py-3 text-left font-medium">Status</th>
             <th className="px-4 py-3 text-left font-medium">Action</th>
           </tr>
         </thead>

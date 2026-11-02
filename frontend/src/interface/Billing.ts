@@ -68,3 +68,15 @@ export interface BillingEntry {
   referenceLabel?: "Request ID" | "Bill ID";
   dateLabel?: "Request date" | "Payment date";
 }
+
+export type BillingStatistics = {
+  totalRequests: number;
+  pendingPayment: number;
+  paidRequests: number;
+  cancelledRequests: number;
+};
+
+export type BillingTab = "billing-queue" | "payment-history";
+export type PaymentMethodFilter = "all" | "cash" | "gcash" | "kiss";
+export type StatusFilter = "all" | "paid" | "pending" | "cancelled";
+export type ServiceFilter = "all" | "consultation" | "laboratory";
