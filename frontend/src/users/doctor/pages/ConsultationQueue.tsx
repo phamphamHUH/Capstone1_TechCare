@@ -4,6 +4,7 @@ import ConsultationQueuePanel from "../components/ConsultationQueue/Consultation
 import type { QueueEntry } from "../../../interface/Queue";
 import type { Service } from "../../../interface/Service";
 import InformationCard from "../components/ConsultationQueue/InformationCard";
+import { connectQueueStream } from "../../../services/queue-sse/connectQueueStream";
 
 type ConsultationQueueProps = {
   services: Service[];
@@ -32,6 +33,14 @@ function ConsultationQueue({
 
   useEffect(() => {
     loadData();
+  }, [loadData]);
+
+  useEffect(() => {
+    const closeQueueStream = connectQueueStream({
+      onQueueChanged: loadData,
+    });
+
+    return closeQueueStream;
   }, [loadData]);
 
   return (

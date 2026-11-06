@@ -78,21 +78,6 @@ function LaboratoryStaff() {
     })();
   }, [loadData, page]);
 
-  useEffect(() => {
-    if (page !== "laboratory-requests") return;
-    const refresh = () => {
-      if (document.visibilityState === "visible") void loadData(true);
-    };
-    window.addEventListener("focus", refresh);
-    document.addEventListener("visibilitychange", refresh);
-    const timer = window.setInterval(refresh, 15000);
-    return () => {
-      window.removeEventListener("focus", refresh);
-      document.removeEventListener("visibilitychange", refresh);
-      window.clearInterval(timer);
-    };
-  }, [loadData, page]);
-
   return (
     <div className="flex min-h-screen cursor-default">
       <SideBar open={open} page={page} setPage={setPage} navItems={navItems} />
@@ -101,7 +86,7 @@ function LaboratoryStaff() {
           open={open}
           setOpen={setOpen}
           loading={loading}
-          loadData={() => loadData()}
+          loadData={loadData}
         />
       )}
 
@@ -113,7 +98,7 @@ function LaboratoryStaff() {
           services={services}
           loading={loading}
           error={error}
-          loadData={() => loadData()}
+          loadData={loadData}
           room={room}
         />
       )}
