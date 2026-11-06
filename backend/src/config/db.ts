@@ -183,7 +183,7 @@ const TABLES: {
       package_id    SERIAL PRIMARY KEY,
       package_name  VARCHAR(255) NOT NULL,
       package_price NUMERIC(10,2) NOT NULL,
-      service_ids   VARCHAR(255)[] NOT NULL,
+      status        VARCHAR(50) NOT NULL DEFAULT 'Active',
       created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     )`,
@@ -191,9 +191,25 @@ const TABLES: {
       package_id: "SERIAL PRIMARY KEY",
       package_name: "VARCHAR(255) NOT NULL",
       package_price: "NUMERIC(10,2) NOT NULL",
-      service_ids: "VARCHAR(255)[] NOT NULL",
+      status: "VARCHAR(50) NOT NULL DEFAULT 'Active'",
       created_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
       updated_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
+    },
+  },
+
+  {
+    table: "package_services",
+    createSQL: `CREATE TABLE IF NOT EXISTS package_services (
+    id          SERIAL PRIMARY KEY,
+    package_id  VARCHAR(255) NOT NULL REFERENCES package(package_id) ON DELETE CASCADE,
+    service_id  VARCHAR(255) NOT NULL REFERENCES services(service_id) ON DELETE RESTRICT
+  )`,
+    columns: {
+      id: "SERIAL PRIMARY KEY",
+      package_id:
+        "VARCHAR(255) NOT NULL REFERENCES package(package_id) ON DELETE CASCADE",
+      service_id:
+        "VARCHAR(255) NOT NULL REFERENCES services(service_id) ON DELETE RESTRICT",
     },
   },
 
@@ -566,17 +582,17 @@ const TABLES: {
       is_sensitive: "BOOLEAN NOT NULL DEFAULT TRUE",
     },
   },
- {
-  table: "sse_test",
-  createSQL: `CREATE TABLE IF NOT EXISTS sse_test (
+  {
+    table: "sse_test",
+    createSQL: `CREATE TABLE IF NOT EXISTS sse_test (
     message_id SERIAL PRIMARY KEY,
     message VARCHAR(255) NOT NULL
   )`,
-  columns: {
-    message_id: "SERIAL PRIMARY KEY",
-    message: "VARCHAR(255) NOT NULL",
+    columns: {
+      message_id: "SERIAL PRIMARY KEY",
+      message: "VARCHAR(255) NOT NULL",
+    },
   },
-},
 ];
 // -----------------------------------------------------------------------
 // CONNECT TO DATABASE
