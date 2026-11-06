@@ -414,7 +414,7 @@ Frontend `.env.local`: `VITE_IS_DEVELOPMENT=true`, `VITE_API_BASE_URL=http://loc
 ## Coding conventions
 
 - **SQL**: tagged-template `sql\`…${param}…\`` for single statements; `pool.connect()` + `BEGIN`/`COMMIT` + `pg_advisory_xact_lock(hashtext('…'))` for multi-step writes that generate IDs. Always parameterize. `sql.transaction([...])` is used where all statements are known up front (form templates).
-- **Controllers**: one folder per role, split by verb (`getRequests`, `postRequests`, `updateRequests`, `deleteRequest(s)`), each with a `dto/<verb>.dto.ts` that exports a namespace per handler (`body`, `response`, `error`, row types) and is used as `Response<ns.response | ns.error>`. Import with `.js` extensions.
+- **Controllers**: one folder per role, split by verb (`getRequests`, `postRequests`, `updateRequests`, `deleteRequest(s)`), each with a `dto/<verb>.dto.ts` that exports a namespace per handler (`body`, `response`, `error`, row types) and is used as `Response<ns.response | ns.error>`. Import with `.js` extensions. Full conventions, namespace index and known mismatches are in the `techcare-backend-dto` skill.
 - **Responses**: success `{ message, <resource> }`; errors `{ message }` (some older handlers use `{ error }`). Use proper status codes (400 validation, 401/403 auth, 404, 409 conflict, 500); newer code does.
 - **Queue changes**: any write to `queue_entries` should end with `publishQueueChange()` after commit, and status comparisons should use `LOWER(status)`.
 - **Audit**: new code should log through `logActivity()` with an `actions` row, not `system_activity`.
