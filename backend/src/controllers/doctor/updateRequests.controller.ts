@@ -166,7 +166,7 @@ export async function skipConsultationQueueEntry(
     // Find the patient's current queue entry. Joining consultation_records
     // makes sure this is a consultation queue and not a laboratory one.
     const queue = await sql`
-      SELECT qe.queue_id, qe.queue_number, qe.status
+      SELECT qe.queue_id, qe.queue_number, qe.status, qe.skip_count
       FROM queue_entries qe
       JOIN consultation_records cr ON cr.queue_id = qe.queue_id
       WHERE qe.queue_id = ${queue_id}
@@ -180,12 +180,20 @@ export async function skipConsultationQueueEntry(
       } as skipQueueEntry.error);
     }
 
-    const { queue_number: currentQueueNumber, status } = queue[0];
+    const { queue_number: currentQueueNumber, status, skip_count } = queue[0];
 
     // Only waiting or serving entries can be skipped.
-    if (!["waiting", "serving"].includes(String(status).toLowerCase())) {
+    // if (!["waiting", "serving"].includes(String(status).toLowerCase())) {
+    //   return res.status(409).json({
+    //     message: `Queue entry cannot be skipped because its status is ${status}.`,
+    //   } as skipQueueEntry.error);
+    // }
+
+    // Check the limit BEFORE shifting anyone.
+    // COALESCE treats a NULL skip_count as 0.
+    if ((skip_count ?? 0) >= 3) {
       return res.status(409).json({
-        message: `Queue entry cannot be skipped because its status is ${status}.`,
+        message: "Maximum skips reached. Cancel this consultation instead.",
       } as skipQueueEntry.error);
     }
 
@@ -210,6 +218,7 @@ export async function skipConsultationQueueEntry(
       UPDATE queue_entries
       SET
         queue_number = ${currentQueueNumber + 2},
+        skip_count = COALESCE(skip_count, 0) + 1,
         status = 'skipped',
         updated_at = NOW()
       WHERE queue_id = ${queue_id}

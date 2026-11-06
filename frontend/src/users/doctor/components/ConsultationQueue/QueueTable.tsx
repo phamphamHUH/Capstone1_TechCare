@@ -11,6 +11,7 @@ type QueueTableProps = {
 };
 
 const PAGE_SIZE = 10;
+const MAX_SKIPS = 3;
 
 function QueueTable({
   filterQueues,
@@ -116,6 +117,17 @@ function QueueTable({
       "Unable to skip queue.",
     );
 
+  // Same base as the other doctor routes; change the path if your cancel route differs
+  const handleCancel = (queue_id: string) => {
+    if (!window.confirm("Cancel this consultation? This can't be undone.")) return;
+    return runQueueRequest(
+      queue_id,
+      () =>
+        api.patch(`/api/doctor/consultation-queues/${id(queue_id)}/cancel`),
+      "Unable to cancel queue.",
+    );
+  };
+
   return (
     <>
       {acceptError && (
@@ -151,6 +163,14 @@ function QueueTable({
           {pageQueues.map((queue) => {
             const status = queue.status?.toLowerCase();
             const busy = acceptingId === queue.queue_id;
+
+            // Skip/cancel logic lives here, where `queue` and `status` exist
+            const skipsUsed = queue.skip_count ?? 0;
+            const skipsExhausted = skipsUsed >= MAX_SKIPS;
+            const canAct =
+              status === "waiting" ||
+              status === "skipped" ||
+              status === "serving";
 
             return (
               <React.Fragment key={queue.id}>
@@ -189,6 +209,11 @@ function QueueTable({
 
                   <td className="px-1 py-3 text-center text-sm">
                     {queue.status}
+                    {skipsUsed > 0 && (
+                      <span className="ml-1 text-xs text-gray-400">
+                        ({skipsUsed}/{MAX_SKIPS})
+                      </span>
+                    )}
                   </td>
 
                   <td className="px-1 py-3">
@@ -224,16 +249,30 @@ function QueueTable({
                         </button>
                       )}
 
-                      {(status === "serving" ||
-                        status === "waiting" ||
-                        status === "skipped") && (
+                      {/* Skip only while skips remain.
+                          "skipped" is excluded because the backend only
+                          allows waiting or serving entries to be skipped. */}
+                      {(status === "waiting" || status === "serving" || status === "skipped") &&
+                        !skipsExhausted && (
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => handleSkip(queue.queue_id)}
+                            className="cursor-pointer rounded-sm border-2 border-yellow-500 px-4 py-2 text-xs text-yellow-500 transition-all duration-300 hover:scale-105 hover:bg-yellow-100 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            Skip
+                          </button>
+                        )}
+
+                      {/* Takes Skip's place after the 3rd skip */}
+                      {skipsExhausted && canAct && (
                         <button
                           type="button"
                           disabled={acceptingId !== null}
                           onClick={() => handleSkip(queue.queue_id)}
                           className="cursor-pointer rounded-sm border-2 border-yellow-500 px-4 py-2 text-xs text-yellow-500 transition-all duration-300 hover:scale-105 hover:bg-yellow-100 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          Skip
+                          Cancel
                         </button>
                       )}
                     </div>
