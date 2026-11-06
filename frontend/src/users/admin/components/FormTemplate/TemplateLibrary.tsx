@@ -72,7 +72,7 @@ export default function TemplateLibrary({
     const names = new Set(
       services
         .map((s) => s.service_category || s.service_type)
-        .filter(Boolean),
+        .filter((name): name is string => Boolean(name)),
     );
     return ["All Templates", ...Array.from(names).sort(), UNCATEGORIZED];
   }, [services]);

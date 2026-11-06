@@ -82,7 +82,7 @@ export default function FormTemplate() {
       const rawServices = servicesRes.data.services ?? [];
       const validServices: ServiceOption[] = rawServices
         .filter(isValidService)
-        .map((s) => ({
+        .map((s: ServiceOption) => ({
           service_id: s.service_id,
           service_name: s.service_name,
           service_type: s.service_type,
