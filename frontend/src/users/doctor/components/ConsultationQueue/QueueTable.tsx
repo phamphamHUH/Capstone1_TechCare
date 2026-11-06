@@ -21,7 +21,7 @@ function QueueTable({
   loadData,
 }: QueueTableProps) {
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
-  const [pendingAction, setPendingAction] = useState<"accept" | "complete" | "skip" | null>(null);
+  const [pendingAction, setPendingAction] = useState<"accept" | "complete" | "skip"| "cancel" | null>(null);
   const requestPending = useRef(false);
   const [acceptError, setAcceptError] = useState<string | null>(null);
 
@@ -48,7 +48,7 @@ function QueueTable({
 
   const runQueueRequest = async (
     queue_id: string,
-    action: "accept" | "complete" | "skip",
+    action: "accept" | "complete" | "skip" | "cancel",
     request: () => Promise<unknown>,
     fallbackMessage: string,
   ) => {
@@ -119,14 +119,33 @@ function QueueTable({
 
   // Same base as the other doctor routes; change the path if your cancel route differs
   const handleCancel = (queue_id: string) => {
-    if (!window.confirm("Cancel this consultation? This can't be undone.")) return;
-    return runQueueRequest(
-      queue_id,
-      () =>
-        api.patch(`/api/doctor/consultation-queues/${id(queue_id)}/cancel`),
-      "Unable to cancel queue.",
-    );
-  };
+  const reason = window.prompt(
+    "Reason for cancelling this consultation:",
+    "Skipped 3 times without responding",
+  );
+  if (reason === null) return; // staff closed the prompt
+
+  const trimmed = reason.trim();
+  if (!trimmed) {
+    setAcceptError("A cancellation reason is required.");
+    return;
+  }
+  if (trimmed.length > 255) {
+    setAcceptError("Reason must not exceed 255 characters.");
+    return;
+  }
+
+  return runQueueRequest(
+    queue_id,
+    "cancel",
+    () =>
+      api.patch(`/api/doctor/consultation-queues/${id(queue_id)}/cancel`, {
+        room,
+        reason: trimmed,
+      }),
+    "Unable to cancel queue.",
+  );
+};
 
   return (
     <>
@@ -230,7 +249,6 @@ function QueueTable({
                         <button
                           type="button"
                           disabled={acceptingId !== null}
-                          aria-busy={busy && pendingAction === "accept"}
                           onClick={() => handleAccept(queue.queue_id)}
                           className="cursor-pointer rounded-sm border-2 border-green-500 px-4 py-2 text-xs text-green-500 transition-all duration-300 hover:scale-105 hover:bg-green-100 disabled:cursor-not-allowed disabled:opacity-50"
                         >
@@ -245,34 +263,30 @@ function QueueTable({
                           onClick={() => handleComplete(queue.queue_id)}
                           className="cursor-pointer rounded-sm border-2 border-green-500 px-4 py-2 text-xs text-green-500 transition-all duration-300 hover:scale-105 hover:bg-green-100 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          Complete
+                          {busy && pendingAction === "complete" ? "Completing..." : "Complete"}
                         </button>
                       )}
 
-                      {/* Skip only while skips remain.
-                          "skipped" is excluded because the backend only
-                          allows waiting or serving entries to be skipped. */}
                       {(status === "waiting" || status === "serving" || status === "skipped") &&
                         !skipsExhausted && (
                           <button
                             type="button"
-                            disabled={busy}
+                            disabled={acceptingId !== null}
                             onClick={() => handleSkip(queue.queue_id)}
                             className="cursor-pointer rounded-sm border-2 border-yellow-500 px-4 py-2 text-xs text-yellow-500 transition-all duration-300 hover:scale-105 hover:bg-yellow-100 disabled:cursor-not-allowed disabled:opacity-50"
                           >
-                            Skip
+                            {busy && pendingAction === "skip" ? "Skipping..." : "Skip"}
                           </button>
                         )}
 
-                      {/* Takes Skip's place after the 3rd skip */}
                       {skipsExhausted && canAct && (
                         <button
                           type="button"
                           disabled={acceptingId !== null}
-                          onClick={() => handleSkip(queue.queue_id)}
-                          className="cursor-pointer rounded-sm border-2 border-yellow-500 px-4 py-2 text-xs text-yellow-500 transition-all duration-300 hover:scale-105 hover:bg-yellow-100 disabled:cursor-not-allowed disabled:opacity-50"
+                          onClick={() => handleCancel(queue.queue_id)}
+                          className="cursor-pointer rounded-sm border-2 border-red-500 px-4 py-2 text-xs text-red-500 transition-all duration-300 hover:scale-105 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          Cancel
+                          {busy && pendingAction === "cancel" ? "Cancelling..." : "Cancel"}
                         </button>
                       )}
                     </div>
