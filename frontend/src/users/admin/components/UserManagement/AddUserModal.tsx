@@ -1,5 +1,10 @@
 import { useState } from "react";
 import api from "../../../../lib/axios";
+import {
+    departmentAfterRoleChange,
+    LAB_ROOMS,
+    LAB_STAFF_ROLE,
+} from "./labRooms";
 
 type Props = {
     onClose: () => void;
@@ -113,6 +118,11 @@ function AddUserModal({ onClose, loadData }: Props) {
             !dateHired
         ) {
             alert("Please fill out all required fields.");
+            return;
+        }
+
+        if (role === LAB_STAFF_ROLE && !department) {
+            alert("Please select a room for the laboratory staff.");
             return;
         }
 
@@ -578,9 +588,16 @@ function AddUserModal({ onClose, loadData }: Props) {
                             <select
                                 className="border p-2"
                                 value={role}
-                                onChange={(e) =>
-                                    setRole(e.target.value)
-                                }
+                                onChange={(e) => {
+                                    setDepartment(
+                                        departmentAfterRoleChange(
+                                            role,
+                                            e.target.value,
+                                            department
+                                        )
+                                    );
+                                    setRole(e.target.value);
+                                }}
                             >
                                 <option value="">
                                     Select Role *
@@ -604,18 +621,43 @@ function AddUserModal({ onClose, loadData }: Props) {
 
                             </select>
 
-                            {/* Department */}
-                            <input
-                                type="text"
-                                placeholder="Department"
-                                className="border p-2"
-                                value={department}
-                                onChange={(e) =>
-                                    setDepartment(
-                                        e.target.value
-                                    )
-                                }
-                            />
+                            {/* Room for laboratory staff, department for everyone else */}
+                            {role === LAB_STAFF_ROLE ? (
+                                <select
+                                    className="border p-2"
+                                    value={department}
+                                    onChange={(e) =>
+                                        setDepartment(
+                                            e.target.value
+                                        )
+                                    }
+                                >
+                                    <option value="">
+                                        Select Room *
+                                    </option>
+
+                                    {LAB_ROOMS.map((room) => (
+                                        <option
+                                            key={room.value}
+                                            value={room.value}
+                                        >
+                                            {room.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            ) : (
+                                <input
+                                    type="text"
+                                    placeholder="Department"
+                                    className="border p-2"
+                                    value={department}
+                                    onChange={(e) =>
+                                        setDepartment(
+                                            e.target.value
+                                        )
+                                    }
+                                />
+                            )}
 
                             {/* Employment Status */}
                             <select

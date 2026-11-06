@@ -286,7 +286,9 @@ function UserProfile({
                 </div>
 
                 <div>
-                  <p className="text-xs text-gray-400">Department</p>
+                  <p className="text-xs text-gray-400">
+                    {user.role === "laboratory-staff" ? "Room" : "Department"}
+                  </p>
 
                   <p className="text-sm font-medium text-gray-900">
                     {user.department || "Not assigned"}

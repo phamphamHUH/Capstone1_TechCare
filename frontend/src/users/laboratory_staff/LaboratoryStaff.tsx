@@ -24,7 +24,9 @@ function LaboratoryStaff() {
     setSearchParams({ page: newPage });
   }
 
-  const room = "Laboratory Room 2";
+  // Each lab staff member's room is the department on their account.
+  const room: string =
+    JSON.parse(sessionStorage.getItem("user") || "{}").department || "Laboratory Room 1";
 
   const loadData = useCallback(async (background = false) => {
     if (refreshing.current) return;
@@ -52,7 +54,7 @@ function LaboratoryStaff() {
       refreshing.current = false;
       if (!background) setLoading(false);
     }
-  }, []);
+  }, [room]);
   const navItems = [
     {
       page: "dashboard",

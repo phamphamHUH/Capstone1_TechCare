@@ -14,6 +14,12 @@ import {
   Camera,
 } from "lucide-react";
 import api from "../../../../lib/axios";
+import {
+  departmentAfterRoleChange,
+  isLabRoom,
+  LAB_ROOMS,
+  LAB_STAFF_ROLE,
+} from "./labRooms";
 
 type Props = {
   user: User;
@@ -47,8 +53,11 @@ function UpdateUserModal({
   const [address, setAddress] = useState(user.address);
 
   const [role, setRole] = useState(user.role);
+  // A lab account with an unrecognized department must pick a real room on save.
   const [department, setDepartment] = useState(
-    user.department || ""
+    user.role === LAB_STAFF_ROLE && !isLabRoom(user.department || "")
+      ? ""
+      : user.department || ""
   );
   const [employmentStatus, setEmploymentStatus] = useState(
     user.employment_status || "active"
@@ -120,6 +129,11 @@ function UpdateUserModal({
   const editUser = async () => {
     if (password && password !== confirmPassword) {
       alert("Your passwords do not match.");
+      return;
+    }
+
+    if (role === LAB_STAFF_ROLE && !department) {
+      alert("Please select a room for the laboratory staff.");
       return;
     }
 
@@ -450,9 +464,16 @@ function UpdateUserModal({
 
                   <select
                     value={role}
-                    onChange={(e) =>
-                      setRole(e.target.value)
-                    }
+                    onChange={(e) => {
+                      setDepartment(
+                        departmentAfterRoleChange(
+                          role,
+                          e.target.value,
+                          department
+                        )
+                      );
+                      setRole(e.target.value);
+                    }}
                     className={inputClass}
                   >
                     <option value="admin">Admin</option>
@@ -469,18 +490,35 @@ function UpdateUserModal({
 
                 <div>
                   <label className={labelClass}>
-                    Department
+                    {role === LAB_STAFF_ROLE ? "Room" : "Department"}
                   </label>
 
-                  <input
-                    type="text"
-                    value={department}
-                    onChange={(e) =>
-                      setDepartment(e.target.value)
-                    }
-                    placeholder="Not assigned"
-                    className={inputClass}
-                  />
+                  {role === LAB_STAFF_ROLE ? (
+                    <select
+                      value={department}
+                      onChange={(e) =>
+                        setDepartment(e.target.value)
+                      }
+                      className={inputClass}
+                    >
+                      <option value="">Select Room</option>
+                      {LAB_ROOMS.map((room) => (
+                        <option key={room.value} value={room.value}>
+                          {room.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      value={department}
+                      onChange={(e) =>
+                        setDepartment(e.target.value)
+                      }
+                      placeholder="Not assigned"
+                      className={inputClass}
+                    />
+                  )}
                 </div>
 
                 <div>
