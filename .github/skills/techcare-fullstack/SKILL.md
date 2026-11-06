@@ -26,7 +26,7 @@ history-related.
 | Auth (login, logout, ping) | Working | Working | Users **and** patients log in at `POST /api/auth/login`. No sign-up or refresh endpoint exists. |
 | Admin: users, services, form templates, activity log, queue monitor | Working | Working | Router is always JWT + `admin` gated. |
 | Front desk: patients, consultation requests, lab requests, payment confirmation, billing history, queue lists | Working | Working | Legacy serve/skip queue endpoints and `POST /billing` are broken. |
-| Laboratory staff: queue, specimen flow, analysis, results, release | Working | Working | UI is pinned to `"Laboratory Room 2"`. |
+| Laboratory staff: queue, specimen flow, analysis, results, release | Working | Working | Room comes from the logged-in user's `department`. |
 | Doctor: findings, prescriptions, lab orders, queue, history | **Partly broken** | Partly mock | Several queries use columns that no longer exist (`doctor_id`, `queue_entries.service_id`). |
 | Patient portal | Stub | Partly wired | Frontend calls routes that do not exist; real routes are unauthenticated. |
 | Public queue tracking page | none | Commented out | `QueueTracking` was removed from routing. |
@@ -45,12 +45,11 @@ TechCare-main/
 ├── backend/                     # Express 5 + TypeScript, ESM ("type": "module")
 │   ├── package.json             # dev: nodemon+tsx, build: npm install && tsc, test: vitest, seed:* scripts
 │   └── src/
-│       ├── server.ts            # boot: connectNeon, repairBillingSchema, syncSchema (prod only), backfillBillLinks, listen, SIGTERM/SIGINT -> closeAllQueueStreams
+│       ├── server.ts            # boot: connectNeon, syncSchema (prod only), listen, SIGTERM/SIGINT -> closeAllQueueStreams
 │       ├── app.ts               # builds the Express app: CORS, json, routers, static frontend/dist, SPA fallback
 │       ├── websocket.ts         # ws server, DEAD CODE (import commented out in server.ts)
 │       ├── config/
 │       │   ├── db.ts            # `sql` (neon http) + `pool` (neon Pool), TABLES array, connectNeon(), syncSchema()
-│       │   ├── billingSchema.ts # repairBillingSchema() (additive bills columns), backfillBillLinks()
 │       │   ├── env.ts           # ENV.* (dotenv; .env.test when NODE_ENV=test)
 │       │   └── cloudinary.ts
 │       ├── middlewares/
@@ -180,14 +179,13 @@ separate tables with similar columns (`password_hash`, not `password`).
 ### How the schema is managed
 
 - `connectNeon()` (runs on every boot): `CREATE TABLE IF NOT EXISTS` for each entry. Its old `ALTER` repairs are commented out.
-- `repairBillingSchema()` (`config/billingSchema.ts`, runs on every boot, also `npm run repair:billing`): additive `ADD COLUMN IF NOT EXISTS` for `bills` and the `bill_id` links, plus a backfill of billing fields. `backfillBillLinks()` runs after `syncSchema` and links legacy unbilled rows to bills.
 - `syncSchema(onlyTables?)` runs **automatically on boot when `IS_PRODUCTION=true`** (see `server.ts`). It **drops tables not in `TABLES`** (`DROP … CASCADE`), adds missing columns and **drops columns not listed in each table's `columns` map**. It compares column names only, so it never changes an existing column's type, nullability or default and never adds a missing constraint. Never run it against a database holding data you care about without reading `TABLES` first.
 - Each table has one definition, its `columns` map. There is no separate `createSQL`. The live database has drifted from it in places (Gotcha 11).
-- Editing `columns` does not alter existing tables outside production. On a non-production database, either call `syncSchema(["table"])` once or add an additive repair like `repairBillingSchema()`. Type, nullability, default and FK changes always need an explicit `ALTER`.
+- Editing `columns` does not alter existing tables outside production. On a non-production database, either call `syncSchema(["table"])` once or drop and reseed it. Type, nullability, default and FK changes always need an explicit `ALTER`.
 
 ### Seeding
 
-**Currently broken, and `seed:reset`/`seed:all` wipe the data before failing (Gotcha 19).** `npm run seed` (insert, idempotent via `ON CONFLICT DO NOTHING`), `npm run seed:reset -- --force` (TRUNCATE ... RESTART IDENTITY then insert), `npm run seed:bulk` (hundreds of synthetic patients, staff and queue rows; `SEED_PATIENTS`, `SEED_STAFF`, `SEED_QUEUE_ENTRIES`), `npm run seed:all`. Seeding refuses to run when `IS_PRODUCTION` or `NODE_ENV=production` unless `--force`. Seed accounts, all with password `password`: `admin101`, `doctor201`, `doctor202`, `fdstaff322` (id `U-26-1001-0004`, the id hardcoded in front desk controllers), `fdstaff323`, `labstaff122` (Laboratory Room 2), `labstaff123`, `fdstaff324` (deactivated), patients `patient101`–`patient108`. Rows for "today" are stamped relative to `CURRENT_DATE`, since the queue endpoints only return today's rows. `seed.ts` rewrites an old `queue_entries` INSERT shape (strips a `service_id` column) before running `seed.sql`.
+`seed.sql` matches the current schema and the rows the application writes. `seedBulk.ts` is still broken (Gotcha 19). `npm run seed` (insert, idempotent via `ON CONFLICT DO NOTHING`), `npm run seed:reset -- --force` (TRUNCATE ... RESTART IDENTITY then insert), `npm run seed:bulk` (hundreds of synthetic patients, staff and queue rows; `SEED_PATIENTS`, `SEED_STAFF`, `SEED_QUEUE_ENTRIES`), `npm run seed:all`. Seeding refuses to run when `IS_PRODUCTION` or `NODE_ENV=production` unless `--force`. Seed accounts, all with password `password`: `admin101`, `doctor201`, `doctor202`, `fdstaff322` (id `U-26-1001-0004`, the id hardcoded in front desk controllers), `fdstaff323`, `labstaff202` (Laboratory Room 2), `labstaff101`, `fdstaff324` (deactivated), patients `patient101`–`patient108`. Rows for "today" are stamped relative to `CURRENT_DATE`, since the queue endpoints only return today's rows. `seed.ts` rewrites an old `queue_entries` INSERT shape (strips a `service_id` column) before running `seed.sql`.
 
 ## Status vocabularies (casing is inconsistent: always compare with `LOWER()`)
 
@@ -447,6 +445,6 @@ Queue and flow details:
 15. Status strings mix cases (`waiting`/`Waiting`, `serving`/`Serving`); always use `LOWER()`. `labstaff GET /laboratory-requests/items/` filters `'Collected'` but items become `'Specimen Collected'`.
 16. **Queue number generators use the wrong "today" expression.** Columns are `TIMESTAMP` holding GMT values, so `(created_at AT TIME ZONE 'Asia/Manila')::date` gives the previous day for rows created before 4 PM Manila, and queue numbers should restart at 1 for tickets issued before 4 PM and again at 4 PM. The correct form is `(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Manila')::date`. List queries use `CURRENT_DATE`, which is the GMT date, so lists and numbers can also disagree.
 17. Legacy/dead code that is safe to ignore (and a candidate to delete): `websocket.ts`, `utils/getQueueMonitorEntries.ts` (the SSE hub never calls it), `generateConsultationId.ts` duplicate generator, `middlewares/test.middleware.ts` + `/api/test` + `/api/sse` demos, `SignupPage.tsx`, `lib/protectRoute.ts` (empty), `frontdesk_staff/pages/Test.tsx`, `packages` and `sse_test` tables, `system_activity` (superseded by `activity_logs`).
-18. Laboratory staff UI is fixed to `"Laboratory Room 2"`; the seeded `labstaff122` matches that, other rooms need the constant changed (or a per-user room).
-19. **Seeds are broken.** `seed.sql` and `seedBulk.ts` insert `patients.emergency_contact_name/emergency_contact/address`, which don't exist, so seeding fails. `seed:reset` and `seed:all` commit the TRUNCATE first, so they would wipe the data and then fail.
+18. Laboratory staff work in the room stored in their account's `department`: seeded `labstaff101` is Laboratory Room 1 and `labstaff202` is Laboratory Room 2.
+19. **`seedBulk.ts` is broken.** It inserts `patients.emergency_contact_name/emergency_contact/address`, which don't exist, so `seed:bulk` fails. `seed:all` runs the base seed first and then fails at this step.
 20. More queries that reference missing columns: `laboratory_results.result_value` (doctor, patient and fdstaff `getRequests`; the doctor query also reads `unit`, `reference_range`, `flag`) and `patients.address/emergency_contact_name/emergency_contact` (`labstaff/getRequests.controller.ts:155-159`).

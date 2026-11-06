@@ -20,63 +20,6 @@ const WIPE = `
   RESTART IDENTITY CASCADE;
 `;
 
-/**
- * The existing queue_entries table does not contain service_id.
- *
- * Keep seed.sql unchanged and adapt only its queue_entries INSERT statement
- * before executing it. The service relationship remains in the appropriate
- * consultation and laboratory records.
- */
-function adaptSeedSql(sql: string): string {
-  const insertPattern =
-    /INSERT\s+INTO\s+queue_entries\s*\(([^)]*)\)\s*VALUES([\s\S]*?)ON\s+CONFLICT\s+DO\s+NOTHING\s*;/i;
-
-  const match = sql.match(insertPattern);
-
-  if (!match) {
-    throw new Error(
-      "Could not find the queue_entries INSERT statement in seed.sql."
-    );
-  }
-
-  const columns = match[1]
-    .split(",")
-    .map((column) => column.trim());
-
-  const serviceIdIndex = columns.findIndex(
-    (column) => column.toLowerCase() === "service_id"
-  );
-
-  if (serviceIdIndex === -1) {
-    // The seed SQL has already been adapted.
-    return sql;
-  }
-
-  // Remove service_id from the INSERT column list.
-  columns.splice(serviceIdIndex, 1);
-
-  let values = match[2];
-
-  /*
-   * Each queue row begins with:
-   *   (queue_id, patient_id, queue_number, service_id, ...)
-   *
-   * The queue IDs, patient IDs, and service IDs in the existing seed data
-   * are strings. Remove only the fourth value from each queue row.
-   */
-  values = values.replace(
-    /(\(\s*'[^']*'\s*,\s*'[^']*'\s*,\s*\d+)\s*,\s*'[^']*'/g,
-    "$1"
-  );
-
-  const adaptedInsert = `
-INSERT INTO queue_entries (${columns.join(", ")})
-VALUES${values}
-ON CONFLICT DO NOTHING;`;
-
-  return sql.replace(match[0], adaptedInsert);
-}
-
 async function main() {
   if ((ENV.IS_PRODUCTION || ENV.NODE_ENV === "production") && !force) {
     console.error(
@@ -91,8 +34,6 @@ async function main() {
     "utf8"
   );
 
-  const adaptedSql = adaptSeedSql(seedSql);
-
   console.log("Ensuring tables exist...");
   await connectNeon();
 
@@ -105,7 +46,7 @@ async function main() {
     }
 
     console.log("Inserting seed data...");
-    await client.query(adaptedSql);
+    await client.query(seedSql);
 
     const { rows } = await client.query(`
       SELECT
@@ -119,10 +60,7 @@ async function main() {
     `);
 
     console.log("Done. Row counts:", rows[0]);
-    console.log(
-      "\nLogin with the seed accounts configured in seed.sql " +
-        "(password: password, if configured there)."
-    );
+    console.log("\nLogin with the accounts listed in seed.sql. Every password is: password");
   } catch (err) {
     await client.query("ROLLBACK").catch(() => undefined);
     throw err;

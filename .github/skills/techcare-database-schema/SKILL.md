@@ -1,11 +1,11 @@
 ---
 name: techcare-database-schema
-description: Complete Neon Postgres schema reference for TechCare - all 18 tables with every column, foreign keys, status values, JSONB shapes, the billing model, code vs live database drift, and how the schema is managed (TABLES, connectNeon, repairBillingSchema, syncSchema, backfillBillLinks). Use when changing tables, adding columns, writing SQL, debugging "column does not exist", schema drift, data lost after deploy, writing transactions, date or timezone filters, billing tables, seeding data, or choosing between the current schema sync and the MVP migrations approach.
+description: Complete Neon Postgres schema reference for TechCare - all 18 tables with every column, foreign keys, status values, JSONB shapes, the billing model, code vs live database drift, and how the schema is managed (TABLES, connectNeon, syncSchema). Use when changing tables, adding columns, writing SQL, debugging "column does not exist", schema drift, data lost after deploy, writing transactions, date or timezone filters, billing tables, seeding data, or choosing between the current schema sync and the MVP migrations approach.
 ---
 
 # Database & Schema
 
-Verified against `backend/src/config/db.ts`, `config/billingSchema.ts` and the live database on 2026-11-07. `TABLES` in `db.ts` is the source of truth for the wanted schema, but an existing database can differ from it (see [Drift](#drift-code-vs-live-database)). There is no ORM and there are no migration files.
+Verified against `backend/src/config/db.ts` and the live database on 2026-11-07. `TABLES` in `db.ts` is the source of truth for the wanted schema, but an existing database can differ from it (see [Drift](#drift-code-vs-live-database)). There is no ORM and there are no migration files.
 
 ## Clients (`config/db.ts`)
 ```ts
@@ -195,7 +195,7 @@ No CHECK constraints exist. These come from the code and the live data.
 | `prescription_records.status` | `Active` |
 | `form_templates.status` | `Published` is the default; only one Published template per service |
 | `bills.status` | `Pending` → `Paid`. Old rows may hold `Unpaid`; `normalizeBillStatus()` maps it to `Pending`. Other values count as cancelled and cannot be paid |
-| `bills.payment_method` | `confirmPayment` accepts `Cash` and `Instapay/QRpH`. `backfillBillLinks` writes `Not recorded`. Live rows also hold `GCash`, `Debit Card`, `Credit Card` |
+| `bills.payment_method` | `confirmPayment` accepts `Cash` and `Instapay/QRpH`. Live rows also hold `GCash`, `Debit Card`, `Credit Card` |
 | `bills.discount_type` | `Senior Citizen`, `PWD` (20%), or NULL |
 | `activity_logs.status` | `success`, `failure`, `blocked` |
 | Exclusions | Billing and backfill treat `cancelled`, `canceled` and `rejected` as not billable |
@@ -238,9 +238,7 @@ Each `TABLES` entry is `{ table, columns: { col: "TYPE ..." } }`. There is only 
 
 Boot order in `server.ts`:
 1. `connectNeon()`: `CREATE TABLE IF NOT EXISTS` for each entry. It does not alter existing tables.
-2. `repairBillingSchema()`: additive `ADD COLUMN IF NOT EXISTS` on `bills`, `consultation_records.bill_id` and `laboratory_request_items.bill_id`, plus a backfill of `billed_at`, `discount_pct` and receipt fields. Also available as `npm run repair:billing`.
-3. `syncSchema()`, only when `IS_PRODUCTION=true`.
-4. `backfillBillLinks()`: links legacy unbilled rows to bills. It is idempotent, and a failure is logged without stopping the boot.
+2. `syncSchema()`, only when `IS_PRODUCTION=true`.
 
 ### What `syncSchema(onlyTables?)` does
 - A full sync **drops every table not in `TABLES`** with `CASCADE`. A selective sync drops no tables.
@@ -251,7 +249,7 @@ Boot order in `server.ts`:
 ### Adding a column
 1. Add it to `columns` in `TABLES`. Keep `TABLES` a plain literal: `tests/isolated/frontdeskBilling.test.ts` parses it from the source text, using `const TABLES: TableDefinition[]` and the closing `\n];` as markers.
 2. Give it a default or make it nullable if the table already has rows.
-3. A non-production database gets it only through a one-off `syncSchema(["table"])`, which also drops that table's unlisted columns, or an additive repair function in the style of `repairBillingSchema()`. Production gets it on the next boot.
+3. A non-production database gets it only through a one-off `syncSchema(["table"])`, which also drops that table's unlisted columns, or by dropping and reseeding it. Production gets it on the next boot.
 4. Changing a type, nullability, default or FK always needs an explicit `ALTER`, because `syncSchema` won't do it. Update `TABLES` too so fresh databases match.
 5. Removing a column or table from `TABLES` deletes the data on the next production boot.
 
@@ -322,7 +320,7 @@ Tested live: for `2026-11-07 02:00` (10:00 AM Manila), the wrong form gives Nov 
 
 **The seeds are currently broken.** `seed.sql` and `seedBulk.ts` insert `patients.emergency_contact_name`, `emergency_contact` and `address`, which don't exist. A test on an in-memory PGlite database created from `TABLES` fails with `column "emergency_contact_name" of relation "patients" does not exist`. **`seed:reset` and `seed:all` commit the TRUNCATE before the insert runs, so they would wipe the data and then fail.** Fix the seeds before using them. The inserts also need `street`, `barangay`, `city`, `province` and `zip_code`.
 
-Seeding refuses in production unless `--force`. Seed accounts use password `password`: `admin101`, `doctor201`, `fdstaff322`, `labstaff122` (Laboratory Room 2), `patient101..108`. Never seed a public deployment with these. "Today" rows are stamped from `CURRENT_DATE`, so reseed daily for demos.
+Seeding refuses in production unless `--force`. Seed accounts use password `password`: `admin101`, `doctor201`, `fdstaff322`, `labstaff101` (Laboratory Room 1), `labstaff202` (Laboratory Room 2), `patient101..108`. Never seed a public deployment with these. "Today" rows are stamped from `CURRENT_DATE`, so reseed daily for demos.
 
 ## Transaction template
 ```ts

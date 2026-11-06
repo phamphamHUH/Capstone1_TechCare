@@ -66,7 +66,7 @@ export namespace getMedicalHistory {
 
 export namespace getMedicalHistoryDetails {
   export interface laboratoryResult {
-    result_id: number;
+    result_id: string;
     result_value: string | number | null;
     unit: string | null;
     reference_range: string | null;
@@ -142,10 +142,7 @@ export namespace getMedicalHistoryFull {
     lab_item_id: string;
     status: string;
     updated_at: string;
-    result_value: string | number | null;
-    remarks: string | null;
-    verified_by: string | null;
-    verified_at: string | null;
+    results: getMedicalHistoryDetails.laboratoryResult[];
     service_name: string;
     room: string | null;
     requested_by: string | null;

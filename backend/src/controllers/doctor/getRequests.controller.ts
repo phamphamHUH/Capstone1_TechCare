@@ -260,6 +260,40 @@ export async function getMedicalHistory(
   }
 }
 
+// laboratory_results stores one row per lab item with a JSON list of tests.
+// The doctor's history screen shows one line per test.
+async function selectLabResultLines(lab_item_id: string) {
+  const rows = await sql`
+    SELECT result_id, results, remarks, verified_by, verified_at, image_url, created_at
+    FROM laboratory_results
+    WHERE lab_item_id = ${lab_item_id}
+    ORDER BY created_at
+  `;
+
+  return rows.flatMap((row) => {
+    const tests: Record<string, any>[] = Array.isArray(row.results) ? row.results : [];
+    const components: Record<string, any>[] = tests[0]?.template_snapshot?.components ?? [];
+
+    return tests.map((test, index) => {
+      const settings = components.find((c) => c.fieldKey === test.field_key)?.settings ?? {};
+      const isLast = index === tests.length - 1;
+      return {
+        result_id: `${row.result_id}-${index}`,
+        result_value: `${test.name}: ${test.result}`,
+        unit: settings.unit || null,
+        reference_range: settings.referenceRange || null,
+        flag: null,
+        // Remarks and verification belong to the whole result, so show them once.
+        remarks: isLast ? row.remarks : null,
+        verified_by: isLast ? row.verified_by : null,
+        verified_at: isLast && row.verified_at ? String(row.verified_at) : null,
+        image_url: row.image_url,
+        created_at: String(row.created_at),
+      };
+    });
+  });
+}
+
 export async function getMedicalHistoryDetails(
   req: Request,
   res: Response<
@@ -295,22 +329,7 @@ export async function getMedicalHistoryDetails(
         } as getMedicalHistoryDetails.error);
       }
 
-      const results = await sql`
-        SELECT
-          result_id,
-          result_value,
-          unit,
-          reference_range,
-          flag,
-          remarks,
-          verified_by,
-          verified_at,
-          image_url,
-          created_at
-        FROM laboratory_results
-        WHERE lab_item_id = ${record_id}
-        ORDER BY created_at
-      `;
+      const results = await selectLabResultLines(String(record_id));
 
       return res.status(200).json({
         message: "Laboratory record and result/s successfully fetched",
@@ -324,21 +343,7 @@ export async function getMedicalHistoryDetails(
         requested_by_role: labDetails.requested_by_role,
         processed_by: labDetails.processed_by,
         processed_by_role: labDetails.processed_by_role,
-        results: results.map(
-          (row) =>
-            ({
-              result_id: Number(row.result_id),
-              result_value: row.result_value,
-              unit: row.unit,
-              reference_range: row.reference_range,
-              flag: row.flag,
-              remarks: row.remarks,
-              verified_by: row.verified_by,
-              verified_at: row.verified_at ? String(row.verified_at) : null,
-              image_url: row.image_url,
-              created_at: String(row.created_at),
-            }) as getMedicalHistoryDetails.laboratoryResult,
-        ),
+        results,
       } as getMedicalHistoryDetails.laboratoryResponse);
     }
 
@@ -355,7 +360,7 @@ export async function getMedicalHistoryDetails(
           CONCAT_WS(' ', u.first_name, u.last_name) AS consulted_by
         FROM consultation_records cr
         JOIN services s ON s.service_id = cr.service_id
-        LEFT JOIN users u ON u.user_id = cr.doctor_id
+        LEFT JOIN users u ON u.user_id = cr.consulted_by
         WHERE cr.consultation_record_id = ${record_id}
       `;
 
@@ -426,10 +431,6 @@ export async function getMedicalHistoryFull(
           lri.lab_item_id,
           lri.status,
           lri.updated_at,
-          lr.result_value,
-          lr.remarks,
-          lr.verified_by,
-          lr.verified_at,
           s.service_name,
           s.room,
           CONCAT_WS(' ', req_u.first_name, req_u.last_name) AS requested_by,
@@ -456,10 +457,7 @@ export async function getMedicalHistoryFull(
         lab_item_id: String(fullLab.lab_item_id),
         status: String(fullLab.status),
         updated_at: String(fullLab.updated_at),
-        result_value: fullLab.result_value,
-        remarks: fullLab.remarks,
-        verified_by: fullLab.verified_by,
-        verified_at: fullLab.verified_at ? String(fullLab.verified_at) : null,
+        results: await selectLabResultLines(String(record_id)),
         service_name: String(fullLab.service_name),
         room: fullLab.room,
         requested_by: fullLab.requested_by,
@@ -485,7 +483,7 @@ export async function getMedicalHistoryFull(
           CONCAT_WS(' ', u.first_name, u.last_name) AS consulted_by
         FROM consultation_records cr
         JOIN services s ON s.service_id = cr.service_id
-        LEFT JOIN users u ON u.user_id = cr.doctor_id
+        LEFT JOIN users u ON u.user_id = cr.consulted_by
         WHERE cr.consultation_record_id = ${record_id}
       `;
 
