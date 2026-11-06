@@ -38,16 +38,22 @@ export const INVOICE_PRINT_CSS = `
   @media print { .invoice-paper { padding: 0; } }
 `;
 
-export async function outputInvoice(element: HTMLElement, filename: string, download: boolean) {
+export async function outputInvoice(
+  element: HTMLElement,
+  filename: string,
+  download: boolean,
+) {
   const frame = document.createElement("iframe");
   frame.title = "Printable invoice";
   frame.setAttribute("aria-hidden", "true");
-  frame.style.cssText = "position:fixed;left:-10000px;top:0;width:794px;height:1123px;border:0";
+  frame.style.cssText =
+    "position:fixed;left:-10000px;top:0;width:794px;height:1123px;border:0";
   document.body.appendChild(frame);
   try {
     const doc = frame.contentDocument;
     const view = frame.contentWindow;
-    if (!doc || !view) throw new Error("The invoice document could not be opened.");
+    if (!doc || !view)
+      throw new Error("The invoice document could not be opened.");
     // Clone DOM nodes rather than interpolating patient data into HTML strings.
     const style = doc.createElement("style");
     style.textContent = INVOICE_PRINT_CSS;
@@ -64,33 +70,77 @@ export async function outputInvoice(element: HTMLElement, filename: string, down
       window.setTimeout(() => frame.remove(), 60_000);
       return;
     }
-    const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
-    const canvas = await html2canvas(doc.body, { scale: 2, backgroundColor: "#ffffff", windowWidth: 794, logging: false });
-    const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+    const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+      import("html2canvas"),
+      import("jspdf"),
+    ]);
+    const canvas = await html2canvas(doc.body, {
+      scale: 2,
+      backgroundColor: "#ffffff",
+      windowWidth: 794,
+      logging: false,
+    });
+    const pdf = new jsPDF({
+      unit: "mm",
+      format: "a4",
+      orientation: "portrait",
+    });
     const width = 186;
     const pageHeight = 273;
     const pixelsPerMm = canvas.width / width;
     // Keep table rows and the totals together across PDF pages.
-    const blocks = Array.from(doc.querySelectorAll("tr, .invoice-totals, .invoice-document-header, .invoice-patient-details, .invoice-document-notes"), (node) => {
-      const rect = node.getBoundingClientRect();
-      return { top: Math.floor(rect.top * 2), bottom: Math.ceil(rect.bottom * 2) };
-    });
+    const blocks = Array.from(
+      doc.querySelectorAll(
+        "tr, .invoice-totals, .invoice-document-header, .invoice-patient-details, .invoice-document-notes",
+      ),
+      (node) => {
+        const rect = node.getBoundingClientRect();
+        return {
+          top: Math.floor(rect.top * 2),
+          bottom: Math.ceil(rect.bottom * 2),
+        };
+      },
+    );
     let offset = 0;
     while (offset < canvas.height) {
-      let end = Math.min(canvas.height, offset + Math.floor(pageHeight * pixelsPerMm));
-      const crossing = blocks.find((block) => block.top > offset && block.top < end && block.bottom > end);
+      let end = Math.min(
+        canvas.height,
+        offset + Math.floor(pageHeight * pixelsPerMm),
+      );
+      const crossing = blocks.find(
+        (block) => block.top > offset && block.top < end && block.bottom > end,
+      );
       if (crossing) end = crossing.top;
       const page = document.createElement("canvas");
       page.width = canvas.width;
       page.height = end - offset;
       const context = page.getContext("2d");
       if (!context) throw new Error("The invoice PDF could not be rendered.");
-      context.drawImage(canvas, 0, offset, canvas.width, page.height, 0, 0, page.width, page.height);
+      context.drawImage(
+        canvas,
+        0,
+        offset,
+        canvas.width,
+        page.height,
+        0,
+        0,
+        page.width,
+        page.height,
+      );
       if (offset) pdf.addPage();
-      pdf.addImage(page.toDataURL("image/jpeg", 0.95), "JPEG", 12, 12, width, page.height / pixelsPerMm);
+      pdf.addImage(
+        page.toDataURL("image/jpeg", 0.95),
+        "JPEG",
+        12,
+        12,
+        width,
+        page.height / pixelsPerMm,
+      );
       offset = end;
     }
-    await pdf.save(`${filename.replace(/[^a-z0-9_-]/gi, "-")}.pdf`, { returnPromise: true });
+    await pdf.save(`${filename.replace(/[^a-z0-9_-]/gi, "-")}.pdf`, {
+      returnPromise: true,
+    });
   } catch (error) {
     frame.remove();
     throw error;
