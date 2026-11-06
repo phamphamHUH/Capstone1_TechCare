@@ -64,6 +64,7 @@ export default function InvoiceTransaction({ patients, services, onBack, onSaved
   const [seniorDiscount, setSeniorDiscount] = useState(false);
   const [customDiscountAmount, setCustomDiscountAmount] = useState("");
   const [method, setMethod] = useState("Cash");
+  const [reference, setReference] = useState("");
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [generatedInvoice, setGeneratedInvoice] = useState<Invoice | null>(null);
   const [resultStep, setResultStep] = useState<"payment" | "invoice">("payment");
@@ -84,7 +85,7 @@ export default function InvoiceTransaction({ patients, services, onBack, onSaved
   const discountLabel = seniorDiscountAmount > 0 ? "Senior Citizen (20%)" : customAmount > 0 ? "Custom discount" : "No discount";
   const total = Math.max(0, Math.round((subtotal - requestedDiscount) * 100) / 100);
   const discountAmount = Math.round((subtotal - total) * 100) / 100;
-  const valid = Boolean(patientId && selected.length && selected.every((service) => numericAmount(service.price) !== null) && customAmount <= subtotal);
+  const valid = Boolean(patientId && selected.length && selected.every((service) => numericAmount(service.price) !== null) && customAmount <= subtotal && (method === "Cash" || reference.trim().length > 0));
   const date = new Date(invoice?.billed_at || draftDate).toLocaleString("en-PH", { timeZone: "Asia/Manila" });
   const dirty = !invoice && !generatedInvoice && Boolean(patientId || serviceIds.length || customDiscountAmount || method !== "Cash");
   const { requestLeave, discardDialog } = useUnsavedChanges(dirty, busy);
@@ -100,8 +101,10 @@ export default function InvoiceTransaction({ patients, services, onBack, onSaved
         patient_id: patientId,
         services_ids: serviceIds,
         discount_pct: seniorDiscountAmount > 0 ? 20 : 0,
+        discount_type: seniorDiscountAmount > 0 ? "Senior Citizen" : customAmount > 0 ? "Custom" : "Not Eligible",
         discount_amount: customAmount > 0 ? customAmount : undefined,
         payment_method: method,
+        reference_num: reference.trim(),
         status: "Paid",
       });
       const savedInvoice = response.data?.bill;
@@ -200,7 +203,8 @@ export default function InvoiceTransaction({ patients, services, onBack, onSaved
               itemCount={selected.length}
               total={total}
             />
-            <section className="billing-card"><label className="billing-field"><span>Payment Method</span><select value={method} onChange={(event) => setMethod(event.target.value)}><option>Cash</option><option>Instapay/QRph</option></select></label></section>
+            <section className="billing-card"><label className="billing-field"><span>Payment Method</span><select value={method} onChange={(event) => setMethod(event.target.value)}><option>Cash</option><option>Instapay/QRpH</option></select></label></section>
+            {method !== "Cash" && <section className="billing-card"><label className="billing-field"><span>Transfer Reference</span><input aria-label="Transfer reference" value={reference} maxLength={50} onChange={(event) => setReference(event.target.value)} placeholder="Enter the received transfer reference" /></label></section>}
             {customAmount > subtotal && <p className="billing-inline-error" role="alert">The discount cannot exceed the subtotal.</p>}
           </fieldset>
           <DraftInvoicePreview patientName={patientName} patientId={patientId} age={age} sex={patient?.sex} items={selected} discountLabel={discountLabel} discountAmount={discountAmount} total={total} />

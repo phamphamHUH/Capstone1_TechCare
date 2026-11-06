@@ -3,6 +3,7 @@ import { User, Phone, Home } from "lucide-react";
 import type { Patient } from "../../../../interface/Patient";
 import calculateAge from "../../../../utils/calculateAge";
 import PatientSearchModal from "./RequestFooter/PatientSearchModal";
+import { formatPatientAddress } from "../../../../utils/formats";
 
 type PatientSelectionHeaderProps = {
   patient: Patient | null;
@@ -89,7 +90,7 @@ function PatientSelectionHeader({
                 </div>
                 <div className="flex gap-1 items-center">
                   <Home size={15} />
-                  <h1>{patient.address}</h1>
+                  <h1>{formatPatientAddress(patient)}</h1>
                 </div>
               </div>
             </div>

@@ -5,7 +5,40 @@ import type {
   getMedicalHistoryDetails,
   getMedicalHistoryFull,
   getConsultationRequests,
+  getRoomSpecificServices,
+  getConsultationQueueDetails,
 } from "./dto/get.dto.js";
+
+export async function getRoomSpecificServices(
+  req: Request,
+  res: Response<
+    getRoomSpecificServices.response | getRoomSpecificServices.error
+  >,
+) {
+  const { room } = req.params;
+  if (!room) {
+    return res.status(400).json({
+      message: "Room field is required.",
+    } as getRoomSpecificServices.error);
+  }
+  try {
+    const services = await sql`
+    SELECT * FROM services
+    WHERE room = ${room}
+    ORDER BY service_id ASC
+      `;
+
+    return res.status(200).json({
+      message: "Successfully fetched services.",
+      services,
+    } as getRoomSpecificServices.response);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: "Internal Server Error",
+    } as getRoomSpecificServices.error);
+  }
+}
 
 export async function getConsultationQueues(
   req: Request,
@@ -19,27 +52,120 @@ export async function getConsultationQueues(
     const queues = await sql`
       SELECT
         q.*,
+        cr.consultation_record_id,
+        cr.consultation_type,
+        cr.service_id,
         s.service_name,
         s.service_type,
         s.service_category,
-        s.room
+        s.room,
+        CONCAT_WS(' ', p.first_name, p.last_name)  AS patient_name,
+        DATE_PART('year', AGE(p.birthdate))::int   AS age
       FROM queue_entries q
-      JOIN services s ON s.service_id = q.service_id
+      JOIN consultation_records cr ON cr.queue_id = q.queue_id
+      JOIN services s              ON s.service_id = cr.service_id
+      JOIN patients p              ON p.patient_id = q.patient_id
       WHERE q.queue_id LIKE 'CONS-%'
         AND s.room = ${room}
         AND q.created_at >= CURRENT_DATE
-        AND q.created_at < CURRENT_DATE + INTERVAL '1 day'
+        AND q.created_at <  CURRENT_DATE + INTERVAL '1 day'
       ORDER BY q.queue_number ASC
     `;
 
-    return res
-      .status(200)
-      .json(queues as unknown as getConsultationRequests.response);
+    return res.status(200).json({
+      message: "Successfully fetched consultation queues.",
+      queueEntries: queues,
+    } as unknown as getConsultationRequests.response);
   } catch (error) {
     console.error(error);
     return res.status(500).json({
       message: "Internal Server Error",
     } as getConsultationRequests.error);
+  }
+}
+
+export async function getConsultationQueueDetails(
+  req: Request,
+  res: Response<
+    getConsultationQueueDetails.response | getConsultationQueueDetails.error
+  >,
+) {
+  // GET /api/doctor/consultation-queues/:queue_id/details
+  try {
+    const { queue_id } = req.params;
+
+    if (!queue_id) {
+      return res.status(400).json({
+        message: "queue_id is required.",
+      } as getConsultationQueueDetails.error);
+    }
+
+    const rows = await sql`
+      SELECT
+        -- queue
+        q.queue_id,
+        q.queue_number,
+        q.is_priority,
+        q.status                                     AS queue_status,
+        q.created_at                                 AS queued_at,
+
+        -- consultation record
+        cr.consultation_record_id,
+        cr.consultation_type,
+        cr.status                                    AS consultation_status,
+        cr.is_paid,
+        cr.requested_at,
+
+        -- service
+        s.service_id,
+        s.service_name,
+        s.service_category,
+        s.service_type,
+        s.room,
+        s.price,
+
+        -- patient
+        p.patient_id,
+        p.image_url,
+        CONCAT_WS(' ', p.first_name, p.middle_name, p.last_name, p.suffix)
+                                                     AS patient_name,
+        p.sex,
+        p.birthdate,
+        DATE_PART('year', AGE(p.birthdate))::int     AS age,
+        p.is_pwd,
+        (DATE_PART('year', AGE(p.birthdate)) >= 60)  AS is_senior,
+        p.contact_number,
+        p.blood_type,
+        p.civil_status,
+        p.allergies,
+        p.existing_conditions,
+        p.current_medications,
+        p.guardian_name,
+        p.guardian_relationship,
+        p.guardian_contact
+      FROM queue_entries q
+      JOIN consultation_records cr ON cr.queue_id = q.queue_id
+      JOIN services s              ON s.service_id = cr.service_id
+      JOIN patients p              ON p.patient_id = q.patient_id
+      WHERE q.queue_id = ${queue_id}
+    `;
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        message: "Queue entry not found.",
+      } as getConsultationQueueDetails.error);
+    }
+
+    return res.status(200).json({
+      message: "Successfully fetched queue details.",
+      details: rows[0],
+    } as unknown as getConsultationQueueDetails.response);
+  } catch (error) {
+    console.error("GET CONSULTATION QUEUE DETAILS ERROR:", error);
+
+    return res.status(500).json({
+      message: "Failed to fetch queue details",
+    } as getConsultationQueueDetails.error);
   }
 }
 

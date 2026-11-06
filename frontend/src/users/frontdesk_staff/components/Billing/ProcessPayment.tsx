@@ -17,30 +17,32 @@ type Props = {
 };
 
 export default function ProcessPayment({ entry, invoice, onBack, onConfirm, submitting, error }: Props) {
+  const initialDiscountType: PaymentOptions["discount_type"] = entry.bill?.is_senior || (entry.age !== null && entry.age >= 60) ? "Senior Citizen" : entry.isPwd ? "PWD" : "Not Eligible";
+  const [discountType, setDiscountType] = useState<PaymentOptions["discount_type"]>(initialDiscountType);
+  const [reference, setReference] = useState("");
   const [cash, setCash] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<PaymentOptions["payment_method"]>(entry.method === "Instapay/QRph" ? entry.method : "Cash");
-  const [discount, setDiscount] = useState(entry.discountPercent ?? (entry.age !== null && entry.age >= 60 ? 20 : 0));
+  const [paymentMethod, setPaymentMethod] = useState<PaymentOptions["payment_method"]>(entry.method === "Instapay/QRpH" ? entry.method : "Cash");
+  const discount = discountType === "Not Eligible" ? 0 : 20;
   const [priority, setPriority] = useState(entry.isPriority === true);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [dismissedError, setDismissedError] = useState("");
   const headingRef = useRef<HTMLHeadingElement>(null);
   const recovering = entry.status === "Paid" && entry.needsLabQueue === true;
-  const readOnly = !entry.request || (entry.status !== "Pending" && !recovering);
+  const readOnly = !entry.bill || (entry.status !== "Pending" && !recovering);
   const locked = readOnly || recovering;
   const subtotal = serviceSubtotal(entry.lines);
   const total = locked ? entry.total : subtotal === null ? null : Math.round(subtotal * (1 - discount / 100) * 100) / 100;
   const cashReceived = numericAmount(cash);
   const change = total !== null && cashReceived !== null ? Math.round((cashReceived - total) * 100) / 100 : null;
-  const valid = recovering || (total !== null && (paymentMethod !== "Cash" || (change !== null && change >= 0)));
-  const reviewed: BillingEntry = { ...entry, total, discountPercent: locked ? entry.discountPercent : discount, method: locked ? entry.method : paymentMethod, isPriority: priority };
-  const initialDiscount = entry.discountPercent ?? (entry.age !== null && entry.age >= 60 ? 20 : 0);
-  const initialMethod = entry.method === "Instapay/QRph" ? entry.method : "Cash";
-  const dirty = !locked && Boolean(cash || discount !== initialDiscount || paymentMethod !== initialMethod || priority !== (entry.isPriority === true));
+  const valid = recovering || (total !== null && (paymentMethod === "Cash" ? change !== null && change >= 0 : Boolean(reference.trim()) && reference.trim().length <= 50));
+  const reviewed: BillingEntry = { ...entry, total, discountPercent: locked ? entry.discountPercent : discount, method: locked ? entry.method : paymentMethod, isPriority: priority, bill: entry.bill ? { ...entry.bill, discount_type: locked ? entry.bill.discount_type : discountType } : undefined };
+  const initialMethod = entry.method === "Instapay/QRpH" ? entry.method : "Cash";
+  const dirty = !locked && Boolean(cash || reference || discountType !== initialDiscountType || paymentMethod !== initialMethod || priority !== (entry.isPriority === true));
   const { requestLeave, discardDialog } = useUnsavedChanges(dirty, submitting);
 
   useEffect(() => { headingRef.current?.focus(); }, []);
 
-  const options: PaymentOptions = { payment_method: paymentMethod, discount_pct: discount, is_priority: priority };
+  const options: PaymentOptions = { payment_method: paymentMethod, discount_type: discountType, amount_received: cashReceived, reference_num: reference.trim(), priority };
   return <div className={`billing-process ${readOnly && invoice ? "billing-process-history" : ""}`}>
     <BillingButton secondary className="billing-back-link" onClick={() => requestLeave(onBack)} disabled={submitting}><ArrowLeft size={18} />Back to Billing Queue</BillingButton>
     <div className="billing-page-heading"><div><h1 ref={headingRef} tabIndex={-1}>{readOnly ? "Payment Details" : recovering ? "Send to Laboratory" : "Process Payment"}</h1><p>Review selected services, apply eligible discounts, and record patient payment.</p></div>{locked && <BillingStatus status={entry.status} />}</div>
@@ -59,19 +61,20 @@ export default function ProcessPayment({ entry, invoice, onBack, onConfirm, subm
         <section className="billing-card">
           <h2>Discount &amp; Priority</h2>
           <div className="billing-two-columns">
-            <div><label className="billing-field"><span><CheckCircle2 size={15} />Discount Eligibility</span><select value={locked ? entry.discountPercent ?? "unknown" : discount} onChange={(event) => setDiscount(Number(event.target.value))} disabled={locked || submitting}>
-              <option value="0">No discount</option>{((entry.age !== null && entry.age >= 60) || discount === 20) && <option value="20">Senior Citizen (20% Discount)</option>}{locked && entry.discountPercent !== null && ![0, 20].includes(entry.discountPercent) && <option value={entry.discountPercent}>{entry.discountPercent}% recorded discount</option>}{locked && entry.discountPercent === null && <option value="unknown">Not recorded</option>}
-            </select></label><p className="billing-help">{locked ? "The discount saved with this payment is shown above." : discount ? `A ${discount}% discount will be applied to the total amount.` : "No discount is applied to this payment."}</p><BillingNotice>Only one discount type can be applied. Senior eligibility is based on the patient's birthdate.</BillingNotice></div>
+            <div><label className="billing-field"><span><CheckCircle2 size={15} />Discount Eligibility</span><select value={locked ? "recorded" : discountType} onChange={(event) => setDiscountType(event.target.value as PaymentOptions["discount_type"])} disabled={locked || submitting}>
+              {locked ? <option value="recorded">{entry.discountPercent === null ? "Not recorded" : `${entry.bill?.discount_type || "Recorded discount"} (${entry.discountPercent}%)`}</option> : <><option value="Not Eligible">No discount</option>{(entry.bill?.is_senior || (entry.age !== null && entry.age >= 60)) && <option value="Senior Citizen">Senior Citizen (20% Discount)</option>}{entry.isPwd && <option value="PWD">PWD (20% Discount)</option>}</>}
+            </select></label><p className="billing-help">{locked ? "The discount saved with this payment is shown above." : discount ? `A ${discount}% discount will be applied to the total amount.` : "No discount is applied to this payment."}</p><BillingNotice>Only one discount type can be applied. Eligibility is checked against the patient's birthdate and PWD profile.</BillingNotice></div>
             <div><label className="billing-field"><span><Flag size={15} />Queue Priority</span><select value={priority ? "priority" : "regular"} onChange={(event) => setPriority(event.target.value === "priority")} disabled={locked || submitting}><option value="regular">Regular</option><option value="priority">Priority</option></select></label><p className="billing-help">Priority affects queue handling, not the service price.</p></div>
           </div>
         </section>
         <section className="billing-card">
           <h2>Payment Method</h2>
-          {locked ? <div className="billing-readonly">{entry.method}</div> : <fieldset className="billing-methods" disabled={submitting}><legend className="sr-only">Payment Method</legend>{(["Cash", "Instapay/QRph"] as const).map((method) => <label className={`billing-method ${paymentMethod === method ? "billing-method-selected" : ""}`} key={method}><input type="radio" name="payment-method" value={method} checked={paymentMethod === method} onChange={() => setPaymentMethod(method)} />{method === "Cash" ? <Wallet size={19} /> : <QrCode size={19} />}<span>{method}</span></label>)}</fieldset>}
+          {locked ? <div className="billing-readonly">{entry.method}</div> : <fieldset className="billing-methods" disabled={submitting}><legend className="sr-only">Payment Method</legend>{(["Cash", "Instapay/QRpH"] as const).map((method) => <label className={`billing-method ${paymentMethod === method ? "billing-method-selected" : ""}`} key={method}><input type="radio" name="payment-method" value={method} checked={paymentMethod === method} onChange={() => setPaymentMethod(method)} />{method === "Cash" ? <Wallet size={19} /> : <QrCode size={19} />}<span>{method}</span></label>)}</fieldset>}
           {!locked && <div className="billing-cash-calculator">
             <div><span className="billing-label">Total Amount Due</span><strong className="billing-blue">{money(total)}</strong></div>
             {paymentMethod === "Cash" ? <><label className="billing-field"><span>Cash Received</span><input aria-label="Cash received" type="number" min={total ?? 0} step="0.01" inputMode="decimal" value={cash} onChange={(event) => setCash(event.target.value)} placeholder="Enter cash amount" disabled={submitting} /></label><div><span className="billing-label">{change !== null && change < 0 ? "Amount Remaining" : "Change"}</span><strong className={change !== null && change < 0 ? "billing-amber" : "billing-green"}>{money(change === null ? 0 : Math.abs(change))}</strong></div></> : <BillingNotice>Verify that the transfer was received before recording payment.</BillingNotice>}
           </div>}
+          {!locked && paymentMethod !== "Cash" && <label className="billing-field"><span>Transfer Reference</span><input aria-label="Transfer reference" value={reference} maxLength={50} onChange={(event) => setReference(event.target.value)} disabled={submitting} placeholder="Enter the received transfer reference" /></label>}
           {locked && entry.receiptId && <p className="billing-help">Receipt: {entry.receiptId}</p>}
         </section>
       </div>

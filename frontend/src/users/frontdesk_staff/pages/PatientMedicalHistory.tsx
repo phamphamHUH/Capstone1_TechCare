@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import type { Patient } from "../../../interface/Patient";
 import api from "../../../lib/axios";
 import Header from "../../../components/Header";
+import { formatPatientAddress } from "../../../utils/formats";
 
 interface LaboratoryRequest {
   id: number;
@@ -258,7 +259,7 @@ function PatientMedicalHistory({
             <div className="mt-4">
               <p className="text-sm text-gray-500">Address</p>
               <p className="text-sm font-medium text-gray-900">
-                {patient.address}
+                {formatPatientAddress(patient)}
               </p>
             </div>
           </div>

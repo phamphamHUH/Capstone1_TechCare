@@ -18,7 +18,7 @@ import ServiceRequest from "./pages/ServiceRequest";
 import Header from "../../components/Header";
 import Queues from "./pages/Queues";
 import type { QueueEntry, QueueRequests } from "../../interface/Queue";
-import type { BillingRecord, UnpaidRequests } from "../../interface/Billing";
+import type { Bill, BillingRecord } from "../../interface/Billing";
 import type { Service } from "../../interface/Service";
 import MedicalHistory from "./pages/MedicalHistory";
 import type { Patient } from "../../interface/Patient";
@@ -30,7 +30,8 @@ function FrontdeskStaff() {
   const [billing, setBilling] = useState<BillingRecord[]>([]);
   const [queues, setQueues] = useState<QueueEntry[]>([]);
   const [queueRequests, setQueueRequests] = useState<QueueRequests[]>([]);
-  const [unpaidRequests, setUnpaidRequests] = useState<UnpaidRequests[]>([]);
+  const [pendingBills, setPendingBills] = useState<Bill[]>([]);
+  const [paidBills, setPaidBills] = useState<Bill[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(() => typeof window === "undefined" || window.innerWidth >= 1024);
@@ -64,7 +65,8 @@ function FrontdeskStaff() {
         { url: "/api/fdstaff/patients", key: "patients", label: "patients", set: setPatients },
         { url: "/api/fdstaff/queues", key: "queueEntries", label: "queues", set: setQueues },
         { url: "/api/fdstaff/queue-requests", key: "requests", label: "queue requests", set: setQueueRequests },
-        { url: "/api/fdstaff/billing/unpaid-lab", key: "unpaidLabRequests", label: "billing requests", set: setUnpaidRequests },
+        { url: "/api/fdstaff/billings?status=Pending", key: "bills", label: "pending bills", set: setPendingBills },
+        { url: "/api/fdstaff/billings?status=Paid", key: "bills", label: "paid bills", set: setPaidBills },
         { url: "/api/fdstaff/billing", key: "billing", label: "payment history", set: setBilling },
       ];
       const responses = await Promise.allSettled(sources.map((source) => api.get(source.url)));
@@ -158,7 +160,6 @@ function FrontdeskStaff() {
             <FrontdeskDashboard
               patients={patients}
               billing={billing}
-              unpaidRequestCount={unpaidRequests.filter((request) => !request.is_paid).length}
               queues={queues}
               open={open}
               setOpen={setOpen}
@@ -211,7 +212,8 @@ function FrontdeskStaff() {
 
           {page === "billing" && (
             <Billing
-              unpaidRequests={unpaidRequests}
+              pendingBills={pendingBills}
+              paidBills={paidBills}
               queueRequests={queueRequests}
               patients={patients}
               services={services}

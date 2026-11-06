@@ -14,14 +14,14 @@ const initialForm = {
   first_name: "", middle_name: "", last_name: "", suffix: "", sex: "",
   birthdate: "", civil_status: "", blood_type: "", height_cm: "", weight_kg: "",
 
-  contact_number: "", email: "", address: "",
-  barangay: "", city: "", province: "", zip_code: "",
+  contact_number: "", email: "",
+  street: "", barangay: "", city: "", province: "", zip_code: "",
 
-  guardian_name: "", guardian_relationship: "", guardian_contact: "", guardian_address: "",
+  guardian_name: "", guardian_relationship: "", guardian_contact: "",
 
   allergies: "", existing_conditions: "", current_medications: "",
   previous_surgeries: "", previous_hospitalizations: "",
-  family_medical_history: "", smoking: "", alcohol_consumption: "",
+  family_medical_history: "", smoking_status: "", alcohol_consumption: "",
 };
 type FormState = typeof initialForm;
 
@@ -30,14 +30,6 @@ const SEX_OPTIONS = ["Male", "Female"];
 const CIVIL_STATUS_OPTIONS = ["Single", "Married", "Widowed", "Separated"];
 const SMOKING_OPTIONS = ["Yes", "No", "Former"];
 const ALCOHOL_OPTIONS = ["None", "Occasional", "Regular"];
-
-// Merges the street address with barangay, city, province and ZIP into one string
-function buildFullAddress(f: FormState) {
-  return [f.address, f.barangay, f.city, f.province, f.zip_code]
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .join(", ");
-}
 
 // Defined outside the component so inputs don't remount (and lose focus) on every keystroke
 function Field({
@@ -140,23 +132,18 @@ function PatientRegistration({ open, setOpen, loadData, loading }: PatientRegist
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    const { first_name, last_name, sex, birthdate, email, contact_number, address } = form;
-    if (!first_name || !last_name || !sex || !birthdate || !email || !contact_number || !address) {
+    const { first_name, last_name, sex, birthdate, email, contact_number, street, barangay, city, province, zip_code } = form;
+    if (!first_name || !last_name || !sex || !birthdate || !email || !contact_number || !street || !barangay || !city || !province || !zip_code) {
       alert("Please fill out all required fields.");
       return;
     }
 
     setSubmitting(true);
     try {
-      // Pull out the pieces that get merged into `address`
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { barangay, city, province, zip_code, ...rest } = form;
-
       const formData = new FormData();
-      Object.entries(rest).forEach(([key, value]) => {
+      Object.entries(form).forEach(([key, value]) => {
         if (value) formData.append(key, value);
       });
-      formData.set("address", buildFullAddress(form)); // overrides the street-only value
       if (image) formData.append("image", image);
 
       const response = await api.post("/api/fdstaff/patients", formData);
@@ -178,23 +165,21 @@ function PatientRegistration({ open, setOpen, loadData, loading }: PatientRegist
     <main className="flex-1 min-w-0">
 
       <div className="w-full px-6 pb-8">
-        <h2 className="mb-4 text-xl font-semibold text-gray-700">Register Patient</h2>
+        <h2 className="mb-4 text-xl font-bold text-black">Register Patient</h2>
 
         <form
           onSubmit={handleSubmit}
           className="space-y-8 rounded-2xl border border-gray-200 p-6"
         >
           <Section title="Personal Information">
-            <Field label="Patient ID" value="" readOnly placeholder="Auto" width="w-32" />
-            <div className="basis-full" />
-            <Field label="First Name" value={form.first_name} onChange={set("first_name")} width="w-36" />
+            <Field label="First Name *" value={form.first_name} onChange={set("first_name")} width="w-36" />
             <Field label="Middle Name" value={form.middle_name} onChange={set("middle_name")} width="w-36" />
-            <Field label="Last Name" value={form.last_name} onChange={set("last_name")} width="w-36" />
+            <Field label="Last Name *" value={form.last_name} onChange={set("last_name")} width="w-36" />
             <Field label="Suffix" value={form.suffix} onChange={set("suffix")} width="w-12" />
-            <SelectField label="Sex" value={form.sex} onChange={set("sex")} options={SEX_OPTIONS} width="w-20" />
-            <Field label="Age" value={age} readOnly width="w-12" />
+            <SelectField label="Sex *" value={form.sex} onChange={set("sex")} options={SEX_OPTIONS} width="w-20" />
 
-            <Field label="Date of Birth" type="date" value={form.birthdate} onChange={set("birthdate")} width="w-36" />
+            <Field label="Date of Birth *" type="date" value={form.birthdate} onChange={set("birthdate")} width="w-36" />
+            <Field label="Age" value={age} readOnly width="w-14" />
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <span>Profile Photo</span>
               <label className="flex h-8 w-36 cursor-pointer items-center justify-center truncate rounded-lg border border-gray-200 px-2 text-xs text-gray-400 underline hover:text-gray-700">
@@ -212,29 +197,27 @@ function PatientRegistration({ open, setOpen, loadData, loading }: PatientRegist
                 </button>
               )}
             </div>
-            <SelectField label="Civil Status" value={form.civil_status} onChange={set("civil_status")} options={CIVIL_STATUS_OPTIONS} width="w-36" />
-            <SelectField label="Blood Type" value={form.blood_type} onChange={set("blood_type")} options={BLOOD_TYPES} width="w-20" />
-            <Field label="Height (CM)" value={form.height_cm} onChange={set("height_cm")} width="w-14" type="number" />
-            <Field label="Weight(KG)" value={form.weight_kg} onChange={set("weight_kg")} width="w-14" type="number" />
+            <SelectField label="Civil Status *" value={form.civil_status} onChange={set("civil_status")} options={CIVIL_STATUS_OPTIONS} width="w-36" />
+            <SelectField label="Blood Type *" value={form.blood_type} onChange={set("blood_type")} options={BLOOD_TYPES} width="w-20" />
+            <Field label="Height(CM) *" value={form.height_cm} onChange={set("height_cm")} width="w-14" type="number" />
+            <Field label="Weight(KG) *" value={form.weight_kg} onChange={set("weight_kg")} width="w-14" type="number" />
           </Section>
 
           <Section title="Contact Information">
-            <Field label="Mobile Number" value={form.contact_number} onChange={set("contact_number")} width="w-36" />
-            <Field label="Email Address" type="email" value={form.email} onChange={set("email")} width="w-44" />
-            <Field label="Street Address" value={form.address} onChange={set("address")} width="w-56" />
+            <Field label="Mobile Number *" value={form.contact_number} onChange={set("contact_number")} width="w-36" />
+            <Field label="Email Address *" type="email" value={form.email} onChange={set("email")} width="w-44" />
             <div className="basis-full" />
-            <Field label="Barangay" value={form.barangay} onChange={set("barangay")} width="w-24" />
-            <Field label="City/Municipality" value={form.city} onChange={set("city")} width="w-28" />
-            <Field label="Province" value={form.province} onChange={set("province")} width="w-28" />
-            <Field label="ZIP Code" value={form.zip_code} onChange={set("zip_code")} width="w-28" />
+            <Field label="Street *" value={form.street} onChange={set("street")} width="w-56" />
+            <Field label="Barangay *" value={form.barangay} onChange={set("barangay")} width="w-24" />
+            <Field label="City/Municipality *" value={form.city} onChange={set("city")} width="w-28" />
+            <Field label="Province *" value={form.province} onChange={set("province")} width="w-28" />
+            <Field label="ZIP Code *" value={form.zip_code} onChange={set("zip_code")} width="w-28" />
           </Section>
 
           <Section title="Guardian Information (If Minor)">
             <Field label="Full Name" value={form.guardian_name} onChange={set("guardian_name")} width="w-60" />
             <Field label="Relationship" value={form.guardian_relationship} onChange={set("guardian_relationship")} width="w-44" />
             <Field label="Contact Number" value={form.guardian_contact} onChange={set("guardian_contact")} width="w-40" />
-            <div className="basis-full" />
-            <Field label="Address" value={form.guardian_address} onChange={set("guardian_address")} width="w-[30rem]" />
           </Section>
 
           <Section title="Medical Information">
@@ -246,7 +229,7 @@ function PatientRegistration({ open, setOpen, loadData, loading }: PatientRegist
             <Field label="Previous Hospitalizations" value={form.previous_hospitalizations} onChange={set("previous_hospitalizations")} width="w-36" />
             <div className="basis-full" />
             <Field label="Family Medical History" value={form.family_medical_history} onChange={set("family_medical_history")} width="w-36" />
-            <SelectField label="Smoking" value={form.smoking} onChange={set("smoking")} options={SMOKING_OPTIONS} width="w-28" />
+            <SelectField label="Smoking" value={form.smoking_status} onChange={set("smoking_status")} options={SMOKING_OPTIONS} width="w-28" />
             <SelectField label="Alcohol Consumption" value={form.alcohol_consumption} onChange={set("alcohol_consumption")} options={ALCOHOL_OPTIONS} width="w-32" />
           </Section>
 

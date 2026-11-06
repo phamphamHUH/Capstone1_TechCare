@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+import { ENV } from "../../config/env.js";
 import { sql } from "../../config/db.js";
 import { pool } from "../../config/db.js";
 import bcrypt from "bcryptjs";
@@ -22,8 +24,8 @@ import type {
   addConsultationRecord,
 } from "./dto/post.dto.js";
 import { publishQueueChange } from "../../services/queue-sse/index.js";
-import { randomUUID } from "node:crypto";
-import { ENV } from "../../config/env.js";
+import { recomputeBillTotals } from "../../utils/recomputeBills.js";
+import { getOrCreateOpenBill } from "../../utils/getOrCreateBill.js";
 export async function addPatient(
   req: Request,
   res: Response<addPatient.response | addPatient.error>,
@@ -37,13 +39,28 @@ export async function addPatient(
       suffix,
       sex,
       email,
-      address,
+      street,
+      barangay,
+      city,
+      province,
+      zip_code,
       contact_number,
       civil_status,
       blood_type,
       birthdate,
-      emergency_contact_name,
-      emergency_contact,
+      guardian_name,
+      guardian_relationship,
+      guardian_contact,
+      height_cm,
+      weight_kg,
+      allergies,
+      existing_conditions,
+      current_medications,
+      previous_surgeries,
+      previous_hospitalizations,
+      family_medical_history,
+      smoking_status,
+      alcohol_consumption,
     } = req.body as addPatient.body;
 
     // Validate required fields (matches NOT NULL columns on `patients`;
@@ -53,13 +70,12 @@ export async function addPatient(
       !last_name ||
       !birthdate ||
       !sex ||
-      !address ||
       !email ||
       !contact_number
     ) {
       return res.status(400).json({
         message:
-          "First name, last name, birthdate, sex, address, email, and contact number are required.",
+          "First name, last name, birthdate, sex, email, and contact number are required.",
       } as addPatient.error);
     }
 
@@ -105,13 +121,28 @@ export async function addPatient(
         suffix,
         sex,
         email,
-        address,
+        street,
+        barangay,
+        city,
+        province,
+        zip_code,
         contact_number,
         civil_status,
         blood_type,
         birthdate,
-        emergency_contact_name,
-        emergency_contact,
+        guardian_name,
+        guardian_relationship,
+        guardian_contact,
+        height_cm,
+        weight_kg,
+        allergies,
+        existing_conditions,
+        current_medications,
+        previous_surgeries,
+        previous_hospitalizations,
+        family_medical_history,
+        smoking_status,
+        alcohol_consumption,
         image_url
       )
       VALUES (
@@ -124,13 +155,28 @@ export async function addPatient(
         ${suffix ?? null},
         ${sex},
         ${email},
-        ${address},
+        ${street},
+        ${barangay},
+        ${city},
+        ${province},
+        ${zip_code},
         ${contact_number},
         ${civil_status ?? "Single"},
         ${blood_type ?? null},
         ${birthdate},
-        ${emergency_contact_name ?? null},
-        ${emergency_contact ?? null},
+        ${guardian_name ?? null},
+        ${guardian_relationship ?? null},
+        ${guardian_contact ?? null},
+        ${height_cm ?? null},
+        ${weight_kg ?? null},
+        ${allergies ?? null},
+        ${existing_conditions ?? null},
+        ${current_medications ?? null},
+        ${previous_surgeries ?? null},
+        ${previous_hospitalizations ?? null},
+        ${family_medical_history ?? null},
+        ${smoking_status ?? null},
+        ${alcohol_consumption ?? null},
         ${imageUrl}
       )
       RETURNING *;
@@ -160,12 +206,14 @@ export async function addBills(
       services_ids = [],
       discount_pct = 0,
       discount_amount,
+      discount_type,
       payment_method = "Cash",
       status = "Paid",
+      reference_num = "",
     } = req.body as addBills.body;
 
-    const validPaymentMethods = ["Cash", "Instapay/QRph"];
-    const validStatuses = ["Paid", "Unpaid"];
+    const validPaymentMethods = ["Cash", "Instapay/QRpH"];
+    const validStatuses = ["Paid", "Pending"];
     const discount = Number(discount_pct);
     const fixedDiscount = discount_amount === undefined ? null : Number(discount_amount);
 
@@ -176,8 +224,11 @@ export async function addBills(
       !Number.isFinite(discount) ||
       discount < 0 ||
       discount > 100 ||
+      (discount_type !== undefined && !["Not Eligible", "Senior Citizen", "PWD", "Custom"].includes(discount_type)) ||
+      ((discount_type === "Senior Citizen" || discount_type === "PWD") && (discount !== 20 || fixedDiscount !== null)) ||
       (fixedDiscount !== null && (!Number.isFinite(fixedDiscount) || fixedDiscount < 0 || discount !== 0)) ||
       !validPaymentMethods.includes(payment_method) ||
+      (payment_method !== "Cash" && (typeof reference_num !== "string" || !reference_num.trim() || reference_num.trim().length > 50)) ||
       !validStatuses.includes(status)
     ) {
       return res.status(400).json({
@@ -185,9 +236,14 @@ export async function addBills(
       } as addBills.error);
     }
 
-    const patient = await sql`SELECT patient_id FROM patients WHERE patient_id = ${patient_id}`;
+    const patient = await sql`SELECT patient_id,
+      COALESCE(birthdate::date <= ((NOW() AT TIME ZONE 'Asia/Manila')::date - INTERVAL '60 years')::date, false) AS is_senior,
+      COALESCE(is_pwd, false) AS is_pwd FROM patients WHERE patient_id = ${patient_id}`;
     if (!patient.length) {
       return res.status(404).json({ message: "Patient not found." } as addBills.error);
+    }
+    if ((discount_type === "Senior Citizen" && !patient[0].is_senior) || (discount_type === "PWD" && !patient[0].is_pwd)) {
+      return res.status(400).json({ message: "Patient is not eligible for this discount." });
     }
 
     const selected = await sql`
@@ -227,7 +283,7 @@ export async function addBills(
         status,
         receipt_id,
         receipt_issued_at,
-        billed_at
+        billed_at, subtotal, discount_type, discount_rate, discount_amount, paid_at, reference_num
       )
       VALUES (
         ${bill_id},
@@ -239,7 +295,9 @@ export async function addBills(
         ${status},
         ${receipt_id},
         ${receipt_id ? new Date().toISOString() : null},
-        NOW()
+        NOW(), ${subtotal}, ${savedDiscount ? discount_type && discount_type !== "Not Eligible" ? discount_type : "Custom" : null}, ${savedDiscount},
+        ${Math.round((subtotal - total_amount) * 100) / 100}, ${status === "Paid" ? new Date().toISOString() : null},
+        ${payment_method === "Cash" ? null : reference_num}
       )
       RETURNING *
     `;
@@ -399,23 +457,28 @@ export async function addLaboratoryRequest(
 
     const request_id = await generateLaboratoryRequestID(client);
     const { rows: laboratory_request_result } = await client.query(
-      `INSERT INTO laboratory_requests (request_id, patient_id, requested_by, is_paid)
-       VALUES ($1, $2, $3, FALSE)
+      `INSERT INTO laboratory_requests (request_id, patient_id, requested_by)
+       VALUES ($1, $2, $3)
        RETURNING *`,
       [request_id, patient_id, user_id],
     );
+
+    const { bill_id, is_new } = await getOrCreateOpenBill(client, patient_id);
 
     const laboratory_item_result = [];
     for (const service of services) {
       const lab_item_id = await generateLaboratoryItemID(client);
       const { rows } = await client.query(
-        `INSERT INTO laboratory_request_items (lab_item_id, request_id, service_id, status)
-         VALUES ($1, $2, $3, 'Requested')
+        `INSERT INTO laboratory_request_items
+           (lab_item_id, request_id, service_id, status, bill_id)
+         VALUES ($1, $2, $3, 'Requested', $4)
          RETURNING *`,
-        [lab_item_id, request_id, service.service_id],
+        [lab_item_id, request_id, service.service_id, bill_id],
       );
       laboratory_item_result.push(rows[0]);
     }
+
+    const bill = await recomputeBillTotals(client, bill_id);
 
     await client.query("COMMIT");
 
@@ -423,6 +486,8 @@ export async function addLaboratoryRequest(
       message: "Laboratory request added successfully.",
       request: laboratory_request_result,
       items: laboratory_item_result,
+      bill,
+      is_new_bill: is_new,
     } as addLaboratoryRequest.response);
   } catch (error: any) {
     console.error(error);
@@ -478,22 +543,36 @@ export async function addConsultationRecord(
       [queue_id, patient_id, queue_number, is_priority],
     );
 
+    const { bill_id, is_new } = await getOrCreateOpenBill(client, patient_id);
+
     const {
       rows: [consultation_record_result],
     } = await client.query(
       `INSERT INTO consultation_records
-         (consultation_record_id, patient_id, service_id, requested_by, queue_id, status)
-       VALUES ($1, $2, $3, $4, $5, 'In Queue')
-       RETURNING *`,
-      [consultation_record_id, patient_id, service_id, user_id, queue_id],
+     (consultation_record_id, patient_id, service_id, requested_by, queue_id, status, bill_id)
+   VALUES ($1, $2, $3, $4, $5, 'In Queue', $6)
+   RETURNING *`,
+      [
+        consultation_record_id,
+        patient_id,
+        service_id,
+        user_id,
+        queue_id,
+        bill_id,
+      ],
     );
+
+    const bill = await recomputeBillTotals(client, bill_id);
 
     await client.query("COMMIT");
     publishQueueChange();
+
     return res.status(201).json({
-      message: "Laboratory request added successfully.",
+      message: "Consultation record added successfully.",
       consultation_record: consultation_record_result,
       queue: queue_result,
+      bill,
+      is_new_bill: is_new,
     } as addConsultationRecord.response);
   } catch (error: any) {
     await client.query("ROLLBACK").catch(console.error);

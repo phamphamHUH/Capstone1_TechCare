@@ -13,7 +13,8 @@ import {
   getMedicalHistoryDetails,
   getPrintablePatientRecord,
   getQueueRequests,
-  getUnpaidRequests,
+  getBills,
+  getBillDetails,
 } from "../controllers/fdstaff/getRequests.controller.js";
 import { getPatientMedicalHistory } from "../controllers/fdstaff/getMedicalHistory.controller.js";
 import {
@@ -24,7 +25,7 @@ import {
   // addToQueue,
 } from "../controllers/fdstaff/postRequests.controller.js";
 import {
-  confirmLabRequestPayment,
+  confirmPayment,
   serveQueueEntry,
   skipQueueEntry,
   updatePatient,
@@ -43,7 +44,8 @@ if (ENV.IS_PRODUCTION) {
 // GET requests
 router.get("/patients", getAllPatients);
 router.get("/billing", getAllBilling);
-router.get("/billing/unpaid-lab", getUnpaidRequests);
+router.get("/billings", getBills);
+router.get("/billings/:bill_id/details", getBillDetails);
 router.get("/services", getAllservices);
 router.get("/queues", getAllQueueEntries);
 router.get("/patients/:patient_id/print", getPrintablePatientRecord);
@@ -72,7 +74,7 @@ router.post("/consultation-requests", addConsultationRecord);
 router.put("/queues/:queue_id", serveQueueEntry);
 router.patch("/queues/:queue_id", skipQueueEntry);
 router.put("/patients/:patient_id", upload.single("image"), updatePatient);
-router.patch("/laboratory-requests/:request_id", confirmLabRequestPayment);
+router.patch("/billings/:bill_id/pay", confirmPayment);
 // DELETE requests
 router.delete("/queues/:queue_id", deleteQueue);
 router.delete("/patients/:patient_id", deletePatient);

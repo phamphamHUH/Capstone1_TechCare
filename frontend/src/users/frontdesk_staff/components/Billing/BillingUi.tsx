@@ -34,13 +34,13 @@ export function PaymentSummary({ entry }: { entry: BillingEntry }) {
   return <aside className="billing-card billing-summary" aria-label="Payment summary">
     <h2>Payment Summary</h2>
     <dl className="billing-summary-list">
-      <div><dt>Selected Services</dt><dd>{entry.lines.length} items</dd></div>
+      <div><dt>Selected Services</dt><dd>{entry.lines.length || entry.bill?.services_count || 0} items</dd></div>
       <div><dt>Subtotal</dt><dd>{money(subtotal)}</dd></div>
-      <div><dt>Discount Type</dt><dd>{entry.discountPercent === null ? "Not recorded" : entry.discountPercent === 20 ? "Senior Citizen (20%)" : entry.discountPercent ? `${entry.discountPercent}% discount` : "No discount"}</dd></div>
+      <div><dt>Discount Type</dt><dd>{entry.discountPercent === null ? "Not recorded" : entry.discountPercent === 20 ? (entry.bill?.discount_type === "PWD" ? "PWD (20%)" : entry.bill?.discount_type === "Custom" ? "Custom discount" : "Senior Citizen (20%)") : entry.discountPercent ? `${entry.discountPercent}% discount` : "No discount"}</dd></div>
       <div><dt>Discount Amount</dt><dd className="billing-green">− {money(discountAmount)}</dd></div>
     </dl>
     <div className="billing-total"><span>Total amount due</span><strong>{money(entry.total)}</strong></div>
     <dl className="billing-summary-list"><div><dt>Payment Method</dt><dd>{entry.method}</dd></div><div><dt>Queue Priority</dt><dd>{entry.isPriority ? "⚑ Priority" : "Regular"}</dd></div></dl>
-    <BillingNotice>{entry.needsLabQueue ? "Payment is confirmed. This request still needs to be sent to the laboratory." : entry.status === "Paid" ? "Payment is confirmed." : "Confirm payment to send this request to the laboratory."}</BillingNotice>
+    <BillingNotice>{entry.needsLabQueue ? "Payment is confirmed. This bill still has tests to send to the laboratory." : entry.status === "Paid" ? "Payment is confirmed." : "Review this bill and confirm the payment received. Any laboratory tests will then be forwarded to their assigned rooms."}</BillingNotice>
   </aside>;
 }

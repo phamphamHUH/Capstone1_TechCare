@@ -196,8 +196,8 @@ export namespace getQueueRequests {
   }
 }
 
-export namespace getUnpaidRequests {
-  export interface unpaidLabRequest {
+export namespace getBills {
+  export interface bill {
     record_type: "laboratory" | string;
     request_id: string;
     patient_id: string;
@@ -211,7 +211,57 @@ export namespace getUnpaidRequests {
 
   export interface response {
     message: string;
-    unpaidLabRequests: unpaidLabRequest[];
+    bills: bill[];
+  }
+
+  export interface error {
+    message: string;
+  }
+}
+
+export namespace getBillDetails {
+  export interface BillDetails {
+    bill_id: string;
+    patient_id: string;
+    patient_name: string;
+    sex: string;
+    birthdate: string; // DATE, "YYYY-MM-DD" in JSON
+    age: number;
+    is_senior: boolean; // age >= 60
+    is_pwd: boolean;
+
+    status: "Pending" | "Paid" | "Cancelled";
+
+    // NUMERIC columns arrive as strings
+    subtotal: string;
+    discount_type: "Senior Citizen" | "PWD" | null;
+    discount_rate: string | null;
+    discount_id_no: string | null;
+    discount_amount: string;
+    total_amount: string;
+
+    payment_method: "Cash" | "Instapay/QRph" | null;
+    amount_tendered: string | null;
+    reference_no: string | null;
+    paid_at: string | null;
+    created_at: string;
+  }
+
+  export interface BillItem {
+    line_type: "consultation" | "laboratory";
+    item_id: string; // consultation_record_id or lab_item_id
+    service_id: string;
+    service_name: string;
+    service_category: string;
+    price: string; // DECIMAL(10,2) arrives as a string
+    status: string;
+    created_at: string;
+  }
+
+  export interface response {
+    message: string;
+    bill: BillDetails;
+    items: BillItem[];
   }
 
   export interface error {

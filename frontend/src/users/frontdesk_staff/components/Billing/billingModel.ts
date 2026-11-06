@@ -1,4 +1,5 @@
-import type { BillingEntry, BillingItem, BillingLine, BillingRecord, UnpaidRequests } from "../../../../interface/Billing";
+import type { Bill, BillItem, BillingEntry, BillingItem, BillingLine, BillingRecord, UnpaidRequests } from "../../../../interface/Billing";
+import type { Invoice } from "./InvoiceTransaction";
 import type { Patient } from "../../../../interface/Patient";
 import type { Service } from "../../../../interface/Service";
 import type { QueueRequests } from "../../../../interface/Queue";
@@ -121,4 +122,27 @@ export function recordEntry(record: BillingRecord, patients: Patient[], services
     receiptId: record.receipt_id || "",
     isPriority: false,
   };
+}
+
+export function billEntry(bill: Bill, patients: Patient[], services: Service[], items?: Array<BillingItem | BillItem>): BillingEntry {
+  const details = patientDetails(bill.patient_id, patients);
+  const saved = items ?? (Array.isArray(bill.items) ? bill.items : []);
+  const selected = lines(saved, services, bill.status.toLowerCase() === "paid");
+  const rate = numericAmount(bill.discount_pct) ?? (bill.discount_type === "Senior Citizen" || bill.discount_type === "PWD" ? 20 : numericAmount(bill.discount_rate));
+  return { ...details, age: bill.age ?? details.age, sex: bill.sex || details.sex, id: bill.bill_id,
+    patientId: bill.patient_id, patientName: bill.patient_name || details.patientName,
+    createdAt: bill.paid_at || bill.created_at, requester: bill.received_by || "Not recorded",
+    type: saved.some((item) => item.line_type === "consultation") ? saved.some((item) => item.line_type === "laboratory") ? "Mixed services" : "Consultation" : "Clinic services",
+    status: bill.status.toLowerCase() === "paid" ? "Paid" : bill.status.toLowerCase() === "cancelled" ? "Cancelled" : "Pending",
+    method: bill.payment_method || "Not recorded", lines: selected, total: numericAmount(bill.total_amount),
+    discountPercent: rate, receiptId: bill.receipt_id || bill.reference_num || "", bill,
+    needsLabQueue: bill.status === "Paid" && bill.needs_lab_queue === true, isPriority: bill.is_priority === true,
+    isPwd: bill.is_pwd === true, reference: bill.bill_id, referenceLabel: "Bill ID", dateLabel: bill.status === "Paid" ? "Payment date" : "Created at" };
+}
+
+export function invoiceForBill(entry: BillingEntry): Invoice | null {
+  if (entry.status !== "Paid" || entry.total === null || !entry.lines.length || entry.lines.some((line) => line.price === null)) return null;
+  return { bill_id: entry.id, patient_id: entry.patientId, items: entry.lines.map((line) => ({ service_name: line.name, service_category: line.category, price: line.price!, quantity: line.quantity })),
+    discount_pct: entry.discountPercent ?? 0, total_amount: entry.total, payment_method: entry.method,
+    status: "Paid", receipt_id: entry.receiptId || null, billed_at: entry.bill?.billed_at || entry.bill?.paid_at || entry.createdAt };
 }
