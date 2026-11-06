@@ -1,3 +1,4 @@
+
 export namespace getAllPatients {
   export interface patient {
     id?: number;
@@ -422,10 +423,81 @@ export namespace getPatientMedicalHistory {
     labItems: number;
   }
 
+  export interface doctor {
+    user_id: string | null;
+    full_name: string;
+    department: string | null;
+    role: string | null;
+  }
+
+  export interface service {
+    service_id: string | null;
+    service_name: string | null;
+    service_type: string | null;
+    room: string | null;
+  }
+
+  export interface consultation {
+    consultation_record_id: string;
+    queue_id: string | null;
+    findings: unknown;
+    status: string;
+    consulted_at: string;
+    updated_at: string;
+    doctor: doctor;
+    visit: {
+      queue_id: string | null;
+      queue_number: number | null;
+      is_priority: boolean | null;
+      status: string | null;
+      service: service;
+    };
+  }
+
+  export interface laboratoryResult {
+    result_id: string;
+    lab_item_id: string;
+    result_value: string;
+    unit: string | null;
+    reference_range: string | null;
+    flag: string | null;
+    remarks: string | null;
+    verified_by: string | null;
+    image_url: string | null;
+    verified_at: string | null;
+    created_at: string;
+  }
+
+  export interface laboratoryItem {
+    lab_item_id: string;
+    request_id: string;
+    service_id: string;
+    queue_id?: string | null;
+    status: string;
+    created_at: string;
+    updated_at: string;
+    service_name: string | null;
+    service_type: string | null;
+    room: string | null;
+    results: laboratoryResult[];
+  }
+
+  export interface laboratoryRequest {
+    request_id: string;
+    consultation_record_id: string | null;
+    doctor_id: string | null;
+    status: string;
+    is_paid: boolean;
+    requested_at: string;
+    updated_at: string;
+    doctor: doctor;
+    items: laboratoryItem[];
+  }
+
   export interface response {
     patient: Record<string, unknown>;
-    consultations: Record<string, unknown>[];
-    labRequests: Record<string, unknown>[];
+    consultations: consultation[];
+    labRequests: laboratoryRequest[];
     summary: summary;
   }
 
