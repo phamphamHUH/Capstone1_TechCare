@@ -312,6 +312,7 @@ const TABLES: {
     queue_id                VARCHAR(255) REFERENCES queue_entries(queue_id),
     bill_id                 VARCHAR(255) REFERENCES bills(bill_id),
     status                  VARCHAR(255) NOT NULL DEFAULT 'Created',
+    cancellation_reason     VARCHAR(255),
     is_paid                 BOOLEAN NOT NULL DEFAULT FALSE,
     requested_by            VARCHAR(255) NOT NULL REFERENCES users(user_id),
     consulted_by            VARCHAR(255) REFERENCES users(user_id),
