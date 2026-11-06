@@ -160,27 +160,10 @@ function FrontdeskStaff() {
     })();
   }, [loadData]);
 
-  useEffect(() => {
-    const viewport = window.matchMedia("(min-width: 1024px)");
-    const closeMobileNavigation = (event: MediaQueryListEvent) => {
-      if (!event.matches) setOpen(false);
-    };
-    viewport.addEventListener("change", closeMobileNavigation);
-    return () => viewport.removeEventListener("change", closeMobileNavigation);
-  }, []);
-
   return (
-    <div className="frontdesk-shell flex min-h-screen">
-      {open && (
-        <button
-          type="button"
-          className="fixed inset-0 z-40 bg-black/30 lg:hidden"
-          aria-label="Close navigation"
-          onClick={() => setOpen(false)}
-        />
-      )}
+    <div className=" flex min-h-screen">
       <SideBar open={open} page={page} setPage={setPage} navItems={navItems} />
-      <div className="frontdesk-workspace">
+      <div className="flex-1 min-w-0">
         <Header
           page={currentPage}
           loading={loading}
