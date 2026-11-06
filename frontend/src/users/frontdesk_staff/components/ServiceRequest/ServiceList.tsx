@@ -3,7 +3,7 @@ import { Syringe, Trash2, Plus } from "lucide-react";
 import api from "#lib/axios";
 import type { Service } from "../../../../interface/Service";
 import RequestSuccessModal from "./ServiceList/RequestSuccessModal";
-import BillingDialog from "../Billing/BillingDialog";
+import ConfirmDialog from "../../../../components/ConfirmDialog";
 
 type ServiceListProps = {
   services: Service[];
@@ -184,8 +184,8 @@ function ServiceList({
           {submitting ? "Submitting..." : "Submit Request"}
         </button>
       </div>
-      {removing && <BillingDialog kind="remove-service" description={`Are you sure you want to remove "${removing.service_name}" from the selected services?`} onCancel={() => setRemoving(null)} onConfirm={() => { onToggleService(removing.service_id); setRemoving(null); }} />}
-      {clearing && <BillingDialog kind="discard-changes" description="Clear all selected services? This will discard the current service selection." onCancel={() => setClearing(false)} onConfirm={() => { onClearAll(); setClearing(false); }} />}
+      {removing && <ConfirmDialog tone="warning" title="Remove Service?" confirmLabel="Remove" description={`Are you sure you want to remove "${removing.service_name}" from the selected services?`} onCancel={() => setRemoving(null)} onConfirm={() => { onToggleService(removing.service_id); setRemoving(null); }} />}
+      {clearing && <ConfirmDialog tone="warning" title="Discard Changes?" confirmLabel="Discard Changes" cancelLabel="Keep Editing" description="Clear all selected services? This will discard the current service selection." onCancel={() => setClearing(false)} onConfirm={() => { onClearAll(); setClearing(false); }} />}
       {success && (
         <RequestSuccessModal
           requestId={success.requestId}

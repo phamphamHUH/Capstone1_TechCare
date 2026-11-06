@@ -1,11 +1,10 @@
 import { Users, Clock, List, Receipt } from "lucide-react";
 import type { Patient } from "../../../interface/Patient";
-import type { BillingRecord } from "../../../interface/Billing";
+import type { Bill } from "../../../interface/Billing";
 import type { QueueEntry } from "../../../interface/Queue";
 
 type FrontdeskDashboardProps = {
-  billing: BillingRecord[];
-  unpaidRequestCount?: number;
+  bills: Bill[];
   loading: boolean;
   patients: Patient[];
   queues: QueueEntry[];
@@ -15,8 +14,7 @@ type FrontdeskDashboardProps = {
 };
 
 function FrontdeskDashboard({
-  billing,
-  unpaidRequestCount = 0,
+  bills,
   patients,
   queues,
   open,
@@ -36,9 +34,7 @@ function FrontdeskDashboard({
 
   const totalQueue = queues.length;
 
-  const pendingBills = billing.filter(
-    (bill) => ["unpaid", "pending"].includes(bill.status.toLowerCase()),
-  ).length + unpaidRequestCount;
+  const pendingBills = bills.filter((bill) => bill.status === "Pending").length;
 
   return (
     <main className="flex-1 min-w-0">
