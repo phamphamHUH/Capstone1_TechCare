@@ -1,4 +1,3 @@
-
 import SideBar from "#components/SideBar";
 import Header from "#components/Header";
 import { useCallback, useState } from "react";
@@ -16,11 +15,18 @@ import MedicalHistory from "./pages/MedicalHistory";
 import LaboratoryRequest from "./pages/LaboratoryRequest";
 import DoctorDashboard from "./pages/DoctorDashboard";
 import Consultation from "./pages/Consultation";
+import type { Service } from "../../interface/Service";
+import type { QueueEntry } from "../../interface/Queue";
+import api from "#lib/axios";
 
 function Doctor() {
   const [open, setOpen] = useState(true);
-  const [loading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [services, setServices] = useState<Service[]>([]);
+  const [queues, setQueues] = useState<QueueEntry[]>([]);
   const [searchParams, setSearchParams] = useSearchParams();
+
   const page = searchParams.get("page") ?? "dashboard";
 
   function setPage(newPage: string) {
@@ -63,20 +69,35 @@ function Doctor() {
       icon: <FileText size={20} />,
     },
   ];
-
+  const room = "Consultation Room";
   const currentPage =
     navItems.find((item) => item.page === page)?.label ?? "Dashboard";
 
-  const loadData = useCallback(async () => {}, []);
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const servicesRes = await api.get(
+        `/api/doctor/services/${encodeURIComponent(room)}`,
+      );
+      setServices(servicesRes.data?.services ?? []);
+
+      const queuesRes = await api.get(
+        `/api/doctor/consultation-queues/room/${encodeURIComponent(room)}`,
+      );
+      setQueues(queuesRes.data?.queueEntries ?? []);
+    } catch (err) {
+      console.error("Error loading doctor data:", err);
+      setError("Could not load consultation data.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <SideBar
-        open={open}
-        page={page}
-        setPage={setPage}
-        navItems={navItems}
-      />
+      <SideBar open={open} page={page} setPage={setPage} navItems={navItems} />
 
       <div className="flex-1 min-w-0">
         <Header
@@ -110,7 +131,11 @@ function Doctor() {
 
           {page === "consultation-queue" && (
             <ConsultationQueue
+              services={services}
+              queues={queues}
+              room={room}
               loading={loading}
+              error={error}
               open={open}
               setOpen={setOpen}
               loadData={loadData}

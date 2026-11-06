@@ -161,9 +161,9 @@ function FrontdeskStaff() {
   }, [loadData]);
 
   return (
-    <div className="flex min-h-screen">
+    <div className=" flex min-h-screen">
       <SideBar open={open} page={page} setPage={setPage} navItems={navItems} />
-      <div className="flex-1 bg-gray-50 dark:bg-white-900">
+      <div className="flex-1 min-w-0">
         <Header
           page={currentPage}
           loading={loading}
