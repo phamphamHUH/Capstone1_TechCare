@@ -21,7 +21,6 @@ import type { QueueRequests } from "../../interface/Queue";
 import type { Bill } from "../../interface/Billing";
 import MedicalHistory from "./pages/MedicalHistory";
 import type { Patient } from "../../interface/Patient";
-import "./frontdesk.css";
 
 function FrontdeskStaff() {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);

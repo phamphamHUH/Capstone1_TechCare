@@ -566,17 +566,17 @@ const TABLES: {
       is_sensitive: "BOOLEAN NOT NULL DEFAULT TRUE",
     },
   },
-  {
-    table: "sse_test",
-    createSQL: `CREATE TABLE IF NOT EXISTS actions (
-      message_id           SERIAL PRIMARY KEY,
-      messages         VARCHAR(255) NOT NULL
-    )`,
-    columns: {
-      message_id: "SERIAL PRIMARY KEY",
-      messages: "VARCHAR(255) NOT NULL",
-    },
+ {
+  table: "sse_test",
+  createSQL: `CREATE TABLE IF NOT EXISTS sse_test (
+    message_id SERIAL PRIMARY KEY,
+    message VARCHAR(255) NOT NULL
+  )`,
+  columns: {
+    message_id: "SERIAL PRIMARY KEY",
+    message: "VARCHAR(255) NOT NULL",
   },
+},
 ];
 // -----------------------------------------------------------------------
 // CONNECT TO DATABASE
