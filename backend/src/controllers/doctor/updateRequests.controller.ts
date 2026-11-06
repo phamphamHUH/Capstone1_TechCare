@@ -1,7 +1,68 @@
 import { sql } from "../../config/db.js";
 import type { Request, Response } from "express";
-import { skipQueueEntry } from "./dto/update.dto.js";
+import type { acceptConsultationQueue, skipQueueEntry } from "./dto/update.dto.js";
 import { publishQueueChange } from "../../services/queue-sse/index.js";
+import { publishQueueChange as publishDoctorQueueChange } from "./sseController.controller.js";
+
+export async function acceptConsultationQueue(
+  req: Request,
+  res: Response<acceptConsultationQueue.response | acceptConsultationQueue.error>,
+) {
+  const { queue_id } = req.params;
+  const { room } = req.body ?? {};
+  if (typeof queue_id !== "string" || !queue_id.trim()) {
+    return res.status(400).json({ message: "Queue ID is required." });
+  }
+  if (typeof room !== "string" || !room.trim()) {
+    return res.status(400).json({ message: "Consultation room is required." });
+  }
+  const roomText = room.trim();
+
+  try {
+    // Keep the status check inside the UPDATE so two requests cannot both accept
+    // the same patient. Only active consultations in this room can be served.
+    const [updated] = await sql`
+      UPDATE queue_entries q
+      SET status = 'Serving', updated_at = NOW()
+      WHERE q.queue_id = ${queue_id}
+        AND q.queue_id LIKE 'CONS-%'
+        AND LOWER(TRIM(q.status)) IN ('waiting', 'skipped')
+        AND EXISTS (
+          SELECT 1 FROM consultation_records cr
+          JOIN services s ON s.service_id = cr.service_id
+          WHERE cr.queue_id = q.queue_id AND cr.patient_id = q.patient_id
+            AND s.room::text = ${roomText}
+            AND LOWER(TRIM(cr.status)) NOT IN ('cancelled', 'canceled', 'rejected', 'completed')
+        )
+      RETURNING q.*
+    `;
+
+    if (!updated) {
+      const [existing] = await sql`
+        SELECT q.status,
+          EXISTS (
+            SELECT 1 FROM consultation_records cr JOIN services s ON s.service_id = cr.service_id
+            WHERE cr.queue_id = q.queue_id AND cr.patient_id = q.patient_id AND s.room::text = ${roomText}
+          ) AS in_room
+        FROM queue_entries q
+        WHERE q.queue_id = ${queue_id} AND q.queue_id LIKE 'CONS-%'
+          AND EXISTS (SELECT 1 FROM consultation_records cr WHERE cr.queue_id = q.queue_id AND cr.patient_id = q.patient_id)
+      `;
+      if (!existing) return res.status(404).json({ message: "Consultation queue entry not found." });
+      if (!existing.in_room) return res.status(403).json({ message: "This consultation belongs to a different room." });
+      return res.status(409).json({ message: "Only waiting or skipped queues with an active consultation can be accepted. Refresh the queue to see its current status." });
+    }
+
+    for (const notify of [publishQueueChange, publishDoctorQueueChange]) {
+      try { notify(); }
+      catch (error) { console.error("Consultation accepted, but queue notification failed:", error); }
+    }
+    return res.status(200).json({ message: "Consultation accepted and now being served.", queue: updated });
+  } catch (error) {
+    console.error("Unable to accept consultation queue:", error);
+    return res.status(500).json({ message: "Unable to accept the consultation. Refresh the queue before trying again." });
+  }
+}
 
 export async function skipConsultationQueueEntry(
   req: Request,
