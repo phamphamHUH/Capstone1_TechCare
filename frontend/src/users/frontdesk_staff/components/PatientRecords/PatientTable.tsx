@@ -1,6 +1,7 @@
 import { useSearchParams } from "react-router";
 import type { Patient } from "../../../../interface/Patient";
 import calculateAge from "../../../../utils/calculateAge";
+import { formatAge } from "../../../../utils/formats";
 
 type PatientTableProps = {
   patients: Patient[];
@@ -98,7 +99,7 @@ function PatientTable({ patients, onEdit }: PatientTableProps) {
                   </td>
 
                   <td className="px-4 py-1 text-gray-700 text-center">
-                    <div>{age} years old</div>
+                    <div>{formatAge(patient.birthdate , age)}</div>
                     <div className="text-xs text-gray-400">{birthday}</div>
                   </td>
 

@@ -37,13 +37,28 @@ export async function addPatient(
       suffix,
       sex,
       email,
-      address,
+      street,
+      barangay,
+      city,
+      province,
+      zip_code,
       contact_number,
       civil_status,
       blood_type,
       birthdate,
-      emergency_contact_name,
-      emergency_contact,
+      guardian_name,
+      guardian_relationship,
+      guardian_contact,
+      height_cm,
+      weight_kg,
+      allergies,
+      existing_conditions,
+      current_medications,
+      previous_surgeries,
+      previous_hospitalizations,
+      family_medical_history,
+      smoking_status,
+      alcohol_consumption,
     } = req.body as addPatient.body;
 
     // Validate required fields (matches NOT NULL columns on `patients`;
@@ -53,13 +68,12 @@ export async function addPatient(
       !last_name ||
       !birthdate ||
       !sex ||
-      !address ||
       !email ||
       !contact_number
     ) {
       return res.status(400).json({
         message:
-          "First name, last name, birthdate, sex, address, email, and contact number are required.",
+          "First name, last name, birthdate, sex, email, and contact number are required.",
       } as addPatient.error);
     }
 
@@ -105,13 +119,28 @@ export async function addPatient(
         suffix,
         sex,
         email,
-        address,
+        street,
+        barangay,
+        city,
+        province,
+        zip_code,
         contact_number,
         civil_status,
         blood_type,
         birthdate,
-        emergency_contact_name,
-        emergency_contact,
+        guardian_name,
+        guardian_relationship,
+        guardian_contact,
+        height_cm,
+        weight_kg,
+        allergies,
+        existing_conditions,
+        current_medications,
+        previous_surgeries,
+        previous_hospitalizations,
+        family_medical_history,
+        smoking_status,
+        alcohol_consumption,
         image_url
       )
       VALUES (
@@ -124,13 +153,28 @@ export async function addPatient(
         ${suffix ?? null},
         ${sex},
         ${email},
-        ${address},
+        ${street},
+        ${barangay},
+        ${city},
+        ${province},
+        ${zip_code},
         ${contact_number},
         ${civil_status ?? "Single"},
         ${blood_type ?? null},
         ${birthdate},
-        ${emergency_contact_name ?? null},
-        ${emergency_contact ?? null},
+        ${guardian_name ?? null},
+        ${guardian_relationship ?? null},
+        ${guardian_contact ?? null},
+        ${height_cm ?? null},
+        ${weight_kg ?? null},
+        ${allergies ?? null},
+        ${existing_conditions ?? null},
+        ${current_medications ?? null},
+        ${previous_surgeries ?? null},
+        ${previous_hospitalizations ?? null},
+        ${family_medical_history ?? null},
+        ${smoking_status ?? null},
+        ${alcohol_consumption ?? null},
         ${imageUrl}
       )
       RETURNING *;
