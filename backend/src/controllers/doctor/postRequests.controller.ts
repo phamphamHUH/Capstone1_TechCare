@@ -239,7 +239,7 @@ export async function addPrescriptions(
     await client.query("BEGIN");
 
     const { rows: consultation } = await client.query(
-      `SELECT patient_id, doctor_id
+      `SELECT patient_id, consulted_by
        FROM consultation_records
        WHERE consultation_record_id = $1`,
       [consultation_record_id],
@@ -252,7 +252,7 @@ export async function addPrescriptions(
         .json({ message: "Consultation record not found." } as addPrescriptions.error);
     }
 
-    if (consultation[0].doctor_id !== user_id) {
+    if (consultation[0].consulted_by && consultation[0].consulted_by !== user_id) {
       await client.query("ROLLBACK");
       return res.status(403).json({
         message: "You can only prescribe for your own consultations.",
@@ -401,10 +401,10 @@ export async function addConsultationFindings(
       const consultation_record_id = await generateConsultationRecordID(client);
       const { rows } = await client.query(
         `INSERT INTO consultation_records (
-           consultation_record_id, patient_id, doctor_id, service_id,
-           consultation_type, diagnosis, presenting_complaint, physical_examination
+           consultation_record_id, patient_id, requested_by, consulted_by, service_id,
+           consultation_type, diagnosis, presenting_complaint, physical_examination, consulted_at
          )
-         VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7::jsonb, $8::jsonb)
+         VALUES ($1, $2, $3, $3, $4, $5, $6::jsonb, $7::jsonb, $8::jsonb, NOW())
          RETURNING *`,
         [
           consultation_record_id,
