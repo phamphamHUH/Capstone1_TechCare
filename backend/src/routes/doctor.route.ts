@@ -23,6 +23,7 @@ import {
   // getLaboratoryServices,
   // getConsultationPatient,
 } from "../controllers/doctor/getRequests.controller.js";
+import { connectQueueStream } from "../controllers/doctor/sseController.controller.js";
 const router = Router();
 
 if (ENV.IS_PRODUCTION) {
@@ -56,4 +57,8 @@ router.get(
 // router.patch("/consultation-queues/:queue_id/accept", acceptConsultationQueue);
 // router.patch("/consultation-queues/:queue_id/cancel", cancelConsultationQueue);
 router.patch("/consultation-queues/:queue_id/skip", skipConsultationQueueEntry);
+
+/// ----------SSE--------
+router.get("/queues/stream", authMiddleware, connectQueueStream);
+
 export default router;
