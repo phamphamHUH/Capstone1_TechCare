@@ -190,6 +190,7 @@ export async function serveQueueEntry(
       RETURNING *;
     `;
 
+    publishQueueChange();
     return res.status(200).json({
       message: "Queue entry called successfully.",
       existingQueueEntry,
@@ -248,6 +249,7 @@ export async function skipQueueEntry(
       RETURNING *;
     `;
 
+    publishQueueChange();
     return res.status(200).json({
       message: "Queue skipped successfully.",
       queue: updatedQueue[0],
