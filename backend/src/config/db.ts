@@ -208,20 +208,36 @@ const TABLES: {
   {
     table: "packages",
     createSQL: `CREATE TABLE IF NOT EXISTS packages (
-      package_id    SERIAL PRIMARY KEY,
+      id            SERIAL PRIMARY KEY,
+      package_id    VARCHAR(255) UNIQUE NOT NULL,
       package_name  VARCHAR(255) NOT NULL,
       package_price NUMERIC(10,2) NOT NULL,
-      service_ids   VARCHAR(255)[] NOT NULL,
+      status        VARCHAR(50) NOT NULL DEFAULT 'Active',
       created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     )`,
     columns: {
-      package_id: "SERIAL PRIMARY KEY",
+      id: "SERIAL PRIMARY KEY",
+      package_id: "VARCHAR(255) UNIQUE NOT NULL",
       package_name: "VARCHAR(255) NOT NULL",
       package_price: "NUMERIC(10,2) NOT NULL",
-      service_ids: "VARCHAR(255)[] NOT NULL",
+      status: "VARCHAR(50) NOT NULL DEFAULT 'Active'",
       created_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
       updated_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
+    },
+  },
+
+  {
+    table: "package_services",
+    createSQL: `CREATE TABLE IF NOT EXISTS package_services (
+    id          SERIAL PRIMARY KEY,
+    package_id  VARCHAR(255) NOT NULL REFERENCES packages(package_id),
+    service_id  VARCHAR(255) NOT NULL REFERENCES services(service_id)
+  )`,
+    columns: {
+      id: "SERIAL PRIMARY KEY",
+      package_id: "VARCHAR(255) NOT NULL REFERENCES packages(package_id)",
+      service_id: "VARCHAR(255) NOT NULL REFERENCES services(service_id)",
     },
   },
 
@@ -233,6 +249,7 @@ const TABLES: {
       patient_id   VARCHAR(255) NOT NULL REFERENCES patients(patient_id),
       queue_number INTEGER NOT NULL,
       is_priority  BOOLEAN NOT NULL DEFAULT FALSE,
+      skip_count   INTEGER NOT NULL DEFAULT 0,
       status       VARCHAR(20) NOT NULL DEFAULT 'waiting',
       created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -243,6 +260,7 @@ const TABLES: {
       patient_id: "VARCHAR(255) NOT NULL REFERENCES patients(patient_id)",
       queue_number: "INTEGER NOT NULL",
       is_priority: "BOOLEAN NOT NULL DEFAULT FALSE",
+      skip_count: "INTEGER NOT NULL DEFAULT 0",
       status: "VARCHAR(20) NOT NULL DEFAULT 'waiting'",
       created_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
       updated_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
