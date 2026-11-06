@@ -237,6 +237,30 @@ export async function generateConsultationRecordId(client: PoolClient) {
 
   return `CR-${prefix}-${String(nextNumber).padStart(4, "0")}`;
 }
+
+export async function generateBillId(client: PoolClient) {
+  const now = new Date();
+
+  const year = String(now.getFullYear()).slice(-2);
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+
+  const prefix = `${year}-${month}${day}`;
+  const billCreatedToday = await sql`
+    SELECT bill_id
+    FROM bills
+    WHERE bill_id LIKE ${`B-${prefix}-%`}
+    ORDER BY bill_id DESC
+    LIMIT 1
+  `;
+
+  const nextNumber =
+    billCreatedToday.length > 0
+      ? Number(billCreatedToday[0].bill_id.slice(-4)) + 1
+      : 1;
+
+  return `B-${prefix}-${String(nextNumber).padStart(4, "0")}`;
+}
 /////////=================================== QUQUE ID GENERATOR =========================================
 // export async function generateConsultationQueueId() {
 //   const queue = await sql`

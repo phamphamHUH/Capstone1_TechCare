@@ -22,6 +22,8 @@ import type {
   addConsultationRecord,
 } from "./dto/post.dto.js";
 import { publishQueueChange } from "../../services/queue-sse/index.js";
+import { recomputeBillTotals } from "../../utils/recomputeBills.js";
+import { getOrCreateOpenBill } from "../../utils/getOrCreateBill.js";
 export async function addPatient(
   req: Request,
   res: Response<addPatient.response | addPatient.error>,
@@ -158,8 +160,6 @@ export async function addBills(
       services_ids = [],
       discount_pct = 0,
       custom_service = [],
-      payment_method = "Cash",
-      status = "Unpaid",
     } = req.body as addBills.body;
 
     const services: {
@@ -204,16 +204,12 @@ export async function addBills(
                 services_ids,
                 discount_pct,
                 total_amount,
-                payment_method,
-                status
             )
             VALUES (
                 ${patient_id},
                 ${services_ids},
                 ${discount_pct},
                 ${total_amount},
-                ${payment_method},
-                ${status}
             )
             RETURNING *;
         `;
@@ -373,23 +369,28 @@ export async function addLaboratoryRequest(
 
     const request_id = await generateLaboratoryRequestID(client);
     const { rows: laboratory_request_result } = await client.query(
-      `INSERT INTO laboratory_requests (request_id, patient_id, requested_by, is_paid)
-       VALUES ($1, $2, $3, FALSE)
+      `INSERT INTO laboratory_requests (request_id, patient_id, requested_by)
+       VALUES ($1, $2, $3)
        RETURNING *`,
       [request_id, patient_id, user_id],
     );
+
+    const { bill_id, is_new } = await getOrCreateOpenBill(client, patient_id);
 
     const laboratory_item_result = [];
     for (const service of services) {
       const lab_item_id = await generateLaboratoryItemID(client);
       const { rows } = await client.query(
-        `INSERT INTO laboratory_request_items (lab_item_id, request_id, service_id, status)
-         VALUES ($1, $2, $3, 'Requested')
+        `INSERT INTO laboratory_request_items
+           (lab_item_id, request_id, service_id, status, bill_id)
+         VALUES ($1, $2, $3, 'Requested', $4)
          RETURNING *`,
-        [lab_item_id, request_id, service.service_id],
+        [lab_item_id, request_id, service.service_id, bill_id],
       );
       laboratory_item_result.push(rows[0]);
     }
+
+    const bill = await recomputeBillTotals(client, bill_id);
 
     await client.query("COMMIT");
 
@@ -397,6 +398,8 @@ export async function addLaboratoryRequest(
       message: "Laboratory request added successfully.",
       request: laboratory_request_result,
       items: laboratory_item_result,
+      bill,
+      is_new_bill: is_new,
     } as addLaboratoryRequest.response);
   } catch (error: any) {
     console.error(error);
@@ -424,7 +427,7 @@ export async function addConsultationRecord(
     service_id,
     is_priority = false,
   } = req.body as addConsultationRecord.body;
-  const user_id = "U-26-1001-0004"; // TODO: take from the authenticated user
+  const user_id = "U-26-1001-0004";
 
   if (!patient_id || !user_id || !service_id) {
     return res.status(400).json({
@@ -452,22 +455,36 @@ export async function addConsultationRecord(
       [queue_id, patient_id, queue_number, is_priority],
     );
 
+    const { bill_id, is_new } = await getOrCreateOpenBill(client, patient_id);
+
     const {
       rows: [consultation_record_result],
     } = await client.query(
       `INSERT INTO consultation_records
-         (consultation_record_id, patient_id, service_id, requested_by, queue_id, status)
-       VALUES ($1, $2, $3, $4, $5, 'In Queue')
-       RETURNING *`,
-      [consultation_record_id, patient_id, service_id, user_id, queue_id],
+     (consultation_record_id, patient_id, service_id, requested_by, queue_id, status, bill_id)
+   VALUES ($1, $2, $3, $4, $5, 'In Queue', $6)
+   RETURNING *`,
+      [
+        consultation_record_id,
+        patient_id,
+        service_id,
+        user_id,
+        queue_id,
+        bill_id,
+      ],
     );
+
+    const bill = await recomputeBillTotals(client, bill_id);
 
     await client.query("COMMIT");
     publishQueueChange();
+
     return res.status(201).json({
-      message: "Laboratory request added successfully.",
+      message: "Consultation record added successfully.",
       consultation_record: consultation_record_result,
       queue: queue_result,
+      bill,
+      is_new_bill: is_new,
     } as addConsultationRecord.response);
   } catch (error: any) {
     await client.query("ROLLBACK").catch(console.error);
