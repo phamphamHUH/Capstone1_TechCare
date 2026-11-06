@@ -1,9 +1,7 @@
-import React from 'react'
+import React from "react";
 
 function QueueSend() {
-  return (
-    <div>QueueSendSSE</div>
-  )
+  return <div>QueueSendSSE</div>;
 }
 
-export default QueueSend
+export default QueueSend;
