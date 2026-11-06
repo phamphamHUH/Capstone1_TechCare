@@ -12,7 +12,7 @@
     "dev": "vite",
     "build": "npm install && tsc -b && vite build",
     "lint": "eslint .",
-    "test:billing": "node --test tests/billingReadability.test.mjs",
+    "test:billing": "node --test tests/billing.test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -23,7 +23,6 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "html2canvas": "^1.4.1",
-    "jspdf": "^4.2.1",
     "lucide-react": "^1.23.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
