@@ -23,7 +23,6 @@ import { addBills, addConsultationRecord, addLaboratoryRequest } from "../../con
 import { getBillDetails, getBills } from "../../controllers/fdstaff/getRequests.controller.js";
 import { addLaboratoryRequest as addDoctorLaboratoryRequest } from "../../controllers/doctor/postRequests.controller.js";
 import { recomputeBillTotals } from "../../utils/recomputeBills.js";
-import { backfillBillLinks } from "../../scripts/repairBilling.js";
 
 let db: PGlite;
 let definitions: string;
@@ -36,7 +35,6 @@ const pay = (options = {}) => invoke(confirmPayment, { payment_method: "Cash", d
 const rows = async (text: string) => (await db.query<any>(text)).rows;
 const bill = async () => (await rows("SELECT * FROM bills WHERE bill_id = 'B-TEST'"))[0];
 const list = async () => (await invoke(getBills)).body.bills as any[];
-const billingColumns = () => definitions.match(/const BILLING_COLUMNS = `([\s\S]*?)`/)![1]!;
 
 beforeAll(async () => {
   db = new PGlite(); state.db = db;
@@ -69,22 +67,12 @@ beforeEach(async () => {
       ('I-L','REQ-TEST','S-L','B-TEST'),('I-U','REQ-TEST','S-U','B-TEST');`);
 });
 
-test("fresh production schema preserves invoice columns and repair is idempotent", async () => {
+test("fresh production schema preserves invoice columns", async () => {
   const section = definitions.slice(definitions.indexOf('table: "bills"'), definitions.indexOf('table: "queue_entries"'));
   for (const column of ["items", "discount_pct", "receipt_id", "receipt_issued_at", "billed_at"]) {
     expect(section).toMatch(new RegExp(`${column}:`));
     expect((await db.query("SELECT column_name FROM information_schema.columns WHERE table_name='bills' AND column_name=$1", [column])).rows).toHaveLength(1);
   }
-  await db.exec(billingColumns()); await db.exec(billingColumns());
-  expect((await bill()).status).toBe("Pending");
-});
-
-test("schema repair adds missing bill links to an older database without touching data", async () => {
-  await db.exec("UPDATE laboratory_request_items SET bill_id=NULL; ALTER TABLE laboratory_request_items DROP COLUMN bill_id; UPDATE bills SET status='Unpaid'");
-  await db.exec(billingColumns());
-  expect((await db.query("SELECT 1 FROM information_schema.columns WHERE table_name='laboratory_request_items' AND column_name='bill_id'")).rows).toHaveLength(1);
-  expect((await bill()).status).toBe("Unpaid");
-  expect(await rows("SELECT * FROM laboratory_request_items")).toHaveLength(2);
 });
 
 test("mixed service payment saves canonical totals, snapshots and one priority queue", async () => {
@@ -259,49 +247,6 @@ test("a saved-items legacy open bill keeps its amount when a new request arrives
   expect(Number((await rows("SELECT total_amount FROM bills WHERE bill_id='B-LEGACY'"))[0].total_amount)).toBe(300);
   const paidLegacy = await invoke(confirmPayment, { amount_received: 300, discount_type: "Not Eligible" }, { bill_id: "B-LEGACY" });
   expect(paidLegacy.code).toBe(200); expect(Number(paidLegacy.body.bill.total_amount)).toBe(300);
-});
-
-test("backfill links only legacy requests that still need a bill and is idempotent", async () => {
-  await db.exec(`TRUNCATE bills, consultation_records, laboratory_requests, laboratory_request_items, queue_entries CASCADE;
-    INSERT INTO queue_entries(queue_id,patient_id,queue_number,status) VALUES ('CONS-0001','P-TEST',1,'Waiting'),('CONS-0002','P-TEST',2,'Completed');
-    INSERT INTO consultation_records(consultation_record_id,patient_id,service_id,requested_by,queue_id,status,is_paid) VALUES
-      ('C-ACTIVE','P-TEST','S-C','U-TEST','CONS-0001','In Queue',FALSE),
-      ('C-DONE','P-TEST','S-C','U-TEST','CONS-0002','In Queue',FALSE),
-      ('C-CANCELLED','P-TEST','S-C','U-TEST',NULL,'Cancelled',FALSE);
-    INSERT INTO laboratory_requests(request_id,patient_id,requested_by,status,is_paid) VALUES
-      ('R-UNPAID','P-TEST','U-TEST','Requested',FALSE),
-      ('R-PAID','P-TEST','U-TEST','Paid',TRUE),
-      ('R-CANCELLED','P-TEST','U-TEST','Cancelled',FALSE);
-    INSERT INTO queue_entries(queue_id,patient_id,queue_number,status) VALUES ('LAB-0009','P-TEST',9,'Waiting');
-    INSERT INTO laboratory_request_items(lab_item_id,request_id,service_id,status,queue_id) VALUES
-      ('I-UNPAID','R-UNPAID','S-L','Requested',NULL),
-      ('I-PAID','R-PAID','S-U','Requested',NULL),
-      ('I-QUEUED','R-PAID','S-L','Waiting','LAB-0009'),
-      ('I-CANCELLED','R-CANCELLED','S-L','Requested',NULL);`);
-  expect(await backfillBillLinks()).toEqual({ openBills: 1, paidBills: 1 });
-  const links = Object.fromEntries((await rows(`SELECT consultation_record_id AS id, bill_id FROM consultation_records
-    UNION ALL SELECT lab_item_id, bill_id FROM laboratory_request_items`)).map((row) => [row.id, row.bill_id]));
-  expect(links["C-ACTIVE"]).toBeTruthy(); expect(links["I-UNPAID"]).toBe(links["C-ACTIVE"]);
-  expect(links["C-DONE"]).toBeNull(); expect(links["C-CANCELLED"]).toBeNull();
-  expect(links["I-QUEUED"]).toBeNull(); expect(links["I-CANCELLED"]).toBeNull();
-  expect(links["I-PAID"]).toBeTruthy(); expect(links["I-PAID"]).not.toBe(links["C-ACTIVE"]);
-
-  const open = (await rows(`SELECT * FROM bills WHERE bill_id='${links["C-ACTIVE"]}'`))[0];
-  expect(open.status).toBe("Pending"); expect(Number(open.total_amount)).toBe(1150);
-  const recovered = (await rows(`SELECT * FROM bills WHERE bill_id='${links["I-PAID"]}'`))[0];
-  expect(recovered.status).toBe("Paid"); expect(recovered.payment_method).toBe("Not recorded");
-  // The amount was never recorded, so no price may be invented for it.
-  expect(Number(recovered.total_amount)).toBe(0); expect(recovered.items[0].price).toBeNull();
-  expect(new Set([links["C-ACTIVE"], links["I-PAID"]]).size).toBe(2);
-
-  expect(await backfillBillLinks()).toEqual({ openBills: 0, paidBills: 0 });
-  expect(await rows("SELECT * FROM bills")).toHaveLength(2);
-
-  const listed = (await list()).find((row) => row.bill_id === links["I-PAID"]);
-  expect(listed.laboratory_status).toBe("Needs forwarding");
-  const retry = await invoke(confirmPayment, {}, { bill_id: links["I-PAID"] });
-  expect(retry.body.queued).toBe(true); expect(retry.body.already_paid).toBe(true);
-  expect(Number((await rows(`SELECT total_amount FROM bills WHERE bill_id='${links["I-PAID"]}'`))[0].total_amount)).toBe(0);
 });
 
 test("standalone invoices retain exact custom peso discounts and canonical totals", async () => {

@@ -401,31 +401,6 @@ function generateCreateTableSQL(table: TableDefinition): string {
 // }
 
 // =======================================================================
-// ADD BILLING COLUMNS TO OLDER DATABASES
-// =======================================================================
-
-const BILLING_COLUMNS = `
-  ALTER TABLE bills
-    ADD COLUMN IF NOT EXISTS items JSONB,
-    ADD COLUMN IF NOT EXISTS discount_pct NUMERIC(5,2),
-    ADD COLUMN IF NOT EXISTS receipt_id VARCHAR(50),
-    ADD COLUMN IF NOT EXISTS receipt_issued_at TIMESTAMP,
-    ADD COLUMN IF NOT EXISTS billed_at TIMESTAMP,
-    ADD COLUMN IF NOT EXISTS subtotal NUMERIC(12,2) NOT NULL DEFAULT 0,
-    ADD COLUMN IF NOT EXISTS discount_type VARCHAR(50),
-    ADD COLUMN IF NOT EXISTS discount_rate NUMERIC(5,2),
-    ADD COLUMN IF NOT EXISTS discount_amount NUMERIC(12,2) NOT NULL DEFAULT 0,
-    ADD COLUMN IF NOT EXISTS paid_at TIMESTAMP,
-    ADD COLUMN IF NOT EXISTS reference_num VARCHAR(50),
-    ADD COLUMN IF NOT EXISTS received_by VARCHAR(255) REFERENCES users(user_id),
-    ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;
-  ALTER TABLE consultation_records
-    ADD COLUMN IF NOT EXISTS bill_id VARCHAR(255) REFERENCES bills(bill_id);
-  ALTER TABLE laboratory_request_items
-    ADD COLUMN IF NOT EXISTS bill_id VARCHAR(255) REFERENCES bills(bill_id);
-`;
-
-// =======================================================================
 // CONNECT TO DATABASE
 // =======================================================================
 
@@ -433,10 +408,6 @@ export async function connectNeon(): Promise<void> {
   try {
     for (const table of TABLES) {
       await sql.query(generateCreateTableSQL(table));
-    }
-
-    for (const statement of BILLING_COLUMNS.split(";")) {
-      if (statement.trim()) await sql.query(statement);
     }
 
     // await ensureLaboratoryResultStatus();
