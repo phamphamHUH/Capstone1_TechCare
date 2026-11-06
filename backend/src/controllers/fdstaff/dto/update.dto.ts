@@ -108,6 +108,7 @@ export namespace confirmLabRequestPayment {
     request: Record<string, unknown>[];
     queued: boolean;
     queues: Record<string, unknown>[];
+    bill: Record<string, unknown> | null;
   }
 
   export interface error {

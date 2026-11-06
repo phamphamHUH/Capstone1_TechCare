@@ -1,0 +1,189 @@
+.fd-billing {
+  padding: 24px clamp(18px, 2.5vw, 34px);
+  color: #103f78;
+}
+.fd-billing button:focus-visible, .fd-billing input:focus-visible, .fd-billing select:focus-visible {
+  outline: 2px solid #0784f8;
+  outline-offset: 3px;
+}
+.fd-billing h1:focus { outline: none; }
+.fd-billing .billing-page-heading { margin: 16px 0; }
+.fd-billing .billing-page-heading h1, .fd-billing .billing-transaction-heading h1 {
+  color: #104779;
+  font-size: 32px;
+  font-weight: 750;
+  letter-spacing: -.025em;
+}
+.fd-billing .billing-page-heading p, .fd-billing .billing-transaction-heading p {
+  color: #486687;
+  font-size: 16px;
+  line-height: 1.5;
+}
+.fd-billing .billing-back-link, .billing-transaction-heading > .billing-secondary {
+  min-height: 44px;
+  width: fit-content;
+  border-radius: 20px;
+  border-color: #c1dfff;
+  background: #f1f8ff;
+  padding: 0 12px;
+  color: #0784f8;
+  font-size: 14px;
+  font-weight: 500;
+}
+.fd-billing .billing-process-grid { grid-template-columns: minmax(0, 2.15fr) minmax(270px, 1fr); gap: 16px; }
+.fd-billing .billing-process-history .billing-process-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.fd-billing .billing-card { padding: 17px; border-radius: 9px; box-shadow: none; }
+.fd-billing .billing-card h2 { margin-bottom: 16px; color: #104779; font-size: 18px; font-weight: 650; }
+.fd-billing .billing-process-main, .fd-billing .billing-transaction-form { gap: 15px; }
+.billing-label { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; color: #486687; font-size: 14px; }
+.billing-patient-details { display: grid; grid-template-columns: minmax(170px, 1.5fr) .8fr 1fr 1fr; gap: 16px; align-items: start; font-size: 16px; }
+.billing-patient-details p { margin: 4px 0; }
+.billing-patient-name { display: flex; align-items: center; gap: 13px; }
+.billing-avatar { display: grid; place-items: center; flex-shrink: 0; width: 52px; height: 52px; border-radius: 50%; background: #e8f2ff; color: #8496a8; }
+.billing-patient-name > div { display: grid; gap: 5px; }
+.billing-patient-name strong { color: #104779; font-size: 16px; }
+.billing-muted { color: #486687; }
+.billing-break { overflow-wrap: anywhere; }
+.billing-two-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 17px; }
+.fd-billing .billing-field { gap: 7px; font-size: 16px; font-weight: 500; }
+.billing-field > span { display: flex; align-items: center; gap: 7px; }
+.fd-billing .billing-field input, .fd-billing .billing-field select { min-height: 44px; padding: 8px 10px; border-radius: 5px; font-size: 16px; }
+.fd-billing .billing-field select:has(option[value="20"]:checked) { border-color: #b8dcff; background: #f0f8ff; }
+.billing-help { margin: 8px 0 0; color: #486687; font-size: 14px; line-height: 1.5; }
+.billing-readonly { border: 1px solid #d8e6f7; border-radius: 5px; padding: 10px; color: #164778; font-size: 16px; }
+.fd-billing .billing-notice { margin: 9px 0 0; padding: 10px; border-radius: 5px; font-size: 14px; line-height: 1.5; }
+.fd-billing .billing-notice svg { flex-shrink: 0; width: 14px; }
+.fd-billing .billing-services-table { font-size: 14px; }
+.fd-billing .billing-services-table th { padding: 10px 8px; color: #164778; font-size: 14px; }
+.fd-billing .billing-services-table tbody td { padding: 20px 8px; }
+.fd-billing .billing-services-table tfoot td { padding: 12px 0 0; border: 0; color: #486687; font-weight: 400; }
+.fd-billing .billing-services-table tfoot td:last-child { color: #164778; font-weight: 650; }
+.billing-methods { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 0; border: 0; }
+.billing-method { display: flex; align-items: center; gap: 12px; min-height: 46px; padding: 8px 12px; border: 1px solid #d4e4f8; border-radius: 6px; color: #164778; font-size: 16px; cursor: pointer; }
+.billing-method input { accent-color: #0784f8; width: 17px; height: 17px; }
+.billing-method-selected { border-color: #0784f8; background: #f0f8ff; color: #0784f8; box-shadow: inset 0 0 0 1px #0784f8; }
+.billing-cash-calculator { display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: start; gap: 14px; margin-top: 17px; }
+.billing-cash-calculator > .billing-notice { grid-column: span 2; margin-top: 0; }
+.billing-cash-calculator strong { display: block; margin-top: 7px; font-size: 22px; }
+.billing-blue { color: #0784f8; }
+.billing-green { color: #00ac54 !important; }
+.billing-amber { color: #ba7400; }
+.fd-billing .billing-summary { gap: 15px; padding: 18px; box-shadow: 0 2px 3px #103f7808; }
+.fd-billing .billing-summary h2 { margin-bottom: 1px; font-size: 20px; }
+.fd-billing .billing-summary-list { gap: 0; }
+.fd-billing .billing-summary-list > div { padding: 13px 0; border-bottom: 1px solid #e5eef9; font-size: 14px; }
+.fd-billing .billing-summary-list dd { max-width: 60%; }
+.fd-billing .billing-total { padding: 15px 12px; border-radius: 5px; font-size: 16px; }
+.fd-billing .billing-total strong { font-size: 28px; white-space: nowrap; }
+.fd-billing .billing-process-actions { justify-content: flex-end; margin-top: 15px; }
+.fd-billing .billing-button { border-radius: 5px; font-size: 16px; }
+.fd-billing .billing-process-actions .billing-button { min-height: 46px; padding: 0 23px; }
+.fd-billing .billing-process-actions .billing-button-secondary { min-width: 96px; }
+.fd-billing .billing-payment-recorded { border-color: #f1d69a; background: #fffbef; color: #8c6300; }
+.fd-billing .billing-payment-recorded strong, .fd-billing .billing-payment-recorded p { color: #8c6300; }
+.fd-billing .billing-transaction-grid { grid-template-columns: minmax(0, 1.04fr) minmax(0, 1fr); gap: 17px; }
+.fd-billing .billing-transaction-heading { gap: 12px; }
+.fd-billing .billing-transaction-form { min-width: 0; margin: 0; padding: 0; border: 0; }
+.fd-billing .billing-primary, .fd-billing .billing-secondary { min-height: 44px; border-radius: 5px; padding: 0 12px; font-size: 14px; }
+.fd-billing .invoice-preview-controls { gap: 8px; margin-bottom: 10px; }
+.fd-billing .invoice-preview-container { padding: 16px; border-radius: 8px; }
+.fd-billing .invoice-preview-help { margin-bottom: 13px; font-size: 14px; }
+.fd-billing .invoice-paper { padding: 20px; overflow: visible; }
+.fd-billing .invoice-document-header { gap: 12px; padding-bottom: 17px; }
+.fd-billing .invoice-clinic-brand { gap: 10px; }
+.fd-billing .invoice-clinic-brand img { width: 35px; height: 35px; }
+.fd-billing .invoice-clinic-brand h2 { font-size: 16px; }
+.fd-billing .invoice-clinic-brand p, .fd-billing .invoice-document-id p { font-size: 14px; }
+.fd-billing .invoice-document-id { max-width: 43%; }
+.fd-billing .invoice-document-id h2 { font-size: 28px; }
+.fd-billing .invoice-patient-details { gap: 5px; padding: 15px 0; }
+.fd-billing .invoice-patient-details h3 { font-size: 14px; }
+.fd-billing .invoice-patient-details > div { grid-template-columns: 57px minmax(0, 1fr) 52px minmax(0, 1fr); gap: 5px; font-size: 14px; }
+.fd-billing .invoice-paper .invoice-table-scroll table { min-width: 0; margin: 14px 0; font-size: 14px; }
+.fd-billing .invoice-paper .invoice-table-scroll th, .fd-billing .invoice-paper .invoice-table-scroll td { padding: 9px 5px; overflow-wrap: anywhere; }
+.fd-billing .invoice-paper .invoice-table-scroll th { font-size: 14px; }
+.fd-billing .invoice-paper .invoice-totals { width: 100%; gap: 8px; font-size: 14px; }
+.fd-billing .invoice-paper .invoice-grand-total { padding: 12px; }
+.fd-billing .invoice-paper .invoice-grand-total strong { font-size: 26px; }
+.fd-billing .invoice-paper .invoice-totals .invoice-grand-total > strong { color: #0784f8 !important; }
+.fd-billing .invoice-patient-summary .invoice-senior-badge { color: #a86e00 !important; }
+.fd-billing .invoice-document-notes { gap: 4px; font-size: 14px; }
+.fd-billing .invoice-patient-select { grid-template-columns: 1fr; gap: 4px; max-width: 55%; font-size: 14px; }
+.fd-billing .invoice-patient-select select { min-width: 0; width: 100%; min-height: 44px; font-size: 14px; }
+.fd-billing .invoice-patient-summary { grid-template-columns: 45px minmax(90px, 1fr) minmax(70px, .9fr); gap: 10px; }
+.fd-billing .invoice-patient-summary > div:last-child { display: none; }
+.fd-billing .invoice-patient-avatar { width: 44px; height: 44px; }
+.fd-billing .invoice-selected-table { min-width: 0; font-size: 14px; }
+.fd-billing .invoice-selected-table th { font-size: 14px; }
+.fd-billing .invoice-selected-table th, .fd-billing .invoice-selected-table td { padding: 13px 6px; }
+.fd-billing .invoice-discount-grid { gap: 12px; }
+.fd-billing .invoice-money-input { min-height: 44px; padding: 0 8px; }
+.fd-billing .billing-transaction-actions { width: calc(51% - 8px); }
+.fd-billing .billing-transaction-actions button { min-height: 46px; }
+@media (max-width: 1100px) {
+  .billing-patient-details { grid-template-columns: 1.3fr 1fr; }
+  .fd-billing .invoice-document-header { align-items: flex-start; flex-direction: column; }
+  .fd-billing .invoice-document-id { max-width: 100%; text-align: left; }
+}
+@media (max-width: 850px) {
+  .fd-billing .billing-process-grid, .fd-billing .billing-process-history .billing-process-grid, .fd-billing .billing-transaction-grid { grid-template-columns: minmax(0, 1fr); }
+  .fd-billing .billing-transaction-grid { grid-template-areas: "form" "preview"; }
+  .fd-billing .billing-process-grid > .billing-summary, .fd-billing .billing-process-grid > .invoice-preview-shell { position: static; max-height: none; overflow: visible; }
+  .fd-billing .billing-transaction-actions { width: 100%; }
+}
+@media (max-width: 500px) {
+  .fd-billing { padding: 16px 12px; }
+  .billing-two-columns, .billing-methods { grid-template-columns: 1fr; }
+  .billing-patient-details { gap: 14px; grid-template-columns: 1fr 1fr; }
+  .billing-patient-name { grid-column: 1 / -1; }
+  .billing-cash-calculator { grid-template-columns: 1fr 1fr; }
+  .billing-cash-calculator > div:last-child { grid-column: 1 / -1; }
+  .fd-billing .billing-process-actions { flex-wrap: wrap; }
+  .fd-billing .invoice-card-heading { align-items: stretch; }
+  .fd-billing .invoice-patient-select { max-width: 100%; }
+  .fd-billing .invoice-preview-container, .fd-billing .invoice-paper { padding: 12px; }
+  .fd-billing .invoice-paper .invoice-table-scroll table { min-width: 430px; }
+  .fd-billing .invoice-selected-table { min-width: 440px; }
+  .fd-billing .invoice-patient-details > div { grid-template-columns: 60px minmax(0, 1fr); }
+}
+
+/* Keep working text readable; tables can scroll instead of shrinking type. */
+.fd-billing { font-size: 16px; line-height: 1.6; }
+.fd-billing .billing-services-table, .fd-billing .billing-summary-list > div, .fd-billing .invoice-selected-table { font-size: 16px; }
+.fd-billing .billing-button, .fd-billing .billing-primary, .fd-billing .billing-secondary, .fd-billing .billing-field, .fd-billing .billing-field input, .fd-billing .billing-field select { font-size: 16px; }
+.fd-billing .billing-patient-details { grid-template-columns: minmax(180px, 1.3fr) 1fr 1fr; gap: 20px; }
+.fd-billing .billing-patient-details > div:last-child { grid-column: 2 / -1; }
+.fd-billing .billing-patient-name strong, .fd-billing .invoice-patient-selected strong, .fd-billing .invoice-patient-summary > div strong { font-size: 17px; }
+.fd-billing .invoice-patient-selected small, .fd-billing .invoice-patient-summary > div > span, .fd-billing .invoice-senior-badge { font-size: 14px; }
+.fd-billing .invoice-patient-select select { font-size: 16px; }
+.fd-billing .billing-total, .fd-billing .invoice-totals-card > div, .fd-billing .invoice-paper .invoice-totals { font-size: 16px; }
+.fd-billing .billing-services-table { min-width: 620px; }
+.fd-billing .invoice-selected-table { min-width: 600px; }
+.fd-billing .invoice-paper .invoice-table-scroll table { min-width: 620px; font-size: 16px; }
+.fd-billing .invoice-patient-details > div { grid-template-columns: 100px minmax(0, 1fr); font-size: 16px; gap: 6px 12px; }
+.fd-billing .invoice-patient-summary { grid-template-columns: 48px minmax(0, 1fr); }
+.fd-billing .invoice-patient-summary > div:not(.invoice-patient-selected) { grid-column: 2; }
+.fd-billing .invoice-document-notes, .fd-billing .invoice-clinic-brand p, .fd-billing .invoice-document-id p { font-size: 14px; line-height: 1.6; }
+.fd-billing .invoice-remove-service { display: grid; place-items: center; min-width: 44px; min-height: 44px; border-radius: 5px; }
+.fd-billing .invoice-card-heading { flex-wrap: wrap; }
+.fd-billing .invoice-add-service { min-height: 44px; font-size: 16px; }
+.fd-billing .billing-queue-table { font-size: 16px; }
+.fd-billing .billing-queue-table th, .fd-billing .billing-queue-table td strong, .fd-billing .billing-row-actions .billing-button { font-size: 16px; }
+.fd-billing .billing-cell-meta, .fd-billing .billing-stat > p, .fd-billing .billing-status, .fd-billing .billing-pagination { font-size: 14px; }
+.fd-billing .billing-toolbar select, .fd-billing .billing-tabs button { font-size: 16px; min-height: 44px; }
+@media (max-width: 1200px) {
+  .fd-billing .billing-process-grid, .fd-billing .billing-process-history .billing-process-grid, .fd-billing .billing-transaction-grid { grid-template-columns: minmax(0, 1fr); }
+  .fd-billing .billing-transaction-grid { grid-template-areas: "form" "preview"; }
+  .fd-billing .billing-transaction-actions { width: 100%; }
+  .fd-billing .billing-process-grid > .billing-summary, .fd-billing .billing-process-grid > .invoice-preview-shell { position: static; max-height: none; }
+}
+@media (max-width: 600px) {
+  .fd-billing .billing-patient-details, .fd-billing .billing-cash-calculator, .fd-billing .billing-two-columns, .fd-billing .invoice-discount-grid { grid-template-columns: minmax(0, 1fr); }
+  .fd-billing .billing-patient-details > div:last-child, .fd-billing .billing-patient-name { grid-column: auto; }
+  .fd-billing .billing-cash-calculator > .billing-notice { grid-column: auto; }
+  .fd-billing .invoice-preview-controls { flex-direction: column; }
+  .fd-billing .invoice-preview-controls button { flex: 0 0 auto; min-height: 44px; }
+  .fd-billing .billing-process-actions .billing-button { width: 100%; white-space: normal; }
+  .fd-billing .invoice-patient-select { max-width: 100%; width: 100%; }
+  .fd-billing .billing-pagination { align-items: flex-start; flex-direction: column; }
+}

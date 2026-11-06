@@ -14,7 +14,7 @@ const initialForm = {
   first_name: "", middle_name: "", last_name: "", suffix: "", sex: "",
   birthdate: "", civil_status: "", blood_type: "", height_cm: "", weight_kg: "",
 
-  contact_number: "", email: "", 
+  contact_number: "", email: "",
   street: "", barangay: "", city: "", province: "", zip_code: "",
 
   guardian_name: "", guardian_relationship: "", guardian_contact: "",

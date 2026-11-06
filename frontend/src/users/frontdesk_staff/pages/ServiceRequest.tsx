@@ -54,6 +54,7 @@ function ServiceRequest({
 
   // FILTER + SORT + PAGINATE
   const filtered = services
+    .filter((s) => s.active)
     .filter((s) => s.service_type.toLowerCase() === activeTab.toLowerCase())
     .filter(
       (s) => categoryFilter === "all" || s.service_category === categoryFilter,
@@ -135,7 +136,7 @@ function ServiceRequest({
             patientId={patient?.patient_id ?? null}
             onToggleService={toggleService}
             onClearAll={clearServices}
-            onSubmitted={() => setPatient(null)}
+            onSubmitted={async () => { setPatient(null); await loadData(); }}
           />
         </div>
       </div>

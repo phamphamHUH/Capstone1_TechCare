@@ -1,0 +1,176 @@
+import { readFile } from "node:fs/promises";
+import { PGlite } from "@electric-sql/pglite";
+import { afterAll, beforeAll, beforeEach, expect, test, vi } from "vitest";
+import type { Request, Response } from "express";
+
+// Every database entry point is replaced before controllers are imported.
+// These checks never import or connect to the configured clinic database.
+const state = vi.hoisted(() => ({ db: null as PGlite | null }));
+vi.mock("../../config/db.js", () => {
+  const query = (text: string, values: unknown[] = []) => state.db!.query(text, values);
+  const sql = Object.assign(async (parts: TemplateStringsArray, ...values: unknown[]) => {
+    const text = parts.reduce((result, part, index) => result + (index ? `$${index}` : "") + part, "");
+    return (await query(text, values)).rows;
+  }, { query: async (text: string, values?: unknown[]) => (await query(text, values)).rows });
+  return { sql, pool: { connect: async () => ({ query, release() {} }) } };
+});
+vi.mock("../../config/env.js", () => ({ ENV: { IS_PRODUCTION: false } }));
+vi.mock("../../config/cloudinary.js", () => ({ default: {} }));
+vi.mock("../../services/queue-sse/index.js", () => ({ publishQueueChange: vi.fn() }));
+
+import { confirmPayment } from "../../controllers/fdstaff/billPayment.controller.js";
+import { addBills } from "../../controllers/fdstaff/postRequests.controller.js";
+import { getAllBilling, getBillDetails, getBills } from "../../controllers/fdstaff/getRequests.controller.js";
+import { recomputeBillTotals } from "../../utils/recomputeBills.js";
+import { BILLING_SCHEMA_REPAIR } from "../../config/billingSchema.js";
+
+let db: PGlite;
+let definitions: string;
+async function invoke(handler: Function, body = {}, params = { bill_id: "B-TEST" }, query = {}) {
+  const response = { code: 200, body: null as any, status(code: number) { this.code = code; return this; }, json(body: unknown) { this.body = body; return this; } };
+  await handler({ body, params, query, user: { user_id: "U-TEST" } } as unknown as Request, response as unknown as Response);
+  return response;
+}
+const pay = (options = {}) => invoke(confirmPayment, { payment_method: "Cash", discount_type: "Senior Citizen", amount_received: 1500, priority: true, ...options });
+const rows = async (text: string) => (await db.query<any>(text)).rows;
+const bill = async () => (await rows("SELECT * FROM bills WHERE bill_id = 'B-TEST'"))[0];
+
+beforeAll(async () => {
+  db = new PGlite(); state.db = db;
+  definitions = (await readFile(new URL("../../config/db.ts", import.meta.url), "utf8")).split("// CONNECT TO DATABASE")[0]!;
+  const tables = [...definitions.matchAll(/createSQL:\s*`([\s\S]*?)`/g)];
+  expect(tables.length).toBeGreaterThan(15);
+  for (const table of tables) await db.exec(table[1]!);
+});
+afterAll(async () => { await db?.close(); });
+beforeEach(async () => {
+  await db.exec(`TRUNCATE users, patients, services, bills, queue_entries, consultation_records, laboratory_requests, laboratory_request_items CASCADE;
+    INSERT INTO users(user_id,username,password_hash,first_name,last_name,sex,email,contact_number,address,birthdate,role,date_hired)
+      VALUES ('U-TEST','staff','test','Test','Staff','Male','staff@example.test','000','Test','1980-01-01','frontdesk_staff','2020-01-01');
+    INSERT INTO patients(patient_id,username,password_hash,first_name,last_name,sex,email,contact_number,street,barangay,city,province,zip_code,birthdate)
+      VALUES ('P-TEST','patient','test','Juan','Test','Male','patient@example.test','000','Street','Barangay','City','Province','1000','1950-01-01');
+    INSERT INTO services(service_id,service_type,service_name,price,room,service_category) VALUES
+      ('S-C','Consultation','Consultation',500,'CONS-1','Consultation'),
+      ('S-L','Laboratory','CBC',650,'LAB-1','Hematology'),
+      ('S-U','Laboratory','Urinalysis',250,'LAB-1','Clinical Microscopy');
+    INSERT INTO bills(bill_id,patient_id) VALUES ('B-TEST','P-TEST');
+    INSERT INTO consultation_records(consultation_record_id,patient_id,service_id,requested_by,bill_id)
+      VALUES ('C-TEST','P-TEST','S-C','U-TEST','B-TEST');
+    INSERT INTO laboratory_requests(request_id,patient_id,requested_by) VALUES ('REQ-TEST','P-TEST','U-TEST');
+    INSERT INTO laboratory_request_items(lab_item_id,request_id,service_id,bill_id) VALUES
+      ('I-L','REQ-TEST','S-L','B-TEST'),('I-U','REQ-TEST','S-U','B-TEST');`);
+});
+
+test("fresh production schema preserves invoice columns and repair is idempotent", async () => {
+  const section = definitions.slice(definitions.indexOf('table: "bills"'), definitions.indexOf('table: "queue_entries"'));
+  for (const column of ["items", "discount_pct", "receipt_id", "receipt_issued_at", "billed_at"]) {
+    expect(section).toMatch(new RegExp(`${column}:`));
+    expect((await db.query("SELECT column_name FROM information_schema.columns WHERE table_name='bills' AND column_name=$1", [column])).rows).toHaveLength(1);
+  }
+  await db.exec(BILLING_SCHEMA_REPAIR); await db.exec(BILLING_SCHEMA_REPAIR);
+  expect((await bill()).status).toBe("Pending");
+});
+
+test("mixed service payment saves canonical totals, snapshots and one priority queue", async () => {
+  const result = await pay();
+  expect(result.code).toBe(200); expect(result.body.queued).toBe(true);
+  expect(result.body.change).toBe(380);
+  const saved = await bill();
+  expect(saved.status).toBe("Paid"); expect(Number(saved.subtotal)).toBe(1400);
+  expect(Number(saved.total_amount)).toBe(1120); expect(Number(saved.discount_rate)).toBe(20);
+  expect(saved.items).toHaveLength(3); expect(saved.receipt_id).toBeTruthy();
+  expect((await rows("SELECT * FROM queue_entries"))).toHaveLength(1);
+  expect((await rows("SELECT is_paid FROM consultation_records"))[0].is_paid).toBe(true);
+  expect((await rows("SELECT is_priority FROM queue_entries"))[0].is_priority).toBe(true);
+});
+
+test("forwarding failure retains payment and retry never charges or queues twice", async () => {
+  await db.exec("UPDATE services SET room='' WHERE service_id='S-L'");
+  const first = await pay();
+  expect(first.code).toBe(200); expect(first.body.queued).toBe(false);
+  const saved = await bill(); expect(saved.status).toBe("Paid");
+  await db.exec("UPDATE services SET room='LAB-1' WHERE service_id='S-L'");
+  for (let index = 0; index < 2; index++) {
+    const retry = await pay({ amount_received: 0, discount_type: "Not Eligible", priority: false });
+    expect(retry.body.queued).toBe(true);
+    expect(retry.body.bill.receipt_id).toBe(saved.receipt_id);
+  }
+  expect(Number((await bill()).total_amount)).toBe(1120);
+  expect((await rows("SELECT * FROM queue_entries"))).toHaveLength(1);
+  expect((await rows("SELECT is_priority FROM queue_entries"))[0].is_priority).toBe(true);
+});
+
+test("paid amounts and history never change after catalog prices change", async () => {
+  await pay(); await db.exec("UPDATE services SET price=9999");
+  const client = { query: (text: string, values: unknown[]) => db.query(text, values) };
+  await recomputeBillTotals(client as any, "B-TEST");
+  expect(Number((await bill()).total_amount)).toBe(1120);
+  const details = await invoke(getBillDetails);
+  expect(details.code).toBe(200);
+  expect(details.body.items.map((item: any) => Number(item.price)).sort((a: number, b: number) => a-b)).toEqual([250,500,650]);
+});
+
+test("invalid cash, transfer reference and eligibility never record a payment", async () => {
+  expect((await pay({ amount_received: 1 })).code).toBe(400);
+  expect((await pay({ payment_method: "Instapay/QRpH", reference_num: "" })).code).toBe(400);
+  expect((await pay({ discount_type: "PWD" })).code).toBe(400);
+  await db.exec("UPDATE patients SET birthdate='2000-01-01'");
+  expect((await pay()).code).toBe(400);
+  expect((await bill()).status).toBe("Pending");
+  expect(await rows("SELECT * FROM queue_entries")).toHaveLength(0);
+});
+
+test("PWD bank payments exclude cancelled items and retain transfer reference", async () => {
+  await db.exec("UPDATE patients SET birthdate='2000-01-01',is_pwd=true; UPDATE laboratory_request_items SET status='Cancelled' WHERE lab_item_id='I-U'");
+  const result = await pay({ discount_type: "PWD", payment_method: "Instapay/QRpH", amount_received: null, reference_num: "TRANSFER-1" });
+  expect(result.code).toBe(200); expect(result.body.queued).toBe(true);
+  const saved = await bill();
+  expect(Number(saved.total_amount)).toBe(920); expect(saved.discount_type).toBe("PWD");
+  expect(saved.reference_num).toBe("TRANSFER-1"); expect(saved.items).toHaveLength(2);
+});
+
+test("consultation-only payment succeeds without laboratory forwarding", async () => {
+  await db.exec("DELETE FROM laboratory_request_items");
+  const result = await pay({ discount_type: "Not Eligible", amount_received: 500 });
+  expect(result.code).toBe(200); expect(result.body.has_laboratory_items).toBe(false);
+  expect(result.body.queued).toBe(true); expect(result.body.queues).toEqual([]);
+  expect(Number((await bill()).total_amount)).toBe(500);
+});
+
+test("release list, detail and history APIs work with canonical bill identifiers", async () => {
+  const pending = await invoke(getBills, {}, undefined, { status: "Pending" });
+  expect(pending.code).toBe(200); expect(pending.body.bills[0].bill_id).toBe("B-TEST");
+  expect(Number(pending.body.bills[0].services_count)).toBe(3);
+  expect((await invoke(getBillDetails)).body.items).toHaveLength(3);
+  await pay();
+  expect((await invoke(getBills, {}, undefined, { status: "Paid" })).body.bills).toHaveLength(1);
+  const history = await invoke(getAllBilling);
+  expect(history.code).toBe(200); expect(JSON.stringify(history.body)).toContain("B-TEST");
+  expect((await invoke(getBills, {}, undefined, { status: "invalid" })).code).toBe(400);
+});
+
+test("standalone invoices retain exact custom peso discounts and canonical totals", async () => {
+  const result = await invoke(addBills, { patient_id: "P-TEST", services_ids: ["S-L","S-U"], discount_amount: 7.77, discount_type: "Custom", payment_method: "Cash" });
+  expect(result.code).toBe(201); const saved = result.body.bill;
+  expect(Number(saved.subtotal)).toBe(900); expect(Number(saved.total_amount)).toBe(892.23);
+  expect(Number(saved.discount_amount)).toBe(7.77); expect(saved.discount_type).toBe("Custom");
+  expect(saved.items).toHaveLength(2); expect(saved.receipt_id).toBeTruthy(); expect(saved.paid_at).toBeTruthy();
+});
+
+test("standalone senior invoices preserve discount type and validate eligibility", async () => {
+  const payload = { patient_id: "P-TEST", services_ids: ["S-L"], discount_pct: 20, discount_type: "Senior Citizen", payment_method: "Cash" };
+  const result = await invoke(addBills, payload);
+  expect(result.code).toBe(201); expect(result.body.bill.discount_type).toBe("Senior Citizen");
+  expect(Number(result.body.bill.total_amount)).toBe(520);
+  await db.exec("UPDATE patients SET birthdate='2000-01-01'");
+  expect((await invoke(addBills, payload)).code).toBe(400);
+});
+
+test("legacy paid history does not invent item prices and cancelled bills cannot be paid", async () => {
+  await db.exec("UPDATE bills SET status='Paid',total_amount=123,items=NULL");
+  const details = await invoke(getBillDetails);
+  expect(details.body.items).toEqual([]); expect(Number(details.body.bill.total_amount)).toBe(123);
+  await db.exec("UPDATE bills SET status='Cancelled'");
+  expect((await pay()).code).toBe(409);
+  expect(await rows("SELECT * FROM queue_entries")).toHaveLength(0);
+});

@@ -45,7 +45,7 @@ export default function BillingQueue({
             <th aria-label="Expand services" />
             <th>Date & time</th>
             <th>Patient</th>
-            <th>{history ? "Bill / Request ID" : "Request ID"}</th>
+            <th>{history ? "Bill / Request ID" : "Bill ID"}</th>
             <th>Service(s)</th>
             <th className="billing-number">Amount</th>
             <th>Payment method</th>
@@ -132,7 +132,7 @@ export default function BillingQueue({
                         ? entry.lines[0].name
                         : entry.lines.length
                           ? `${entry.type} (${entry.lines.length})`
-                          : `${entry.type} request`}
+                          : `${entry.type} (${entry.bill?.services_count ?? 0})`}
                     </span>
                     <span className="billing-cell-meta">
                       {entry.lines.length === 1
@@ -149,7 +149,7 @@ export default function BillingQueue({
                   </td>
                   <td>
                     <div className="billing-row-actions">
-                      {entry.request &&
+                      {(entry.bill || entry.request) &&
                         (entry.status === "Pending" || entry.needsLabQueue) && (
                           <BillingButton onClick={() => onProcess(entry)}>
                             {entry.needsLabQueue

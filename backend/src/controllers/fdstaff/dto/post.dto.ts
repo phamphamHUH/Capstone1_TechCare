@@ -86,17 +86,20 @@ export namespace addBills {
 
   export interface body {
     patient_id: string;
-    services_ids?: number[];
+    services_ids?: string[];
     discount_pct?: number;
+    discount_amount?: number;
+    discount_type?: "Not Eligible" | "Senior Citizen" | "PWD" | "Custom";
     custom_service?: customService[];
     payment_method?: string;
+    reference_num?: string;
     status?: string;
   }
 
   export interface bill {
     bill_id: number;
     patient_id: string;
-    services_ids?: number[];
+      services_ids?: string[];
     discount_pct: number | string;
     total_amount: number | string;
     payment_method: string;

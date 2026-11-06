@@ -228,16 +228,55 @@ const TABLES: {
   },
 
   {
-    table: "package_services",
-    createSQL: `CREATE TABLE IF NOT EXISTS package_services (
-    id          SERIAL PRIMARY KEY,
-    package_id  VARCHAR(255) NOT NULL REFERENCES packages(package_id),
-    service_id  VARCHAR(255) NOT NULL REFERENCES services(service_id)
-  )`,
+    table: "bills",
+    createSQL: `CREATE TABLE IF NOT EXISTS bills (
+      id                      SERIAL PRIMARY KEY,
+      bill_id                 VARCHAR(255) UNIQUE NOT NULL,
+      patient_id              VARCHAR(255) NOT NULL REFERENCES patients(patient_id),
+      status                  VARCHAR(20) NOT NULL DEFAULT 'Pending',
+      items                   JSONB,
+      discount_pct            NUMERIC(5,2),
+      receipt_id              VARCHAR(50),
+      receipt_issued_at       TIMESTAMP,
+      billed_at               TIMESTAMP,
+
+      subtotal                NUMERIC(12,2) NOT NULL DEFAULT 0,
+      discount_type           VARCHAR(50),
+      discount_rate           NUMERIC(5,2),
+      discount_amount         NUMERIC(12,2) NOT NULL DEFAULT 0,
+      discounted_by           VARCHAR(255) REFERENCES users(user_id),
+      total_amount            NUMERIC(12,2) NOT NULL DEFAULT 0,
+
+      payment_method          VARCHAR(30) NOT NULL DEFAULT 'Cash',
+      paid_at                 TIMESTAMP,
+      reference_num           VARCHAR(50),
+      received_by             VARCHAR(255) REFERENCES users(user_id),
+      created_at              TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at              TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`,
     columns: {
       id: "SERIAL PRIMARY KEY",
-      package_id: "VARCHAR(255) NOT NULL REFERENCES packages(package_id)",
-      service_id: "VARCHAR(255) NOT NULL REFERENCES services(service_id)",
+      bill_id: "VARCHAR(255) UNIQUE NOT NULL",
+      patient_id: "VARCHAR(255) NOT NULL REFERENCES patients(patient_id)",
+      status: "VARCHAR(20) NOT NULL DEFAULT 'Pending'",
+      items: "JSONB",
+      discount_pct: "NUMERIC(5,2)",
+      receipt_id: "VARCHAR(50)",
+      receipt_issued_at: "TIMESTAMP",
+      billed_at: "TIMESTAMP",
+      subtotal: "NUMERIC(12,2) NOT NULL DEFAULT 0",
+      discount_type: "VARCHAR(50)",
+      discount_rate: "NUMERIC(5,2)",
+      discount_amount: "NUMERIC(12,2) NOT NULL DEFAULT 0",
+      discount_id_no: "VARCHAR(100)",
+      discounted_by: "VARCHAR(255) REFERENCES users(user_id)",
+      total_amount: "NUMERIC(12,2) NOT NULL DEFAULT 0",
+      payment_method: " VARCHAR(30) NOT NULL DEFAULT 'Cash'",
+      paid_at: "TIMESTAMP",
+      reference_num: "VARCHAR(50)",
+      received_by: "VARCHAR(255) REFERENCES users(user_id)",
+      created_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      updated_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
     },
   },
 
@@ -277,6 +316,7 @@ const TABLES: {
     queue_id                VARCHAR(255) REFERENCES queue_entries(queue_id),
     bill_id                 VARCHAR(255) REFERENCES bills(bill_id),
     status                  VARCHAR(255) NOT NULL DEFAULT 'Created',
+    cancellation_reason     VARCHAR(255),
     is_paid                 BOOLEAN NOT NULL DEFAULT FALSE,
     requested_by            VARCHAR(255) NOT NULL REFERENCES users(user_id),
     consulted_by            VARCHAR(255) REFERENCES users(user_id),
@@ -509,49 +549,6 @@ const TABLES: {
   },
 
   {
-    table: "bills",
-    createSQL: `CREATE TABLE IF NOT EXISTS bills (
-      id                      SERIAL PRIMARY KEY,
-      bill_id                 VARCHAR(255) UNIQUE NOT NULL,
-      patient_id              VARCHAR(255) NOT NULL REFERENCES patients(patient_id),
-      status                  VARCHAR(20) NOT NULL DEFAULT 'Pending',
-      
-      subtotal                NUMERIC(12,2) NOT NULL DEFAULT 0,
-      discount_type           VARCHAR(50),
-      discount_rate           NUMERIC(5,2),
-      discount_amount         NUMERIC(12,2) NOT NULL DEFAULT 0,
-      discounted_by           VARCHAR(255) REFERENCES users(user_id),
-      total_amount            NUMERIC(12,2) NOT NULL DEFAULT 0,
-
-      payment_method          VARCHAR(30) NOT NULL DEFAULT 'Cash',
-      paid_at                 TIMESTAMP,
-      reference_num           VARCHAR(50),
-      received_by             VARCHAR(255) REFERENCES users(user_id),
-      created_at              TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at              TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-    )`,
-    columns: {
-      id: "SERIAL PRIMARY KEY",
-      bill_id: "VARCHAR(255) UNIQUE NOT NULL",
-      patient_id: "VARCHAR(255) NOT NULL REFERENCES patients(patient_id)",
-      status: "VARCHAR(20) NOT NULL DEFAULT 'Pending'",
-      subtotal: "NUMERIC(12,2) NOT NULL DEFAULT 0",
-      discount_type: "VARCHAR(50)",
-      discount_rate: "NUMERIC(5,2)",
-      discount_amount: "NUMERIC(12,2) NOT NULL DEFAULT 0",
-      discount_id_no: "VARCHAR(100)",
-      discounted_by: "VARCHAR(255) REFERENCES users(user_id)",
-      total_amount: "NUMERIC(12,2) NOT NULL DEFAULT 0",
-      payment_method: " VARCHAR(30) NOT NULL DEFAULT 'Cash'",
-      paid_at: "TIMESTAMP",
-      reference_num: "VARCHAR(50)",
-      received_by: "VARCHAR(255) REFERENCES users(user_id)",
-      created_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
-      updated_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
-    },
-  },
-
-  {
     table: "system_activity",
     createSQL: `CREATE TABLE IF NOT EXISTS system_activity (
       id           SERIAL PRIMARY KEY,
@@ -599,9 +596,9 @@ const TABLES: {
     table: "actions",
     createSQL: `CREATE TABLE IF NOT EXISTS actions (
       action_id           SERIAL PRIMARY KEY,
-      action_name         VARCHAR(255) NOT NULL UNIQUE, 
+      action_name         VARCHAR(255) NOT NULL UNIQUE,
       action_description  TEXT,
-      module              VARCHAR(100) NOT NULL,     
+      module              VARCHAR(100) NOT NULL,
       is_sensitive        BOOLEAN NOT NULL DEFAULT TRUE
     )`,
     columns: {

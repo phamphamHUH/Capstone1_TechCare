@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Syringe, Trash2, Plus } from "lucide-react";
 import api from "#lib/axios";
 import type { Service } from "../../../../interface/Service";
 import RequestSuccessModal from "./ServiceList/RequestSuccessModal";
+import BillingDialog from "../Billing/BillingDialog";
 
 type ServiceListProps = {
   services: Service[];
@@ -11,7 +12,7 @@ type ServiceListProps = {
   patientId: string | null;
   onToggleService: (serviceId: string) => void;
   onClearAll: () => void;
-  onSubmitted?: () => void;
+  onSubmitted?: () => void | Promise<void>;
 };
 
 function ServiceList({
@@ -24,6 +25,9 @@ function ServiceList({
   onSubmitted,
 }: ServiceListProps) {
   const [submitting, setSubmitting] = useState(false);
+  const pending = useRef(false);
+  const [removing, setRemoving] = useState<Service | null>(null);
+  const [clearing, setClearing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<{
     requestId?: string;
@@ -42,11 +46,13 @@ function ServiceList({
   const canSubmit = !!patientId && selectedServices.length > 0 && !submitting;
 
   const handleSubmit = async () => {
+    if (pending.current) return;
     if (!patientId) return setError("Please select a patient first.");
     if (selectedServices.length === 0)
       return setError("Select at least one service.");
 
     try {
+      pending.current = true;
       setSubmitting(true);
       setError(null);
 
@@ -57,7 +63,7 @@ function ServiceList({
         });
 
         setSuccess({
-          requestId: res.data.request?.request_id,
+          requestId: (Array.isArray(res.data.request) ? res.data.request[0] : res.data.request)?.request_id,
           count: selectedServices.length,
         });
       } else {
@@ -67,12 +73,13 @@ function ServiceList({
         });
 
         setSuccess({
-          requestId: res.data.consultationRecord?.consultation_record_id,
+          requestId: res.data.consultation_record?.consultation_record_id,
           count: 1,
         });
       }
 
       onClearAll();
+      void onSubmitted?.();
     } catch (err) {
       console.error("Error submitting request:", err);
       setError(
@@ -80,6 +87,7 @@ function ServiceList({
           ?.message || "Failed to submit request.",
       );
     } finally {
+      pending.current = false;
       setSubmitting(false);
     }
   };
@@ -96,7 +104,8 @@ function ServiceList({
           {servicesList.length > 0 && (
             <button
               type="button"
-              onClick={onClearAll}
+              onClick={() => setClearing(true)}
+              disabled={submitting}
               className="text-xs text-blue-500 underline tracking-wider cursor-pointer transition-all
                        hover:text-blue-600 active:scale-99 active:text-blue-700"
             >
@@ -136,7 +145,8 @@ function ServiceList({
                 </div>
                 <button
                   type="button"
-                  onClick={() => onToggleService(service.service_id)}
+                  onClick={() => setRemoving(service)}
+                  disabled={submitting}
                   aria-label={`Remove ${service.service_name}`}
                   className="text-gray-500 hover:text-red-500 cursor-pointer p-1 rounded-md hover:bg-pink-100"
                 >
@@ -174,13 +184,15 @@ function ServiceList({
           {submitting ? "Submitting..." : "Submit Request"}
         </button>
       </div>
+      {removing && <BillingDialog kind="remove-service" description={`Are you sure you want to remove "${removing.service_name}" from the selected services?`} onCancel={() => setRemoving(null)} onConfirm={() => { onToggleService(removing.service_id); setRemoving(null); }} />}
+      {clearing && <BillingDialog kind="discard-changes" description="Clear all selected services? This will discard the current service selection." onCancel={() => setClearing(false)} onConfirm={() => { onClearAll(); setClearing(false); }} />}
       {success && (
         <RequestSuccessModal
           requestId={success.requestId}
           serviceCount={success.count}
+          serviceType={activeTab}
           onClose={() => {
             setSuccess(null);
-            onSubmitted?.();
           }}
         />
       )}

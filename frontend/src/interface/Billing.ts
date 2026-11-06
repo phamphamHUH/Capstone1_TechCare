@@ -20,6 +20,14 @@ export type Bill = {
   total_amount: number | string | null;
   payment_method: string | null;
   paid_at: string | null;
+  items?: BillingItem[];
+  discount_pct?: number | string | null;
+  receipt_id?: string | null;
+  receipt_issued_at?: string | null;
+  billed_at?: string | null;
+  reference_num?: string | null;
+  needs_lab_queue?: boolean;
+  is_priority?: boolean;
   created_at: string;
 };
 
@@ -30,17 +38,40 @@ export type BillDetails = {
 };
 
 export interface BillItem {
+  request_id?: string;
+  quantity?: number;
   line_type: "consultation" | "laboratory";
   item_id: string;
   service_id: string;
   service_name: string;
   service_category: string;
-  price: string;
+  price: string | number;
   status: string;
   created_at: string;
 }
 
+export interface UnpaidRequests {
+  record_type: "laboratory";
+  lab_item_id?: string;
+  request_id: string;
+  patient_id: string;
+  patient_name: string;
+  service_id?: string;
+  service_name?: string;
+  is_paid: boolean;
+  is_priority?: boolean;
+  requested_by: string;
+  requester_role: string;
+  created_at: string;
+  items?: BillingItem[];
+  total_amount?: number | string;
+  payment_method?: string;
+}
+
 export interface BillingItem {
+  line_type?: "consultation" | "laboratory";
+  item_id?: string;
+  request_id?: string;
   service_id?: string;
   service_name?: string;
   service_category?: string;
@@ -87,13 +118,23 @@ export interface BillingEntry {
   total: number | null;
   discountPercent: number | null;
   receiptId: string;
-  request?: Bill;
+  request?: UnpaidRequests;
   needsLabQueue?: boolean;
+  bill?: Bill;
+  isPwd?: boolean;
+  isPriority?: boolean;
   reference?: string;
   referenceLabel?: "Request ID" | "Bill ID";
-  dateLabel?: "Request date" | "Payment date";
+  dateLabel?: "Request date" | "Payment date" | "Created at";
 }
 
+export interface PaymentOptions {
+  payment_method: "Cash" | "Instapay/QRpH";
+  discount_type: "Not Eligible" | "Senior Citizen" | "PWD";
+  amount_received: number | null;
+  reference_num: string;
+  priority: boolean;
+}
 export type BillingStatistics = {
   totalRequests: number;
   pendingPayment: number;

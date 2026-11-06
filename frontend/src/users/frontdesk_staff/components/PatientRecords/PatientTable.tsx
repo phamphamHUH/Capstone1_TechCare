@@ -1,7 +1,7 @@
 import { useSearchParams } from "react-router";
 import type { Patient } from "../../../../interface/Patient";
 import calculateAge from "../../../../utils/calculateAge";
-import { formatAge } from "../../../../utils/formats";
+import { formatAge, formatPatientAddress } from "../../../../utils/formats";
 
 type PatientTableProps = {
   patients: Patient[];
@@ -95,7 +95,7 @@ function PatientTable({ patients, onEdit }: PatientTableProps) {
                   </td>
 
                   <td className="px-4 py-1 text-gray-700">
-                    <div>{patient.address}</div>
+                    <div>{formatPatientAddress(patient)}</div>
                   </td>
 
                   <td className="px-4 py-1 text-gray-700 text-center">

@@ -34,7 +34,7 @@ export async function recomputeBillTotals(client: PoolClient, bill_id: string) {
        ) s
        WHERE bb.bill_id = $1
      ) t
-     WHERE b.bill_id = $1
+     WHERE b.bill_id = $1 AND b.status = 'Pending'
      RETURNING b.*`,
     [bill_id],
   );

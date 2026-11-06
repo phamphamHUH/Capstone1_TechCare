@@ -4,12 +4,14 @@ import { CheckCircle2 } from "lucide-react";
 type RequestSuccessModalProps = {
   requestId?: string;
   serviceCount: number;
+  serviceType?: string;
   onClose: () => void;
 };
 
 function RequestSuccessModal({
   requestId,
   serviceCount,
+  serviceType = "laboratory",
   onClose,
 }: RequestSuccessModalProps) {
   // close on Escape
@@ -39,7 +41,7 @@ function RequestSuccessModal({
 
         <h2 className="text-lg font-bold">Request Submitted</h2>
         <p className="mt-1 text-sm text-gray-500">
-          {serviceCount} laboratory service{serviceCount === 1 ? "" : "s"} added
+          {serviceCount} {serviceType} service{serviceCount === 1 ? "" : "s"} added
           successfully.
         </p>
 

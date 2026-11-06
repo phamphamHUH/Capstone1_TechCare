@@ -1,7 +1,152 @@
-import { sql } from "../../config/db.js";
+import { sql, pool } from "../../config/db.js";
+import type { PoolClient } from "@neondatabase/serverless";
 import type { Request, Response } from "express";
-import { skipQueueEntry } from "./dto/update.dto.js";
+import type { acceptConsultationQueue, cancelConsultationQueue, skipQueueEntry } from "./dto/update.dto.js";
+import { recomputeBillTotals } from "../../utils/recomputeBills.js";
 import { publishQueueChange } from "../../services/queue-sse/index.js";
+import { publishQueueChange as publishDoctorQueueChange } from "./sseController.controller.js";
+
+export async function acceptConsultationQueue(
+  req: Request,
+  res: Response<acceptConsultationQueue.response | acceptConsultationQueue.error>,
+) {
+  const { queue_id } = req.params;
+  const { room } = req.body ?? {};
+  if (typeof queue_id !== "string" || !queue_id.trim()) {
+    return res.status(400).json({ message: "Queue ID is required." });
+  }
+  if (typeof room !== "string" || !room.trim()) {
+    return res.status(400).json({ message: "Consultation room is required." });
+  }
+  const roomText = room.trim();
+
+  try {
+    // Keep the status check inside the UPDATE so two requests cannot both accept
+    // the same patient. Only active consultations in this room can be served.
+    const [updated] = await sql`
+      UPDATE queue_entries q
+      SET status = 'Serving', updated_at = NOW()
+      WHERE q.queue_id = ${queue_id}
+        AND q.queue_id LIKE 'CONS-%'
+        AND LOWER(TRIM(q.status)) IN ('waiting', 'skipped')
+        AND EXISTS (
+          SELECT 1 FROM consultation_records cr
+          JOIN services s ON s.service_id = cr.service_id
+          WHERE cr.queue_id = q.queue_id AND cr.patient_id = q.patient_id
+            AND s.room::text = ${roomText}
+            AND LOWER(TRIM(cr.status)) NOT IN ('cancelled', 'canceled', 'rejected', 'completed')
+        )
+      RETURNING q.*
+    `;
+
+    if (!updated) {
+      const [existing] = await sql`
+        SELECT q.status,
+          EXISTS (
+            SELECT 1 FROM consultation_records cr JOIN services s ON s.service_id = cr.service_id
+            WHERE cr.queue_id = q.queue_id AND cr.patient_id = q.patient_id AND s.room::text = ${roomText}
+          ) AS in_room
+        FROM queue_entries q
+        WHERE q.queue_id = ${queue_id} AND q.queue_id LIKE 'CONS-%'
+          AND EXISTS (SELECT 1 FROM consultation_records cr WHERE cr.queue_id = q.queue_id AND cr.patient_id = q.patient_id)
+      `;
+      if (!existing) return res.status(404).json({ message: "Consultation queue entry not found." });
+      if (!existing.in_room) return res.status(403).json({ message: "This consultation belongs to a different room." });
+      return res.status(409).json({ message: "Only waiting or skipped queues with an active consultation can be accepted. Refresh the queue to see its current status." });
+    }
+
+    for (const notify of [publishQueueChange, publishDoctorQueueChange]) {
+      try { notify(); }
+      catch (error) { console.error("Consultation accepted, but queue notification failed:", error); }
+    }
+    return res.status(200).json({ message: "Consultation accepted and now being served.", queue: updated });
+  } catch (error) {
+    console.error("Unable to accept consultation queue:", error);
+    return res.status(500).json({ message: "Unable to accept the consultation. Refresh the queue before trying again." });
+  }
+}
+
+export async function cancelConsultationQueue(
+  req: Request,
+  res: Response<cancelConsultationQueue.response | cancelConsultationQueue.error>,
+) {
+  const { queue_id } = req.params;
+  const { room, reason } = req.body ?? {};
+  if (typeof queue_id !== "string" || !queue_id.trim() || queue_id.length > 255) {
+    return res.status(400).json({ message: "A valid queue ID is required." });
+  }
+  if (typeof room !== "string" || !room.trim()) {
+    return res.status(400).json({ message: "Consultation room is required." });
+  }
+  if (typeof reason !== "string" || !reason.trim() || reason.trim().length > 255) {
+    return res.status(400).json({ message: "Cancellation reason is required and must not exceed 255 characters." });
+  }
+
+  let client: PoolClient | undefined;
+  try {
+    client = await pool.connect();
+    await client.query("BEGIN");
+    const reject = async (status: number, message: string) => {
+      await client!.query("ROLLBACK");
+      return res.status(status).json({ message });
+    };
+
+    // Lock the queue first, as front desk cancellation does, then its clinical
+    // records. Concurrent accepts/cancellations must see the committed status.
+    const { rows: [entry] } = await client.query(
+      "SELECT * FROM queue_entries WHERE queue_id = $1 AND queue_id LIKE 'CONS-%' FOR UPDATE",
+      [queue_id.trim()],
+    );
+    if (!entry) return await reject(404, "Consultation queue entry not found.");
+    const { rows: consultations } = await client.query(
+      `SELECT cr.*, s.room FROM consultation_records cr
+       JOIN services s ON s.service_id = cr.service_id
+       WHERE cr.queue_id = $1 AND cr.patient_id = $2
+       ORDER BY cr.consultation_record_id FOR UPDATE OF cr`,
+      [entry.queue_id, entry.patient_id],
+    );
+    if (!consultations.length) return await reject(404, "Consultation queue entry not found.");
+    if (consultations.some((record) => String(record.room) !== room.trim())) {
+      return await reject(403, "This consultation belongs to a different room.");
+    }
+    const activeStatuses = ["created", "in queue", "waiting", "skipped", "serving"];
+    if (!["waiting", "skipped", "serving"].includes(String(entry.status).trim().toLowerCase()) ||
+        consultations.some((record) => !activeStatuses.includes(String(record.status).trim().toLowerCase()))) {
+      return await reject(409, "Only waiting, skipped or serving queues with active consultations can be cancelled.");
+    }
+
+    const { rows: [queue] } = await client.query(
+      "UPDATE queue_entries SET status = 'Cancelled', updated_at = NOW() WHERE queue_id = $1 RETURNING *",
+      [entry.queue_id],
+    );
+    const { rows: cancelled } = await client.query(
+      `UPDATE consultation_records SET status = 'Cancelled', cancellation_reason = $1
+       WHERE consultation_record_id = ANY($2::text[]) RETURNING *`,
+      [reason.trim(), consultations.map((record) => record.consultation_record_id)],
+    );
+    const billIds = [...new Set(consultations.map((record) => record.bill_id as string | null).filter((id): id is string => Boolean(id)))].sort();
+    for (const billId of billIds) await recomputeBillTotals(client, billId);
+    await client.query("COMMIT");
+
+    // A failed stream notification must not turn a committed cancellation into
+    // an API failure that prompts the caller to retry.
+    for (const notify of [publishQueueChange, publishDoctorQueueChange]) {
+      try { notify(); }
+      catch (error) { console.error("Consultation cancelled, but queue notification failed:", error); }
+    }
+    return res.status(200).json({
+      message: "Consultation request cancelled successfully.",
+      queue,
+      consultations: cancelled,
+    });
+  } catch (error) {
+    if (client) await client.query("ROLLBACK").catch(console.error);
+    console.error("Unable to cancel consultation queue:", error);
+    return res.status(500).json({ message: "Unable to cancel the consultation. Refresh the queue before trying again." });
+  } finally {
+    client?.release();
+  }
+}
 
 export async function skipConsultationQueueEntry(
   req: Request,

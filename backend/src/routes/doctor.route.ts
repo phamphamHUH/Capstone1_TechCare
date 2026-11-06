@@ -4,8 +4,8 @@ import authMiddleware from "../middlewares/auth.middleware.js";
 import doctorMiddleware from "../middlewares/doctor.middleware.js";
 import {
   skipConsultationQueueEntry,
-  // acceptConsultationQueue,
-  // cancelConsultationQueue,
+  acceptConsultationQueue,
+  cancelConsultationQueue,
 } from "../controllers/doctor/updateRequests.controller.js";
 import { getReleasedLaboratoryResults } from "../controllers/labstaff/getRequests.controller.js";
 import {
@@ -54,8 +54,8 @@ router.get(
   getMedicalHistoryFull,
 );
 
-// router.patch("/consultation-queues/:queue_id/accept", acceptConsultationQueue);
-// router.patch("/consultation-queues/:queue_id/cancel", cancelConsultationQueue);
+router.patch("/consultation-queues/:queue_id/accept", acceptConsultationQueue);
+router.patch("/consultation-queues/:queue_id/cancel", cancelConsultationQueue);
 router.patch("/consultation-queues/:queue_id/skip", skipConsultationQueueEntry);
 
 /// ----------SSE--------

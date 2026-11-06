@@ -1,0 +1,28 @@
+.frontdesk-shell { width: 100%; font-family: "Geist Variable", Arial, sans-serif; font-size: 16px; line-height: 1.6; }
+.frontdesk-shell .text-xs { font-size: 14px; line-height: 1.6; }
+.frontdesk-shell :is([class~="text-[10px]"], [class~="text-[11px]"], [class~="text-[12px]"], [class~="text-[13px]"]) { font-size: 14px; line-height: 1.6; }
+.frontdesk-shell .text-sm { font-size: 16px; line-height: 1.6; }
+.frontdesk-shell :is(input, select, textarea, button) { font-size: 16px; }
+.frontdesk-shell main :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select, button) { min-height: 44px; }
+.frontdesk-shell main table { font-size: 16px; }
+.frontdesk-workspace { flex: 1; min-width: 0; width: 0; }
+.frontdesk-shell > aside { flex-shrink: 0; }
+.frontdesk-workspace > header { height: 76px; margin-bottom: 0; }
+@media (max-width: 1023px) {
+  .frontdesk-shell > aside { position: fixed; top: 0; bottom: 0; left: 0; z-index: 50; overflow-y: auto; }
+  .frontdesk-workspace > header { padding: 0 16px; gap: 12px; }
+  .frontdesk-workspace > header > div { gap: 10px; }
+  .frontdesk-workspace > header > div:last-child > div { padding: 0 6px; gap: 8px; }
+  .frontdesk-workspace > header > div:last-child > div > div { display: none; }
+  .frontdesk-workspace > header > div:last-child > div > svg { display: none; }
+  .frontdesk-workspace > header > div:last-child > div > img { width: 32px; height: 32px; }
+}
+@media (max-width: 500px) {
+  .frontdesk-workspace > header { height: 66px; padding: 0 12px; }
+  .frontdesk-workspace > header > div:first-child h1 { font-size: 16px; max-width: 100px; }
+  .frontdesk-workspace > header > div:first-child h2 { display: none; }
+  .frontdesk-workspace > header > div:last-child > button:first-child { width: 96px; height: 44px; padding: 0 8px; font-size: 16px; }
+  .frontdesk-workspace > header [aria-label="Notifications"] { display: none; }
+  .frontdesk-workspace > header > div:last-child > button:last-child { padding: 8px; }
+  .frontdesk-workspace > header > div:last-child > button:last-child > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}
