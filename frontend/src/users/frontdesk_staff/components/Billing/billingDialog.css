@@ -1,0 +1,21 @@
+.fd-dialog-backdrop { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 20px; background: rgb(13 24 38 / 65%); font-family: "Geist Variable", Arial, sans-serif; }
+.fd-dialog { position: relative; width: min(100%, 550px); max-height: calc(100dvh - 40px); overflow-y: auto; border: 1px solid #dce7f3; border-radius: 15px; padding: 32px 26px 24px; background: #fff; color: #104779; box-shadow: 0 20px 70px #071b3e40; }
+.fd-dialog-content { display: grid; grid-template-columns: 68px minmax(0, 1fr); align-items: center; gap: 20px; padding-right: 9px; }
+.fd-dialog-icon { display: grid; place-items: center; width: 68px; height: 68px; border-radius: 50%; background: #e8f4ff; color: #0085ff; }
+.fd-dialog-green .fd-dialog-icon { background: #e7f7ec; color: #20bf55; }
+.fd-dialog-amber .fd-dialog-icon { background: #fff3e1; color: #e98200; }
+.fd-dialog-red .fd-dialog-icon { background: #ffe9ed; color: #f23f60; }
+.fd-dialog h2 { margin: 0 0 9px; color: #104779; font-size: 22px; font-weight: 750; line-height: 1.35; }
+.fd-dialog p { margin: 0; color: #486687; font-size: 16px; line-height: 1.6; overflow-wrap: anywhere; }
+.fd-dialog-close { position: absolute; top: 5px; right: 5px; display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 7px; background: transparent; color: #58718e; cursor: pointer; }
+.fd-dialog-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 28px; }
+.fd-dialog-actions-single { grid-template-columns: minmax(160px, 220px); justify-content: center; }
+.fd-dialog-actions button { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; border: 1px solid #cbdff5; border-radius: 6px; padding: 10px 12px; font: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
+.fd-dialog-secondary { background: #fff; color: #164778; }
+.fd-dialog-actions .fd-dialog-primary { border-color: #0085ff; background: #0085ff; color: #fff; }
+.fd-dialog-actions .fd-dialog-destructive { border-color: #f28b00; background: #f28b00; }
+.fd-dialog button:hover:not(:disabled) { filter: brightness(.95); }
+.fd-dialog button:disabled { opacity: .6; cursor: wait; }
+.fd-dialog button:focus-visible { outline: 3px solid #1266c2; outline-offset: 3px; }
+@media (max-width: 480px) { .fd-dialog-backdrop { padding: 12px; }.fd-dialog { padding: 32px 18px 20px; max-height: calc(100dvh - 24px); }.fd-dialog-content { grid-template-columns: 52px minmax(0, 1fr); gap: 13px; }.fd-dialog-icon { width: 52px; height: 52px; }.fd-dialog h2 { font-size: 21px; }.fd-dialog-actions { grid-template-columns: 1fr; }.fd-dialog-actions-single { grid-template-columns: 1fr; } }
+@media print { .fd-dialog-backdrop { display: none !important; } }

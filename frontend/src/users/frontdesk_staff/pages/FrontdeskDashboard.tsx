@@ -1,35 +1,14 @@
 import { Users, Clock, List, Receipt } from "lucide-react";
 import type { Patient } from "../../../interface/Patient";
-
-type Bill = {
-  id: number;
-  bill_id: string;
-  patient_id: string;
-  discount_pct: number;
-  total_amount: number;
-  payment_method: string;
-  status: string;
-  receipt_id: string;
-  billed_at: string;
-}[];
-
-type Queue = {
-  id: number;
-  queue_id: string;
-  patient_id: string;
-  queue_number: number;
-  doctor_id: string;
-  service_type: string;
-  status: string;
-  created_at: string;
-  updated_at: string;
-}[];
+import type { BillingRecord } from "../../../interface/Billing";
+import type { QueueEntry } from "../../../interface/Queue";
 
 type FrontdeskDashboardProps = {
-  billing: Bill;
+  billing: BillingRecord[];
+  unpaidRequestCount?: number;
   loading: boolean;
   patients: Patient[];
-  queues: Queue;
+  queues: QueueEntry[];
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   loadData: () => Promise<void>;
@@ -37,6 +16,7 @@ type FrontdeskDashboardProps = {
 
 function FrontdeskDashboard({
   billing,
+  unpaidRequestCount = 0,
   patients,
   queues,
   open,
@@ -44,21 +24,21 @@ function FrontdeskDashboard({
   loadData,
   loading,
 }: FrontdeskDashboardProps) {
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
 
   const patientsInQueue = queues.filter(
     (queue) => queue.status.toLowerCase() === "waiting",
   ).length;
 
   const registeredToday = patients.filter(
-    (patient) => patient.created_at?.split("T")[0] === today,
+    (patient) => patient.created_at && new Date(patient.created_at).toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }) === today,
   ).length;
 
   const totalQueue = queues.length;
 
   const pendingBills = billing.filter(
-    (bill) => bill.status.toLowerCase() === "unpaid",
-  ).length;
+    (bill) => ["unpaid", "pending"].includes(bill.status.toLowerCase()),
+  ).length + unpaidRequestCount;
 
   return (
     <main className="flex-1 min-w-0">
@@ -168,7 +148,7 @@ function FrontdeskDashboard({
               <p className="text-3xl font-semibold mt-2">
                 {
                   queues.filter(
-                    (queue) => queue.status.toLowerCase() === "in progress",
+                    (queue) => ["in progress", "in service", "serving"].includes(queue.status.toLowerCase()),
                   ).length
                 }
               </p>

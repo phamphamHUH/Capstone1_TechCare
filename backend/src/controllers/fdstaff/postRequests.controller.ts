@@ -23,6 +23,7 @@ import type {
 } from "./dto/post.dto.js";
 import { publishQueueChange } from "../../services/queue-sse/index.js";
 import { randomUUID } from "node:crypto";
+import { ENV } from "../../config/env.js";
 export async function addPatient(
   req: Request,
   res: Response<addPatient.response | addPatient.error>,
@@ -158,6 +159,7 @@ export async function addBills(
       patient_id,
       services_ids = [],
       discount_pct = 0,
+      discount_amount,
       payment_method = "Cash",
       status = "Paid",
     } = req.body as addBills.body;
@@ -165,6 +167,7 @@ export async function addBills(
     const validPaymentMethods = ["Cash", "Instapay/QRph"];
     const validStatuses = ["Paid", "Unpaid"];
     const discount = Number(discount_pct);
+    const fixedDiscount = discount_amount === undefined ? null : Number(discount_amount);
 
     if (
       !patient_id ||
@@ -173,6 +176,7 @@ export async function addBills(
       !Number.isFinite(discount) ||
       discount < 0 ||
       discount > 100 ||
+      (fixedDiscount !== null && (!Number.isFinite(fixedDiscount) || fixedDiscount < 0 || discount !== 0)) ||
       !validPaymentMethods.includes(payment_method) ||
       !validStatuses.includes(status)
     ) {
@@ -205,7 +209,11 @@ export async function addBills(
       quantity: 1,
     }));
     const subtotal = items.reduce((sum, item) => sum + item.price, 0);
-    const total_amount = Math.round(subtotal * (1 - discount / 100) * 100) / 100;
+    if (items.some((item) => !Number.isFinite(item.price) || item.price < 0) || (fixedDiscount !== null && fixedDiscount > subtotal)) {
+      return res.status(400).json({ message: "Service prices must be valid and the discount cannot exceed the subtotal." });
+    }
+    const total_amount = Math.round((fixedDiscount === null ? subtotal * (1 - discount / 100) : subtotal - fixedDiscount) * 100) / 100;
+    const savedDiscount = fixedDiscount === null ? discount : subtotal > 0 ? Math.round(fixedDiscount / subtotal * 10000) / 100 : 0;
     const bill_id = `B-${randomUUID()}`;
     const receipt_id = status === "Paid" ? `R-${randomUUID().slice(0, 12).toUpperCase()}` : null;
     const bill = await sql`
@@ -225,7 +233,7 @@ export async function addBills(
         ${bill_id},
         ${patient_id},
         ${JSON.stringify(items)}::jsonb,
-        ${discount},
+        ${savedDiscount},
         ${total_amount},
         ${payment_method},
         ${status},
@@ -370,7 +378,7 @@ export async function addLaboratoryRequest(
   res: Response<addLaboratoryRequest.response | addLaboratoryRequest.error>,
 ) {
   const { patient_id, services } = req.body as addLaboratoryRequest.body;
-  const user_id = "U-26-1001-0004";
+  const user_id = req.user?.user_id ?? (!ENV.IS_PRODUCTION ? "U-26-1001-0004" : undefined);
 
   if (
     !patient_id ||
@@ -442,7 +450,7 @@ export async function addConsultationRecord(
     service_id,
     is_priority = false,
   } = req.body as addConsultationRecord.body;
-  const user_id = "U-26-1001-0004"; // TODO: take from the authenticated user
+  const user_id = req.user?.user_id ?? (!ENV.IS_PRODUCTION ? "U-26-1001-0004" : undefined);
 
   if (!patient_id || !user_id || !service_id) {
     return res.status(400).json({

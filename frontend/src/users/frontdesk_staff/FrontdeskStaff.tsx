@@ -17,19 +17,21 @@ import PatientRegistration from "./pages/PatientRegistration";
 import ServiceRequest from "./pages/ServiceRequest";
 import Header from "../../components/Header";
 import Queues from "./pages/Queues";
-import type { QueueRequests } from "../../interface/Queue";
-import type { UnpaidRequests } from "../../interface/Billing";
+import type { QueueEntry, QueueRequests } from "../../interface/Queue";
+import type { BillingRecord, UnpaidRequests } from "../../interface/Billing";
+import type { Service } from "../../interface/Service";
 import MedicalHistory from "./pages/MedicalHistory";
 import type { Patient } from "../../interface/Patient";
+import "./frontdesk.css";
 
 function FrontdeskStaff() {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
-  const [patients, setPatients] = useState([]);
-  const [billing] = useState([]);
-  const [queues, setQueues] = useState([]);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [billing, setBilling] = useState<BillingRecord[]>([]);
+  const [queues, setQueues] = useState<QueueEntry[]>([]);
   const [queueRequests, setQueueRequests] = useState<QueueRequests[]>([]);
   const [unpaidRequests, setUnpaidRequests] = useState<UnpaidRequests[]>([]);
-  const [services, setServices] = useState([]);
+  const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(() => typeof window === "undefined" || window.innerWidth >= 1024);
   const [loadError, setLoadError] = useState("");
@@ -48,7 +50,10 @@ function FrontdeskStaff() {
   // searchParams.entries()         // Get all key-value pairs
 
   function setPage(newPage: string) {
-    setSearchParams({ page: newPage });
+    if (newPage === page) return;
+    const proceed = () => setSearchParams({ page: newPage });
+    const event = new CustomEvent("frontdesk:before-navigate", { cancelable: true, detail: { proceed } });
+    if (window.dispatchEvent(event)) proceed();
   }
   const loadData = useCallback(async () => {
     try {
@@ -60,6 +65,7 @@ function FrontdeskStaff() {
         { url: "/api/fdstaff/queues", key: "queueEntries", label: "queues", set: setQueues },
         { url: "/api/fdstaff/queue-requests", key: "requests", label: "queue requests", set: setQueueRequests },
         { url: "/api/fdstaff/billing/unpaid-lab", key: "unpaidLabRequests", label: "billing requests", set: setUnpaidRequests },
+        { url: "/api/fdstaff/billing", key: "billing", label: "payment history", set: setBilling },
       ];
       const responses = await Promise.allSettled(sources.map((source) => api.get(source.url)));
       const failed: string[] = [];
@@ -152,6 +158,7 @@ function FrontdeskStaff() {
             <FrontdeskDashboard
               patients={patients}
               billing={billing}
+              unpaidRequestCount={unpaidRequests.filter((request) => !request.is_paid).length}
               queues={queues}
               open={open}
               setOpen={setOpen}

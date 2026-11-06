@@ -58,6 +58,7 @@ export namespace addBills {
     patient_id: string;
     services_ids?: string[];
     discount_pct?: number;
+    discount_amount?: number;
     custom_service?: customService[];
     payment_method?: string;
     status?: string;

@@ -22,19 +22,23 @@ export function billingDate(value: string, time = false) {
   });
 }
 
-function patientDetails(id: string, patients: Patient[]) {
-  const patient = patients.find((value) => value.patient_id === id);
+export function patientAge(birthdate?: string): number | null {
   let age: number | null = null;
-  if (patient?.birthdate && /^\d{4}-\d{2}-\d{2}/.test(patient.birthdate)) {
+  if (birthdate && /^\d{4}-\d{2}-\d{2}/.test(birthdate)) {
     const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
-    const [year, month, day] = patient.birthdate.slice(0, 10).split("-").map(Number);
+    const [year, month, day] = birthdate.slice(0, 10).split("-").map(Number);
     const [currentYear, currentMonth, currentDay] = today.split("-").map(Number);
     const result = currentYear - year - (currentMonth < month || (currentMonth === month && currentDay < day) ? 1 : 0);
     if (result >= 0 && result <= 130) age = result;
   }
+  return age;
+}
+
+function patientDetails(id: string, patients: Patient[]) {
+  const patient = patients.find((value) => value.patient_id === id);
   return {
     patientName: patient ? [patient.first_name, patient.middle_name, patient.last_name, patient.suffix].filter(Boolean).join(" ") : id,
-    age,
+    age: patientAge(patient?.birthdate),
     sex: patient?.sex || "Not recorded",
   };
 }
@@ -76,6 +80,7 @@ export function requestEntry(request: UnpaidRequests, patients: Patient[], servi
     total: numericAmount(request.total_amount) ?? serviceSubtotal(selected),
     discountPercent: null,
     receiptId: "",
+    isPriority: request.is_priority === true,
     request,
   };
 }
@@ -114,5 +119,6 @@ export function recordEntry(record: BillingRecord, patients: Patient[], services
     total: numericAmount(record.total_amount),
     discountPercent: numericAmount(record.discount_pct),
     receiptId: record.receipt_id || "",
+    isPriority: false,
   };
 }

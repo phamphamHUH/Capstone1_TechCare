@@ -29,15 +29,18 @@ export function ServicesTable({ entry }: { entry: BillingEntry }) {
 }
 
 export function PaymentSummary({ entry }: { entry: BillingEntry }) {
+  const subtotal = serviceSubtotal(entry.lines);
+  const discountAmount = subtotal !== null && entry.total !== null ? Math.max(0, Math.round((subtotal - entry.total) * 100) / 100) : null;
   return <aside className="billing-card billing-summary" aria-label="Payment summary">
-    <h2>Payment summary</h2>
+    <h2>Payment Summary</h2>
     <dl className="billing-summary-list">
-      <div><dt>Selected services</dt><dd>{entry.lines.length ? `${entry.lines.length} services` : "Not provided"}</dd></div>
-      <div><dt>Service subtotal</dt><dd>{money(serviceSubtotal(entry.lines))}</dd></div>
-      <div><dt>Discount</dt><dd>{entry.discountPercent === null ? "Not recorded" : `${entry.discountPercent}%`}</dd></div>
+      <div><dt>Selected Services</dt><dd>{entry.lines.length} items</dd></div>
+      <div><dt>Subtotal</dt><dd>{money(subtotal)}</dd></div>
+      <div><dt>Discount Type</dt><dd>{entry.discountPercent === null ? "Not recorded" : entry.discountPercent === 20 ? "Senior Citizen (20%)" : entry.discountPercent ? `${entry.discountPercent}% discount` : "No discount"}</dd></div>
+      <div><dt>Discount Amount</dt><dd className="billing-green">− {money(discountAmount)}</dd></div>
     </dl>
     <div className="billing-total"><span>Total amount due</span><strong>{money(entry.total)}</strong></div>
-    <dl className="billing-summary-list"><div><dt>Payment method</dt><dd>{entry.method}</dd></div><div><dt>Payment status</dt><dd><BillingStatus status={entry.status} /></dd></div></dl>
+    <dl className="billing-summary-list"><div><dt>Payment Method</dt><dd>{entry.method}</dd></div><div><dt>Queue Priority</dt><dd>{entry.isPriority ? "⚑ Priority" : "Regular"}</dd></div></dl>
     <BillingNotice>{entry.needsLabQueue ? "Payment is confirmed. This request still needs to be sent to the laboratory." : entry.status === "Paid" ? "Payment is confirmed." : "Confirm payment to send this request to the laboratory."}</BillingNotice>
   </aside>;
 }

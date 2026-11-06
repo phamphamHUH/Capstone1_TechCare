@@ -7,6 +7,7 @@ export interface UnpaidRequests {
   service_id?: string;
   service_name?: string;
   is_paid: boolean;
+  is_priority?: boolean;
   requested_by: string;
   requester_role: string;
   created_at: string;
@@ -16,6 +17,7 @@ export interface UnpaidRequests {
 }
 
 export interface BillingItem {
+  request_id?: string;
   service_id?: string;
   service_name?: string;
   service_category?: string;
@@ -64,7 +66,14 @@ export interface BillingEntry {
   receiptId: string;
   request?: UnpaidRequests;
   needsLabQueue?: boolean;
+  isPriority?: boolean;
   reference?: string;
   referenceLabel?: "Request ID" | "Bill ID";
   dateLabel?: "Request date" | "Payment date";
+}
+
+export interface PaymentOptions {
+  payment_method: "Cash" | "Instapay/QRph";
+  discount_pct: number;
+  is_priority: boolean;
 }

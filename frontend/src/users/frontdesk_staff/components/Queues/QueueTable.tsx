@@ -1,8 +1,11 @@
 import type { QueueEntry } from "../../../../interface/Queue";
 import { Trash2 } from "lucide-react";
+import { useRef, useState } from "react";
+import api from "../../../../lib/axios";
 
 type QueueTableProps = {
   queues: QueueEntry[];
+  onRefresh: () => Promise<void>;
 };
 
 const parseDateOnly = (value: string) => {
@@ -29,8 +32,28 @@ const statusStyles: Record<string, string> = {
   cancelled: "bg-gray-100 text-gray-500",
 };
 
-function QueueTable({ queues }: QueueTableProps) {
+function QueueTable({ queues, onRefresh }: QueueTableProps) {
+  const [cancelEntry, setCancelEntry] = useState<QueueEntry | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const pending = useRef(false);
+  async function cancel() {
+    if (!cancelEntry || pending.current) return;
+    pending.current = true;
+    setBusy(true);
+    setError("");
+    try {
+      await api.delete(`/api/fdstaff/queues/${encodeURIComponent(cancelEntry.queue_id)}`);
+      setCancelEntry(null);
+      await onRefresh();
+    } catch (cause) {
+      const response = cause as { response?: { data?: { error?: string; message?: string } } };
+      setError(response.response?.data?.message || response.response?.data?.error || "The queue entry could not be cancelled.");
+    } finally { pending.current = false; setBusy(false); }
+  }
   return (
+    <>
+    {error && <p role="alert" className="mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
     <div className="max-h-105 overflow-auto rounded-xl border border-gray-200 bg-white">
       <table className="w-full text-sm">
         <colgroup>
@@ -107,7 +130,7 @@ function QueueTable({ queues }: QueueTableProps) {
 
                   <td className="px-4 py-3 align-top">
                     <div className="text-[11px] text-gray-400">
-                      <button>
+                      <button type="button" aria-label={`Cancel queue ${entry.queue_id}`} title={entry.status.toLowerCase() === "waiting" ? "Cancel waiting entry" : "Only waiting entries can be cancelled"} disabled={entry.status.toLowerCase() !== "waiting" || busy} className="cursor-pointer text-red-600 disabled:cursor-not-allowed disabled:text-gray-300" onClick={() => { setError(""); setCancelEntry(entry); }}>
                         <Trash2 size={15} />
                       </button>
                     </div>
@@ -125,6 +148,8 @@ function QueueTable({ queues }: QueueTableProps) {
         </tbody>
       </table>
     </div>
+    {cancelEntry && <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4"><section role="dialog" aria-modal="true" aria-labelledby="cancel-queue-title" className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl"><h2 id="cancel-queue-title" className="text-lg font-semibold">Cancel waiting entry?</h2><p className="my-4 text-sm text-gray-600">Cancel {cancelEntry.queue_id} for {cancelEntry.patient_name}? This preserves the patient's records. Payments remain recorded.</p>{error && <p role="alert" className="mb-3 text-sm text-red-700">{error}</p>}<div className="flex justify-end gap-3"><button autoFocus disabled={busy} onClick={() => setCancelEntry(null)} className="rounded-lg border border-gray-200 px-4 py-2 text-sm">Keep Entry</button><button disabled={busy} onClick={() => void cancel()} className="rounded-lg bg-red-600 px-4 py-2 text-sm text-white">{busy ? "Cancelling…" : "Cancel Entry"}</button></div></section></div>}
+    </>
   );
 }
 

@@ -6,10 +6,12 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:frontdesk": "vitest run --config src/tests/vitest.unit.config.ts",
     "dev": "nodemon --watch src --ext ts --exec tsx src/server.ts",
     "build": "npm install && tsc",
     "start": "node dist/server.js",
     "seed": "tsx src/scripts/seed.ts",
+    "repair:billing": "tsx src/scripts/repairBilling.ts",
     "seed:reset": "tsx src/scripts/seed.ts --reset",
     "seed:bulk": "tsx src/scripts/seedBulk.ts",
     "seed:all": "npm run seed:reset -- --force && npm run seed:bulk -- --force"

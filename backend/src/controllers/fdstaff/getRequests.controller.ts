@@ -209,53 +209,71 @@ export async function getAllBilling(
 ) {
   // get /api/fdstaff/billing
   try {
-    // Confirming a lab payment persists is_paid on the request, even when no
-    // separate bill was issued. Include that saved fact without inventing an
-    // amount, payment method, receipt, or historical service price.
-    const history = await sql`
-      WITH payment_history AS (
-        SELECT to_jsonb(b) || jsonb_build_object('record_type', 'bill') AS record,
-          COALESCE(b.billed_at, b.created_at) AS sort_date
-        FROM bills b
-        UNION ALL
-        SELECT jsonb_build_object(
-          'bill_id', 'LAB-CONFIRM:' || lr.request_id,
-          'record_type', 'laboratory_confirmation',
-          'request_id', lr.request_id,
-          'patient_id', lr.patient_id,
-          'status', 'Paid',
-          'items', COALESCE((
-            SELECT jsonb_agg(jsonb_build_object(
-              'service_id', ri.service_id,
-              'service_name', s.service_name,
-              'service_category', s.service_category,
-              'quantity', 1
-            ) ORDER BY ri.lab_item_id)
-            FROM laboratory_request_items ri
-            JOIN services s ON s.service_id = ri.service_id
-            WHERE ri.request_id = lr.request_id
-          ), '[]'::jsonb),
-          'total_amount', NULL,
-          'discount_pct', NULL,
-          'payment_method', NULL,
-          'receipt_id', NULL,
-          'created_at', lr.requested_at,
-          'billed_at', NULL
-        ) AS record, lr.updated_at AS sort_date
-        FROM laboratory_requests lr
-        WHERE lr.is_paid = TRUE
-          AND NOT EXISTS (
-            SELECT 1 FROM bills b
-            WHERE LOWER(b.status) = 'paid'
-              AND b.patient_id = lr.patient_id
-              AND b.items @> jsonb_build_array(jsonb_build_object('request_id', lr.request_id))
-          )
-      )
-      SELECT record FROM payment_history
-      ORDER BY sort_date DESC NULLS LAST, record->>'bill_id' DESC
-    `;
+    // Read bills and confirmed requests separately. Matching request IDs in
+    // JavaScript handles legacy bill item encodings without PostgreSQL JSONB
+    // containment/type inference differences.
+    const [billRows, paidRequests] = await Promise.all([
+      sql`SELECT to_jsonb(b) AS record,
+            COALESCE(b.billed_at, b.created_at) AS sort_date
+          FROM bills b`,
+      sql`SELECT lr.request_id, lr.patient_id, lr.requested_at,
+            COALESCE((
+              SELECT jsonb_agg(jsonb_build_object(
+                'service_id', ri.service_id,
+                'service_name', s.service_name,
+                'service_category', s.service_category,
+                'quantity', 1
+              ) ORDER BY ri.lab_item_id)
+              FROM laboratory_request_items ri
+              JOIN services s ON s.service_id = ri.service_id
+              WHERE ri.request_id = lr.request_id
+            ), '[]'::jsonb) AS items
+          FROM laboratory_requests lr
+          WHERE lr.is_paid = TRUE`,
+    ]);
+    const billing: getAllBilling.bill[] = [];
+    const paidRequestKeys = new Set<string>();
+    for (const row of billRows) {
+      const record = row.record as Record<string, unknown>;
+      let items: unknown = record.items;
+      if (typeof items === "string") {
+        try { items = JSON.parse(items); } catch { items = []; }
+      }
+      const parsedItems = Array.isArray(items) ? items as Record<string, unknown>[] : [];
+      const normalized = { ...record, record_type: "bill", items: parsedItems } as unknown as getAllBilling.bill;
+      billing.push(normalized);
+      if (String(record.status ?? "").toLowerCase() === "paid") {
+        for (const item of parsedItems) {
+          const requestId = item.request_id;
+          if (typeof requestId === "string") paidRequestKeys.add(`${record.patient_id}:${requestId}`);
+        }
+      }
+    }
+    for (const request of paidRequests) {
+      if (paidRequestKeys.has(`${request.patient_id}:${request.request_id}`)) continue;
+      billing.push({
+        bill_id: `LAB-CONFIRM:${request.request_id}`,
+        record_type: "laboratory_confirmation",
+        request_id: request.request_id,
+        patient_id: request.patient_id,
+        status: "Paid",
+        items: request.items,
+        total_amount: null,
+        discount_pct: null,
+        payment_method: null,
+        receipt_id: null,
+        created_at: request.requested_at,
+      } as getAllBilling.bill);
+    }
+    billing.sort((left, right) => {
+      const leftDate = Date.parse(String(left.billed_at || left.created_at || ""));
+      const rightDate = Date.parse(String(right.billed_at || right.created_at || ""));
+      const safeLeft = Number.isFinite(leftDate) ? leftDate : 0;
+      const safeRight = Number.isFinite(rightDate) ? rightDate : 0;
+      return safeRight - safeLeft || String(right.bill_id).localeCompare(String(left.bill_id));
+    });
     return res.status(200).json({
-      billing: history.map((row) => row.record) as getAllBilling.bill[],
+      billing,
     } as getAllBilling.response);
   } catch (error) {
     console.error("Error fetching billing records:", error);
@@ -279,6 +297,7 @@ export async function getAllQueueEntries(
           to_char(p.birthdate, 'YYYY-MM-DD')                       AS birthdate,
           qe.queue_number,
           COALESCE(cs.service_type, lab.service_type)              AS service_type,
+          COALESCE(cs.service_category, lab.service_category)      AS service_category,
           COALESCE(cs.room::text,   lab.room)                      AS room,
           qe.is_priority,
           qe.status,
@@ -289,7 +308,7 @@ export async function getAllQueueEntries(
         LEFT JOIN consultation_records cr ON cr.queue_id = qe.queue_id
         LEFT JOIN services cs             ON cs.service_id = cr.service_id
         LEFT JOIN LATERAL (
-          SELECT ls.service_type, ls.room::text AS room
+          SELECT ls.service_type, ls.service_category, ls.room::text AS room
           FROM laboratory_request_items lri
           JOIN services ls ON ls.service_id = lri.service_id
           WHERE lri.queue_id = qe.queue_id
@@ -415,6 +434,16 @@ export async function getUnpaidRequests(
         lr.patient_id,
         CONCAT_WS(' ', p.first_name, p.last_name)   AS patient_name,
         lr.is_paid,
+        lr.is_priority,
+        COALESCE((
+          SELECT jsonb_agg(jsonb_build_object(
+            'service_id', ri.service_id, 'service_name', s.service_name,
+            'service_category', s.service_category, 'price', s.price, 'quantity', 1
+          ) ORDER BY ri.lab_item_id)
+          FROM laboratory_request_items ri
+          JOIN services s ON s.service_id = ri.service_id
+          WHERE ri.request_id = lr.request_id
+        ), '[]'::jsonb) AS items,
         CONCAT_WS(' ', u.first_name, u.last_name)   AS requested_by,
         u.role                                      AS requester_role,
         lr.requested_at                             AS created_at
@@ -428,8 +457,7 @@ export async function getUnpaidRequests(
           WHERE lri.request_id = lr.request_id
             AND lri.queue_id IS NULL
         )
-        AND lr.requested_at >= CURRENT_DATE
-        AND lr.requested_at <  CURRENT_DATE + INTERVAL '1 day'
+        AND LOWER(TRIM(lr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
       ORDER BY lr.requested_at DESC
     `;
 

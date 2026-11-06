@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, CheckCircle2, Clock3, ListFilter, ReceiptText, RefreshCw, Search, Wallet, XCircle } from "lucide-react";
 import api from "../../../lib/axios";
-import type { BillingEntry, BillingRecord, UnpaidRequests } from "../../../interface/Billing";
+import type { BillingEntry, BillingItem, BillingRecord, PaymentOptions, UnpaidRequests } from "../../../interface/Billing";
 import type { Patient } from "../../../interface/Patient";
 import type { Service } from "../../../interface/Service";
 import type { QueueRequests } from "../../../interface/Queue";
 import BillingQueue from "../components/Billing/BillingQueue";
 import ProcessPayment from "../components/Billing/ProcessPayment";
 import { BillingButton, BillingNotice } from "../components/Billing/BillingUi";
-import { paidRequestsAwaitingLab, recordEntry, requestEntry } from "../components/Billing/billingModel";
-import InvoiceTransaction from "../components/Billing/InvoiceTransaction";
+import { numericAmount, paidRequestsAwaitingLab, patientAge, recordEntry, requestEntry } from "../components/Billing/billingModel";
+import InvoiceTransaction, { InvoicePreview, type Invoice } from "../components/Billing/InvoiceTransaction";
+import "../components/Billing/billing.css";
+import BillingDialog from "../components/Billing/BillingDialog";
 
 
 type BillingProps = {
@@ -23,7 +25,47 @@ type BillingProps = {
   loading: boolean;
 };
 const PAGE_SIZE = 5;
-const message = (error: unknown, fallback: string) => (error as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message || (error as Error)?.message || fallback;
+const message = (error: unknown, fallback: string) => {
+  const response = error as {
+    response?: { data?: { message?: string; error?: string } };
+    message?: string;
+  };
+  return response.response?.data?.message || response.response?.data?.error || response.message || fallback;
+};
+
+function savedInvoiceForRequest(records: BillingRecord[], requestId: string): Invoice | null {
+  for (const record of records) {
+    if (record.record_type === "laboratory_confirmation") continue;
+    if (record.status?.toLowerCase() !== "paid") continue;
+    let items: unknown = record.items;
+    if (typeof items === "string") {
+      try { items = JSON.parse(items); } catch { continue; }
+    }
+    if (!Array.isArray(items)) continue;
+    const savedItems = items as BillingItem[];
+    if (String(record.bill_id) !== requestId && !savedItems.some((item) => item.request_id === requestId)) continue;
+    if (!savedItems.length || savedItems.some((item) => numericAmount(item.price) === null) || numericAmount(record.total_amount) === null) continue;
+    return {
+      bill_id: String(record.bill_id),
+      receipt_id: record.receipt_id || null,
+      patient_id: record.patient_id,
+      items: savedItems.map((item) => ({
+        request_id: item.request_id,
+        service_id: item.service_id,
+        service_name: String(item.service_name || "Laboratory service"),
+        service_category: item.service_category ? String(item.service_category) : undefined,
+        price: Number(item.price) || 0,
+        quantity: Number(item.quantity) || 1,
+      })),
+      discount_pct: Number(record.discount_pct) || 0,
+      total_amount: Number(record.total_amount) || 0,
+      payment_method: record.payment_method || "Not recorded",
+      status: record.status,
+      billed_at: record.billed_at || record.created_at || new Date().toISOString(),
+    };
+  }
+  return null;
+}
 
 export default function Billing({ unpaidRequests, queueRequests = [], patients = [], services = [], loadData, loading }: BillingProps) {
   const [tab, setTab] = useState<"queue" | "history">("queue");
@@ -37,7 +79,11 @@ export default function Billing({ unpaidRequests, queueRequests = [], patients =
   const [page, setPage] = useState(1);
   const [expandedId, setExpandedId] = useState("");
   const [selected, setSelected] = useState<BillingEntry | null>(null);
+  const [paymentInvoice, setPaymentInvoice] = useState<Invoice | null>(null);
   const [newInvoice, setNewInvoice] = useState(false);
+  const [forwardedInvoice, setForwardedInvoice] = useState<Invoice | null>(null);
+  const [showForwardedInvoice, setShowForwardedInvoice] = useState(false);
+  const [resultStep, setResultStep] = useState<"payment" | "invoice" | "forwarded" | null>(null);
   const [confirmed, setConfirmed] = useState<BillingEntry[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -53,7 +99,10 @@ export default function Billing({ unpaidRequests, queueRequests = [], patients =
     try {
       const response = await api.get("/api/fdstaff/billing", { signal: controller.signal });
       if (!Array.isArray(response.data?.billing)) throw new Error("Payment history could not be read.");
-      if (!controller.signal.aborted) setHistory(response.data.billing);
+      if (!controller.signal.aborted) {
+        setHistory(response.data.billing);
+        setHistoryError("");
+      }
     } catch (cause) {
       if (!controller.signal.aborted) setHistoryError(message(cause, "Payment history is unavailable. Please try again."));
     } finally {
@@ -91,22 +140,33 @@ export default function Billing({ unpaidRequests, queueRequests = [], patients =
   const currentPage = Math.min(page, pages);
   const visible = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
   const busy = loading || historyLoading;
+  const forwardedPatient = forwardedInvoice
+    ? patients.find((patient) => patient.patient_id === forwardedInvoice.patient_id)
+    : undefined;
+  const forwardedPatientName = forwardedPatient
+    ? [forwardedPatient.first_name, forwardedPatient.middle_name, forwardedPatient.last_name, forwardedPatient.suffix].filter(Boolean).join(" ")
+    : forwardedInvoice?.patient_id || "";
 
   function changeTab(next: "queue" | "history") {
     setTab(next); setPage(1); setExpandedId(""); setServiceType("all"); setMethod("all"); setStatus("all");
     if (next === "history") refreshHistory();
   }
-  function openPayment(entry: BillingEntry) { setSelected(entry); setError(""); }
+  function openPayment(entry: BillingEntry) {
+    const invoice = savedInvoiceForRequest(history, entry.id);
+    setSelected(invoice ? { ...entry, total: Number(invoice.total_amount), discountPercent: Number(invoice.discount_pct), method: invoice.payment_method, receiptId: invoice.receipt_id || "", lines: invoice.items.map((item, index) => ({ id: `${item.service_id}-${index}`, name: item.service_name, category: item.service_category || "Laboratory", price: Number(item.price), quantity: item.quantity })) } : entry);
+    setPaymentInvoice(invoice);
+    setError("");
+  }
   function backToQueue() {
     if (pending.current) return;
     setSelected(null); setError("");
     requestAnimationFrame(() => headingRef.current?.focus());
   }
-  async function confirmPayment() {
+  async function confirmPayment(options: PaymentOptions) {
     if (pending.current || !selected?.request || (selected.status !== "Pending" && !selected.needsLabQueue)) return;
     pending.current = true; setSubmitting(true); setError("");
     try {
-      const response = await api.patch(`/api/fdstaff/laboratory-requests/${encodeURIComponent(selected.id)}`);
+      const response = await api.patch(`/api/fdstaff/laboratory-requests/${encodeURIComponent(selected.id)}`, options);
       const saved = response.data?.request;
       const rows = Array.isArray(saved) ? saved : saved ? [saved] : [];
       if (!rows.some((row) => row?.request_id === selected.id && row.is_paid === true && row.status?.toLowerCase() === "paid")) {
@@ -116,14 +176,39 @@ export default function Billing({ unpaidRequests, queueRequests = [], patients =
       const forwarded = response.data?.queued === true && Array.isArray(queues) && queues.length > 0
         && queues.every((queue) => typeof queue.queue_id === "string" && queue.queue_id.startsWith("LAB-")
           && queue.patient_id === selected.patientId && typeof queue.room === "string" && queue.room.trim());
-      const paid: BillingEntry = { ...selected, status: "Paid", needsLabQueue: !forwarded, request: { ...selected.request!, is_paid: true } };
+      const rawInvoice = response.data?.bill;
+      let invoiceItems: unknown[] = [];
+      if (Array.isArray(rawInvoice?.items)) invoiceItems = rawInvoice.items;
+      else if (typeof rawInvoice?.items === "string") {
+        try {
+          const parsedItems: unknown = JSON.parse(rawInvoice.items);
+          if (Array.isArray(parsedItems)) invoiceItems = parsedItems;
+        } catch {
+          invoiceItems = [];
+        }
+      }
+      const invoice = rawInvoice ? { ...rawInvoice, items: invoiceItems } : null;
+      const invoiceSaved = invoice?.bill_id && invoice.status?.toLowerCase() === "paid"
+        && invoiceItems.length > 0;
+      if (invoiceSaved) setPaymentInvoice(invoice as Invoice);
+      const paid: BillingEntry = { ...selected, status: "Paid", total: invoiceSaved ? Number(invoice.total_amount) : selected.total, discountPercent: invoiceSaved ? Number(invoice.discount_pct) : selected.discountPercent, method: invoiceSaved ? invoice.payment_method : options.payment_method, receiptId: invoiceSaved ? invoice.receipt_id || "" : "", isPriority: saved?.is_priority ?? rows[0]?.is_priority ?? options.is_priority, needsLabQueue: !forwarded, request: { ...selected.request!, is_paid: true } };
       setConfirmed((previous) => [...previous.filter((entry) => entry.id !== selected.id), paid]);
       if (!forwarded) {
         setSelected(paid);
-        setError("Payment is confirmed, but sending to the laboratory could not be verified. Refresh its status or try Send to laboratory again.");
+        setError(response.data?.message || "Payment is confirmed, but sending to the laboratory could not be verified. Try Send to Laboratory again.");
+        void Promise.allSettled([loadData(), loadHistory()]);
+        return;
+      }
+      if (!invoiceSaved) {
+        setSelected(paid);
+        setError("Payment was confirmed and forwarded, but the invoice could not be verified. Refresh payment history before retrying.");
+        void Promise.allSettled([loadData(), loadHistory()]);
         return;
       }
       setSelected(null);
+      setForwardedInvoice(invoice as Invoice);
+      setShowForwardedInvoice(false);
+      setResultStep(selected.status === "Paid" ? "forwarded" : "payment");
       const rooms = [...new Set(queues.map((queue) => queue.room))].join(", ");
       setSuccess(`Payment confirmed. ${selected.patientName} was sent to ${rooms}.`);
       requestAnimationFrame(() => headingRef.current?.focus());
@@ -137,7 +222,7 @@ export default function Billing({ unpaidRequests, queueRequests = [], patients =
   }
 
   return <main className="fd-billing" aria-label="Front desk billing">
-    {newInvoice ? <InvoiceTransaction patients={patients} services={services} onBack={() => setNewInvoice(false)} onSaved={() => { setHistoryLoading(true); void loadHistory(); }} /> : selected ? <ProcessPayment key={selected.id} entry={selected} onBack={backToQueue} onConfirm={confirmPayment} submitting={submitting} error={error} /> : <>
+    {newInvoice ? <InvoiceTransaction patients={patients} services={services} onBack={() => setNewInvoice(false)} onSaved={() => { setHistoryLoading(true); void loadHistory(); void loadData(); }} /> : forwardedInvoice && showForwardedInvoice ? <InvoicePreview invoice={forwardedInvoice} patientName={forwardedPatientName} age={patientAge(forwardedPatient?.birthdate)} sex={forwardedPatient?.sex} date={new Date(forwardedInvoice.billed_at).toLocaleString("en-PH", { timeZone: "Asia/Manila" })} onClose={() => { setShowForwardedInvoice(false); requestAnimationFrame(() => headingRef.current?.focus()); }} /> : selected ? <ProcessPayment key={selected.id} entry={selected} invoice={paymentInvoice || savedInvoiceForRequest(history, selected.id) || undefined} onBack={backToQueue} onConfirm={confirmPayment} submitting={submitting} error={error} /> : <>
       <div className="billing-page-heading"><div><h1 ref={headingRef} tabIndex={-1}>Billing & payments</h1><p>Record transactions, confirm laboratory payments, and generate invoices.</p></div><BillingButton onClick={() => setNewInvoice(true)}><ReceiptText size={18}/> New invoice</BillingButton></div>
       <div className="billing-stat-grid">
         {[
@@ -162,5 +247,9 @@ export default function Billing({ unpaidRequests, queueRequests = [], patients =
       </section>
       <div className="billing-pagination"><p>Showing {filtered.length ? (currentPage - 1) * PAGE_SIZE + 1 : 0}–{Math.min(currentPage * PAGE_SIZE, filtered.length)} of {filtered.length} {tab === "queue" ? "requests" : "records"}</p><div><BillingButton secondary disabled={currentPage <= 1} onClick={() => setPage(currentPage - 1)} aria-label="Previous page"><ArrowLeft size={18} /></BillingButton><span>Page {currentPage} of {pages}</span><BillingButton secondary disabled={currentPage >= pages} onClick={() => setPage(currentPage + 1)} aria-label="Next page"><ArrowRight size={18} /></BillingButton></div></div>
     </>}
+    {forwardedInvoice && !showForwardedInvoice && resultStep === "payment" && <BillingDialog kind="payment-received" onConfirm={() => setResultStep("invoice")} />}
+    {forwardedInvoice && !showForwardedInvoice && resultStep === "invoice" && <BillingDialog kind="invoice-generated" onSecondary={() => { setResultStep("forwarded"); setShowForwardedInvoice(true); }} onConfirm={() => setResultStep("forwarded")} />}
+    {forwardedInvoice && !showForwardedInvoice && resultStep === "forwarded" && <BillingDialog kind="request-forwarded" onConfirm={() => { setForwardedInvoice(null); setResultStep(null); requestAnimationFrame(() => headingRef.current?.focus()); }} />}
   </main>;
 }
+
