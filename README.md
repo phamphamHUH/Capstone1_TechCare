@@ -1,8 +1,33 @@
-# TechCare: Cloud-Based Integrated Information System for Reyna G. Diagnostic Medical Clinic
+<h1 align="center">TechCare: Cloud-Based Integrated Clinic Information System</h1>
+
+<p align="center">
+  <img width="220" height="220" alt="Reyna G. Diagnostic Medical Clinic Logo"
+       src="https://github.com/user-attachments/assets/39194892-b7a8-45cc-808f-842a5e1376c6" />
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" />
+    <img src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white" />
+  <img src="https://img.shields.io/badge/Express-5-black?logo=express" />
+  <img src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" />
+  <img src="https://img.shields.io/badge/PostgreSQL-Neon-4169E1?logo=postgresql&logoColor=white" />
+  <img src="https://img.shields.io/badge/Real--Time-SSE-orange" />
+</p>
+
+<p align="center">
+  <a href="https://techcare-1.onrender.com/">
+    <strong>Live Application</strong>
+  </a>
+  ·
+  <a href="docs/SETUP.md">
+    <strong>Setup Documentation</strong>
+  </a>
+</p>
+
+---
 
 TechCare is a full-stack clinic management system designed to streamline patient registration, consultation and laboratory queueing, laboratory requests, billing, and administrative operations for Reyna G. Diagnostic Medical Clinic.
 
-**Live Application:** [https://techcare-1.onrender.com/](https://techcare-1.onrender.com/)
 
 ## Group Members
 
@@ -85,10 +110,3 @@ flowchart TD
     %% ---------------- Frontend hosting ----------------
     G -.->|"SPA fallback index.html"| A
 ```
-
-
-## Documentation
-
-For detailed setup and deployment instructions, see:
-
-**[TechCare Setup and Deployment Notes](docs/SETUP.md)**
