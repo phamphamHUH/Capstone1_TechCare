@@ -97,7 +97,7 @@ export namespace addBills {
   }
 
   export interface bill {
-    bill_id: number;
+    bill_id: string;
     patient_id: string;
       services_ids?: string[];
     discount_pct: number | string;
