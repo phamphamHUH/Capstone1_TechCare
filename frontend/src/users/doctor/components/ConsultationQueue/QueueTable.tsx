@@ -117,17 +117,6 @@ function QueueTable({
       "Unable to skip queue.",
     );
 
-  // Same base as the other doctor routes; change the path if your cancel route differs
-  const handleCancel = (queue_id: string) => {
-    if (!window.confirm("Cancel this consultation? This can't be undone.")) return;
-    return runQueueRequest(
-      queue_id,
-      () =>
-        api.patch(`/api/doctor/consultation-queues/${id(queue_id)}/cancel`),
-      "Unable to cancel queue.",
-    );
-  };
-
   return (
     <>
       {acceptError && (
