@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import type { Patient } from "../../../../interface/Patient";
 import { X, Mail, Phone, MapPin, Save, ArrowLeft, Camera } from "lucide-react";
 import api from "../../../../lib/axios";
+import calculateAge from "../../../../utils/calculateAge";
 
 type Props = {
   selectedPatient: Patient | null;
@@ -9,35 +10,118 @@ type Props = {
   loadData: () => Promise<void>;
 };
 
+const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+const SEX_OPTIONS = ["Male", "Female"];
+const CIVIL_STATUS_OPTIONS = ["Single", "Married", "Widowed", "Separated"];
+const SMOKING_OPTIONS = ["Yes", "No", "Former"];
+const ALCOHOL_OPTIONS = ["None", "Occasional", "Regular"];
+
+// Same keys the registration form sends, minus the address parts
+// (barangay, city, province and ZIP are already merged into `address`)
+function buildForm(p: Patient | null) {
+  return {
+    first_name: p?.first_name ?? "",
+    middle_name: p?.middle_name ?? "",
+    last_name: p?.last_name ?? "",
+    suffix: p?.suffix ?? "",
+    sex: p?.sex ?? "",
+    birthdate: p?.birthdate?.substring(0, 10) ?? "",
+    civil_status: p?.civil_status ?? "",
+    blood_type: p?.blood_type ?? "",
+    height_cm: p?.height_cm != null ? String(p.height_cm) : "",
+    weight_kg: p?.weight_kg != null ? String(p.weight_kg) : "",
+
+    email: p?.email ?? "",
+    contact_number: p?.contact_number ?? "",
+    street: p?.street ?? "",
+    barangay: p?.barangay ?? "",
+    city: p?.city ?? "",
+    province: p?.province ?? "",
+    zip_code: p?.zip_code ?? "",
+
+    guardian_name: p?.guardian_name ?? "",
+    guardian_relationship: p?.guardian_relationship ?? "",
+    guardian_contact: p?.guardian_contact ?? "",
+
+    allergies: p?.allergies ?? "",
+    existing_conditions: p?.existing_conditions ?? "",
+    current_medications: p?.current_medications ?? "",
+    previous_surgeries: p?.previous_surgeries ?? "",
+    previous_hospitalizations: p?.previous_hospitalizations ?? "",
+    family_medical_history: p?.family_medical_history ?? "",
+    smoking_status: p?.smoking_status ?? "",
+    alcohol_consumption: p?.alcohol_consumption ?? "",
+  };
+}
+type FormState = ReturnType<typeof buildForm>;
+
+const inputClass =
+  "w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-100";
+const labelClass = "mb-1.5 block text-xs font-medium text-gray-500";
+
+// Defined outside the component so inputs don't remount on every keystroke
+function TextInput({
+  label, value, onChange, type = "text", placeholder = "Not provided",
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  type?: string;
+  placeholder?: string;
+}) {
+  return (
+    <div>
+      <label className={labelClass}>{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className={inputClass}
+      />
+    </div>
+  );
+}
+
+function SelectInput({
+  label, value, onChange, options, placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+  placeholder: string;
+}) {
+  return (
+    <div>
+      <label className={labelClass}>{label}</label>
+      <select value={value} onChange={(e) => onChange(e.target.value)} className={inputClass}>
+        <option value="">{placeholder}</option>
+        {options.map((o) => (
+          <option key={o} value={o}>{o}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function Card({
+  title, children, wide = false,
+}: {
+  title: string;
+  children: React.ReactNode;
+  wide?: boolean;
+}) {
+  return (
+    <div className={`rounded-3xl bg-white p-6 shadow-sm ${wide ? "lg:col-span-2" : ""}`}>
+      <h2 className="mb-6 text-base font-semibold text-gray-900">{title}</h2>
+      {children}
+    </div>
+  );
+}
+
 function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
-  const [firstName, setFirstName] = useState(selectedPatient?.first_name ?? "");
-  const [middleName, setMiddleName] = useState(
-    selectedPatient?.middle_name ?? "",
-  );
-  const [lastName, setLastName] = useState(selectedPatient?.last_name ?? "");
-  const [suffix, setSuffix] = useState(selectedPatient?.suffix ?? "");
-  const [sex, setSex] = useState(selectedPatient?.sex ?? "");
-  const [birthdate, setBirthdate] = useState(
-    selectedPatient?.birthdate?.substring(0, 10) ?? "",
-  );
-  const [civilStatus, setCivilStatus] = useState(
-    selectedPatient?.civil_status ?? "",
-  );
-  const [bloodType, setBloodType] = useState(selectedPatient?.blood_type ?? "");
-
-  const [email, setEmail] = useState(selectedPatient?.email ?? "");
-  const [contactNumber, setContactNumber] = useState(
-    selectedPatient?.contact_number ?? "",
-  );
-  const [address, setAddress] = useState(selectedPatient?.address ?? "");
-
-  const [emergencyContactName, setEmergencyContactName] = useState(
-    selectedPatient?.emergency_contact_name ?? "",
-  );
-  const [emergencyContact, setEmergencyContact] = useState(
-    selectedPatient?.emergency_contact ?? "",
-  );
-
+  const [form, setForm] = useState<FormState>(() => buildForm(selectedPatient));
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState(selectedPatient?.image_url ?? "");
   const [saving, setSaving] = useState(false);
@@ -47,15 +131,16 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
 
   // Guard: nothing to edit if no patient was selected
   if (!selectedPatient) return null;
-
-  // Copy into a local const so TS keeps this narrowed to `Patient`
-  // (non-null) inside nested closures like handleSave below.
   const patient = selectedPatient;
 
-  const fullName = [firstName, middleName, lastName, suffix]
+  const set = (key: keyof FormState) => (v: string) =>
+    setForm((f) => ({ ...f, [key]: v }));
+
+  const fullName = [form.first_name, form.middle_name, form.last_name, form.suffix]
     .filter(Boolean)
     .join(" ");
-  const initials = `${firstName?.charAt(0) || ""}${lastName?.charAt(0) || ""}`;
+  const initials = `${form.first_name.charAt(0)}${form.last_name.charAt(0)}`;
+  const age = form.birthdate ? String(Math.max(0, calculateAge(form.birthdate))) : "";
 
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -70,7 +155,8 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
       return;
     }
 
-    if (preview) URL.revokeObjectURL(preview);
+    // Only revoke previews we created ourselves, not the saved image URL
+    if (image && preview) URL.revokeObjectURL(preview);
     setImage(file);
     setPreview(URL.createObjectURL(file));
   }
@@ -80,23 +166,11 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
     setError(null);
     try {
       const formData = new FormData();
-      formData.append("first_name", firstName.trim());
-      formData.append("middle_name", middleName.trim());
-      formData.append("last_name", lastName.trim());
-      formData.append("suffix", suffix.trim());
-      formData.append("sex", sex);
-      formData.append("birthdate", birthdate);
-      formData.append("civil_status", civilStatus);
-      formData.append("blood_type", bloodType.trim());
-      formData.append("email", email.trim());
-      formData.append("contact_number", contactNumber.trim());
-      formData.append("address", address.trim());
-      formData.append("emergency_contact_name", emergencyContactName.trim());
-      formData.append("emergency_contact", emergencyContact.trim());
-
-      if (image) {
-        formData.append("image", image); // Must match upload.single("image")
-      }
+      // Send every field, including empty ones, so a cleared value actually gets cleared
+      Object.entries(form).forEach(([key, value]) => {
+        formData.append(key, value.trim());
+      });
+      if (image) formData.append("image", image); // Must match upload.single("image")
 
       const response = await api.put(
         `/api/fdstaff/patients/${patient.patient_id}`,
@@ -106,24 +180,19 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
       await loadData();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+          (err instanceof Error ? err.message : "Something went wrong"),
+      );
     } finally {
       setSaving(false);
     }
   }
 
-  const inputClass =
-    "w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-100";
-
-  const labelClass = "mb-1.5 block text-xs font-medium text-gray-500";
-
   return (
     <>
       {/* Overlay */}
-      <div
-        className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
       <div className="fixed left-1/2 top-1/2 z-50 flex w-[94%] max-w-5xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-3xl bg-gray-50 shadow-2xl">
@@ -137,14 +206,9 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
             >
               <ArrowLeft size={19} />
             </button>
-
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">
-                Edit Patient Record
-              </h2>
-              <p className="mt-0.5 text-sm text-gray-500">
-                Update patient and contact information
-              </p>
+              <h2 className="text-lg font-semibold text-gray-900">Edit Patient Record</h2>
+              <p className="mt-0.5 text-sm text-gray-500">Update patient and contact information</p>
             </div>
           </div>
 
@@ -203,14 +267,13 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
               </div>
 
               <div className="mt-5">
-                <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                  {fullName}
-                </h1>
+                <h1 className="text-2xl font-bold tracking-tight text-gray-900">{fullName}</h1>
 
                 <p className="mt-1 text-sm text-gray-500">
                   {patient.patient_id}
-                  {sex && ` • ${sex}`}
-                  {civilStatus && ` • ${civilStatus}`}
+                  {form.sex && ` • ${form.sex}`}
+                  {age && ` • ${age} yrs`}
+                  {form.civil_status && ` • ${form.civil_status}`}
                 </p>
 
                 <button
@@ -221,9 +284,7 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
                   Change profile photo
                 </button>
 
-                {image && (
-                  <p className="mt-1 text-xs text-gray-400">{image.name}</p>
-                )}
+                {image && <p className="mt-1 text-xs text-gray-400">{image.name}</p>}
               </div>
             </div>
           </div>
@@ -231,24 +292,14 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
           {/* Cards */}
           <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
             {/* Contact */}
-            <div className="rounded-3xl bg-white p-6 shadow-sm">
-              <h2 className="mb-6 text-base font-semibold text-gray-900">
-                Contact Information
-              </h2>
-
+            <Card title="Contact Information">
               <div className="space-y-5">
                 <div className="flex gap-4">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100">
                     <Mail size={18} className="text-gray-600" />
                   </div>
                   <div className="flex-1">
-                    <label className={labelClass}>Email</label>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className={inputClass}
-                    />
+                    <TextInput label="Email" type="email" value={form.email} onChange={set("email")} />
                   </div>
                 </div>
 
@@ -257,13 +308,7 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
                     <Phone size={18} className="text-gray-600" />
                   </div>
                   <div className="flex-1">
-                    <label className={labelClass}>Contact Number</label>
-                    <input
-                      type="text"
-                      value={contactNumber}
-                      onChange={(e) => setContactNumber(e.target.value)}
-                      className={inputClass}
-                    />
+                    <TextInput label="Mobile Number" value={form.contact_number} onChange={set("contact_number")} />
                   </div>
                 </div>
 
@@ -272,24 +317,33 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
                     <MapPin size={18} className="text-gray-600" />
                   </div>
                   <div className="flex-1">
-                    <label className={labelClass}>Address</label>
+                    <label className={labelClass}> Address</label>
                     <textarea
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
+                      value={form.street}
+                      onChange={(e) => set("street")(e.target.value)}
                       rows={3}
+                      placeholder="Street"
                       className={`${inputClass} resize-none`}
                     />
+                    <textarea
+                      value={form.barangay}
+                      onChange={(e) => set("barangay")(e.target.value)}
+                      rows={2}
+                      placeholder="Barangay"
+                      className={`${inputClass} resize-none`}
+                    />
+                    <div className="grid grid-cols-2 gap-4">
+                      <TextInput label="City" value={form.city} onChange={set("city")} />
+                      <TextInput label="Province" value={form.province} onChange={set("province")} />
+                    </div>
+                    <TextInput label="ZIP Code" value={form.zip_code} onChange={set("zip_code")} />
                   </div>
                 </div>
               </div>
-            </div>
+            </Card>
 
             {/* Record Info */}
-            <div className="rounded-3xl bg-white p-6 shadow-sm">
-              <h2 className="mb-6 text-base font-semibold text-gray-900">
-                Record Information
-              </h2>
-
+            <Card title="Record Information">
               <div className="space-y-5">
                 <div>
                   <label className={labelClass}>Patient ID</label>
@@ -298,136 +352,86 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
                   </div>
                 </div>
 
-                <div>
-                  <label className={labelClass}>Civil Status</label>
-                  <select
-                    value={civilStatus}
-                    onChange={(e) => setCivilStatus(e.target.value)}
-                    className={inputClass}
-                  >
-                    <option value="">Select civil status</option>
-                    <option value="Single">Single</option>
-                    <option value="Married">Married</option>
-                    <option value="Widowed">Widowed</option>
-                    <option value="Separated">Separated</option>
-                  </select>
-                </div>
+                <SelectInput
+                  label="Civil Status"
+                  value={form.civil_status}
+                  onChange={set("civil_status")}
+                  options={CIVIL_STATUS_OPTIONS}
+                  placeholder="Select civil status"
+                />
+                <SelectInput
+                  label="Blood Type"
+                  value={form.blood_type}
+                  onChange={set("blood_type")}
+                  options={BLOOD_TYPES}
+                  placeholder="Select blood type"
+                />
 
-                <div>
-                  <label className={labelClass}>Blood Type</label>
-                  <input
-                    type="text"
-                    value={bloodType}
-                    onChange={(e) => setBloodType(e.target.value)}
-                    placeholder="Not provided"
-                    className={inputClass}
-                  />
+                <div className="grid grid-cols-2 gap-5">
+                  <TextInput label="Height (CM)" type="number" value={form.height_cm} onChange={set("height_cm")} />
+                  <TextInput label="Weight (KG)" type="number" value={form.weight_kg} onChange={set("weight_kg")} />
                 </div>
               </div>
-            </div>
+            </Card>
 
             {/* Personal */}
-            <div className="rounded-3xl bg-white p-6 shadow-sm lg:col-span-2">
-              <h2 className="mb-6 text-base font-semibold text-gray-900">
-                Personal Information
-              </h2>
-
+            <Card title="Personal Information" wide>
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                <TextInput label="First Name" value={form.first_name} onChange={set("first_name")} />
+                <TextInput label="Middle Name" value={form.middle_name} onChange={set("middle_name")} />
+                <TextInput label="Last Name" value={form.last_name} onChange={set("last_name")} />
+                <TextInput label="Suffix" value={form.suffix} onChange={set("suffix")} />
+                <SelectInput
+                  label="Sex"
+                  value={form.sex}
+                  onChange={set("sex")}
+                  options={SEX_OPTIONS}
+                  placeholder="Select sex"
+                />
+                <TextInput label="Birthdate" type="date" value={form.birthdate} onChange={set("birthdate")} />
                 <div>
-                  <label className={labelClass}>First Name</label>
-                  <input
-                    type="text"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    className={inputClass}
-                  />
-                </div>
-
-                <div>
-                  <label className={labelClass}>Middle Name</label>
-                  <input
-                    type="text"
-                    value={middleName}
-                    onChange={(e) => setMiddleName(e.target.value)}
-                    className={inputClass}
-                  />
-                </div>
-
-                <div>
-                  <label className={labelClass}>Last Name</label>
-                  <input
-                    type="text"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    className={inputClass}
-                  />
-                </div>
-
-                <div>
-                  <label className={labelClass}>Suffix</label>
-                  <input
-                    type="text"
-                    value={suffix}
-                    onChange={(e) => setSuffix(e.target.value)}
-                    className={inputClass}
-                  />
-                </div>
-
-                <div>
-                  <label className={labelClass}>Sex</label>
-                  <select
-                    value={sex}
-                    onChange={(e) => setSex(e.target.value)}
-                    className={inputClass}
-                  >
-                    <option value="">Select sex</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className={labelClass}>Birthdate</label>
-                  <input
-                    type="date"
-                    value={birthdate}
-                    onChange={(e) => setBirthdate(e.target.value)}
-                    className={inputClass}
-                  />
+                  <label className={labelClass}>Age</label>
+                  <div className="rounded-xl bg-gray-50 px-3 py-2.5 text-sm font-semibold text-gray-700">
+                    {age || "—"}
+                  </div>
                 </div>
               </div>
-            </div>
+            </Card>
 
-            {/* Emergency */}
-            <div className="rounded-3xl bg-white p-6 shadow-sm lg:col-span-2">
-              <h2 className="mb-6 text-base font-semibold text-gray-900">
-                Emergency Contact
-              </h2>
-
-              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                <div>
-                  <label className={labelClass}>Contact Name</label>
-                  <input
-                    type="text"
-                    value={emergencyContactName}
-                    onChange={(e) => setEmergencyContactName(e.target.value)}
-                    placeholder="Not provided"
-                    className={inputClass}
-                  />
-                </div>
-
-                <div>
-                  <label className={labelClass}>Contact Number</label>
-                  <input
-                    type="text"
-                    value={emergencyContact}
-                    onChange={(e) => setEmergencyContact(e.target.value)}
-                    placeholder="Not provided"
-                    className={inputClass}
-                  />
-                </div>
+            {/* Guardian */}
+            <Card title="Guardian Information (If Minor)" wide>
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                <TextInput label="Full Name" value={form.guardian_name} onChange={set("guardian_name")} />
+                <TextInput label="Relationship" value={form.guardian_relationship} onChange={set("guardian_relationship")} />
+                <TextInput label="Contact Number" value={form.guardian_contact} onChange={set("guardian_contact")} />
               </div>
-            </div>
+            </Card>
+
+            {/* Medical */}
+            <Card title="Medical Information" wide>
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                <TextInput label="Allergies" value={form.allergies} onChange={set("allergies")} />
+                <TextInput label="Existing Medical Conditions" value={form.existing_conditions} onChange={set("existing_conditions")} />
+                <TextInput label="Current Medications" value={form.current_medications} onChange={set("current_medications")} />
+                <TextInput label="Previous Surgeries" value={form.previous_surgeries} onChange={set("previous_surgeries")} />
+                <TextInput label="Previous Hospitalizations" value={form.previous_hospitalizations} onChange={set("previous_hospitalizations")} />
+                <TextInput label="Family Medical History" value={form.family_medical_history} onChange={set("family_medical_history")} />
+                <SelectInput
+                  label="Smoking"
+                  value={form.smoking_status}
+                  onChange={set("smoking_status")}
+                  options={SMOKING_OPTIONS}
+                  placeholder="Select"
+                />
+                <SelectInput
+                  label="Alcohol Consumption"
+                  value={form.alcohol_consumption}
+                  onChange={set("alcohol_consumption")}
+                  options={ALCOHOL_OPTIONS}
+                  placeholder="Select"
+                />
+              </div>
+            </Card>
           </div>
 
           {/* Actions */}
