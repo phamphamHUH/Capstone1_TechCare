@@ -1,5 +1,5 @@
 ---
-name: techcare
+name: techcare-fullstack
 description: Deep, code-verified reference for the TechCare clinic management system monorepo (Express 5/TypeScript + Neon Postgres backend, React 19/Vite/Tailwind frontend). Use this skill whenever working on the TechCare codebase — adding or fixing API routes/controllers, changing the Postgres schema (TABLES/syncSchema in db.ts), wiring frontend pages under frontend/src/users/**, debugging JWT/role middleware, the live queue monitor (SSE), consultations/prescriptions, laboratory requests/results/form templates, billing, patient login, seed scripts, tests, or the tools/ ETL scripts. Trigger on mentions of "TechCare", clinic management system, front desk / doctor / lab staff / admin / patient dashboards, queue_entries, consultation_records, laboratory_request_items, publishQueueChange, or any file path under backend/src or frontend/src. Also use to explain the project to a new contributor or to make changes consistent with existing (sometimes inconsistent) conventions.
 ---
 
