@@ -56,7 +56,7 @@ export namespace addBills {
 
   export interface body {
     patient_id: string;
-    services_ids?: number[];
+    services_ids?: string[];
     discount_pct?: number;
     custom_service?: customService[];
     payment_method?: string;
@@ -66,7 +66,7 @@ export namespace addBills {
   export interface bill {
     bill_id: number;
     patient_id: string;
-    services_ids?: number[];
+      services_ids?: string[];
     discount_pct: number | string;
     total_amount: number | string;
     payment_method: string;

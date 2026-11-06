@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, CheckCircle2, Clock3, ListFilter, RefreshCw, Search, Wallet, XCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Clock3, ListFilter, ReceiptText, RefreshCw, Search, Wallet, XCircle } from "lucide-react";
 import api from "../../../lib/axios";
 import type { BillingEntry, BillingRecord, UnpaidRequests } from "../../../interface/Billing";
 import type { Patient } from "../../../interface/Patient";
@@ -9,6 +9,7 @@ import BillingQueue from "../components/Billing/BillingQueue";
 import ProcessPayment from "../components/Billing/ProcessPayment";
 import { BillingButton, BillingNotice } from "../components/Billing/BillingUi";
 import { paidRequestsAwaitingLab, recordEntry, requestEntry } from "../components/Billing/billingModel";
+import InvoiceTransaction from "../components/Billing/InvoiceTransaction";
 
 
 type BillingProps = {
@@ -36,6 +37,7 @@ export default function Billing({ unpaidRequests, queueRequests = [], patients =
   const [page, setPage] = useState(1);
   const [expandedId, setExpandedId] = useState("");
   const [selected, setSelected] = useState<BillingEntry | null>(null);
+  const [newInvoice, setNewInvoice] = useState(false);
   const [confirmed, setConfirmed] = useState<BillingEntry[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -135,8 +137,8 @@ export default function Billing({ unpaidRequests, queueRequests = [], patients =
   }
 
   return <main className="fd-billing" aria-label="Front desk billing">
-    {selected ? <ProcessPayment key={selected.id} entry={selected} onBack={backToQueue} onConfirm={confirmPayment} submitting={submitting} error={error} /> : <>
-      <div className="billing-page-heading"><div><h1 ref={headingRef} tabIndex={-1}>Billing queue</h1><p>Manage payment confirmations for laboratory requests.</p><p>Review patient details and services before confirming payment.</p></div></div>
+    {newInvoice ? <InvoiceTransaction patients={patients} services={services} onBack={() => setNewInvoice(false)} onSaved={() => { setHistoryLoading(true); void loadHistory(); }} /> : selected ? <ProcessPayment key={selected.id} entry={selected} onBack={backToQueue} onConfirm={confirmPayment} submitting={submitting} error={error} /> : <>
+      <div className="billing-page-heading"><div><h1 ref={headingRef} tabIndex={-1}>Billing & payments</h1><p>Record transactions, confirm laboratory payments, and generate invoices.</p></div><BillingButton onClick={() => setNewInvoice(true)}><ReceiptText size={18}/> New invoice</BillingButton></div>
       <div className="billing-stat-grid">
         {[
           { label: "Total requests", value: requests.length, detail: "Requests in this billing queue", icon: ListFilter, color: "blue" },

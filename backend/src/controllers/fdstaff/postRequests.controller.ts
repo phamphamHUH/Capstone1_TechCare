@@ -22,6 +22,7 @@ import type {
   addConsultationRecord,
 } from "./dto/post.dto.js";
 import { publishQueueChange } from "../../services/queue-sse/index.js";
+import { randomUUID } from "node:crypto";
 export async function addPatient(
   req: Request,
   res: Response<addPatient.response | addPatient.error>,
@@ -157,72 +158,89 @@ export async function addBills(
       patient_id,
       services_ids = [],
       discount_pct = 0,
-      custom_service = [],
       payment_method = "Cash",
-      status = "Unpaid",
+      status = "Paid",
     } = req.body as addBills.body;
 
-    const services: {
-      service_name: string;
-      price: number;
-    }[] = [];
+    const validPaymentMethods = ["Cash", "Instapay/QRph"];
+    const validStatuses = ["Paid", "Unpaid"];
+    const discount = Number(discount_pct);
 
-    // Fetch services from the database
-    for (let i = 0; i < services_ids.length; i++) {
-      const service = await sql`
-                SELECT price, service_name
-                FROM services
-                WHERE service_id = ${services_ids[i]}
-            `;
-
-      if (service.length === 0) {
-        return res.status(404).json({
-          message: `Service ID ${services_ids[i]} not found`,
-        } as addBills.error);
-      }
-
-      services.push({
-        service_name: service[0].service_name,
-        price: Number(service[0].price),
-      });
+    if (
+      !patient_id ||
+      !Array.isArray(services_ids) ||
+      services_ids.length === 0 ||
+      !Number.isFinite(discount) ||
+      discount < 0 ||
+      discount > 100 ||
+      !validPaymentMethods.includes(payment_method) ||
+      !validStatuses.includes(status)
+    ) {
+      return res.status(400).json({
+        message: "A patient, services, valid discount, payment method and status are required.",
+      } as addBills.error);
     }
 
-    // Add custom services
-    services.push(...custom_service);
+    const patient = await sql`SELECT patient_id FROM patients WHERE patient_id = ${patient_id}`;
+    if (!patient.length) {
+      return res.status(404).json({ message: "Patient not found." } as addBills.error);
+    }
 
-    const service_total = services.reduce(
-      (sum, service) => sum + service.price,
-      0,
-    );
+    const selected = await sql`
+      SELECT service_id, service_name, service_category, price
+      FROM services
+      WHERE service_id = ANY(${services_ids}) AND active = TRUE
+    `;
+    if (selected.length !== new Set(services_ids).size) {
+      return res.status(400).json({
+        message: "One or more selected services are unavailable.",
+      } as addBills.error);
+    }
 
-    const discount = service_total * (discount_pct / 100);
-    const total_amount = service_total - discount;
-
+    const items = selected.map((service) => ({
+      service_id: service.service_id,
+      service_name: service.service_name,
+      service_category: service.service_category,
+      price: Number(service.price),
+      quantity: 1,
+    }));
+    const subtotal = items.reduce((sum, item) => sum + item.price, 0);
+    const total_amount = Math.round(subtotal * (1 - discount / 100) * 100) / 100;
+    const bill_id = `B-${randomUUID()}`;
+    const receipt_id = status === "Paid" ? `R-${randomUUID().slice(0, 12).toUpperCase()}` : null;
     const bill = await sql`
-            INSERT INTO bills (
-                patient_id,
-                services_ids,
-                discount_pct,
-                total_amount,
-                payment_method,
-                status
-            )
-            VALUES (
-                ${patient_id},
-                ${services_ids},
-                ${discount_pct},
-                ${total_amount},
-                ${payment_method},
-                ${status}
-            )
-            RETURNING *;
-        `;
+      INSERT INTO bills (
+        bill_id,
+        patient_id,
+        items,
+        discount_pct,
+        total_amount,
+        payment_method,
+        status,
+        receipt_id,
+        receipt_issued_at,
+        billed_at
+      )
+      VALUES (
+        ${bill_id},
+        ${patient_id},
+        ${JSON.stringify(items)}::jsonb,
+        ${discount},
+        ${total_amount},
+        ${payment_method},
+        ${status},
+        ${receipt_id},
+        ${receipt_id ? new Date().toISOString() : null},
+        NOW()
+      )
+      RETURNING *
+    `;
 
     return res.status(201).json({
       message: "Bill created successfully",
       bill: {
         ...bill[0],
-        services,
+        items,
       } as unknown as addBills.bill,
     } as addBills.response);
   } catch (error) {
