@@ -72,24 +72,10 @@ function LaboratoryStaff() {
   ];
 
   useEffect(() => {
-    // Laboratory Results loads its own accepted, sample-collected requests.
     if (page === "laboratory-results") return;
     (async () => {
       await loadData();
     })();
-  }, [loadData, page]);
-
-  useEffect(() => {
-    if (page !== "laboratory-requests") return;
-    const refresh = () => { if (document.visibilityState === "visible") void loadData(true); };
-    window.addEventListener("focus", refresh);
-    document.addEventListener("visibilitychange", refresh);
-    const timer = window.setInterval(refresh, 15000);
-    return () => {
-      window.removeEventListener("focus", refresh);
-      document.removeEventListener("visibilitychange", refresh);
-      window.clearInterval(timer);
-    };
   }, [loadData, page]);
 
   return (
@@ -100,7 +86,7 @@ function LaboratoryStaff() {
           open={open}
           setOpen={setOpen}
           loading={loading}
-          loadData={() => loadData()}
+          loadData={loadData}
         />
       )}
 
@@ -112,17 +98,13 @@ function LaboratoryStaff() {
           services={services}
           loading={loading}
           error={error}
-          loadData={() => loadData()}
+          loadData={loadData}
           room={room}
         />
       )}
 
       {page === "laboratory-results" && (
-        <LaboratoryResults
-          open={open}
-          setOpen={setOpen}
-          room={room}
-        />
+        <LaboratoryResults open={open} setOpen={setOpen} room={room} />
       )}
     </div>
   );

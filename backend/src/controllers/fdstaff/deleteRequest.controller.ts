@@ -1,4 +1,5 @@
-import { sql } from "../../config/db.js";
+import { sql, pool } from "../../config/db.js";
+import type { PoolClient } from "@neondatabase/serverless";
 import type { Request, Response } from "express";
 import type { deleteQueue, deletePatient } from "./dto/delete.dto.js";
 import { publishQueueChange } from "../../services/queue-sse/index.js";
@@ -6,35 +7,40 @@ export async function deleteQueue(
   req: Request,
   res: Response<deleteQueue.response | deleteQueue.error>,
 ) {
+  let client: PoolClient | undefined;
   try {
     const { queue_id } = req.params;
-
-    // Delete the queue entry.
-    // RETURNING returns the deleted row so we can verify it existed.
-    const deletedQueue = await sql`
-      DELETE FROM queue_entries
-      WHERE queue_id = ${queue_id}
-      RETURNING queue_id;
-    `;
-
-    // If nothing was returned, no queue with that ID existed.
-    if (deletedQueue.length === 0) {
+    client = await pool.connect();
+    await client.query("BEGIN");
+    const { rows: [entry] } = await client.query("SELECT status FROM queue_entries WHERE queue_id = $1 FOR UPDATE", [queue_id]);
+    if (!entry) {
+      await client.query("ROLLBACK");
       return res.status(404).json({
         error: "Queue not found",
       } as deleteQueue.error);
     }
-
+    if (!["waiting", "cancelled"].includes(String(entry.status).toLowerCase())) {
+      await client.query("ROLLBACK");
+      return res.status(409).json({ error: "Only waiting queue entries can be cancelled." });
+    }
+    // Keep the queue and its linked clinical records for history. Deleting the
+    // queue previously failed its laboratory/consultation foreign keys.
+    await client.query("UPDATE queue_entries SET status = 'Cancelled', updated_at = NOW() WHERE queue_id = $1", [queue_id]);
+    await client.query("UPDATE laboratory_request_items SET status = 'Cancelled', updated_at = NOW() WHERE queue_id = $1 AND LOWER(status) = 'waiting'", [queue_id]);
+    await client.query("UPDATE consultation_records SET status = 'Cancelled', cancellation_reason = 'Cancelled by front desk' WHERE queue_id = $1 AND LOWER(status) IN ('created', 'in queue')", [queue_id]);
+    await client.query("COMMIT");
     publishQueueChange();
     return res.status(200).json({
-      message: "Queue deleted successfully",
+      message: "Queue entry cancelled successfully",
     } as deleteQueue.response);
   } catch (error) {
+    if (client) await client.query("ROLLBACK").catch(console.error);
     console.error(error);
 
     return res.status(500).json({
       error: "Error deleting queue",
     } as deleteQueue.error);
-  }
+  } finally { client?.release(); }
 }
 
 export async function deletePatient(

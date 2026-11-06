@@ -3,6 +3,9 @@
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
 
+@page { size:A4 portrait; margin:12mm; }
+@media print { html,body,#root { width:100%; min-height:0; margin:0!important; padding:0!important; background:#fff!important; } }
+
 /* @custom-variant dark (&:is(.dark *));
 
 @theme inline {

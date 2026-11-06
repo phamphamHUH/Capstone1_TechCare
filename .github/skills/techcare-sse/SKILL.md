@@ -1,5 +1,5 @@
 ---
-name: express-react-sse
+name: techcare-sse
 description: Implement Server-Sent Events (SSE) in full-stack TypeScript applications using Express, PostgreSQL, and React. Use when building real-time server-to-client updates, initial data snapshots, client registration, connection cleanup, role-based broadcasting, and frontend EventSource consumption.
 ---
 

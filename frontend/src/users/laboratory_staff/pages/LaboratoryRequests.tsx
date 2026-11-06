@@ -1,10 +1,11 @@
 ﻿import Header from "../../../components/Header";
 import RequestSummary from "../components/LaboratoryRequests/RequestSummary";
 import LaboratoryQueuePanel from "../components/LaboratoryRequests/LaboratoryQueuePanel";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import InformationCard from "../components/LaboratoryRequests/InformationCard";
 import type { QueueEntry } from "../../../interface/Queue";
 import type { Service } from "../../../interface/Service";
+import { connectQueueStream } from "../../../services/queue-sse/connectQueueStream";
 
 type LaboratoryRequestsProps = {
   open: boolean;
@@ -13,7 +14,7 @@ type LaboratoryRequestsProps = {
   services: Service[];
   loading: boolean;
   error: string | null;
-  loadData: () => Promise<void>;
+  loadData: (background?: boolean) => Promise<void>;
   room: string;
 };
 
@@ -32,6 +33,14 @@ function LaboratoryRequests({
   const [openQueueAccordion, setOpenQueueAccordion] = useState<string | null>(
     null,
   );
+
+  useEffect(() => {
+    const closeQueueStream = connectQueueStream({
+      onQueueChanged: () => loadData(true),
+    });
+
+    return closeQueueStream;
+  }, [loadData]);
 
   return (
     <main className="flex-1 min-w-0 border-gray-300">

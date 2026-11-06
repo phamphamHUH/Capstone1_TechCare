@@ -1,5 +1,5 @@
 ---
-name: techcare
+name: techcare-fullstack
 description: Deep, code-verified reference for the TechCare clinic management system monorepo (Express 5/TypeScript + Neon Postgres backend, React 19/Vite/Tailwind frontend). Use this skill whenever working on the TechCare codebase — adding or fixing API routes/controllers, changing the Postgres schema (TABLES/syncSchema in db.ts), wiring frontend pages under frontend/src/users/**, debugging JWT/role middleware, the live queue monitor (SSE), consultations/prescriptions, laboratory requests/results/form templates, billing, patient login, seed scripts, tests, or the tools/ ETL scripts. Trigger on mentions of "TechCare", clinic management system, front desk / doctor / lab staff / admin / patient dashboards, queue_entries, consultation_records, laboratory_request_items, publishQueueChange, or any file path under backend/src or frontend/src. Also use to explain the project to a new contributor or to make changes consistent with existing (sometimes inconsistent) conventions.
 ---
 
@@ -45,11 +45,12 @@ TechCare-main/
 ├── backend/                     # Express 5 + TypeScript, ESM ("type": "module")
 │   ├── package.json             # dev: nodemon+tsx, build: npm install && tsc, test: vitest, seed:* scripts
 │   └── src/
-│       ├── server.ts            # boot: connectNeon, syncSchema (prod only), listen, SIGTERM/SIGINT -> closeAllQueueStreams
+│       ├── server.ts            # boot: connectNeon, repairBillingSchema, syncSchema (prod only), backfillBillLinks, listen, SIGTERM/SIGINT -> closeAllQueueStreams
 │       ├── app.ts               # builds the Express app: CORS, json, routers, static frontend/dist, SPA fallback
 │       ├── websocket.ts         # ws server, DEAD CODE (import commented out in server.ts)
 │       ├── config/
 │       │   ├── db.ts            # `sql` (neon http) + `pool` (neon Pool), TABLES array, connectNeon(), syncSchema()
+│       │   ├── billingSchema.ts # repairBillingSchema() (additive bills columns), backfillBillLinks()
 │       │   ├── env.ts           # ENV.* (dotenv; .env.test when NODE_ENV=test)
 │       │   └── cloudinary.ts
 │       ├── middlewares/
@@ -65,7 +66,7 @@ TechCare-main/
 │       ├── controllers/<role>/
 │       │   ├── getRequests / postRequests / updateRequests / deleteRequest(s) .controller.ts
 │       │   └── dto/{get,post,update,delete}.dto.ts     # TypeScript namespaces: body/response/error types per handler
-│       │   (auth, admin, fdstaff, doctor, labstaff, patient; fdstaff also has getMedicalHistory.controller.ts;
+│       │   (auth, admin, fdstaff, doctor, labstaff, patient;
 │       │    test.controller.ts and test/sse/ are demo code)
 │       ├── services/queue-sse/{index,queueStream.handlers,queueStream.hub}.ts   # live Queue Monitor
 │       ├── utils/
@@ -147,41 +148,46 @@ so they must match the frontend route paths exactly.
 
 ## Database schema (`TABLES` in `backend/src/config/db.ts`)
 
-Every table has `SERIAL id`; foreign keys point at the **string** business
+Summary only. Every column, FK, status value, JSONB shape and the code vs live
+database drift are in the `techcare-database-schema` skill.
+
+Every table has a serial primary key (`id`, except `actions.action_id` and
+`sse_test.message_id`); foreign keys point at the **string** business
 IDs (e.g. `patient_id`), not the serial id. Users and patients are
 separate tables with similar columns (`password_hash`, not `password`).
 
 | Table | Key columns and notes |
 |---|---|
 | `users` | `user_id` (unique), `username`, `password_hash`, `first_name/middle_name/last_name/suffix`, `sex`, `email` (unique), `contact_number`, `emergency_contact(_name)`, `address`, `birthdate`, `role`, `department`, `employment_status`, `date_hired`, `shift_start/shift_end`, `last_login`, `account_status` (false = deactivated, login returns 403), `active` (online flag set on login/logout), `profile_photo`. |
-| `patients` | `patient_id` (unique), `username` (= patient_id when created by front desk), `password_hash` (default password is the last name), same personal columns as users, `civil_status`, `blood_type`, `image_url`, `role` default `'patient'`, `account_status`, `active`. |
+| `patients` | `patient_id` (unique), `username` (= patient_id when created by front desk), `password_hash` (default password is the last name), name, `sex`, `email` (unique), `contact_number`, `birthdate`, address as `street/barangay/city/province/zip_code`, `guardian_name/guardian_relationship/guardian_contact`, `is_pwd`, `height_cm`, `weight_kg`, medical history text columns, `smoking_status`, `alcohol_consumption`, `civil_status`, `blood_type`, `image_url`, `role` default `'patient'`, `account_status`, `active`. **No `address`, `emergency_contact_name` or `emergency_contact`.** |
 | `services` | `service_id`, `service_type` (`consultation` / `laboratory`), `service_name` (unique), `price`, `active`, `room` (e.g. `Consultation Room`, `Laboratory Room 1/2`), `service_category`. |
-| `packages` | `package_id` serial, `package_name`, `package_price`, `service_ids VARCHAR[]`. No controller uses it yet. |
-| `queue_entries` | `queue_id` (`CONS-####` / `LAB-####`), `patient_id`, `queue_number`, `is_priority`, `status`. **No `service_id` or `service_type`**: the service is reached through `consultation_records.queue_id` or `laboratory_request_items.queue_id`. |
-| `consultation_records` | `consultation_record_id`, `patient_id`, `service_id`, `queue_id`, `status` (default `'Created'`), `cancellation_reason`, `is_paid`, `requested_by` → users, `consulted_by` → users, `consultation_type` (`Initial`), JSONB `diagnosis`, `presenting_complaint`, `vital_signs`, `physical_examination`, `notes`, `requested_at`, `consulted_at`. **There is no `doctor_id`.** |
+| `packages` | `package_id` (unique string), `package_name`, `package_price`, `status` (`Active`). No controller uses it yet. |
+| `queue_entries` | `queue_id` (`CONS-####` / `LAB-####`), `patient_id`, `queue_number`, `is_priority`, `skip_count`, `status`. **No `service_id` or `service_type`**: the service is reached through `consultation_records.queue_id` or `laboratory_request_items.queue_id`. |
+| `consultation_records` | `consultation_record_id`, `patient_id`, `service_id`, `queue_id`, `bill_id` → bills, `status` (default `'Created'`), `cancellation_reason`, `is_paid`, `requested_by` → users, `consulted_by` → users, `consultation_type` (`Initial`), JSONB `diagnosis`, `presenting_complaint`, `vital_signs`, `physical_examination`, `notes`, `requested_at`, `consulted_at`. **There is no `doctor_id`.** |
 | `prescription_records` | `prescription_id` (`RX-…`), `consultation_record_id`, `patient_id`, `prescriber_id`, `valid_until`, `status` (`Active`), `prescription_items` JSONB (`[{medication,dosage,frequency,duration?,instructions?}]`), `notes`. |
 | `laboratory_requests` | `request_id` (`LR-…`), optional `consultation_record_id`, `patient_id`, `requested_by`, `status` (`Requested` → `Paid`), `is_paid`, `is_priority`, `request_date`, `estimated_release_date`, `requested_at`. |
-| `laboratory_request_items` | `lab_item_id` (`LI-…`), `request_id`, `service_id`, `processed_by`, `queue_id` (set when payment forwards it to a room queue), `status`, `reason`. One row per ordered test. |
-| `laboratory_results` | `result_id` (`RES-<uuid>`), `lab_item_id`, `results` JSONB (`[{name,result,…}]`), `status` (`Pending` → `Released`), `remarks`, `image_url`, `verified_by/at`. |
+| `laboratory_request_items` | `lab_item_id` (`LI-…`), `request_id`, `service_id`, `processed_by`, `queue_id` (set when payment forwards it to a room queue), `bill_id` → bills, `status`, `reason`. One row per ordered test. |
+| `laboratory_results` | `result_id` (`RES-<uuid>`), `lab_item_id`, `results` JSONB (`[{name,result,…}]`), `status` (`Pending` → `Released`), `remarks`, `image_url`, `verified_by/at`, `released_at/by` (no code writes these). **No `result_value`.** |
 | `form_templates` | `form_id` (`F-<timestamp>`), `form_name`, `form_description`, `service_id`, `status` (`Published` etc.; only one Published per service), `created_by`, `version` (incremented on update). |
 | `form_components` | `form_component_id` (`FC-<form_id>-<index>`), `form_id`, `type_id` → `form_component_types`, `label`, `field_key`, `display_order`, JSONB `settings`, `validation`. |
 | `form_component_types` | `type_id`, `type_name`, `data_type`. Seeded values: `text_field number_field checkbox date_field table section_header static_text line_divider image`. |
-| `bills` | `bill_id`, `patient_id`, `items` JSONB, `discount_pct`, `total_amount`, `payment_method`, `status` (`Unpaid`), `receipt_id`, `receipt_issued_at`, `billed_at`. |
-| `actions` | `action_id` serial, `action_name` (unique, e.g. `user.deactivate`), `module`, `is_sensitive`. Lookup for the audit log. |
-| `activity_logs` | `user_id`, `action_id` → actions, `status` (`success`/`failure`/`blocked`), `target_type`, `target_id`, `metadata` JSONB. **Current audit log**, written by `logActivity()`. |
+| `bills` | `bill_id`, `patient_id`, `status` (default `Pending` → `Paid`; old rows may hold `Unpaid`), `items` JSONB (snapshot saved at payment), `subtotal`, `discount_type`, `discount_rate`, `discount_pct`, `discount_amount`, `discount_id_no`, `discounted_by`, `total_amount`, `payment_method`, `reference_num`, `receipt_id`, `receipt_issued_at`, `billed_at`, `paid_at`, `received_by`. Consultations and lab items link to it through their own `bill_id`. |
+| `actions` | `action_id` serial, `action_name` (unique, e.g. `user.deactivate`), `action_description`, `module`, `is_sensitive`. Lookup for the audit log. |
+| `activity_logs` | `user_id`, `action_id` (refers to actions, no FK), `status` (`success`/`failure`/`blocked`), `target_type`, `target_id`, `metadata` JSONB. **Current audit log**, written by `logActivity()`. |
 | `system_activity` | Legacy audit table (`activity_id`, `user_id`, `service_name` → services). Still written by `POST /api/admin/activities` and read by `GET /api/admin/activity`. |
-| `sse_test` | Demo table for `/api/sse`. |
+| `sse_test` | Demo table for the test SSE controllers (`controllers/test/`). |
 
 ### How the schema is managed
 
-- `connectNeon()` (runs on every boot): `CREATE TABLE IF NOT EXISTS` for each entry, plus additive `ALTER TABLE … ADD COLUMN IF NOT EXISTS` repairs for `laboratory_results` (`status`, `released_at`, `released_by`) and `consultation_records.cancellation_reason`.
-- `syncSchema(onlyTables?)` runs **automatically on boot when `IS_PRODUCTION=true`** (see `server.ts`). It makes the DB match `TABLES` exactly: it **drops tables not in `TABLES`** (`DROP … CASCADE`), adds missing columns and **drops columns not listed in each table's `columns` map**. Never run it against a database holding data you care about without reading `TABLES` first.
-- **To change a column you must edit two places** in the table entry: the `createSQL` string (fresh DBs) and the `columns` object (what `syncSchema` compares). They have drifted in places (Gotcha 11).
-- `createSQL` does not alter existing tables. On a non-production database, either call `syncSchema(["table"])` once or add an explicit additive `ALTER` to `connectNeon()`.
+- `connectNeon()` (runs on every boot): `CREATE TABLE IF NOT EXISTS` for each entry. Its old `ALTER` repairs are commented out.
+- `repairBillingSchema()` (`config/billingSchema.ts`, runs on every boot, also `npm run repair:billing`): additive `ADD COLUMN IF NOT EXISTS` for `bills` and the `bill_id` links, plus a backfill of billing fields. `backfillBillLinks()` runs after `syncSchema` and links legacy unbilled rows to bills.
+- `syncSchema(onlyTables?)` runs **automatically on boot when `IS_PRODUCTION=true`** (see `server.ts`). It **drops tables not in `TABLES`** (`DROP … CASCADE`), adds missing columns and **drops columns not listed in each table's `columns` map**. It compares column names only, so it never changes an existing column's type, nullability or default and never adds a missing constraint. Never run it against a database holding data you care about without reading `TABLES` first.
+- Each table has one definition, its `columns` map. There is no separate `createSQL`. The live database has drifted from it in places (Gotcha 11).
+- Editing `columns` does not alter existing tables outside production. On a non-production database, either call `syncSchema(["table"])` once or add an additive repair like `repairBillingSchema()`. Type, nullability, default and FK changes always need an explicit `ALTER`.
 
 ### Seeding
 
-`npm run seed` (insert, idempotent via `ON CONFLICT DO NOTHING`), `npm run seed:reset -- --force` (TRUNCATE ... RESTART IDENTITY then insert), `npm run seed:bulk` (hundreds of synthetic patients, staff and queue rows; `SEED_PATIENTS`, `SEED_STAFF`, `SEED_QUEUE_ENTRIES`), `npm run seed:all`. Seeding refuses to run when `IS_PRODUCTION` or `NODE_ENV=production` unless `--force`. Seed accounts, all with password `password`: `admin101`, `doctor201`, `doctor202`, `fdstaff322` (id `U-26-1001-0004`, the id hardcoded in front desk controllers), `fdstaff323`, `labstaff122` (Laboratory Room 2), `labstaff123`, `fdstaff324` (deactivated), patients `patient101`–`patient108`. Rows for "today" are stamped relative to `CURRENT_DATE`, since the queue endpoints only return today's rows. `seed.ts` rewrites an old `queue_entries` INSERT shape (strips a `service_id` column) before running `seed.sql`.
+**Currently broken, and `seed:reset`/`seed:all` wipe the data before failing (Gotcha 19).** `npm run seed` (insert, idempotent via `ON CONFLICT DO NOTHING`), `npm run seed:reset -- --force` (TRUNCATE ... RESTART IDENTITY then insert), `npm run seed:bulk` (hundreds of synthetic patients, staff and queue rows; `SEED_PATIENTS`, `SEED_STAFF`, `SEED_QUEUE_ENTRIES`), `npm run seed:all`. Seeding refuses to run when `IS_PRODUCTION` or `NODE_ENV=production` unless `--force`. Seed accounts, all with password `password`: `admin101`, `doctor201`, `doctor202`, `fdstaff322` (id `U-26-1001-0004`, the id hardcoded in front desk controllers), `fdstaff323`, `labstaff122` (Laboratory Room 2), `labstaff123`, `fdstaff324` (deactivated), patients `patient101`–`patient108`. Rows for "today" are stamped relative to `CURRENT_DATE`, since the queue endpoints only return today's rows. `seed.ts` rewrites an old `queue_entries` INSERT shape (strips a `service_id` column) before running `seed.sql`.
 
 ## Status vocabularies (casing is inconsistent: always compare with `LOWER()`)
 
@@ -192,12 +198,12 @@ separate tables with similar columns (`password_hash`, not `password`).
 | `laboratory_requests.status` | `Requested` → `Paid` (set by payment confirmation together with `is_paid=TRUE`). |
 | `laboratory_request_items.status` | `Requested` → `Waiting` (forwarded to a room queue) → `Specimen Collected` (queue entry completed) → `In Progress` (analysis started) → `Completed` (result saved). |
 | `laboratory_results.status` | `Pending` → `Released`. Only `Released` rows are returned by the "released results" endpoints. |
-| `bills.status` | `Unpaid`, `Paid`. |
+| `bills.status` | `Pending`, `Paid` (legacy rows may store `Unpaid`; the API normalizes them to `Pending`). |
 
 ### Laboratory flow (end to end)
 
 1. Doctor (`POST /api/doctor/laboratory-requests`) or front desk (`POST /api/fdstaff/laboratory-requests`) creates a `laboratory_requests` row plus one `laboratory_request_items` row per service (status `Requested`, `is_paid=FALSE`).
-2. Front desk sees it in `GET /api/fdstaff/billing/unpaid-lab` and confirms payment with `PATCH /api/fdstaff/laboratory-requests/:request_id`. In one transaction this creates a `LAB-####` queue entry **per room** (queue number is per room per Manila day), links the items (`queue_id`, status `Waiting`), sets the request `is_paid=TRUE, status='Paid'`, then calls `publishQueueChange()`.
+2. Every new request joins the patient's open bill (`getOrCreateOpenBill` + `recomputeBillTotals`). Front desk sees it in `GET /api/fdstaff/billings` and confirms payment with `PATCH /api/fdstaff/billings/:bill_id/pay`, which also retries forwarding on a paid bill without charging again. In one transaction this creates a `LAB-####` queue entry **per room** (queue number is per room per Manila day), links the items (`queue_id`, status `Waiting`), sets the request `is_paid=TRUE, status='Paid'`, then calls `publishQueueChange()`.
 3. Lab staff accept (`…/laboratory-queues/:queue_id/accept`, body `{room}`) → `Serving`; complete (`…/complete`) → items become `Specimen Collected`; skip moves the entry back; cancel sets `Cancelled`.
 4. `PATCH /api/labstaff/laboratory-requests/analysis/start` → items `In Progress`.
 5. `POST /api/labstaff/laboratory-results/:lab_item_id` (body `{results[], remarks?, image_url?, room}`) upserts a `Pending` result and sets the item `Completed`.
@@ -325,7 +331,7 @@ Admin QueueingMonitor page
 - SSE carries a signal, never queue data. The page always reloads from REST, including on every (re)connect.
 - Hub: max 50 screens (503 beyond), `retry: 3000`, `ping` every 25 s, screens tracked in an in-memory `Set` (single-instance only). `closeAllQueueStreams()` runs on SIGTERM/SIGINT so `server.close()` does not hang.
 - Client: 401/403 stops retrying (`unauthorized`), other errors retry with backoff (2 s, 4 s, 8 s, then 15 s max), 65 s of silence forces a reconnect. It uses `fetchEventSource` rather than `EventSource` because it needs the `Authorization` header.
-- **Callers of `publishQueueChange()`**: fdstaff `addConsultationRecord`, `confirmLabRequestPayment`, `deleteQueue`, `deletePatient`; doctor `skipConsultationQueueEntry`; labstaff `acceptQueueEntry`, `completeQueueEntry`, `skipQueueEntry`, `cancelQueueEntry`. When you add a new controller that changes `queue_entries`, call it after the commit. The legacy fdstaff `serveQueueEntry`/`skipQueueEntry` do not.
+- **Callers of `publishQueueChange()`**: fdstaff `addConsultationRecord`, `confirmPayment`, `deleteQueue`, `deletePatient`; doctor `skipConsultationQueueEntry`; labstaff `acceptQueueEntry`, `completeQueueEntry`, `skipQueueEntry`, `cancelQueueEntry`. When you add a new controller that changes `queue_entries`, call it after the commit. The legacy fdstaff `serveQueueEntry`/`skipQueueEntry` do not.
 
 ## Frontend
 
@@ -362,7 +368,7 @@ Data is passed down as props; there is no React Query/SWR or global store. Use `
 - **patient**: `PatientInformation.tsx`, `pages/ConsultationsView`, `PrescriptionsView`, `components/PatientSummaryCard`, `patientApi.ts`, `types.ts`.
 
 ### Environment and API base URL
-`lib/axios.ts` baseURL: `""` in `vite dev` (uses the Vite `/api` proxy), else `http://localhost:5000` when `VITE_IS_DEVELOPMENT=true`, else `VITE_API_BASE_URL` (or `VITE_API_URL`, trailing `/` and `/api` stripped; empty means same origin, which is what the monolith deployment wants).
+`lib/axios.ts` baseURL: `""` in `vite dev` (uses the Vite `/api` proxy), else `VITE_API_BASE_URL` (or `VITE_API_URL`, trailing `/` and `/api` stripped; empty means same origin, which is what the monolith deployment wants).
 
 ## Tests
 
@@ -408,7 +414,7 @@ Frontend `.env.local`: `VITE_IS_DEVELOPMENT=true`, `VITE_API_BASE_URL=http://loc
 ## Coding conventions
 
 - **SQL**: tagged-template `sql\`…${param}…\`` for single statements; `pool.connect()` + `BEGIN`/`COMMIT` + `pg_advisory_xact_lock(hashtext('…'))` for multi-step writes that generate IDs. Always parameterize. `sql.transaction([...])` is used where all statements are known up front (form templates).
-- **Controllers**: one folder per role, split by verb (`getRequests`, `postRequests`, `updateRequests`, `deleteRequest(s)`), each with a `dto/<verb>.dto.ts` that exports a namespace per handler (`body`, `response`, `error`, row types) and is used as `Response<ns.response | ns.error>`. Import with `.js` extensions.
+- **Controllers**: one folder per role, split by verb (`getRequests`, `postRequests`, `updateRequests`, `deleteRequest(s)`), each with a `dto/<verb>.dto.ts` that exports a namespace per handler (`body`, `response`, `error`, row types) and is used as `Response<ns.response | ns.error>`. Import with `.js` extensions. Full conventions, namespace index and known mismatches are in the `techcare-backend-dto` skill.
 - **Responses**: success `{ message, <resource> }`; errors `{ message }` (some older handlers use `{ error }`). Use proper status codes (400 validation, 401/403 auth, 404, 409 conflict, 500); newer code does.
 - **Queue changes**: any write to `queue_entries` should end with `publishQueueChange()` after commit, and status comparisons should use `LOWER(status)`.
 - **Audit**: new code should log through `logActivity()` with an `actions` row, not `system_activity`.
@@ -431,14 +437,16 @@ Auth and data exposure:
 9. `addFormTemplates` imports `registerFormComponentTypes` but does not call it; `form_components.type_id` has a FK to `form_component_types`, so creating the first template on an unseeded DB can fail until `updateFormTemplate` or the seed has inserted the types.
 
 Schema and config:
-10. **`syncSchema()` runs on boot in production** and drops unknown tables/columns. Anything created only via ad-hoc SQL or only in `createSQL` (not in `columns`) can be removed.
-11. `createSQL` and `columns` have drifted: `laboratory_results.released_at/released_by` are added by `connectNeon()` but are absent from `columns` (so `syncSchema` drops them; nothing reads them, and the release endpoint does not write them); `consultation_records.cancellation_reason` is only in `columns` + an `ALTER`; `services.service_category` is `NOT NULL` in `createSQL` but nullable in `columns`; `activity_logs.user_id` has the FK only in `columns`.
+10. **`syncSchema()` runs on boot in production** and drops unknown tables/columns. Anything created only via ad-hoc SQL (not in `columns`) can be removed.
+11. The live database has drifted from `TABLES` (checked 2026-11-07): `patients` address columns, `services.service_category`, `consultation_records.service_id/requested_by` and `queue_entries.patient_id` are nullable live, and most of those hold NULLs; `bills.total_amount` is `NUMERIC(10,2)` live; the FKs `laboratory_request_items.request_id` and `activity_logs.user_id` are missing live, and 429 of 435 lab items have no matching request. `syncSchema` cannot repair any of this. Full table in `techcare-database-schema`.
 12. **Env name mismatch**: `docs/SETUP.md` documents `REFRESH_TOKEN_SECRET` and `MODE`, but `env.ts` reads `JWT_REFRESH_TOKEN` and `NODE_ENV`. With no `JWT_REFRESH_TOKEN`, `jwt.sign` for the refresh token throws and **login returns 500**.
-13. `POST /api/fdstaff/billing` (`addBills`) is broken (`services_ids` column, missing `bill_id`), and nothing in the frontend calls it; `GET /billing` works. `updatePatient` ignores the uploaded image. `addPatient` no longer requires an image.
-14. `frontend/vite.config.ts` proxy target is `!process.env.NODE_ENV ? "https://techcare-hui6.onrender.com" : "http://localhost:5000"`. If `NODE_ENV` is unset when you run `vite`, the dev server proxies to the **deployed** backend.
+13. `POST /api/fdstaff/billing` (`addBills`) creates standalone bills but nothing in the frontend calls it. `updatePatient` ignores the uploaded image. `addPatient` no longer requires an image.
+14. `frontend/vite.config.ts` proxies `/api` to `http://localhost:5000` unless the shell sets `API_PROXY_TARGET`. `lib/axios.ts` uses relative URLs in `vite dev` and `VITE_API_BASE_URL` in production builds.
 
 Queue and flow details:
 15. Status strings mix cases (`waiting`/`Waiting`, `serving`/`Serving`); always use `LOWER()`. `labstaff GET /laboratory-requests/items/` filters `'Collected'` but items become `'Specimen Collected'`.
-16. Queue "today" windows use `CURRENT_DATE` (database timezone) in list queries but `Asia/Manila` in the number generators, so numbers and lists can disagree around midnight if the DB is not on Manila time.
+16. **Queue number generators use the wrong "today" expression.** Columns are `TIMESTAMP` holding GMT values, so `(created_at AT TIME ZONE 'Asia/Manila')::date` gives the previous day for rows created before 4 PM Manila, and queue numbers should restart at 1 for tickets issued before 4 PM and again at 4 PM. The correct form is `(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Manila')::date`. List queries use `CURRENT_DATE`, which is the GMT date, so lists and numbers can also disagree.
 17. Legacy/dead code that is safe to ignore (and a candidate to delete): `websocket.ts`, `utils/getQueueMonitorEntries.ts` (the SSE hub never calls it), `generateConsultationId.ts` duplicate generator, `middlewares/test.middleware.ts` + `/api/test` + `/api/sse` demos, `SignupPage.tsx`, `lib/protectRoute.ts` (empty), `frontdesk_staff/pages/Test.tsx`, `packages` and `sse_test` tables, `system_activity` (superseded by `activity_logs`).
 18. Laboratory staff UI is fixed to `"Laboratory Room 2"`; the seeded `labstaff122` matches that, other rooms need the constant changed (or a per-user room).
+19. **Seeds are broken.** `seed.sql` and `seedBulk.ts` insert `patients.emergency_contact_name/emergency_contact/address`, which don't exist, so seeding fails. `seed:reset` and `seed:all` commit the TRUNCATE first, so they would wipe the data and then fail.
+20. More queries that reference missing columns: `laboratory_results.result_value` (doctor, patient and fdstaff `getRequests`; the doctor query also reads `unit`, `reference_range`, `flag`) and `patients.address/emergency_contact_name/emergency_contact` (`labstaff/getRequests.controller.ts:155-159`).

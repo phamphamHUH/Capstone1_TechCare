@@ -49,7 +49,7 @@ flowchart TD
         A["App.tsx Routes<br/>ProtectedRoute role guard<br/>(enforced in production builds only)"]
         B["Role Dashboards<br/>Admin · Front Desk · Doctor<br/>Laboratory Staff · Patient"]
         C["lib/axios.ts<br/>Bearer token from sessionStorage"]
-        D["Admin QueueingMonitor<br/>reloads queue on queue-changed"]
+        D["Admin, Doctor, Lab Queue Pages<br/>reload queue on queue-changed"]
         E["connectQueueStream.ts<br/>fetch-event-source with auth header"]
     end
 
@@ -57,7 +57,7 @@ flowchart TD
     subgraph BE["Backend: Express 5 · TypeScript · ESM"]
         F["server.ts<br/>connectNeon on boot<br/>syncSchema when IS_PRODUCTION<br/>graceful SSE shutdown"]
         G["app.ts<br/>CORS · JSON body · routers<br/>static frontend/dist + SPA fallback"]
-        H["API Routers<br/>/api/auth · /api/admin · /api/fdstaff<br/>/api/doctor · /api/labstaff · /api/patient<br/>(dev only: /api/test · /api/sse)"]
+        H["API Routers<br/>/api/auth · /api/queue · /api/admin · /api/fdstaff<br/>/api/doctor · /api/labstaff · /api/patient<br/>(dev only: /api/test · /api/sse practice)"]
         I["authMiddleware<br/>verify JWT, load users row"]
         J["Role Middleware<br/>admin: always on<br/>fdstaff · doctor · labstaff: only when IS_PRODUCTION<br/>patientMiddleware: patient lab results"]
         K["Controllers + DTO types<br/>get · post · update · delete per role"]
@@ -67,8 +67,8 @@ flowchart TD
 
     %% ---------------- Queue SSE ----------------
     subgraph SSE["services/queue-sse"]
-        N["queueStream.handlers.ts<br/>GET /api/admin/queue/stream<br/>GET /api/admin/queue/stream/stats"]
-        O["queueStream.hub.ts<br/>connected screens · 25s ping<br/>publishQueueChange, debounced 150 ms"]
+        N["queueStream.handlers.ts<br/>GET /api/queue/stream"]
+        O["queueStream.hub.ts<br/>Map<Response, User><br/>initial snapshot + queue-changed signal"]
     end
 
     %% ---------------- Data and services ----------------
@@ -105,7 +105,7 @@ flowchart TD
     K -->|"after a queue mutation:<br/>publishQueueChange"| O
     O -->|"queue-changed signal only"| E
     E -->|"onQueueChanged"| D
-    D -->|"GET /api/admin/queues<br/>reload today's queue"| C
+    D -->|"role queue REST endpoint<br/>reload today's queue"| C
 
     %% ---------------- Frontend hosting ----------------
     G -.->|"SPA fallback index.html"| A

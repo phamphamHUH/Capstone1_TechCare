@@ -1,7 +1,7 @@
+import { randomUUID } from "node:crypto";
 import bcrypt from "bcryptjs";
 import cloudinary from "../../config/cloudinary.js";
 import { sql, pool } from "../../config/db.js";
-import type { PoolClient } from "@neondatabase/serverless";
 import {
   generateLaboratoryQueueId,
   generateQueueNumberLaboratory,
@@ -13,7 +13,6 @@ import type {
   updatePatient,
   serveQueueEntry,
   skipQueueEntry,
-  confirmLabRequestPayment,
   confirmPayment,
 } from "./dto/update.dto.js";
 
@@ -35,13 +34,28 @@ export async function updatePatient(
       suffix,
       sex,
       email,
-      address,
+      street,
+      barangay,
+      city,
+      province,
+      zip_code,
       contact_number,
       civil_status,
       blood_type,
       birthdate,
-      emergency_contact_name,
-      emergency_contact,
+      height_cm,
+      weight_kg,
+      allergies,
+      existing_conditions,
+      current_medications,
+      previous_surgeries,
+      previous_hospitalizations,
+      family_medical_history,
+      smoking_status,
+      alcohol_consumption,
+      guardian_name,
+      guardian_relationship,
+      guardian_contact,
     } = req.body as updatePatient.body;
 
     if (!patient_id) {
@@ -63,6 +77,11 @@ export async function updatePatient(
     }
 
     let hashedPassword = null;
+    let imageUrl: string | null = null;
+    if (req.file) {
+      const uploaded = await cloudinary.uploader.upload(req.file.path, { folder: "techcare/patients" });
+      imageUrl = uploaded.secure_url;
+    }
 
     if (password) {
       hashedPassword = await bcrypt.hash(password, 10);
@@ -79,13 +98,29 @@ export async function updatePatient(
                 suffix = COALESCE(${suffix}, suffix),
                 sex = COALESCE(${sex}, sex),
                 email = COALESCE(${email}, email),
-                address = COALESCE(${address}, address),
-                birthdate = COALESCE(${birthdate}, birthdate),
+                street = COALESCE(${street}, street),
+                barangay = COALESCE(${barangay}, barangay),
+                city = COALESCE(${city}, city),
+                province = COALESCE(${province}, province),
+                zip_code = COALESCE(${zip_code}, zip_code),
                 contact_number = COALESCE(${contact_number}, contact_number),
-                emergency_contact_name =  COALESCE(${emergency_contact_name}, emergency_contact_name),
-                emergency_contact = COALESCE(${emergency_contact}, emergency_contact),
                 civil_status = COALESCE(${civil_status}, civil_status),
                 blood_type = COALESCE(${blood_type}, blood_type),
+                birthdate = COALESCE(${birthdate}, birthdate),
+                guardian_name = COALESCE(${guardian_name}, guardian_name),
+                guardian_relationship = COALESCE(${guardian_relationship}, guardian_relationship),
+                guardian_contact = COALESCE(${guardian_contact}, guardian_contact),
+                allergies = COALESCE(${allergies}, allergies),
+                existing_conditions = COALESCE(${existing_conditions}, existing_conditions),
+                current_medications = COALESCE(${current_medications}, current_medications),
+                previous_surgeries = COALESCE(${previous_surgeries}, previous_surgeries),
+                previous_hospitalizations = COALESCE(${previous_hospitalizations}, previous_hospitalizations),
+                family_medical_history = COALESCE(${family_medical_history}, family_medical_history),
+                smoking_status = COALESCE(${smoking_status}, smoking_status),
+                alcohol_consumption = COALESCE(${alcohol_consumption}, alcohol_consumption),
+                height_cm = COALESCE(${height_cm}, height_cm),
+                weight_kg = COALESCE(${weight_kg}, weight_kg),
+                image_url = COALESCE(${imageUrl}, image_url),
                 updated_at = CURRENT_TIMESTAMP
             WHERE patient_id = ${patient_id}
             RETURNING *;
@@ -154,6 +189,7 @@ export async function serveQueueEntry(
       RETURNING *;
     `;
 
+    publishQueueChange();
     return res.status(200).json({
       message: "Queue entry called successfully.",
       existingQueueEntry,
@@ -212,6 +248,7 @@ export async function skipQueueEntry(
       RETURNING *;
     `;
 
+    publishQueueChange();
     return res.status(200).json({
       message: "Queue skipped successfully.",
       queue: updatedQueue[0],
@@ -229,58 +266,37 @@ export async function confirmPayment(
   req: Request,
   res: Response<confirmPayment.response | confirmPayment.error>,
 ) {
-  const { bill_id } = req.params;
+  // PATCH /api/fdstaff/billings/:bill_id/pay
+  // A pending bill is paid first, then its laboratory tests are forwarded.
+  // A paid bill is never charged again: the same call only retries forwarding.
+  const { bill_id } = req.params as { bill_id: string };
   const {
-    payment_method,
-    discount_type,
+    payment_method = "Cash",
+    discount_type = "Not Eligible",
     amount_received,
     reference_num,
     priority,
-  } = req.body;
+  } = (req.body ?? {}) as confirmPayment.body;
 
-  if (!["Cash", "Instapay/QRpH"].includes(payment_method)) {
+  if (
+    !["Cash", "Instapay/QRpH"].includes(payment_method) ||
+    !["Not Eligible", "Senior Citizen", "PWD"].includes(discount_type) ||
+    (priority !== undefined && typeof priority !== "boolean")
+  ) {
     return res.status(400).json({
-      message: "Invalid payment method.",
-    } as confirmPayment.error);
+      message: "A valid payment method, discount and priority are required.",
+    });
   }
 
-  if (!["Not Eligible", "Senior Citizen", "PWD"].includes(discount_type)) {
-    return res.status(400).json({
-      message: "Invalid discount type.",
-    } as confirmPayment.error);
-  }
-
-  const isCash = payment_method === "Cash";
-  const reference = String(reference_num ?? "").trim();
-
-  if (!isCash && (reference === "" || reference.length > 50)) {
-    return res.status(400).json({
-      message: "A reference number (max 50 characters) is required.",
-    } as confirmPayment.error);
-  }
-
-  let client: PoolClient | undefined;
-
+  const client = await pool.connect();
   try {
-    client = await pool.connect();
+    // 1. Record the payment.
     await client.query("BEGIN");
-
-    // Same lock the lab flow uses, so queue ids and numbers can't collide.
-    await client.query("SELECT pg_advisory_xact_lock(hashtext('queue_ids'))");
-
-    // Roll back and respond in one step.
-    const reject = async (status: number, message: string) => {
-      await client!.query("ROLLBACK");
-      return res.status(status).json({ message } as confirmPayment.error);
-    };
-
-    // ---- Lock the bill and read the patient's eligibility ----
     const {
-      rows: [bill],
+      rows: [found],
     } = await client.query(
-      `SELECT
-         b.status,
-         COALESCE(DATE_PART('year', AGE(p.birthdate)) >= 60, false) AS is_senior,
+      `SELECT b.*,
+         COALESCE(p.birthdate::date <= ((NOW() AT TIME ZONE 'Asia/Manila')::date - INTERVAL '60 years')::date, false) AS is_senior,
          COALESCE(p.is_pwd, false) AS is_pwd
        FROM bills b
        JOIN patients p ON p.patient_id = b.patient_id
@@ -289,226 +305,196 @@ export async function confirmPayment(
       [bill_id],
     );
 
-    if (!bill) return reject(404, "Bill not found.");
-    if (bill.status !== "Pending") {
-      return reject(409, "This bill has already been processed.");
+    if (!found) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ message: "Bill not found." });
     }
 
-    if (
-      (discount_type === "Senior Citizen" && !bill.is_senior) ||
-      (discount_type === "PWD" && !bill.is_pwd)
-    ) {
-      return reject(400, "Patient is not eligible for this discount.");
+    const status = String(found.status).trim().toLowerCase();
+    if (!["pending", "unpaid", "paid"].includes(status)) {
+      await client.query("ROLLBACK");
+      return res.status(409).json({ message: "A cancelled bill cannot be paid." });
     }
 
-    // ---- Recompute totals from the database ----
-    const {
-      rows: [{ subtotal }],
-    } = await client.query(
-      `SELECT COALESCE(SUM(price), 0)::float8 AS subtotal FROM (
-         SELECT s.price
+    const already_paid = status === "paid";
+    let bill = found;
+    let change = 0;
+
+    if (!already_paid) {
+      if (
+        (discount_type === "Senior Citizen" && !found.is_senior) ||
+        (discount_type === "PWD" && !found.is_pwd)
+      ) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({ message: "Patient is not eligible for this discount." });
+      }
+
+      const { rows: linkedItems } = await client.query(
+        `SELECT 'consultation'::text AS line_type, cr.consultation_record_id AS item_id, NULL::text AS request_id,
+           cr.service_id, s.service_name, s.service_category, s.price, 1 AS quantity
          FROM consultation_records cr
          JOIN services s ON s.service_id = cr.service_id
-         WHERE cr.bill_id = $1
+         WHERE cr.bill_id = $1 AND LOWER(TRIM(cr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
          UNION ALL
-         SELECT s.price
+         SELECT 'laboratory'::text, lri.lab_item_id, lri.request_id, lri.service_id, s.service_name, s.service_category, s.price, 1
          FROM laboratory_request_items lri
          JOIN services s ON s.service_id = lri.service_id
-         WHERE lri.bill_id = $1
-       ) lines`,
-      [bill_id],
-    );
+         JOIN laboratory_requests lr ON lr.request_id = lri.request_id
+         WHERE lri.bill_id = $1 AND LOWER(TRIM(lri.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+           AND LOWER(TRIM(lr.status)) NOT IN ('cancelled', 'canceled', 'rejected')`,
+        [bill_id],
+      );
 
-    if (subtotal <= 0) return reject(400, "Bill has no billable items.");
-
-    const discountRate = discount_type === "Not Eligible" ? 0 : 0.2;
-    const discountAmount = Math.round(subtotal * discountRate * 100) / 100;
-    const total = Math.round((subtotal - discountAmount) * 100) / 100;
-
-    let change = 0;
-    if (isCash) {
-      const received = Number(amount_received);
+      // Legacy bills have no linked rows, only their saved item list.
+      const source: Record<string, any>[] = linkedItems.length > 0 ? linkedItems : Array.isArray(found.items) ? found.items : [];
+      const items = source.map((item) => ({
+        ...item,
+        price: item.price === null || item.price === undefined ? NaN : Number(item.price),
+        quantity: Number(item.quantity ?? 1),
+      }));
 
       if (
-        !Number.isFinite(received) ||
-        Math.round(received * 100) < Math.round(total * 100)
+        items.length === 0 ||
+        items.some((item) => !Number.isFinite(item.price) || item.price < 0 || !Number.isInteger(item.quantity) || item.quantity <= 0)
       ) {
-        return reject(400, "Amount received is less than the total.");
-      }
-
-      change = (Math.round(received * 100) - Math.round(total * 100)) / 100;
-    }
-    const { rows: labItems } = await client.query(
-      `SELECT lri.lab_item_id, lri.request_id, lri.queue_id, lri.status, s.room
-       FROM laboratory_request_items lri
-       JOIN services s ON s.service_id = lri.service_id
-       WHERE lri.bill_id = $1
-       ORDER BY lri.request_id, lri.lab_item_id
-       FOR UPDATE OF lri`,
-      [bill_id],
-    );
-
-    const unsent = labItems.filter(
-      (item) =>
-        !item.queue_id &&
-        !["cancelled", "canceled", "rejected"].includes(
-          String(item.status).trim().toLowerCase(),
-        ),
-    );
-
-    if (
-      unsent.some(
-        (item) =>
-          item.status !== "Requested" ||
-          typeof item.room !== "string" ||
-          !item.room.trim(),
-      )
-    ) {
-      return reject(
-        409,
-        "Some laboratory tests are not pending or have no assigned room, so payment can't be forwarded.",
-      );
-    }
-
-    const byRequest = new Map<string, Map<string, string[]>>();
-    for (const item of unsent) {
-      const rooms =
-        byRequest.get(item.request_id) ?? new Map<string, string[]>();
-      const ids = rooms.get(item.room) ?? [];
-      ids.push(item.lab_item_id);
-      rooms.set(item.room, ids);
-      byRequest.set(item.request_id, rooms);
-    }
-
-    let queuedCount = 0;
-
-    for (const [request_id, rooms] of byRequest) {
-      const {
-        rows: [request],
-      } = await client.query(
-        "SELECT * FROM laboratory_requests WHERE request_id = $1 FOR UPDATE",
-        [request_id],
-      );
-
-      if (!request) {
         await client.query("ROLLBACK");
-        return res.status(404).json({
-          message: "Laboratory request not found.",
-        } as confirmPayment.error);
+        return res.status(409).json({ message: "Bill has no valid billable items." });
       }
 
-      if (
-        ["cancelled", "canceled", "rejected"].includes(
-          String(request.status).trim().toLowerCase(),
-        )
-      ) {
-        return reject(
-          409,
-          "A cancelled or rejected request cannot be confirmed or sent to the laboratory.",
-        );
+      const subtotal = Math.round(items.reduce((sum, item) => sum + item.price * item.quantity, 0) * 100) / 100;
+      const discount_rate = discount_type === "Not Eligible" ? 0 : 20;
+      const total = Math.round(subtotal * (100 - discount_rate)) / 100;
+      const reference = String(reference_num ?? "").trim();
+
+      if (payment_method !== "Cash" && (!reference || reference.length > 50)) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({
+          message: "A transfer reference number of at most 50 characters is required.",
+        });
       }
 
-      for (const [room, ids] of rooms) {
-        const queueId = await generateLaboratoryQueueId(client);
-        const queueNumber = await generateQueueNumberLaboratory(client, room);
-
-        await client.query(
-          `INSERT INTO queue_entries (queue_id, patient_id, queue_number, is_priority, status)
-           VALUES ($1, $2, $3, $4, 'Waiting')`,
-          [
-            queueId,
-            request.patient_id,
-            queueNumber,
-            priority === true || request.is_priority === true,
-          ],
-        );
-
-        const linked = await client.query(
-          `UPDATE laboratory_request_items
-           SET queue_id = $1, status = 'Waiting', updated_at = NOW()
-           WHERE request_id = $2 AND lab_item_id = ANY($3::text[])
-             AND queue_id IS NULL AND status = 'Requested'
-           RETURNING lab_item_id`,
-          [queueId, request_id, ids],
-        );
-
-        if (linked.rows.length !== ids.length) {
-          throw new Error(
-            "Some laboratory items changed while being forwarded.",
-          );
+      if (payment_method === "Cash") {
+        const received = amount_received === null || amount_received === "" || amount_received === undefined ? NaN : Number(amount_received);
+        if (!Number.isFinite(received) || Math.round(received * 100) < Math.round(total * 100)) {
+          await client.query("ROLLBACK");
+          return res.status(400).json({ message: "Amount received is less than the total." });
         }
-
-        queuedCount++;
+        change = (Math.round(received * 100) - Math.round(total * 100)) / 100;
       }
 
+      const { rows } = await client.query(
+        `UPDATE bills
+         SET status = 'Paid', subtotal = $2, discount_type = $3, discount_rate = $4, discount_pct = $4,
+             discount_amount = $5, total_amount = $6, payment_method = $7, reference_num = $8, items = $9::jsonb,
+             receipt_id = COALESCE(receipt_id, $10), paid_at = NOW(), billed_at = NOW(), receipt_issued_at = NOW(),
+             received_by = $11, updated_at = NOW()
+         WHERE bill_id = $1
+         RETURNING *`,
+        [
+          bill_id,
+          subtotal,
+          discount_rate ? discount_type : null,
+          discount_rate,
+          Math.round((subtotal - total) * 100) / 100,
+          total,
+          payment_method,
+          payment_method === "Cash" ? null : reference,
+          JSON.stringify(items),
+          `R-${randomUUID().slice(0, 12).toUpperCase()}`,
+          req.user?.user_id ?? null,
+        ],
+      );
+      bill = rows[0];
+
+      await client.query("UPDATE consultation_records SET is_paid = TRUE WHERE bill_id = $1", [bill_id]);
       await client.query(
-        `UPDATE laboratory_requests
-         SET is_paid = TRUE, status = 'Paid',
-             updated_at = CASE WHEN is_paid = TRUE AND status = 'Paid' THEN updated_at ELSE NOW() END
-         WHERE request_id = $1`,
-        [request_id],
+        `UPDATE laboratory_requests lr
+         SET is_paid = TRUE, status = 'Paid', is_priority = COALESCE($2, lr.is_priority), updated_at = NOW()
+         WHERE EXISTS (SELECT 1 FROM laboratory_request_items lri WHERE lri.request_id = lr.request_id AND lri.bill_id = $1)
+           AND LOWER(TRIM(lr.status)) NOT IN ('cancelled', 'canceled', 'rejected')`,
+        [bill_id, priority ?? null],
       );
     }
-
-    const {
-      rows: [updatedBill],
-    } = await client.query(
-      `UPDATE bills
-       SET status = 'Paid',
-           subtotal = $2,
-           discount_type = $3,
-           discount_rate = $4,
-           discount_amount = $5,
-           total_amount = $6,
-           payment_method = $7,
-           reference_num = $8,
-           paid_at = NOW(),
-           updated_at = NOW()
-       WHERE bill_id = $1 AND status = 'Pending'
-       RETURNING *`,
-      [
-        bill_id,
-        subtotal,
-        discount_type === "Not Eligible" ? null : discount_type,
-        discountRate,
-        discountAmount,
-        total,
-        payment_method,
-        isCash ? null : reference,
-      ],
-    );
-
-    if (!updatedBill) {
-      return reject(409, "This bill has already been processed.");
-    }
-    const { rows: queues } = await client.query(
-      `SELECT DISTINCT q.*, s.room
-       FROM queue_entries q
-       JOIN laboratory_request_items lri ON lri.queue_id = q.queue_id
-       JOIN services s ON s.service_id = lri.service_id
-       WHERE lri.bill_id = $1
-       ORDER BY q.queue_id, s.room`,
-      [bill_id],
-    );
-
     await client.query("COMMIT");
 
-    if (queuedCount > 0) publishQueueChange();
+    // 2. Forward laboratory tests in a separate transaction, so a forwarding
+    // problem can never undo the payment. Each request gets one queue entry per room.
+    let has_laboratory_items = false;
+    let queued = true;
+    let forwardingError = "";
+    let queueChanged = false;
+    try {
+      await client.query("BEGIN");
+      await client.query("SELECT pg_advisory_xact_lock(hashtext('queue_ids'))");
+      const { rows: labItems } = await client.query(
+        `SELECT lri.lab_item_id, lri.request_id, lri.queue_id, lri.status, lr.patient_id, lr.is_priority, s.room
+         FROM laboratory_request_items lri
+         JOIN services s ON s.service_id = lri.service_id
+         JOIN laboratory_requests lr ON lr.request_id = lri.request_id
+         WHERE lri.bill_id = $1 AND LOWER(TRIM(lri.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+           AND LOWER(TRIM(lr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+         ORDER BY lri.request_id, lri.lab_item_id
+         FOR UPDATE OF lri`,
+        [bill_id],
+      );
+      has_laboratory_items = labItems.length > 0;
 
+      const unforwarded = labItems.filter((item) => !item.queue_id);
+      if (unforwarded.some((item) => String(item.status).trim().toLowerCase() !== "requested" || !String(item.room ?? "").trim())) {
+        queued = false;
+        forwardingError = "Payment was recorded, but some laboratory tests still need an assigned room before they can be forwarded.";
+        await client.query("ROLLBACK");
+      } else {
+        const groups = new Map<string, typeof unforwarded>();
+        for (const item of unforwarded) {
+          const key = `${item.request_id}|${item.room}`;
+          groups.set(key, [...(groups.get(key) ?? []), item]);
+        }
+        for (const group of groups.values()) {
+          const { patient_id, is_priority, room } = group[0];
+          const queue_id = await generateLaboratoryQueueId(client);
+          const queue_number = await generateQueueNumberLaboratory(client, room);
+          await client.query(
+            `INSERT INTO queue_entries (queue_id, patient_id, queue_number, is_priority, status)
+             VALUES ($1, $2, $3, $4, 'Waiting')`,
+            [queue_id, patient_id, queue_number, is_priority === true],
+          );
+          await client.query(
+            `UPDATE laboratory_request_items
+             SET queue_id = $1, status = 'Waiting', updated_at = NOW()
+             WHERE lab_item_id = ANY($2::text[])`,
+            [queue_id, group.map((item) => item.lab_item_id)],
+          );
+          queueChanged = true;
+        }
+        await client.query("COMMIT");
+      }
+    } catch (error) {
+      await client.query("ROLLBACK").catch(console.error);
+      console.error("Unable to forward paid bill:", { bill_id, error });
+      queued = false;
+      queueChanged = false;
+      forwardingError = "Payment was recorded, but laboratory forwarding failed. Retry forwarding from the paid bill.";
+    }
+
+    if (queueChanged) publishQueueChange();
+
+    const { is_senior, is_pwd, ...savedBill } = bill;
     return res.status(200).json({
-      message: "Payment confirmed successfully.",
-      bill: updatedBill,
+      message: forwardingError || (already_paid ? "This bill is already paid. No new charge was recorded." : "Payment confirmed successfully."),
+      bill: { ...savedBill, status: "Paid" },
       change,
-      queues,
-    } as confirmPayment.response);
+      already_paid,
+      queued,
+      has_laboratory_items,
+    });
   } catch (error) {
-    if (client) await client.query("ROLLBACK").catch(console.error);
-    console.error("Error in confirmPayment controller:", error);
-
+    await client.query("ROLLBACK").catch(console.error);
+    console.error("Unable to record bill payment:", { bill_id, error });
     return res.status(500).json({
-      message: "Error in confirmPayment controller.",
-    } as confirmPayment.error);
+      message: "Payment could not be recorded. Refresh the bill status before trying again.",
+    });
   } finally {
-    client?.release();
+    client.release();
   }
 }

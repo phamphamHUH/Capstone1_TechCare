@@ -12,6 +12,7 @@
     "dev": "vite",
     "build": "npm install && tsc -b && vite build",
     "lint": "eslint .",
+    "test:billing": "node --test tests/billing.test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

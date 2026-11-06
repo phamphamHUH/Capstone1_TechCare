@@ -3,3 +3,4 @@ node_modules
 .vscode
 dist
 backend/.env.test
+debug.log

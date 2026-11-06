@@ -21,6 +21,10 @@ export const formatAge = (birthdate: string | null, age: number | null) => {
   return `${years} ${years === 1 ? "year" : "years"} old`;
 };
 
+export function formatPatientAddress(patient: { street?: string; barangay?: string; city?: string; province?: string; zip_code?: string; address?: string }) {
+  return [patient.street, patient.barangay, patient.city, patient.province, patient.zip_code].map((part) => part?.trim()).filter(Boolean).join(", ") || patient.address || "Not recorded";
+}
+
 export const peso = (v: number | string | null | undefined) =>
   new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(
     Number(v ?? 0),

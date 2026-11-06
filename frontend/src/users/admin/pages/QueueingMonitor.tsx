@@ -4,9 +4,6 @@ import { connectQueueStream } from "../../../services/queue-sse/connectQueueStre
 import QueueColumn from "../components/QueueMonitor/QueueColumn";
 import type { QueueEntry, QueueStreamStatus } from "../../../interface/Queue";
 
-// Admin.tsx still passes these props, but this page does not use them:
-// Admin's loadData() loads users, services and activities (not the queue), so
-// this page loads the queue by itself with loadQueue() below.
 type QueueingMonitorProps = {
   open?: boolean;
   setOpen?: React.Dispatch<React.SetStateAction<boolean>>;
@@ -35,7 +32,6 @@ function QueueingMonitor(_props: QueueingMonitorProps) {
   // Used for the Fullscreen button.
   const screenRef = useRef<HTMLDivElement>(null);
 
-  // Counts how many times we asked for the queue (explained in loadQueue).
   const latestRequest = useRef(0);
 
   // Live clock in the header.
@@ -44,12 +40,7 @@ function QueueingMonitor(_props: QueueingMonitorProps) {
     return () => clearInterval(timer);
   }, []);
 
-  // Loads today's queue from the REST API.
-  // SSE tells us WHEN to call this, the data itself comes from here.
   const loadQueue = useCallback(async () => {
-    // If the queue changes twice quickly, two requests are sent. If the first
-    // one answers LAST, it would replace newer data with older data.
-    // So we number each request and ignore any answer that is not the latest.
     latestRequest.current += 1;
     const thisRequest = latestRequest.current;
 
@@ -64,16 +55,12 @@ function QueueingMonitor(_props: QueueingMonitorProps) {
     }
   }, []);
 
-  // THE LIVE CONNECTION
-  // All the SSE work is in services/queue-sse/connectQueueStream.ts.
-  // This page only says what to do when the queue changed: reload it.
   useEffect(() => {
     const closeQueueStream = connectQueueStream({
       onQueueChanged: loadQueue,
       onStatusChange: setStatus,
     });
 
-    // Cleanup: close the connection when leaving the page.
     return closeQueueStream;
   }, [loadQueue]);
 

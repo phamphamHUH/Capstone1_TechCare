@@ -3,7 +3,6 @@ import type { Request, Response } from "express";
 import type {
   getAllPatients,
   getPrintablePatientRecord,
-  getAllBilling,
   getAllQueueEntries,
   getAllServices,
   getLaboratoryRequest,
@@ -204,64 +203,6 @@ export async function getPrintablePatientRecord(
   }
 }
 
-export async function getAllBilling(
-  req: Request,
-  res: Response<getAllBilling.response | getAllBilling.error>,
-) {
-  try {
-    const history = await sql`
-      WITH payment_history AS (
-        SELECT to_jsonb(b) || jsonb_build_object('record_type', 'bill') AS record,
-          COALESCE(b.billed_at, b.created_at) AS sort_date
-        FROM bills b
-        UNION ALL
-        SELECT jsonb_build_object(
-          'bill_id', 'LAB-CONFIRM:' || lr.request_id,
-          'record_type', 'laboratory_confirmation',
-          'request_id', lr.request_id,
-          'patient_id', lr.patient_id,
-          'status', 'Paid',
-          'items', COALESCE((
-            SELECT jsonb_agg(jsonb_build_object(
-              'service_id', ri.service_id,
-              'service_name', s.service_name,
-              'service_category', s.service_category,
-              'quantity', 1
-            ) ORDER BY ri.lab_item_id)
-            FROM laboratory_request_items ri
-            JOIN services s ON s.service_id = ri.service_id
-            WHERE ri.request_id = lr.request_id
-          ), '[]'::jsonb),
-          'total_amount', NULL,
-          'discount_pct', NULL,
-          'payment_method', NULL,
-          'receipt_id', NULL,
-          'created_at', lr.requested_at,
-          'billed_at', NULL
-        ) AS record, lr.updated_at AS sort_date
-        FROM laboratory_requests lr
-        WHERE lr.is_paid = TRUE
-          AND NOT EXISTS (
-            SELECT 1 FROM bills b
-            WHERE LOWER(b.status) = 'paid'
-              AND b.patient_id = lr.patient_id
-              AND b.items @> jsonb_build_array(jsonb_build_object('request_id', lr.request_id))
-          )
-      )
-      SELECT record FROM payment_history
-      ORDER BY sort_date DESC NULLS LAST, record->>'bill_id' DESC
-    `;
-    return res.status(200).json({
-      billing: history.map((row) => row.record) as getAllBilling.bill[],
-    } as getAllBilling.response);
-  } catch (error) {
-    console.error("Error fetching billing records:", error);
-    return res.status(500).json({
-      error: "error on fetching billing records",
-    } as getAllBilling.error);
-  }
-}
-
 export async function getAllQueueEntries(
   req: Request,
   res: Response<getAllQueueEntries.response | getAllQueueEntries.error>,
@@ -276,6 +217,7 @@ export async function getAllQueueEntries(
           to_char(p.birthdate, 'YYYY-MM-DD')                       AS birthdate,
           qe.queue_number,
           COALESCE(cs.service_type, lab.service_type)              AS service_type,
+          COALESCE(cs.service_category, lab.service_category) AS service_category,
           COALESCE(cs.room::text,   lab.room)                      AS room,
           qe.is_priority,
           qe.status,
@@ -286,7 +228,7 @@ export async function getAllQueueEntries(
         LEFT JOIN consultation_records cr ON cr.queue_id = qe.queue_id
         LEFT JOIN services cs             ON cs.service_id = cr.service_id
         LEFT JOIN LATERAL (
-          SELECT ls.service_type, ls.room::text AS room
+          SELECT ls.service_type, ls.service_category, ls.room::text AS room
           FROM laboratory_request_items lri
           JOIN services ls ON ls.service_id = lri.service_id
           WHERE lri.queue_id = qe.queue_id
@@ -400,63 +342,77 @@ export async function getQueueRequests(
   }
 }
 
+// Shared by the bill list and the bill details so both always agree.
+// Legacy "Unpaid" rows come out as "Pending". The stored value is left alone.
+function selectBills(billId: string | null) {
+  return sql`
+    SELECT b.bill_id, b.patient_id, b.items, b.discount_type, b.discount_amount, b.payment_method,
+      b.reference_num, b.receipt_id, b.paid_at, b.created_at,
+      CASE WHEN LOWER(TRIM(b.status)) = 'paid' THEN 'Paid' ELSE 'Pending' END AS status,
+      CASE WHEN LOWER(TRIM(b.status)) <> 'paid' AND lines.count > 0 THEN lines.subtotal ELSE b.subtotal END AS subtotal,
+      CASE WHEN LOWER(TRIM(b.status)) <> 'paid' AND lines.count > 0 THEN lines.subtotal ELSE b.total_amount END AS total_amount,
+      COALESCE(
+        CASE WHEN LOWER(TRIM(b.status)) = 'paid' OR lines.count = 0 THEN (
+          SELECT ARRAY_AGG(item->>'service_name')
+          FROM jsonb_array_elements(CASE WHEN jsonb_typeof(b.items) = 'array' THEN b.items ELSE '[]'::jsonb END) item
+        ) END,
+        lines.names,
+        '{}'::text[]
+      ) AS services,
+      CASE
+        WHEN NOT lab.has_items THEN 'No laboratory tests'
+        WHEN LOWER(TRIM(b.status)) <> 'paid' THEN 'Waiting for payment'
+        WHEN lab.has_unforwarded THEN 'Needs forwarding'
+        ELSE 'Forwarded'
+      END AS laboratory_status,
+      lab.has_priority AS is_priority,
+      CONCAT_WS(' ', p.first_name, p.last_name) AS patient_name,
+      p.sex, p.birthdate, DATE_PART('year', AGE(p.birthdate))::int AS age,
+      COALESCE(DATE_PART('year', AGE(p.birthdate)) >= 60, false) AS is_senior,
+      COALESCE(p.is_pwd, false) AS is_pwd
+    FROM bills b
+    JOIN patients p ON p.patient_id = b.patient_id
+    LEFT JOIN LATERAL (
+      SELECT ARRAY_AGG(l.service_name::text ORDER BY l.created_at, l.service_name) AS names,
+        SUM(l.price) AS subtotal, COUNT(*) AS count
+      FROM (
+        SELECT s.service_name, s.price, cr.requested_at AS created_at
+        FROM consultation_records cr JOIN services s ON s.service_id = cr.service_id
+        WHERE cr.bill_id = b.bill_id AND LOWER(TRIM(cr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+        UNION ALL
+        SELECT s.service_name, s.price, lri.created_at
+        FROM laboratory_request_items lri JOIN services s ON s.service_id = lri.service_id
+        JOIN laboratory_requests lr ON lr.request_id = lri.request_id
+        WHERE lri.bill_id = b.bill_id AND LOWER(TRIM(lri.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+          AND LOWER(TRIM(lr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+      ) l
+    ) lines ON TRUE
+    LEFT JOIN LATERAL (
+      SELECT COUNT(*) > 0 AS has_items,
+        COALESCE(BOOL_OR(lri.queue_id IS NULL AND LOWER(TRIM(lri.status)) = 'requested'), false) AS has_unforwarded,
+        COALESCE(BOOL_OR(lr.is_priority), false) AS has_priority
+      FROM laboratory_request_items lri JOIN laboratory_requests lr ON lr.request_id = lri.request_id
+      WHERE lri.bill_id = b.bill_id AND LOWER(TRIM(lri.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+        AND LOWER(TRIM(lr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+    ) lab ON TRUE
+    WHERE LOWER(TRIM(b.status)) IN ('pending', 'unpaid', 'paid')
+      AND (${billId}::text IS NULL OR b.bill_id = ${billId})
+    ORDER BY CASE WHEN LOWER(TRIM(b.status)) = 'paid' THEN 1 ELSE 0 END, COALESCE(b.paid_at, b.created_at) DESC
+    LIMIT 1000`;
+}
+
 export async function getBills(
   req: Request,
   res: Response<getBills.response | getBills.error>,
 ) {
+  // GET /api/fdstaff/billings
   try {
-    // Optional ?status=Pending or ?status=Paid. Omitted = both.
-    const status = req.query.status as string | undefined;
-
-    // Reject anything that isn't a known status.
-    if (status !== undefined && !["Pending", "Paid"].includes(status)) {
-      return res.status(400).json({
-        message: "Invalid status filter.",
-      } as getBills.error);
-    }
-
-    const bills = await sql`
-      SELECT
-        b.bill_id,
-        b.patient_id,
-        CONCAT_WS(' ', p.first_name, p.last_name)   AS patient_name,
-        b.status,
-        b.subtotal,
-        b.discount_amount,
-        b.total_amount,
-        b.payment_method,
-        CONCAT_WS(' ', u.first_name, u.last_name)   AS received_by,
-        b.paid_at,
-        b.created_at,
-        (
-          (SELECT COUNT(*)::int
-           FROM consultation_records cr
-           WHERE cr.bill_id = b.bill_id
-             AND lower(trim(cr.status)) NOT IN ('cancelled', 'canceled', 'rejected'))
-          +
-          (SELECT COUNT(*)::int
-           FROM laboratory_request_items lri
-           WHERE lri.bill_id = b.bill_id
-             AND lower(trim(lri.status)) NOT IN ('cancelled', 'canceled', 'rejected'))
-        )                                           AS services_count
-      FROM bills b
-      JOIN patients p   ON p.patient_id = b.patient_id
-      LEFT JOIN users u ON u.user_id = b.received_by
-      WHERE b.status IN ('Pending', 'Paid')
-        ${status ? sql`AND b.status = ${status}` : sql``}
-      ORDER BY COALESCE(b.paid_at, b.created_at) DESC
-      LIMIT 200
-    `;
-
-    return res.status(200).json({
-      message: "Successfully fetched bills.",
-      bills: bills as getBills.bill[],
-    } as getBills.response);
+    const rows = await selectBills(null);
+    const bills = rows.map(({ items, ...bill }) => bill) as unknown as getBills.bill[];
+    return res.status(200).json({ bills });
   } catch (error) {
-    console.error("Error fetching bills:", error);
-    return res.status(500).json({
-      message: "Failed to fetch bills",
-    } as getBills.error);
+    console.error("Unable to load bills:", error);
+    return res.status(500).json({ message: "Bills could not be loaded." });
   }
 }
 
@@ -464,81 +420,42 @@ export async function getBillDetails(
   req: Request,
   res: Response<getBillDetails.response | getBillDetails.error>,
 ) {
-  const { bill_id } = req.params;
-
+  // GET /api/fdstaff/billings/:bill_id/details
+  const bill_id = String(req.params.bill_id);
   try {
-    const [billRows, items] = await Promise.all([
-      sql`
-        SELECT
-          b.bill_id,
-          b.patient_id,
-          CONCAT_WS(' ', p.first_name, p.last_name)   AS patient_name,
-          p.image_url,
-          p.sex,
-          p.birthdate,
-          DATE_PART('year', AGE(p.birthdate))::int    AS age,
-          (DATE_PART('year', AGE(p.birthdate)) >= 60) AS is_senior,
-          p.is_pwd,
-          b.status,
-          b.subtotal,
-          b.discount_type,
-          b.discount_rate,
-          b.discount_id_no,
-          b.discount_amount,
-          b.total_amount,
-          b.payment_method,
-          b.paid_at,
-          b.created_at
-        FROM bills b
-        JOIN patients p ON p.patient_id = b.patient_id
-        WHERE b.bill_id = ${bill_id}
-      `,
-      sql`
-        SELECT * FROM (
-          SELECT 'consultation'::text      AS line_type,
-                 cr.consultation_record_id AS item_id,
-                 cr.service_id,
-                 s.service_name,
-                 s.service_category,
-                 s.price,
-                 cr.status,
-                 cr.requested_at           AS created_at
-          FROM consultation_records cr
-          JOIN services s ON s.service_id = cr.service_id
-          WHERE cr.bill_id = ${bill_id}
-          UNION ALL
-          SELECT 'laboratory'::text,
-                 lri.lab_item_id,
-                 lri.service_id,
-                 s.service_name,
-                 s.service_category,
-                 s.price,
-                 lri.status,
-                 lri.created_at
-          FROM laboratory_request_items lri
-          JOIN services s ON s.service_id = lri.service_id
-          WHERE lri.bill_id = ${bill_id}
-        ) lines
-        ORDER BY created_at, item_id
-      `,
+    const [rows, linkedItems] = await Promise.all([
+      selectBills(bill_id),
+      sql`SELECT * FROM (
+        SELECT 'consultation'::text AS line_type, cr.consultation_record_id AS item_id, NULL::text AS request_id,
+          cr.service_id, s.service_name, s.service_category, s.price, 1 AS quantity, cr.status, cr.requested_at AS created_at
+        FROM consultation_records cr JOIN services s ON s.service_id = cr.service_id
+        WHERE cr.bill_id = ${bill_id} AND LOWER(TRIM(cr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+        UNION ALL
+        SELECT 'laboratory'::text, lri.lab_item_id, lri.request_id, lri.service_id, s.service_name, s.service_category,
+          s.price, 1, lri.status, lri.created_at
+        FROM laboratory_request_items lri JOIN services s ON s.service_id = lri.service_id
+        JOIN laboratory_requests lr ON lr.request_id = lri.request_id
+        WHERE lri.bill_id = ${bill_id} AND LOWER(TRIM(lri.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+          AND LOWER(TRIM(lr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+      ) lines ORDER BY created_at, item_id`,
     ]);
 
-    if (billRows.length === 0) {
-      return res.status(404).json({
-        message: "Bill not found.",
-      } as getBillDetails.error);
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "Bill not found." });
     }
 
+    const { items: savedItems, ...bill } = rows[0];
+    const saved = Array.isArray(savedItems) ? savedItems : [];
+    // Paid bills keep the prices that were charged, never today's catalog prices.
+    const items = bill.status === "Paid" || linkedItems.length === 0 ? saved : linkedItems;
+
     return res.status(200).json({
-      message: "Successfully fetched bill details.",
-      bill: billRows[0],
-      items,
-    } as unknown as getBillDetails.response);
+      bill: bill as unknown as getBills.bill,
+      items: items as getBillDetails.BillItem[],
+    });
   } catch (error) {
-    console.error("Error fetching bill details:", error);
-    return res.status(500).json({
-      message: "Failed to fetch bill details",
-    } as getBillDetails.error);
+    console.error("Unable to load bill details:", error);
+    return res.status(500).json({ message: "Bill details could not be loaded." });
   }
 }
 
@@ -813,5 +730,465 @@ export async function getMedicalHistoryFull(
     return res.status(500).json({
       message: "Failed to fetch full medical history",
     } as getMedicalHistoryFull.error);
+  }
+}
+////////////////  --------- GET medical history controller ---------  //////////////////
+import type { getPatientMedicalHistory as MedicalHistoryDTO } from "./dto/get.dto.js";
+
+// DATABASE ROW TYPES
+// =======================================================================
+
+type MedicalHistoryConsultationRow = {
+  consultation_record_id: string;
+  queue_id: string | null;
+  findings: unknown;
+  status: string;
+  consulted_at: string;
+  updated_at: string;
+  doctor_user_id: string | null;
+  doctor_first_name: string | null;
+  doctor_middle_name: string | null;
+  doctor_last_name: string | null;
+  doctor_suffix: string | null;
+  doctor_department: string | null;
+  doctor_role: string | null;
+  queue_number: number | null;
+  is_priority: boolean | null;
+  queue_status: string | null;
+  service_id: string | null;
+  service_name: string | null;
+  service_type: string | null;
+  room: string | null;
+};
+
+type MedicalHistoryLabRequestRow = {
+  request_id: string;
+  consultation_record_id: string | null;
+  doctor_id: string | null;
+  status: string;
+  is_paid: boolean;
+  requested_at: string;
+  updated_at: string;
+  doctor_first_name: string | null;
+  doctor_middle_name: string | null;
+  doctor_last_name: string | null;
+  doctor_suffix: string | null;
+  doctor_department: string | null;
+  doctor_role: string | null;
+};
+
+type MedicalHistoryLabItemRow = {
+  lab_item_id: string;
+  request_id: string;
+  service_id: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  queue_id?: string | null;
+  service_name: string;
+  service_type: string;
+  room: string;
+};
+
+type MedicalHistoryLabResultRow = {
+  result_id: string;
+  lab_item_id: string;
+  result_value: string;
+  unit: string | null;
+  reference_range: string | null;
+  flag: string | null;
+  remarks: string | null;
+  verified_by: string | null;
+  image_url: string | null;
+  verified_at: string | null;
+  created_at: string;
+};
+
+// HELPERS
+// =======================================================================
+
+async function resolveLabItemsTable(): Promise<
+  "laboratory_request_items" | "request_items" | null
+> {
+  const laboratoryRequestItems = (await sql`
+    SELECT to_regclass('public.laboratory_request_items') AS table_name
+  `) as { table_name: string | null }[];
+
+  if (laboratoryRequestItems[0]?.table_name) {
+    return "laboratory_request_items";
+  }
+
+  const requestItems = (await sql`
+    SELECT to_regclass('public.request_items') AS table_name
+  `) as { table_name: string | null }[];
+
+  if (requestItems[0]?.table_name) {
+    return "request_items";
+  }
+
+  return null;
+}
+
+function buildFullName(
+  parts: Array<string | null | undefined>
+): string {
+  return parts.filter(Boolean).join(" ");
+}
+
+// GET PATIENT MEDICAL HISTORY
+// =======================================================================
+
+export async function getPatientMedicalHistory(
+  req: Request<{ patient_id: string }>,
+  res: Response<
+    MedicalHistoryDTO.response | MedicalHistoryDTO.error
+  >
+) {
+  try {
+    const { patient_id } = req.params;
+
+    if (!patient_id) {
+      return res.status(400).json({
+        message: "Patient ID is required.",
+      });
+    }
+
+    // PATIENT
+    // ===================================================================
+
+    const patientRows = (await sql`
+      SELECT *
+      FROM patients
+      WHERE patient_id = ${patient_id}
+      LIMIT 1
+    `) as Record<string, unknown>[];
+
+    const patient = patientRows[0];
+
+    if (!patient) {
+      return res.status(404).json({
+        message: "Patient not found.",
+      });
+    }
+
+    // CONSULTATION HISTORY
+    // ===================================================================
+
+    const consultations = (await sql`
+      SELECT
+        cr.consultation_record_id,
+        cr.queue_id,
+        cr.findings,
+        cr.status,
+        cr.consulted_at,
+        cr.updated_at,
+
+        u.user_id AS doctor_user_id,
+        u.first_name AS doctor_first_name,
+        u.middle_name AS doctor_middle_name,
+        u.last_name AS doctor_last_name,
+        u.suffix AS doctor_suffix,
+        u.department AS doctor_department,
+        u.role AS doctor_role,
+
+        q.queue_number,
+        q.is_priority,
+        q.status AS queue_status,
+
+        s.service_id,
+        s.service_name,
+        s.service_type,
+        s.room
+
+      FROM consultation_records cr
+      LEFT JOIN users u ON u.user_id = cr.doctor_id
+      LEFT JOIN queue_entries q ON q.queue_id = cr.queue_id
+      LEFT JOIN services s ON s.service_id = q.service_id
+
+      WHERE cr.patient_id = ${patient_id}
+
+      ORDER BY cr.consulted_at DESC, cr.updated_at DESC
+    `) as MedicalHistoryConsultationRow[];
+
+    // LABORATORY REQUESTS
+    // ===================================================================
+
+    const labRequests = (await sql`
+      SELECT
+        lr.request_id,
+        lr.consultation_record_id,
+        lr.doctor_id,
+        lr.status,
+        lr.is_paid,
+        lr.requested_at,
+        lr.updated_at,
+
+        u.first_name AS doctor_first_name,
+        u.middle_name AS doctor_middle_name,
+        u.last_name AS doctor_last_name,
+        u.suffix AS doctor_suffix,
+        u.department AS doctor_department,
+        u.role AS doctor_role
+
+      FROM lab_requests lr
+      LEFT JOIN users u ON u.user_id = lr.doctor_id
+
+      WHERE lr.patient_id = ${patient_id}
+
+      ORDER BY lr.requested_at DESC, lr.updated_at DESC
+    `) as MedicalHistoryLabRequestRow[];
+
+    // LABORATORY ITEMS AND RESULTS
+    // ===================================================================
+
+    const labItemsTable = await resolveLabItemsTable();
+
+    let labItems: MedicalHistoryLabItemRow[] = [];
+    let labResults: MedicalHistoryLabResultRow[] = [];
+
+    if (labItemsTable === "laboratory_request_items") {
+      labItems = (await sql`
+        SELECT
+          li.lab_item_id,
+          li.request_id,
+          li.service_id,
+          li.queue_id,
+          li.status,
+          li.created_at,
+          li.updated_at,
+
+          s.service_name,
+          s.service_type,
+          s.room
+
+        FROM laboratory_request_items li
+        LEFT JOIN services s ON s.service_id = li.service_id
+        JOIN lab_requests lr ON lr.request_id = li.request_id
+
+        WHERE lr.patient_id = ${patient_id}
+
+        ORDER BY li.created_at DESC, li.updated_at DESC
+      `) as MedicalHistoryLabItemRow[];
+
+      labResults = (await sql`
+        SELECT
+          r.result_id,
+          r.lab_item_id,
+          r.result_value,
+          r.unit,
+          r.reference_range,
+          r.flag,
+          r.remarks,
+          r.verified_by,
+          r.image_url,
+          r.verified_at,
+          r.created_at
+
+        FROM laboratory_results r
+        JOIN laboratory_request_items li
+          ON li.lab_item_id = r.lab_item_id
+        JOIN lab_requests lr
+          ON lr.request_id = li.request_id
+
+        WHERE lr.patient_id = ${patient_id}
+
+        ORDER BY r.created_at DESC
+      `) as MedicalHistoryLabResultRow[];
+
+    } else if (labItemsTable === "request_items") {
+      labItems = (await sql`
+        SELECT
+          li.lab_item_id,
+          li.request_id,
+          li.service_id,
+          li.status,
+          li.created_at,
+          li.updated_at,
+
+          s.service_name,
+          s.service_type,
+          s.room
+
+        FROM request_items li
+        LEFT JOIN services s ON s.service_id = li.service_id
+        JOIN lab_requests lr ON lr.request_id = li.request_id
+
+        WHERE lr.patient_id = ${patient_id}
+
+        ORDER BY li.created_at DESC, li.updated_at DESC
+      `) as MedicalHistoryLabItemRow[];
+
+      labResults = (await sql`
+        SELECT
+          r.result_id,
+          r.lab_item_id,
+          r.result_value,
+          r.unit,
+          r.reference_range,
+          r.flag,
+          r.remarks,
+          r.verified_by,
+          r.image_url,
+          r.verified_at,
+          r.created_at
+
+        FROM laboratory_results r
+        JOIN request_items li
+          ON li.lab_item_id = r.lab_item_id
+        JOIN lab_requests lr
+          ON lr.request_id = li.request_id
+
+        WHERE lr.patient_id = ${patient_id}
+
+        ORDER BY r.created_at DESC
+      `) as MedicalHistoryLabResultRow[];
+    }
+
+    // GROUP LAB RESULTS BY LAB ITEM
+    // ===================================================================
+
+    const resultsByLabItemId = new Map<
+      string,
+      MedicalHistoryLabResultRow[]
+    >();
+
+    for (const result of labResults) {
+      const existing =
+        resultsByLabItemId.get(result.lab_item_id) ?? [];
+
+      existing.push(result);
+
+      resultsByLabItemId.set(result.lab_item_id, existing);
+    }
+
+    // GROUP LAB ITEMS BY REQUEST
+    // ===================================================================
+
+    const itemsByRequestId = new Map<
+      string,
+      MedicalHistoryLabItemRow[]
+    >();
+
+    for (const item of labItems) {
+      const existing =
+        itemsByRequestId.get(item.request_id) ?? [];
+
+      existing.push(item);
+
+      itemsByRequestId.set(item.request_id, existing);
+    }
+
+    // BUILD CONSULTATION RESPONSE
+    // ===================================================================
+
+    const consultationHistory: MedicalHistoryDTO.response["consultations"] =
+      consultations.map((consultation) => ({
+        consultation_record_id:
+          consultation.consultation_record_id,
+        queue_id: consultation.queue_id,
+        findings: consultation.findings,
+        status: consultation.status,
+        consulted_at: consultation.consulted_at,
+        updated_at: consultation.updated_at,
+
+        doctor: {
+          user_id: consultation.doctor_user_id,
+          full_name: buildFullName([
+            consultation.doctor_first_name,
+            consultation.doctor_middle_name,
+            consultation.doctor_last_name,
+            consultation.doctor_suffix,
+          ]),
+          department: consultation.doctor_department,
+          role: consultation.doctor_role,
+        },
+
+        visit: {
+          queue_id: consultation.queue_id,
+          queue_number: consultation.queue_number,
+          is_priority: consultation.is_priority,
+          status: consultation.queue_status,
+
+          service: {
+            service_id: consultation.service_id,
+            service_name: consultation.service_name,
+            service_type: consultation.service_type,
+            room: consultation.room,
+          },
+        },
+      }));
+
+    // BUILD LABORATORY RESPONSE
+    // ===================================================================
+
+    const labRequestHistory: MedicalHistoryDTO.response["labRequests"] =
+      labRequests.map((request) => {
+        const items = (
+          itemsByRequestId.get(request.request_id) ?? []
+        ).map((item) => ({
+          lab_item_id: item.lab_item_id,
+          request_id: item.request_id,
+          service_id: item.service_id,
+          queue_id: item.queue_id,
+          status: item.status,
+          created_at: item.created_at,
+          updated_at: item.updated_at,
+          service_name: item.service_name,
+          service_type: item.service_type,
+          room: item.room,
+
+          results:
+            resultsByLabItemId.get(item.lab_item_id) ?? [],
+        }));
+
+        return {
+          request_id: request.request_id,
+          consultation_record_id:
+            request.consultation_record_id,
+          doctor_id: request.doctor_id,
+          status: request.status,
+          is_paid: request.is_paid,
+          requested_at: request.requested_at,
+          updated_at: request.updated_at,
+
+          doctor: {
+            user_id: request.doctor_id,
+            full_name: buildFullName([
+              request.doctor_first_name,
+              request.doctor_middle_name,
+              request.doctor_last_name,
+              request.doctor_suffix,
+            ]),
+            department: request.doctor_department,
+            role: request.doctor_role,
+          },
+
+          items,
+        };
+      });
+
+    // FINAL RESPONSE
+    // ===================================================================
+
+    const response: MedicalHistoryDTO.response = {
+      patient,
+      consultations: consultationHistory,
+      labRequests: labRequestHistory,
+
+      summary: {
+        consultations: consultationHistory.length,
+        labRequests: labRequestHistory.length,
+        labItems: labItems.length,
+      },
+    };
+
+    return res.status(200).json(response);
+
+  } catch (error) {
+    console.error("getPatientMedicalHistory error:", error);
+
+    return res.status(500).json({
+      message: "Internal Server Error",
+    });
   }
 }

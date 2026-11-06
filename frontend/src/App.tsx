@@ -61,8 +61,6 @@ function App() {
           }
         />
 
-        {/* Your existing routes */}
-
         <Route path="/sse">
           <Route path="sse-message">
             <Route path="sse-send" element={<MessageSSESend />} />
@@ -73,6 +71,7 @@ function App() {
             <Route path="sse-receive" element={<QueueSendSSE />} />
           </Route>
         </Route>
+
         {/* Public-facing display, intentionally not gated
         <Route path="/queue-tracking" element={<QueueTracking />} /> */}
       </Routes>

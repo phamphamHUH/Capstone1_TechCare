@@ -1,198 +1,208 @@
-import { useEffect, useMemo, useState } from "react";
-import type {
-  BillingStatistics,
-  BillingTab,
-  Bill,
-  BillItem,
-  PaymentMethodFilter,
-  StatusFilter,
-  ServiceFilter,
-  BillDetails,
-} from "../../../interface/Billing";
-import api from "#lib/axios";
+import { useMemo, useState } from "react";
+import axios from "axios";
+import { LoaderCircle, RefreshCw, Search } from "lucide-react";
+import api from "../../../lib/axios";
+import type { Bill, BillDetails, BillingNotice, BillingStatistics, PaymentOptions, PaymentResult } from "../../../interface/Billing";
+import { peso } from "../../../utils/formats";
 import BillingStats from "../components/Billing/BillingStats";
-import BillingTabs from "../components/Billing/BillingTabs";
-import BillingFilters from "../components/Billing/BillingFilters";
-import BillsTable from "../components/Billing/BillsTable";
-import PaymentPage from "../components/Billing/PaymentPage";
+import BillingTable from "../components/Billing/BillingTable";
+import ProcessPayment from "../components/Billing/ProcessPayment";
 
 type BillingProps = {
-  pendingBills: Bill[];
-  paidBills: Bill[];
-  open: boolean;
-  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  loadData(): Promise<void>;
+  bills: Bill[];
   loading: boolean;
+  error: string;
+  loadData: () => Promise<void>;
 };
 
-const fetchBillDetails = async (bill_id: string) => {
-  const { data } = await api.get<BillDetails>(
-    `/api/fdstaff/billings/${bill_id}/details`,
-  );
-  return data;
-};
+type Tab = "queue" | "history";
 
-const fetchBillItems = async (bill_id: string) =>
-  (await fetchBillDetails(bill_id)).items;
+const errorMessage = (cause: unknown, fallback: string) =>
+  (axios.isAxiosError<{ message?: string }>(cause) && cause.response?.data?.message) || fallback;
 
-function Billing({ pendingBills, paidBills, loadData }: BillingProps) {
-  const [activeTab, setActiveTab] = useState<BillingTab>("billing-queue");
-  const [paymentBill, setPaymentBill] = useState<Bill | null>(null);
-  const [fetched, setFetched] = useState<{
-    billId: string;
-    details: BillDetails | null;
-  } | null>(null);
+function Billing({ bills, loading, error, loadData }: BillingProps) {
+  const [tab, setTab] = useState<Tab>("queue");
+  const [search, setSearch] = useState("");
+  const [details, setDetails] = useState<BillDetails | null>(null);
+  const [opening, setOpening] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [actionError, setActionError] = useState("");
+  const [notice, setNotice] = useState<BillingNotice | null>(null);
 
-  // FILTERS
-  const [search, setSearch] = useState<string>("");
-  const [servicesFilter, setServicesFilter] = useState<ServiceFilter>("all");
-  const [paymentMethodFilter, setPaymentMethodFilter] =
-    useState<PaymentMethodFilter>("all");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-
-  const billId = paymentBill?.bill_id;
-  const isCurrent = !!billId && fetched?.billId === billId;
-  const paymentDetails = isCurrent ? (fetched?.details ?? null) : null;
-  const paymentItems: BillItem[] = paymentDetails?.items ?? [];
-  const itemsLoading = !!billId && !isCurrent;
-  const bills = activeTab === "payment-history" ? paidBills : pendingBills;
+  const pending = useMemo(() => bills.filter((bill) => bill.status === "Pending"), [bills]);
+  const paid = useMemo(() => bills.filter((bill) => bill.status === "Paid"), [bills]);
 
   const stats: BillingStatistics = {
-    totalRequests: pendingBills.length + paidBills.length,
-    pendingPayment: pendingBills.length,
-    paidRequests: paidBills.length,
-    cancelledRequests: 0,
+    total: bills.length,
+    pending: pending.length,
+    paid: paid.length,
+    awaitingLaboratory: paid.filter((bill) => bill.laboratory_status === "Needs forwarding").length,
   };
 
-  const filteredBills = useMemo(() => {
-    const term = search.trim().toLowerCase();
+  const visibleBills = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return (tab === "queue" ? pending : paid).filter(
+      (bill) =>
+        !q ||
+        bill.bill_id.toLowerCase().includes(q) ||
+        bill.patient_id.toLowerCase().includes(q) ||
+        bill.patient_name.toLowerCase().includes(q) ||
+        bill.services.some((service) => service.toLowerCase().includes(q)),
+    );
+  }, [tab, pending, paid, search]);
 
-    return bills.filter((bill) => {
-      if (term) {
-        const matchesSearch =
-          bill.patient_name.toLowerCase().includes(term) ||
-          bill.patient_id.toLowerCase().includes(term) ||
-          bill.bill_id.toLowerCase().includes(term);
-        if (!matchesSearch) return false;
-      }
+  async function openBill(bill: Bill) {
+    setActionError("");
+    setNotice(null);
+    setOpening(true);
+    try {
+      const { data } = await api.get<BillDetails>(`/api/fdstaff/billings/${bill.bill_id}/details`);
+      setDetails(data);
+    } catch (cause) {
+      setActionError(errorMessage(cause, "Bill details could not be loaded. Please try again."));
+    } finally {
+      setOpening(false);
+    }
+  }
 
-      if (
-        paymentMethodFilter !== "all" &&
-        (bill.payment_method ?? "").toLowerCase() !==
-          String(paymentMethodFilter).toLowerCase()
-      ) {
-        return false;
-      }
+  function closeBill() {
+    setDetails(null);
+    setActionError("");
+    setNotice(null);
+  }
 
-      if (statusFilter !== "all" && bill.status !== String(statusFilter)) {
-        return false;
-      }
+  // Paying and retrying forwarding use the same endpoint. A paid bill is never charged twice.
+  async function submitPayment(billId: string, body: Partial<PaymentOptions>) {
+    setSubmitting(true);
+    setActionError("");
+    setNotice(null);
+    let result: PaymentResult;
+    try {
+      const { data } = await api.patch<PaymentResult>(`/api/fdstaff/billings/${billId}/pay`, body);
+      result = data;
+    } catch (cause) {
+      setActionError(errorMessage(cause, "The server did not confirm this request. Refresh the bill before trying again."));
+      setSubmitting(false);
+      return;
+    }
 
-      return true;
-    });
-  }, [bills, search, paymentMethodFilter, statusFilter]);
+    const lab = result.has_laboratory_items ? " Laboratory tests are in the queue." : "";
+    if (!result.queued) setNotice({ tone: "warning", text: result.message });
+    else if (result.already_paid) setNotice({ tone: "success", text: `No new charge was recorded.${lab}` });
+    else setNotice({ tone: "success", text: `Payment recorded.${result.change > 0 ? ` Change: ${peso(result.change)}.` : ""}${lab}` });
 
-  const handleProcessPayment = (bill: Bill) => {
-    setFetched(null);
-    setPaymentBill(bill);
-  };
+    // The payment is saved by now, so a failed refresh must not look like a failed payment.
+    try {
+      const [{ data }] = await Promise.all([
+        api.get<BillDetails>(`/api/fdstaff/billings/${billId}/details`),
+        loadData(),
+      ]);
+      setDetails(data);
+    } catch {
+      setActionError("The payment is saved, but this page could not refresh. Use Back and Refresh to see the latest status.");
+    }
+    setSubmitting(false);
+  }
 
-  useEffect(() => {
-    if (!billId) return;
+  if (details) {
+    return (
+      <main className="min-w-0 flex-1 px-6 pt-5">
+        <ProcessPayment
+          key={details.bill.bill_id}
+          bill={details.bill}
+          items={details.items}
+          submitting={submitting}
+          error={actionError}
+          notice={notice}
+          onBack={closeBill}
+          onPay={(options) => submitPayment(details.bill.bill_id, options)}
+          onRetryForwarding={() => submitPayment(details.bill.bill_id, {})}
+        />
+      </main>
+    );
+  }
 
-    let cancelled = false;
-
-    fetchBillDetails(billId)
-      .then((details) => {
-        if (!cancelled) setFetched({ billId, details });
-      })
-      .catch((err) => {
-        console.error("Failed to fetch bill details", err);
-        if (!cancelled) setFetched({ billId, details: null });
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [billId]);
+  const tabs: { id: Tab; label: string; count: number }[] = [
+    { id: "queue", label: "Pending Billing Queue", count: pending.length },
+    { id: "history", label: "Paid Payment History", count: paid.length },
+  ];
 
   return (
-    <main className="flex-1 min-w-0 px-6">
-      {paymentBill ? (
-        <PaymentPage
-          paymentBill={paymentDetails?.bill ?? paymentBill}
-          setPaymentBill={setPaymentBill}
-          items={paymentItems}
-          itemsLoading={itemsLoading}
-          onPaid={async () => {
-            await loadData();
-            setPaymentBill(null);
-          }}
-        />
-      ) : (
-        <>
-          <h1 className="text-2xl font-bold">Billing Queue</h1>
-          <p className="w-3/7 text-sm font-light">
-            Manage and process payments for laboratory and consultation
-            requests. Only paid requests will be forwarded to the respective
-            departments.
-          </p>
+    <main className="min-w-0 flex-1 px-6 pt-5" aria-label="Front desk billing">
+      <h1 className="text-2xl font-bold">Billing &amp; Payments</h1>
+      <p className="text-sm font-light text-gray-600">Review patient bills, record payments, and forward paid laboratory tests.</p>
 
-          <BillingStats stats={stats} />
-
-          <BillingTabs activeTab={activeTab} onChange={setActiveTab} />
-
-          {activeTab === "billing-queue" ? (
-            <div className="min-h-64 rounded-b-sm rounded-tr-sm border border-gray-200 py-5">
-              <div className="px-1">
-                <BillingFilters
-                  loadData={loadData}
-                  search={search}
-                  setSearch={setSearch}
-                  servicesFilter={servicesFilter}
-                  setServicesFilter={setServicesFilter}
-                  paymentMethodFilter={paymentMethodFilter}
-                  setPaymentMethodFilter={setPaymentMethodFilter}
-                  statusFilter={statusFilter}
-                  setStatusFilter={setStatusFilter}
-                />
-              </div>
-
-              <BillsTable
-                key={activeTab}
-                variant={activeTab === "billing-queue" ? "queue" : "history"}
-                bills={filteredBills}
-                onProcessPayment={handleProcessPayment}
-                fetchBillItems={fetchBillItems}
-              />
-            </div>
-          ) : (
-            <div className="min-h-64 rounded-b-sm rounded-tr-sm border border-gray-200 py-5">
-              <div className="px-1">
-                <BillingFilters
-                  loadData={loadData}
-                  search={search}
-                  setSearch={setSearch}
-                  servicesFilter={servicesFilter}
-                  setServicesFilter={setServicesFilter}
-                  paymentMethodFilter={paymentMethodFilter}
-                  setPaymentMethodFilter={setPaymentMethodFilter}
-                  statusFilter={statusFilter}
-                  setStatusFilter={setStatusFilter}
-                />
-              </div>
-
-              <BillsTable
-                key={activeTab}
-                variant={activeTab === "payment-history" ? "history" : "queue"}
-                bills={filteredBills}
-                onProcessPayment={handleProcessPayment}
-                fetchBillItems={fetchBillItems}
-              />
-            </div>
-          )}
-        </>
+      {error && (
+        <div role="alert" className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+          <span>{error}</span>
+          <button type="button" disabled={loading} onClick={() => void loadData()} className="cursor-pointer rounded border border-red-300 bg-white px-3 py-1 font-medium disabled:opacity-50">Try Again</button>
+        </div>
       )}
+      {actionError && <p role="alert" className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{actionError}</p>}
+      {stats.awaitingLaboratory > 0 && (
+        <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          {stats.awaitingLaboratory} paid {stats.awaitingLaboratory === 1 ? "bill still needs" : "bills still need"} laboratory forwarding.{" "}
+          <button type="button" className="cursor-pointer underline" onClick={() => setTab("history")}>Open payment history</button> and retry.
+        </p>
+      )}
+
+      <BillingStats stats={stats} />
+
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <div role="tablist" aria-label="Billing views" className="flex gap-2">
+          {tabs.map(({ id, label, count }) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={tab === id}
+              onClick={() => setTab(id)}
+              className={`cursor-pointer rounded-md border px-3 py-1.5 text-sm font-medium ${tab === id ? "border-sky-500 bg-sky-50 text-sky-700" : "border-gray-300 text-gray-600 hover:bg-gray-50"}`}
+            >
+              {label} ({count})
+            </button>
+          ))}
+        </div>
+        <label className="relative min-w-60 flex-1">
+          <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="search"
+            aria-label="Search bills"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search bill ID, patient, or service"
+            className="h-9 w-full rounded-sm border border-gray-300 pl-9 pr-3 text-sm outline-none focus:border-sky-400"
+          />
+        </label>
+        <button
+          type="button"
+          disabled={loading}
+          onClick={() => void loadData()}
+          className="flex h-9 cursor-pointer items-center gap-2 rounded-sm border border-gray-300 px-3 text-sm text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {loading ? <LoaderCircle size={16} className="animate-spin motion-reduce:animate-none" /> : <RefreshCw size={16} />}
+          Refresh
+        </button>
+      </div>
+
+      {opening && <p role="status" className="mb-3 text-sm text-gray-500">Loading the selected bill...</p>}
+
+      <BillingTable
+        key={`${tab}-${search}`}
+        bills={visibleBills}
+        variant={tab}
+        loading={loading && bills.length === 0}
+        emptyMessage={
+          error
+            ? "The latest bills could not be loaded."
+            : search.trim()
+              ? "No bills match this search."
+              : tab === "queue"
+                ? "No pending bills."
+                : "No paid bills yet."
+        }
+        onOpen={(bill) => void openBill(bill)}
+      />
     </main>
   );
 }
