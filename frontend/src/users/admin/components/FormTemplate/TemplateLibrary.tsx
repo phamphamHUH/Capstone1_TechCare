@@ -54,39 +54,22 @@ export default function TemplateLibrary({
     return map;
   }, [services]);
 
-  const serviceIdToCategory = useMemo(() => {
-    const map: Record<string, string> = {};
-    services.forEach((s) => {
-      map[s.service_id] = s.service_category || s.service_type || UNCATEGORIZED;
-    });
-    return map;
-  }, [services]);
-
-  const getServiceName = (serviceId: string) =>
+  const getCategoryName = (serviceId: string) =>
     serviceIdToName[serviceId] || UNCATEGORIZED;
 
-  const getCategoryName = (serviceId: string) =>
-    serviceIdToCategory[serviceId] || UNCATEGORIZED;
-
   const categories = useMemo(() => {
-    const names = new Set(
-      services
-        .map((s) => s.service_category || s.service_type)
-        .filter(Boolean),
-    );
+    const names = new Set(services.map((s) => s.service_category));
     return ["All Templates", ...Array.from(names).sort(), UNCATEGORIZED];
   }, [services]);
 
   const filteredTemplates = templates.filter((tpl) => {
     const tplCategory = getCategoryName(tpl.service_id);
-    const serviceName = getServiceName(tpl.service_id);
     const matchesCat =
       selectedCategory === "All Templates" || tplCategory === selectedCategory;
 
     const q = searchQuery.toLowerCase();
     const matchesSearch =
       tpl.form_name.toLowerCase().includes(q) ||
-      serviceName.toLowerCase().includes(q) ||
       tplCategory.toLowerCase().includes(q) ||
       (tpl.form_description && tpl.form_description.toLowerCase().includes(q));
 
@@ -112,8 +95,10 @@ export default function TemplateLibrary({
   const handlePreviewClick = async (tpl: FormTemplate) => {
     setPreviewLoadingId(tpl.form_id);
     try {
+      const token = localStorage.getItem("token");
       const response = await api.get(
-        `/api/admin/form-templates/${tpl.form_id}`,
+        `api/admin/form-templates/${tpl.form_id}`,
+        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       const fullTemplate: FormTemplate = {
@@ -267,7 +252,7 @@ export default function TemplateLibrary({
                   <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-[11px] text-gray-500">
                     <div className="flex items-center gap-1">
                       <Clock size={12} className="text-gray-400" />
-                      <span>{getServiceName(tpl.service_id)}</span>
+                      <span>{getCategoryName(tpl.service_id)}</span>
                     </div>
                     <button
                       type="button"
@@ -352,7 +337,7 @@ export default function TemplateLibrary({
                     {selectedTemplate.form_name}
                   </h4>
                   <span className="text-xs text-gray-500">
-                    {getServiceName(selectedTemplate.service_id)}
+                    {getCategoryName(selectedTemplate.service_id)}
                   </span>
                 </div>
               </div>
@@ -363,12 +348,6 @@ export default function TemplateLibrary({
               </p>
 
               <div className="flex flex-col gap-2 pt-2 border-t border-gray-100 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Service:</span>
-                  <span className="font-medium text-gray-800">
-                    {getServiceName(selectedTemplate.service_id)}
-                  </span>
-                </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400">Category:</span>
                   <span className="font-medium text-gray-800">

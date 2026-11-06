@@ -446,8 +446,6 @@ export async function addFormTemplates(
 
     // NOTE: For Neon HTTP queries, separate BEGIN/COMMIT calls may not share
     // the same connection. Use a transaction-capable client for atomic writes.
-    await registerFormComponentTypes();
-
     const form_id = `F-${Date.now()}`;
 
     const [formCreated] = await sql`

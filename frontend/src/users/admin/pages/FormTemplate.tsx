@@ -80,14 +80,12 @@ export default function FormTemplate() {
       setFormTemplates(validTemplates);
 
       const rawServices = servicesRes.data.services ?? [];
-      const validServices: ServiceOption[] = rawServices
-        .filter(isValidService)
-        .map((s) => ({
-          service_id: s.service_id,
-          service_name: s.service_name,
-          service_type: s.service_type,
-          service_category: s.service_category || s.service_type || "Laboratory",
-        }));
+      const validServices = rawServices.filter(isValidService);
+      if (validServices.length !== rawServices.length) {
+        console.warn(
+          `Dropped ${rawServices.length - validServices.length} malformed service record(s).`,
+        );
+      }
       setServices(validServices);
     } catch (error) {
       console.error("Error fetching form templates / services:", error);
@@ -110,11 +108,13 @@ export default function FormTemplate() {
     setViewMode("builder");
   };
 
-  // Fetch full form details & components from GET /api/admin/form-templates/:form_id
+  // Updated handleEditTemplate to fetch full form details & components from GET /api/admin/form-templates/:form_id
   const handleEditTemplate = async (template: FormTemplateData) => {
     try {
+      const token = localStorage.getItem("token");
       const response = await api.get(
-        `/api/admin/form-templates/${template.form_id}`,
+        `api/admin/form-templates/${template.form_id}`,
+        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       const fullTemplate: FormTemplateData = {
@@ -139,7 +139,10 @@ export default function FormTemplate() {
     setFormTemplates((prev) => prev.filter((t) => t.form_id !== formId));
 
     try {
-      await api.delete(`/api/admin/form-templates/${formId}`);
+      const token = localStorage.getItem("token");
+      await api.delete(`api/admin/form-templates/${formId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
     } catch (error) {
       console.error("Error deleting template:", error);
       setFormTemplates(previous); // roll back

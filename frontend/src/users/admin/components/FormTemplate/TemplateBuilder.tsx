@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Eye, CheckCircle2, AlertCircle } from "lucide-react";
-import { isAxiosError } from "axios";
 import api from "#lib/axios";
 import type {
   BuilderComponent,
@@ -207,8 +206,13 @@ export default function TemplateBuilder({
       return;
     }
 
-    const createdBy =
-      initialTemplate?.created_by || getCurrentUserId() || "ADMIN";
+    const createdBy = initialTemplate?.created_by || getCurrentUserId();
+    if (!createdBy) {
+      setNoticeMessage(
+        "Could not determine current user. Please log in again.",
+      );
+      return;
+    }
 
     const payload = {
       form_name: templateName,
@@ -228,15 +232,20 @@ export default function TemplateBuilder({
 
     setIsSaving(true);
     try {
+      const token = localStorage.getItem("token");
+
       if (isEditMode && initialTemplate?.form_id) {
-        // Uses PUT /api/admin/form-templates/:form_id
+        // Uses PUT /api/admin/form-templates/:form_id.
         await api.put(
-          `/api/admin/form-templates/${initialTemplate.form_id}`,
+          `api/admin/form-templates/${initialTemplate.form_id}`,
           payload,
+          { headers: { Authorization: `Bearer ${token}` } },
         );
         setNoticeMessage("Template updated successfully.");
       } else {
-        await api.post("/api/admin/form-templates", payload);
+        await api.post("api/admin/form-templates", payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         setNoticeMessage(
           status === "Published"
             ? "Template published successfully."
@@ -245,12 +254,12 @@ export default function TemplateBuilder({
       }
 
       onBackToLibrary();
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error("Error saving template:", error);
-      const message = isAxiosError<{ message?: string }>(error)
-        ? error.response?.data?.message
-        : "Failed to save template. Please try again.";
-      setNoticeMessage(message || "Failed to save template. Please try again.");
+      const message =
+        error?.response?.data?.message ||
+        "Failed to save template. Please try again.";
+      setNoticeMessage(message);
     } finally {
       setIsSaving(false);
     }
