@@ -7,6 +7,7 @@ export interface Queue {
   queue_number: number;
   service_id: string;
   is_priority: boolean;
+  skip_count: number;
   status: string;
   created_at: string;
   updated_at: string;
@@ -25,6 +26,7 @@ export interface QueueEntry {
   service_category: string;
   room: string;
   is_priority: boolean;
+  skip_count: number;
   status: string;
   created_at: string;
   updated_at: string;
