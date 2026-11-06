@@ -15,6 +15,7 @@ import {
   generateQueueNumberLaboratory,
   generateLaboratoryItemID,
   generateConsultationRecordId,
+  generateBillId,
 } from "../../utils/generateId.js";
 import type {
   addPatient,
@@ -270,42 +271,51 @@ export async function addBills(
     }
     const total_amount = Math.round((fixedDiscount === null ? subtotal * (1 - discount / 100) : subtotal - fixedDiscount) * 100) / 100;
     const savedDiscount = fixedDiscount === null ? discount : subtotal > 0 ? Math.round(fixedDiscount / subtotal * 10000) / 100 : 0;
-    const bill_id = `B-${randomUUID()}`;
     const receipt_id = status === "Paid" ? `R-${randomUUID().slice(0, 12).toUpperCase()}` : null;
-    const bill = await sql`
-      INSERT INTO bills (
-        bill_id,
-        patient_id,
-        items,
-        discount_pct,
-        total_amount,
-        payment_method,
-        status,
-        receipt_id,
-        receipt_issued_at,
-        billed_at, subtotal, discount_type, discount_rate, discount_amount, paid_at, reference_num
-      )
-      VALUES (
-        ${bill_id},
-        ${patient_id},
-        ${JSON.stringify(items)}::jsonb,
-        ${savedDiscount},
-        ${total_amount},
-        ${payment_method},
-        ${status},
-        ${receipt_id},
-        ${receipt_id ? new Date().toISOString() : null},
-        NOW(), ${subtotal}, ${savedDiscount ? discount_type && discount_type !== "Not Eligible" ? discount_type : "Custom" : null}, ${savedDiscount},
-        ${Math.round((subtotal - total_amount) * 100) / 100}, ${status === "Paid" ? new Date().toISOString() : null},
-        ${payment_method === "Cash" ? null : reference_num}
-      )
-      RETURNING *
-    `;
+    const client = await pool.connect();
+    let bill: Record<string, any>;
+    try {
+      await client.query("BEGIN");
+      await client.query("SELECT pg_advisory_xact_lock(hashtext('bill_ids'))");
+      const bill_id = await generateBillId(client);
+      const { rows } = await client.query(
+        `INSERT INTO bills (
+           bill_id, patient_id, items, discount_pct, total_amount, payment_method, status,
+           receipt_id, receipt_issued_at, billed_at, subtotal, discount_type, discount_rate,
+           discount_amount, paid_at, reference_num
+         )
+         VALUES ($1, $2, $3::jsonb, $4, $5, $6, $7, $8, $9, NOW(), $10, $11, $4, $12, $13, $14)
+         RETURNING *`,
+        [
+          bill_id,
+          patient_id,
+          JSON.stringify(items),
+          savedDiscount,
+          total_amount,
+          payment_method,
+          status,
+          receipt_id,
+          receipt_id ? new Date().toISOString() : null,
+          subtotal,
+          savedDiscount ? (discount_type && discount_type !== "Not Eligible" ? discount_type : "Custom") : null,
+          Math.round((subtotal - total_amount) * 100) / 100,
+          status === "Paid" ? new Date().toISOString() : null,
+          payment_method === "Cash" ? null : reference_num,
+        ],
+      );
+      bill = rows[0];
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK").catch(console.error);
+      throw error;
+    } finally {
+      client.release();
+    }
 
     return res.status(201).json({
       message: "Bill created successfully",
       bill: {
-        ...bill[0],
+        ...bill,
         items,
       } as unknown as addBills.bill,
     } as addBills.response);

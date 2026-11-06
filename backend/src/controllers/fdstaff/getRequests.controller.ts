@@ -3,7 +3,6 @@ import type { Request, Response } from "express";
 import type {
   getAllPatients,
   getPrintablePatientRecord,
-  getAllBilling,
   getAllQueueEntries,
   getAllServices,
   getLaboratoryRequest,
@@ -204,28 +203,6 @@ export async function getPrintablePatientRecord(
   }
 }
 
-export async function getAllBilling(req: Request, res: Response) {
-  try {
-    const rows = await sql`
-      SELECT b.*, 'bill'::text AS record_type,
-        CONCAT_WS(' ', p.first_name, p.middle_name, p.last_name, p.suffix) AS patient_name,
-        p.image_url, p.sex, p.birthdate,
-        CASE WHEN LOWER(TRIM(b.status)) = 'unpaid' THEN 'Pending' ELSE b.status END AS normalized_status
-      FROM bills b
-      JOIN patients p ON p.patient_id = b.patient_id
-      ORDER BY COALESCE(b.paid_at, b.created_at) DESC
-    `;
-    const billing = rows.map(({ normalized_status, ...bill }) => ({
-      ...bill,
-      status: normalized_status,
-    }));
-    return res.status(200).json({ billing });
-  } catch (error) {
-    console.error("Unable to load billing history:", error);
-    return res.status(500).json({ message: "Billing history could not be loaded." });
-  }
-}
-
 export async function getAllQueueEntries(
   req: Request,
   res: Response<getAllQueueEntries.response | getAllQueueEntries.error>,
@@ -365,50 +342,89 @@ export async function getQueueRequests(
   }
 }
 
-export async function getBills(req: Request, res: Response) {
-  const status = req.query.status;
-  const requestedStatus = status === undefined ? undefined : String(status);
-  if (requestedStatus !== undefined && !["Pending", "Unpaid", "Paid"].includes(requestedStatus)) {
-    return res.status(400).json({ message: "Invalid status filter." });
-  }
-  const normalizedStatus = requestedStatus === "Unpaid" ? "Pending" : requestedStatus;
+// Shared by the bill list and the bill details so both always agree.
+// Legacy "Unpaid" rows come out as "Pending". The stored value is left alone.
+function selectBills(billId: string | null) {
+  return sql`
+    SELECT b.bill_id, b.patient_id, b.items, b.discount_type, b.discount_amount, b.payment_method,
+      b.reference_num, b.receipt_id, b.paid_at, b.created_at,
+      CASE WHEN LOWER(TRIM(b.status)) = 'paid' THEN 'Paid' ELSE 'Pending' END AS status,
+      CASE WHEN LOWER(TRIM(b.status)) <> 'paid' AND lines.count > 0 THEN lines.subtotal ELSE b.subtotal END AS subtotal,
+      CASE WHEN LOWER(TRIM(b.status)) <> 'paid' AND lines.count > 0 THEN lines.subtotal ELSE b.total_amount END AS total_amount,
+      COALESCE(
+        CASE WHEN LOWER(TRIM(b.status)) = 'paid' OR lines.count = 0 THEN (
+          SELECT ARRAY_AGG(item->>'service_name')
+          FROM jsonb_array_elements(CASE WHEN jsonb_typeof(b.items) = 'array' THEN b.items ELSE '[]'::jsonb END) item
+        ) END,
+        lines.names,
+        '{}'::text[]
+      ) AS services,
+      CASE
+        WHEN NOT lab.has_items THEN 'No laboratory tests'
+        WHEN LOWER(TRIM(b.status)) <> 'paid' THEN 'Waiting for payment'
+        WHEN lab.has_unforwarded THEN 'Needs forwarding'
+        ELSE 'Forwarded'
+      END AS laboratory_status,
+      lab.has_priority AS is_priority,
+      CONCAT_WS(' ', p.first_name, p.last_name) AS patient_name,
+      p.sex, p.birthdate, DATE_PART('year', AGE(p.birthdate))::int AS age,
+      COALESCE(DATE_PART('year', AGE(p.birthdate)) >= 60, false) AS is_senior,
+      COALESCE(p.is_pwd, false) AS is_pwd
+    FROM bills b
+    JOIN patients p ON p.patient_id = b.patient_id
+    LEFT JOIN LATERAL (
+      SELECT ARRAY_AGG(l.service_name::text ORDER BY l.created_at, l.service_name) AS names,
+        SUM(l.price) AS subtotal, COUNT(*) AS count
+      FROM (
+        SELECT s.service_name, s.price, cr.requested_at AS created_at
+        FROM consultation_records cr JOIN services s ON s.service_id = cr.service_id
+        WHERE cr.bill_id = b.bill_id AND LOWER(TRIM(cr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+        UNION ALL
+        SELECT s.service_name, s.price, lri.created_at
+        FROM laboratory_request_items lri JOIN services s ON s.service_id = lri.service_id
+        JOIN laboratory_requests lr ON lr.request_id = lri.request_id
+        WHERE lri.bill_id = b.bill_id AND LOWER(TRIM(lri.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+          AND LOWER(TRIM(lr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+      ) l
+    ) lines ON TRUE
+    LEFT JOIN LATERAL (
+      SELECT COUNT(*) > 0 AS has_items,
+        COALESCE(BOOL_OR(lri.queue_id IS NULL AND LOWER(TRIM(lri.status)) = 'requested'), false) AS has_unforwarded,
+        COALESCE(BOOL_OR(lr.is_priority), false) AS has_priority
+      FROM laboratory_request_items lri JOIN laboratory_requests lr ON lr.request_id = lri.request_id
+      WHERE lri.bill_id = b.bill_id AND LOWER(TRIM(lri.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+        AND LOWER(TRIM(lr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+    ) lab ON TRUE
+    WHERE LOWER(TRIM(b.status)) IN ('pending', 'unpaid', 'paid')
+      AND (${billId}::text IS NULL OR b.bill_id = ${billId})
+    ORDER BY CASE WHEN LOWER(TRIM(b.status)) = 'paid' THEN 1 ELSE 0 END, COALESCE(b.paid_at, b.created_at) DESC
+    LIMIT 1000`;
+}
+
+export async function getBills(
+  req: Request,
+  res: Response<getBills.response | getBills.error>,
+) {
+  // GET /api/fdstaff/billings
   try {
-    const bills = await sql`
-      SELECT b.*, CONCAT_WS(' ', p.first_name, p.last_name) AS patient_name,
-        p.image_url, p.sex, p.birthdate, DATE_PART('year', AGE(p.birthdate))::int AS age,
-        COALESCE(DATE_PART('year', AGE(p.birthdate)) >= 60, false) AS is_senior, COALESCE(p.is_pwd, false) AS is_pwd,
-        CONCAT_WS(' ', u.first_name, u.last_name) AS received_by_name,
-        CASE WHEN jsonb_typeof(b.items) = 'array' THEN jsonb_array_length(b.items)
-          ELSE (SELECT COUNT(*)::int FROM consultation_records cr WHERE cr.bill_id = b.bill_id AND LOWER(TRIM(cr.status)) NOT IN ('cancelled', 'canceled', 'rejected'))
-             + (SELECT COUNT(*)::int FROM laboratory_request_items lri WHERE lri.bill_id = b.bill_id AND LOWER(TRIM(lri.status)) NOT IN ('cancelled', 'canceled', 'rejected')) END AS services_count,
-        EXISTS(SELECT 1 FROM laboratory_request_items lri WHERE lri.bill_id = b.bill_id AND lri.queue_id IS NULL AND LOWER(TRIM(lri.status)) = 'requested') AS needs_lab_queue,
-        EXISTS(SELECT 1 FROM laboratory_request_items lri JOIN laboratory_requests lr ON lr.request_id = lri.request_id WHERE lri.bill_id = b.bill_id AND lr.is_priority = TRUE) AS is_priority
-      FROM bills b JOIN patients p ON p.patient_id = b.patient_id LEFT JOIN users u ON u.user_id = b.received_by
-      WHERE LOWER(TRIM(b.status)) IN ('pending', 'unpaid', 'paid')
-        AND (${normalizedStatus === undefined ? null : normalizedStatus}::text IS NULL
-          OR LOWER(TRIM(b.status)) = LOWER(${normalizedStatus === undefined ? null : normalizedStatus}))
-      ORDER BY COALESCE(b.paid_at, b.created_at) DESC LIMIT 200`;
-    const normalizedBills = bills.map((bill) => ({
-      ...bill,
-      status: String(bill.status).trim().toLowerCase() === "unpaid" ? "Pending" : bill.status,
-    }));
-    return res.status(200).json({ message: "Successfully fetched bills.", bills: normalizedBills });
+    const rows = await selectBills(null);
+    const bills = rows.map(({ items, ...bill }) => bill) as unknown as getBills.bill[];
+    return res.status(200).json({ bills });
   } catch (error) {
     console.error("Unable to load bills:", error);
     return res.status(500).json({ message: "Bills could not be loaded." });
   }
 }
 
-export async function getBillDetails(req: Request, res: Response) {
-  const { bill_id } = req.params;
+export async function getBillDetails(
+  req: Request,
+  res: Response<getBillDetails.response | getBillDetails.error>,
+) {
+  // GET /api/fdstaff/billings/:bill_id/details
+  const bill_id = String(req.params.bill_id);
   try {
     const [rows, linkedItems] = await Promise.all([
-      sql`SELECT b.*, CONCAT_WS(' ', p.first_name, p.last_name) AS patient_name,
-        p.image_url, p.sex, p.birthdate, DATE_PART('year', AGE(p.birthdate))::int AS age,
-        COALESCE(DATE_PART('year', AGE(p.birthdate)) >= 60, false) AS is_senior, COALESCE(p.is_pwd, false) AS is_pwd,
-        EXISTS(SELECT 1 FROM laboratory_request_items lri WHERE lri.bill_id = b.bill_id AND lri.queue_id IS NULL AND LOWER(TRIM(lri.status)) = 'requested') AS needs_lab_queue,
-        EXISTS(SELECT 1 FROM laboratory_request_items lri JOIN laboratory_requests lr ON lr.request_id = lri.request_id WHERE lri.bill_id = b.bill_id AND lr.is_priority = TRUE) AS is_priority
-        FROM bills b JOIN patients p ON p.patient_id = b.patient_id WHERE b.bill_id = ${bill_id}`,
+      selectBills(bill_id),
       sql`SELECT * FROM (
         SELECT 'consultation'::text AS line_type, cr.consultation_record_id AS item_id, NULL::text AS request_id,
           cr.service_id, s.service_name, s.service_category, s.price, 1 AS quantity, cr.status, cr.requested_at AS created_at
@@ -418,17 +434,25 @@ export async function getBillDetails(req: Request, res: Response) {
         SELECT 'laboratory'::text, lri.lab_item_id, lri.request_id, lri.service_id, s.service_name, s.service_category,
           s.price, 1, lri.status, lri.created_at
         FROM laboratory_request_items lri JOIN services s ON s.service_id = lri.service_id
+        JOIN laboratory_requests lr ON lr.request_id = lri.request_id
         WHERE lri.bill_id = ${bill_id} AND LOWER(TRIM(lri.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+          AND LOWER(TRIM(lr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
       ) lines ORDER BY created_at, item_id`,
     ]);
-    const bill = rows[0];
-    if (!bill) return res.status(404).json({ message: "Bill not found." });
-    if (String(bill.status).trim().toLowerCase() === "unpaid") bill.status = "Pending";
-    let saved = bill.items;
-    if (typeof saved === "string") { try { saved = JSON.parse(saved); } catch { saved = []; } }
-    // Never replace a historical invoice's prices with the current catalog.
-    const items = bill.status === 'Paid' ? (Array.isArray(saved) ? saved : []) : linkedItems.length ? linkedItems : Array.isArray(saved) ? saved : [];
-    return res.status(200).json({ message: "Successfully fetched bill details.", bill, items });
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "Bill not found." });
+    }
+
+    const { items: savedItems, ...bill } = rows[0];
+    const saved = Array.isArray(savedItems) ? savedItems : [];
+    // Paid bills keep the prices that were charged, never today's catalog prices.
+    const items = bill.status === "Paid" || linkedItems.length === 0 ? saved : linkedItems;
+
+    return res.status(200).json({
+      bill: bill as unknown as getBills.bill,
+      items: items as getBillDetails.BillItem[],
+    });
   } catch (error) {
     console.error("Unable to load bill details:", error);
     return res.status(500).json({ message: "Bill details could not be loaded." });
