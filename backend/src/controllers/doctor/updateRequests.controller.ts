@@ -4,7 +4,6 @@ import type { Request, Response } from "express";
 import type { acceptConsultationQueue, cancelConsultationQueue, skipQueueEntry } from "./dto/update.dto.js";
 import { recomputeBillTotals } from "../../utils/recomputeBills.js";
 import { publishQueueChange } from "../../services/queue-sse/index.js";
-import { publishQueueChange as publishDoctorQueueChange } from "./sseController.controller.js";
 
 export async function acceptConsultationQueue(
   req: Request,
@@ -55,10 +54,7 @@ export async function acceptConsultationQueue(
       return res.status(409).json({ message: "Only waiting or skipped queues with an active consultation can be accepted. Refresh the queue to see its current status." });
     }
 
-    for (const notify of [publishQueueChange, publishDoctorQueueChange]) {
-      try { notify(); }
-      catch (error) { console.error("Consultation accepted, but queue notification failed:", error); }
-    }
+    publishQueueChange();
     return res.status(200).json({ message: "Consultation accepted and now being served.", queue: updated });
   } catch (error) {
     console.error("Unable to accept consultation queue:", error);
@@ -128,12 +124,7 @@ export async function cancelConsultationQueue(
     for (const billId of billIds) await recomputeBillTotals(client, billId);
     await client.query("COMMIT");
 
-    // A failed stream notification must not turn a committed cancellation into
-    // an API failure that prompts the caller to retry.
-    for (const notify of [publishQueueChange, publishDoctorQueueChange]) {
-      try { notify(); }
-      catch (error) { console.error("Consultation cancelled, but queue notification failed:", error); }
-    }
+    publishQueueChange();
     return res.status(200).json({
       message: "Consultation request cancelled successfully.",
       queue,
