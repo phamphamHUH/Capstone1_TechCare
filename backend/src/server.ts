@@ -1,7 +1,6 @@
 import app from "./app.js";
 import { connectNeon, syncSchema } from "./config/db.js";
 import { ENV } from "./config/env.js";
-import { repairBillingSchema } from "./config/billingSchema.js";
 // import { initializeWebSocket } from "./websocket.js";
 import { closeAllQueueStreams } from "./services/queue-sse/index.js";
 
@@ -10,7 +9,6 @@ import { closeAllQueueStreams } from "./services/queue-sse/index.js";
 async function initializeServer() {
   try {
     await connectNeon();
-    await repairBillingSchema();
 
     if (ENV.IS_PRODUCTION) {
       console.log(
