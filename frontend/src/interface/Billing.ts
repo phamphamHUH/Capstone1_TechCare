@@ -1,18 +1,43 @@
-export interface UnpaidRequests {
-  record_type: "laboratory";
-  lab_item_id?: string;
-  request_id: string;
+export type Bill = {
+  bill_id: string;
   patient_id: string;
   patient_name: string;
-  service_id?: string;
-  service_name?: string;
-  is_paid: boolean;
-  requested_by: string;
-  requester_role: string;
+  image_url: string | null;
+  sex: string | null;
+  birthdate: string | null;
+  age: number | null;
+  is_senior: boolean;
+  is_pwd: boolean;
+  status: string;
+  subtotal: number | string | null;
+  discount_type: string | null;
+  discount_rate: number | string | null;
+  discount_id_no: string | null;
+  discount_amount: number | string | null;
+  discounted_by: string;
+  received_by: string;
+  services_count: number;
+  total_amount: number | string | null;
+  payment_method: string | null;
+  paid_at: string | null;
   created_at: string;
-  items?: BillingItem[];
-  total_amount?: number | string;
-  payment_method?: string;
+};
+
+export type BillDetails = {
+  message: string;
+  bill: Bill;
+  items: BillItem[];
+};
+
+export interface BillItem {
+  line_type: "consultation" | "laboratory";
+  item_id: string;
+  service_id: string;
+  service_name: string;
+  service_category: string;
+  price: string;
+  status: string;
+  created_at: string;
 }
 
 export interface BillingItem {
@@ -62,7 +87,7 @@ export interface BillingEntry {
   total: number | null;
   discountPercent: number | null;
   receiptId: string;
-  request?: UnpaidRequests;
+  request?: Bill;
   needsLabQueue?: boolean;
   reference?: string;
   referenceLabel?: "Request ID" | "Bill ID";

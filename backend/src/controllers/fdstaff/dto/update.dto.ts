@@ -84,3 +84,57 @@ export namespace confirmLabRequestPayment {
     message: string;
   }
 }
+
+export namespace confirmPayment {
+  export type Bill = {
+    id: number;
+    bill_id: string;
+    patient_id: string;
+    status: string;
+
+    subtotal: string;
+    discount_type: string | null;
+    discount_rate: string | null;
+    discount_amount: string;
+    discounted_by: string | null;
+    total_amount: string;
+
+    payment_method: string;
+    reference_num: string | null;
+    paid_at: string | null;
+    received_by: string | null;
+
+    created_at: string;
+    updated_at: string;
+  };
+
+  export interface queueEntry {
+    id: number;
+    queue_id: string;
+    patient_id: string;
+    patient_name: string;
+    birthdate: string;
+    queue_number: number;
+    service_id: string;
+    service_name: string;
+    service_type: string;
+    service_category: string;
+    room: string;
+    is_priority: boolean;
+    status: string;
+    created_at: string;
+    updated_at: string;
+    [key: string]: unknown;
+  }
+
+  export interface response {
+    message: string;
+    bill: Bill;
+    change: number;
+    queues: queueEntry[];
+  }
+
+  export interface error {
+    message: string;
+  }
+}

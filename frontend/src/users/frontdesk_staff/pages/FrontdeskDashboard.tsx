@@ -57,16 +57,12 @@ function FrontdeskDashboard({
   const totalQueue = queues.length;
 
   const pendingBills = billing.filter(
-    (bill) => bill.status.toLowerCase() === "unpaid",
+    (bill) => bill.status.toLowerCase() === "pending",
   ).length;
 
   return (
     <main className="flex-1 min-w-0">
-
       <div className="space-y-6 px-6">
-        {/* =========================
-                    FRONTDESK SUMMARY
-                ========================== */}
         <section className="bg-white border border-gray-300 rounded-2xl overflow-hidden">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-gray-300">
             {/* Patients in Queue */}
@@ -110,7 +106,6 @@ function FrontdeskDashboard({
               </p>
             </div>
 
-            {/* Pending Bills */}
             <div className="p-6">
               <div className="flex items-center gap-3 mb-4">
                 <Receipt size={20} strokeWidth={1.5} />
@@ -120,7 +115,7 @@ function FrontdeskDashboard({
 
               <p className="text-3xl font-semibold">{pendingBills}</p>
 
-              <p className="text-sm text-gray-400 mt-2">Unpaid bills</p>
+              <p className="text-sm text-gray-400 mt-2">Pending bills</p>
             </div>
           </div>
         </section>

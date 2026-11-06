@@ -8,10 +8,11 @@ import type {
   getAllServices,
   getLaboratoryRequest,
   getQueueRequests,
-  getUnpaidRequests,
   getMedicalHistory,
   getMedicalHistoryDetails,
   getMedicalHistoryFull,
+  getBills,
+  getBillDetails,
 } from "./dto/get.dto.js";
 
 function calculateAge(dateOfBirth: string | Date): number | "Invalid Age" {
@@ -207,11 +208,7 @@ export async function getAllBilling(
   req: Request,
   res: Response<getAllBilling.response | getAllBilling.error>,
 ) {
-  // get /api/fdstaff/billing
   try {
-    // Confirming a lab payment persists is_paid on the request, even when no
-    // separate bill was issued. Include that saved fact without inventing an
-    // amount, payment method, receipt, or historical service price.
     const history = await sql`
       WITH payment_history AS (
         SELECT to_jsonb(b) || jsonb_build_object('record_type', 'bill') AS record,
@@ -403,46 +400,145 @@ export async function getQueueRequests(
   }
 }
 
-export async function getUnpaidRequests(
+export async function getBills(
   req: Request,
-  res: Response<getUnpaidRequests.response | getUnpaidRequests.error>,
+  res: Response<getBills.response | getBills.error>,
 ) {
   try {
-    const unpaidLabRequests = await sql`
+    // Optional ?status=Pending or ?status=Paid. Omitted = both.
+    const status = req.query.status as string | undefined;
+
+    // Reject anything that isn't a known status.
+    if (status !== undefined && !["Pending", "Paid"].includes(status)) {
+      return res.status(400).json({
+        message: "Invalid status filter.",
+      } as getBills.error);
+    }
+
+    const bills = await sql`
       SELECT
-        'laboratory'::text                          AS record_type,
-        lr.request_id,
-        lr.patient_id,
+        b.bill_id,
+        b.patient_id,
         CONCAT_WS(' ', p.first_name, p.last_name)   AS patient_name,
-        lr.is_paid,
-        CONCAT_WS(' ', u.first_name, u.last_name)   AS requested_by,
-        u.role                                      AS requester_role,
-        lr.requested_at                             AS created_at
-      FROM laboratory_requests lr
-      JOIN patients p   ON p.patient_id = lr.patient_id
-      LEFT JOIN users u ON u.user_id = lr.requested_by
-      WHERE lr.is_paid = FALSE
-        AND EXISTS (
-          SELECT 1
-          FROM laboratory_request_items lri
-          WHERE lri.request_id = lr.request_id
-            AND lri.queue_id IS NULL
-        )
-        AND lr.requested_at >= CURRENT_DATE
-        AND lr.requested_at <  CURRENT_DATE + INTERVAL '1 day'
-      ORDER BY lr.requested_at DESC
+        b.status,
+        b.subtotal,
+        b.discount_amount,
+        b.total_amount,
+        b.payment_method,
+        CONCAT_WS(' ', u.first_name, u.last_name)   AS received_by,
+        b.paid_at,
+        b.created_at,
+        (
+          (SELECT COUNT(*)::int
+           FROM consultation_records cr
+           WHERE cr.bill_id = b.bill_id
+             AND lower(trim(cr.status)) NOT IN ('cancelled', 'canceled', 'rejected'))
+          +
+          (SELECT COUNT(*)::int
+           FROM laboratory_request_items lri
+           WHERE lri.bill_id = b.bill_id
+             AND lower(trim(lri.status)) NOT IN ('cancelled', 'canceled', 'rejected'))
+        )                                           AS services_count
+      FROM bills b
+      JOIN patients p   ON p.patient_id = b.patient_id
+      LEFT JOIN users u ON u.user_id = b.received_by
+      WHERE b.status IN ('Pending', 'Paid')
+        ${status ? sql`AND b.status = ${status}` : sql``}
+      ORDER BY COALESCE(b.paid_at, b.created_at) DESC
+      LIMIT 200
     `;
 
     return res.status(200).json({
-      message: "Successfully fetched unpaid laboratory requests.",
-      unpaidLabRequests:
-        unpaidLabRequests as unknown as getUnpaidRequests.unpaidLabRequest[],
-    } as getUnpaidRequests.response);
+      message: "Successfully fetched bills.",
+      bills: bills as getBills.bill[],
+    } as getBills.response);
   } catch (error) {
-    console.error("Error fetching unpaid requests:", error);
+    console.error("Error fetching bills:", error);
     return res.status(500).json({
-      message: "Failed to fetch unpaid requests",
-    } as getUnpaidRequests.error);
+      message: "Failed to fetch bills",
+    } as getBills.error);
+  }
+}
+
+export async function getBillDetails(
+  req: Request,
+  res: Response<getBillDetails.response | getBillDetails.error>,
+) {
+  const { bill_id } = req.params;
+
+  try {
+    const [billRows, items] = await Promise.all([
+      sql`
+        SELECT
+          b.bill_id,
+          b.patient_id,
+          CONCAT_WS(' ', p.first_name, p.last_name)   AS patient_name,
+          p.image_url,
+          p.sex,
+          p.birthdate,
+          DATE_PART('year', AGE(p.birthdate))::int    AS age,
+          (DATE_PART('year', AGE(p.birthdate)) >= 60) AS is_senior,
+          p.is_pwd,
+          b.status,
+          b.subtotal,
+          b.discount_type,
+          b.discount_rate,
+          b.discount_id_no,
+          b.discount_amount,
+          b.total_amount,
+          b.payment_method,
+          b.paid_at,
+          b.created_at
+        FROM bills b
+        JOIN patients p ON p.patient_id = b.patient_id
+        WHERE b.bill_id = ${bill_id}
+      `,
+      sql`
+        SELECT * FROM (
+          SELECT 'consultation'::text      AS line_type,
+                 cr.consultation_record_id AS item_id,
+                 cr.service_id,
+                 s.service_name,
+                 s.service_category,
+                 s.price,
+                 cr.status,
+                 cr.requested_at           AS created_at
+          FROM consultation_records cr
+          JOIN services s ON s.service_id = cr.service_id
+          WHERE cr.bill_id = ${bill_id}
+          UNION ALL
+          SELECT 'laboratory'::text,
+                 lri.lab_item_id,
+                 lri.service_id,
+                 s.service_name,
+                 s.service_category,
+                 s.price,
+                 lri.status,
+                 lri.created_at
+          FROM laboratory_request_items lri
+          JOIN services s ON s.service_id = lri.service_id
+          WHERE lri.bill_id = ${bill_id}
+        ) lines
+        ORDER BY created_at, item_id
+      `,
+    ]);
+
+    if (billRows.length === 0) {
+      return res.status(404).json({
+        message: "Bill not found.",
+      } as getBillDetails.error);
+    }
+
+    return res.status(200).json({
+      message: "Successfully fetched bill details.",
+      bill: billRows[0],
+      items,
+    } as unknown as getBillDetails.response);
+  } catch (error) {
+    console.error("Error fetching bill details:", error);
+    return res.status(500).json({
+      message: "Failed to fetch bill details",
+    } as getBillDetails.error);
   }
 }
 

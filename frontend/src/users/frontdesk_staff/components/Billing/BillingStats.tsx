@@ -22,7 +22,7 @@ function BillingStats({ stats }: BillingStatsProps) {
     },
     {
       header: "Paid and Forwarded",
-      subHeader: "Already processed and sent to departments",
+      subHeader: "Payments already processed",
       value: stats.paidRequests,
       bg: "bg-white",
       border: "border-green-400",
@@ -32,7 +32,7 @@ function BillingStats({ stats }: BillingStatsProps) {
       subHeader: "Requests that were cancelled",
       value: stats.cancelledRequests,
       bg: "bg-white",
-      border: "border-green-400",
+      border: "border-red-400",
     },
   ];
 
@@ -42,7 +42,7 @@ function BillingStats({ stats }: BillingStatsProps) {
         return (
           <div
             key={card.header}
-            className={`rounded-3xl border ${card.border} ${card.bg} px-4 py-3 flex flex-col gap-1`}
+            className={`rounded-3xl border ${card.border} ${card.bg} px-4 py-2 flex flex-col gap-1`}
           >
             <h1 className="text-sm font-bold">{card.header}</h1>
 

@@ -18,7 +18,7 @@ import ServiceRequest from "./pages/ServiceRequest";
 import Header from "../../components/Header";
 import Queues from "./pages/Queues";
 import type { QueueRequests } from "../../interface/Queue";
-import type { UnpaidRequests } from "../../interface/Billing";
+import type { Bill } from "../../interface/Billing";
 import MedicalHistory from "./pages/MedicalHistory";
 import type { Patient } from "../../interface/Patient";
 import "./frontdesk.css";
@@ -29,10 +29,13 @@ function FrontdeskStaff() {
   const [billing] = useState([]);
   const [queues, setQueues] = useState([]);
   const [queueRequests, setQueueRequests] = useState<QueueRequests[]>([]);
-  const [unpaidRequests, setUnpaidRequests] = useState<UnpaidRequests[]>([]);
+  const [pendingBills, setPendingBills] = useState<Bill[]>([]);
+  const [paidBills, setPaidBills] = useState<Bill[]>([]);
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [open, setOpen] = useState(() => typeof window === "undefined" || window.innerWidth >= 1024);
+  const [open, setOpen] = useState(
+    () => typeof window === "undefined" || window.innerWidth >= 1024,
+  );
   const [loadError, setLoadError] = useState("");
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -56,28 +59,67 @@ function FrontdeskStaff() {
       setLoading(true);
       setLoadError("");
       const sources = [
-        { url: "/api/fdstaff/services", key: "services", label: "services", set: setServices },
-        { url: "/api/fdstaff/patients", key: "patients", label: "patients", set: setPatients },
-        { url: "/api/fdstaff/queues", key: "queueEntries", label: "queues", set: setQueues },
-        { url: "/api/fdstaff/queue-requests", key: "requests", label: "queue requests", set: setQueueRequests },
-        { url: "/api/fdstaff/billing/unpaid-lab", key: "unpaidLabRequests", label: "billing requests", set: setUnpaidRequests },
+        {
+          url: "/api/fdstaff/services",
+          key: "services",
+          label: "services",
+          set: setServices,
+        },
+        {
+          url: "/api/fdstaff/patients",
+          key: "patients",
+          label: "patients",
+          set: setPatients,
+        },
+        {
+          url: "/api/fdstaff/queues",
+          key: "queueEntries",
+          label: "queues",
+          set: setQueues,
+        },
+        {
+          url: "/api/fdstaff/queue-requests",
+          key: "requests",
+          label: "queue requests",
+          set: setQueueRequests,
+        },
+        {
+          url: "/api/fdstaff/billings?status=Pending",
+          key: "bills",
+          label: "billing queue",
+          set: setPendingBills,
+        },
+        {
+          url: "/api/fdstaff/billings?status=Paid",
+          key: "bills",
+          label: "payment history",
+          set: setPaidBills,
+        },
       ];
-      const responses = await Promise.allSettled(sources.map((source) => api.get(source.url)));
+      const responses = await Promise.allSettled(
+        sources.map((source) => api.get(source.url)),
+      );
       const failed: string[] = [];
       responses.forEach((response, index) => {
         const source = sources[index];
-        if (response.status === "fulfilled" && Array.isArray(response.value.data?.[source.key])) {
+        if (
+          response.status === "fulfilled" &&
+          Array.isArray(response.value.data?.[source.key])
+        ) {
           source.set(response.value.data[source.key]);
         } else failed.push(source.label);
       });
-      if (failed.length) setLoadError(`Could not refresh ${failed.join(", ")}. Use Load Data to try again.`);
+      if (failed.length)
+        setLoadError(
+          `Could not refresh ${failed.join(", ")}. Use Load Data to try again.`,
+        );
     } catch (error) {
       console.log("Error fetching queue entries data:", error);
     } finally {
       setLoading(false);
     }
   }, []);
-  
+
   const navItems = [
     {
       page: "dashboard",
@@ -111,8 +153,7 @@ function FrontdeskStaff() {
     },
   ];
   const currentPage =
-    navItems.find((item) => item.page === page)?.label ??
-    "Dashboard";
+    navItems.find((item) => item.page === page)?.label ?? "Dashboard";
 
   useEffect(() => {
     (async () => {
@@ -131,13 +172,15 @@ function FrontdeskStaff() {
 
   return (
     <div className="frontdesk-shell flex min-h-screen">
-      {open && <button type="button" className="fixed inset-0 z-40 bg-black/30 lg:hidden" aria-label="Close navigation" onClick={() => setOpen(false)} />}
-      <SideBar
-        open={open}
-        page={page}
-        setPage={setPage} 
-        navItems={navItems}
-      />
+      {open && (
+        <button
+          type="button"
+          className="fixed inset-0 z-40 bg-black/30 lg:hidden"
+          aria-label="Close navigation"
+          onClick={() => setOpen(false)}
+        />
+      )}
+      <SideBar open={open} page={page} setPage={setPage} navItems={navItems} />
       <div className="frontdesk-workspace">
         <Header
           page={currentPage}
@@ -148,7 +191,14 @@ function FrontdeskStaff() {
         />
 
         <div className="pb-6">
-          {loadError && <p role="alert" className="mx-6 mb-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-base text-amber-900">{loadError}</p>}
+          {loadError && (
+            <p
+              role="alert"
+              className="mx-6 mb-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-base text-amber-900"
+            >
+              {loadError}
+            </p>
+          )}
           {page === "dashboard" && (
             <FrontdeskDashboard
               patients={patients}
@@ -205,10 +255,8 @@ function FrontdeskStaff() {
 
           {page === "billing" && (
             <Billing
-              unpaidRequests={unpaidRequests}
-              queueRequests={queueRequests}
-              patients={patients}
-              services={services}
+              pendingBills={pendingBills}
+              paidBills={paidBills}
               open={open}
               setOpen={setOpen}
               loadData={loadData}

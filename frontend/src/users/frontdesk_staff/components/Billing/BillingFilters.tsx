@@ -75,21 +75,6 @@ function BillingFilters({
           <option value="all">All Payment Methods</option>
           <option value="cash">Cash</option>
           <option value="gcash">Gcash</option>
-          <option value="kiss">Kiss</option>
-        </select>
-        <ChevronDown size={15} className={chevronClass} />
-      </label>
-
-      <label className={labelClass}>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-          className={selectClass}
-        >
-          <option value="all">All Statuses</option>
-          <option value="paid">Paid</option>
-          <option value="pending">Pending</option>
-          <option value="cancelled">Cancelled</option>
         </select>
         <ChevronDown size={15} className={chevronClass} />
       </label>
