@@ -8,34 +8,34 @@ interface SlideItem {
 
 const CLINIC_SLIDES: SlideItem[] = [
   {
-    src: "/assets/clinic-reception.webp",
+    src: "/assets/images/clinic-reception.webp",
     title: "Reception & Waiting Area",
-    subtitle: "Stay cool in our reception and waiting area, or conveniently track your queue status directly on our website.",
+    subtitle: "Wait here or track your queue status on our website.",
   },
   {
-    src: "/assets/clinic-extraction.webp",
+    src: "/assets/images/clinic-extraction.webp",
     title: "Extraction & Triage Area",
-    subtitle: "The extraction area is the designated space where medical professionals safely perform procedures and collect diagnostic specimens.",
+    subtitle: "Where our staff perform procedures and collect specimens.",
   },
   {
-    src: "/assets/clinic-consultation.webp",
+    src: "/assets/images/clinic-consultation.webp",
     title: "Consultation Room",
-    subtitle: "Meet with your attending physician for your check-up and medical results discussion.",
+    subtitle: "Meet your attending physician for check-ups and results.",
   },
   {
-    src: "/assets/clinic-lab.webp",
+    src: "/assets/images/clinic-lab.webp",
     title: "Diagnostic Laboratory",
-    subtitle: "State-of-the-art facility for accurate and timely diagnostic testing.",
+    subtitle: "Where your diagnostic tests are processed.",
   },
   {
-    src: "/assets/clinic-xray.webp",
+    src: "/assets/images/clinic-xray.webp",
     title: "Radiology & Imaging",
-    subtitle: "Advanced imaging technology for precise diagnosis.",
+    subtitle: "Imaging services for diagnosis.",
   },
   {
-    src: "/assets/clinic-xray-room.webp",
+    src: "/assets/images/clinic-xray-room.webp",
     title: "X-Ray Facility",
-    subtitle: "Modern x-ray equipment for high-quality imaging.",
+    subtitle: "Our x-ray room and equipment.",
   },
 ];
 
@@ -46,7 +46,7 @@ interface ClinicSlideshowProps {
 
 function ClinicSlideshow({
   slides = CLINIC_SLIDES,
-  autoPlayInterval = 4500,
+  autoPlayInterval = 6000,
 }: ClinicSlideshowProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -55,11 +55,14 @@ function ClinicSlideshow({
   }, [slides.length]);
 
   useEffect(() => {
-    if (slides.length <= 1) return;
+    if (
+      slides.length <= 1 ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return;
+    }
 
-    const timer = setInterval(() => {
-      nextSlide();
-    }, autoPlayInterval);
+    const timer = setInterval(nextSlide, autoPlayInterval);
 
     return () => clearInterval(timer);
   }, [nextSlide, autoPlayInterval, currentIndex, slides.length]);
@@ -67,17 +70,15 @@ function ClinicSlideshow({
   return (
     <div
       onClick={nextSlide}
-      className="group relative w-full h-full min-h-[480px] lg:min-h-[580px] rounded-3xl overflow-hidden bg-slate-900 flex items-center justify-center select-none shadow-inner cursor-pointer"
+      className="relative w-full h-full min-h-[480px] lg:min-h-[580px] rounded-md overflow-hidden bg-gray-900 select-none cursor-pointer"
     >
       {slides.map((slide, index) => {
         const isActive = index === currentIndex;
         return (
           <div
             key={slide.src}
-            className={`absolute inset-0 transition-all duration-1000 ease-in-out ${
-              isActive
-                ? "opacity-100 z-10 scale-100"
-                : "opacity-0 z-0 scale-105 pointer-events-none"
+            className={`absolute inset-0 transition-opacity duration-500 motion-reduce:transition-none ${
+              isActive ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
             }`}
           >
             <img
@@ -85,17 +86,17 @@ function ClinicSlideshow({
               alt={slide.title || `Clinic photo ${index + 1}`}
               className="w-full h-full object-cover object-center"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
+            <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-black/75 to-transparent" />
 
             {(slide.title || slide.subtitle) && (
-              <div className="absolute bottom-16 left-6 right-6 z-20 text-white drop-shadow-md transition-opacity duration-700">
+              <div className="absolute bottom-12 left-6 right-6 z-20 text-white">
                 {slide.title && (
-                  <h3 className="text-xl sm:text-2xl font-bold tracking-tight mb-1 text-white">
+                  <h3 className="text-lg font-medium text-white">
                     {slide.title}
                   </h3>
                 )}
                 {slide.subtitle && (
-                  <p className="text-sm text-slate-200 line-clamp-2 max-w-md">
+                  <p className="mt-0.5 text-sm text-gray-200 line-clamp-2 max-w-md">
                     {slide.subtitle}
                   </p>
                 )}
@@ -107,7 +108,7 @@ function ClinicSlideshow({
 
       {slides.length > 1 && (
         <div
-          className="absolute bottom-6 left-0 right-0 z-30 flex justify-center gap-2"
+          className="absolute bottom-5 left-0 right-0 z-30 flex justify-center gap-1"
           onClick={(e) => e.stopPropagation()}
         >
           {slides.map((_, idx) => (
@@ -119,12 +120,17 @@ function ClinicSlideshow({
                 setCurrentIndex(idx);
               }}
               aria-label={`Go to slide ${idx + 1}`}
-              className={`h-2.5 rounded-full transition-all duration-500 cursor-pointer ${
-                idx === currentIndex
-                  ? "w-8 bg-sky-400"
-                  : "w-2.5 bg-white/50 hover:bg-white/80"
-              }`}
-            />
+              aria-current={idx === currentIndex}
+              className="cursor-pointer p-1"
+            >
+              <span
+                className={`block h-1.5 w-1.5 rounded-full ${
+                  idx === currentIndex
+                    ? "bg-white"
+                    : "bg-white/50 hover:bg-white/80"
+                }`}
+              />
+            </button>
           ))}
         </div>
       )}
