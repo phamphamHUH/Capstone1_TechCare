@@ -1,7 +1,7 @@
 import { sql, pool } from "../../config/db.js";
 import type { PoolClient } from "@neondatabase/serverless";
 import type { Request, Response } from "express";
-import type { acceptConsultationQueue, cancelConsultationQueue, skipQueueEntry } from "./dto/update.dto.js";
+import type { acceptConsultationQueue, completeConsultationQueueEntry, cancelConsultationQueue, skipQueueEntry } from "./dto/update.dto.js";
 import { recomputeBillTotals } from "../../utils/recomputeBills.js";
 import { publishQueueChange } from "../../services/queue-sse/index.js";
 
@@ -62,6 +62,98 @@ export async function acceptConsultationQueue(
   }
 }
 
+export async function completeConsultationQueueEntry(
+  req: Request,
+  res: Response<completeConsultationQueueEntry.response | completeConsultationQueueEntry.error>,
+) {
+  const { queue_id } = req.params;
+  const { room } = req.body ?? {};
+
+  // Validate inputs
+  if (typeof queue_id !== "string" || !queue_id.trim() || queue_id.length > 255) {
+    return res.status(400).json({ message: "A valid queue ID is required." });
+  }
+  if (typeof room !== "string" || !room.trim()) {
+    return res.status(400).json({ message: "Consultation room is required." });
+  }
+
+  const roomText = room.trim();
+  let client: PoolClient | undefined;
+
+  try {
+    client = await pool.connect();
+    await client.query("BEGIN");
+
+    const reject = async (status: number, message: string) => {
+      await client!.query("ROLLBACK");
+      return res.status(status).json({ message });
+    };
+
+    // Lock the queue entry for update
+    const { rows: [entry] } = await client.query(
+      "SELECT * FROM queue_entries WHERE queue_id = $1 AND queue_id LIKE 'CONS-%' FOR UPDATE",
+      [queue_id.trim()]
+    );
+    if (!entry) return await reject(404, "Consultation queue entry not found.");
+
+    // Lock related consultation records to verify the room
+    const { rows: consultations } = await client.query(
+      `SELECT cr.*, s.room FROM consultation_records cr
+       JOIN services s ON s.service_id = cr.service_id
+       WHERE cr.queue_id = $1 AND cr.patient_id = $2
+       ORDER BY cr.consultation_record_id FOR UPDATE OF cr`,
+      [entry.queue_id, entry.patient_id]
+    );
+
+    if (!consultations.length) {
+      return await reject(404, "Consultation records not found.");
+    }
+
+    if (consultations.some((record) => String(record.room) !== roomText)) {
+      return await reject(403, "This consultation belongs to a different room.");
+    }
+
+    // Validate that the queue is actually 'Serving' right now
+    if (String(entry.status).trim().toLowerCase() !== "serving") {
+      return await reject(409, "Only 'Serving' queues can be marked as completed.");
+    }
+
+    // Update the queue status to 'Completed'
+    const { rows: [queue] } = await client.query(
+      "UPDATE queue_entries SET status = 'Completed', updated_at = NOW() WHERE queue_id = $1 RETURNING *",
+      [entry.queue_id]
+    );
+
+    // Update the consultation records themselves to 'Completed' 
+    const { rows: completedRecords } = await client.query(
+      `UPDATE consultation_records SET status = 'Completed'
+       WHERE consultation_record_id = ANY($1::text[]) RETURNING *`,
+      [consultations.map((record) => record.consultation_record_id)]
+    );
+
+    await client.query("COMMIT");
+
+    // Fire off the SSE stream updates
+    for (const notify of [publishQueueChange, publishDoctorQueueChange]) {
+      try { notify(); }
+      catch (error) { console.error("Consultation completed, but queue notification failed:", error); }
+    }
+
+    return res.status(200).json({
+      message: "Consultation completed successfully.",
+      queue,
+      consultations: completedRecords,
+    } as any); // Cast as 'any' if the 'consultations' property isn't defined in completeConsultationQueueEntry.response yet
+    
+  } catch (error) {
+    if (client) await client.query("ROLLBACK").catch(console.error);
+    console.error("Unable to complete consultation queue:", error);
+    return res.status(500).json({ message: "Unable to complete the consultation. Refresh the queue before trying again." });
+  } finally {
+    client?.release();
+  }
+}
+
 export async function cancelConsultationQueue(
   req: Request,
   res: Response<cancelConsultationQueue.response | cancelConsultationQueue.error>,
@@ -74,6 +166,8 @@ export async function cancelConsultationQueue(
   if (typeof room !== "string" || !room.trim()) {
     return res.status(400).json({ message: "Consultation room is required." });
   }
+
+const roomText = room.trim();
   if (typeof reason !== "string" || !reason.trim() || reason.trim().length > 255) {
     return res.status(400).json({ message: "Cancellation reason is required and must not exceed 255 characters." });
   }
@@ -102,7 +196,7 @@ export async function cancelConsultationQueue(
       [entry.queue_id, entry.patient_id],
     );
     if (!consultations.length) return await reject(404, "Consultation queue entry not found.");
-    if (consultations.some((record) => String(record.room) !== room.trim())) {
+    if (consultations.some((record) => String(record.room) !== roomText)) {
       return await reject(403, "This consultation belongs to a different room.");
     }
     const activeStatuses = ["created", "in queue", "waiting", "skipped", "serving"];
@@ -174,11 +268,11 @@ export async function skipConsultationQueueEntry(
     const { queue_number: currentQueueNumber, status, skip_count } = queue[0];
 
     // Only waiting or serving entries can be skipped.
-    // if (!["waiting", "serving"].includes(String(status).toLowerCase())) {
-    //   return res.status(409).json({
-    //     message: `Queue entry cannot be skipped because its status is ${status}.`,
-    //   } as skipQueueEntry.error);
-    // }
+    if (!["waiting", "serving", "skipped"].includes(String(status).trim().toLowerCase())) {
+      return res.status(409).json({
+        message: `Queue entry cannot be skipped because its status is ${status}.`,
+      } as skipQueueEntry.error);
+    }
 
     // Check the limit BEFORE shifting anyone.
     // COALESCE treats a NULL skip_count as 0.
