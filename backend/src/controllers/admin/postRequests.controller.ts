@@ -547,7 +547,7 @@ export async function addPackages(
 
     const existingPackage = await sql`
       SELECT package_id
-      FROM package
+      FROM packages
       WHERE package_name = ${package_name}
     `;
 
@@ -572,7 +572,7 @@ export async function addPackages(
     const packageId = await generatePackageId();
 
     const newPackage = await sql`
-      INSERT INTO package (package_id, package_name, price)
+      INSERT INTO packages (package_id, package_name, package_price)
       VALUES (${packageId}, ${package_name}, ${Number(price)})
       RETURNING *
     `;
@@ -583,7 +583,7 @@ export async function addPackages(
         SELECT ${packageId}, unnest(${serviceIds}::text[])
       `;
     } catch (error) {
-      await sql`DELETE FROM package WHERE package_id = ${packageId}`;
+      await sql`DELETE FROM packages WHERE package_id = ${packageId}`;
       throw error;
     }
 

@@ -1,17 +1,7 @@
 import AddService from "../components/ServicePricing/AddService";
 import { PlusIcon, Search, ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
-
-type Service = {
-  id: number;
-  service_id: string;
-  service_name: string;
-  service_category: string;
-  service_type: string;
-  price: number;
-  room: string;
-  active: boolean;
-};
+import type { Service } from "../../../interface/Service";
 
 type ServicePricingProps = {
   services: Service[];
@@ -135,6 +125,7 @@ function ServicePricing({ services, loadData }: ServicePricingProps) {
         <AddService
           onClose={() => setShowAddService(false)}
           loadData={loadData}
+          services={services}
         />
       )}
 

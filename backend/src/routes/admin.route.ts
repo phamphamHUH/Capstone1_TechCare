@@ -14,6 +14,7 @@ import {
   addActivity,
   addAction,
   addFormTemplates,
+  addPackages,
 } from "../controllers/admin/postRequests.controller.js";
 import {
   updateFormTemplate,
@@ -25,7 +26,10 @@ import { upload } from "../middlewares/multer.middleware.js";
 import authMiddleware from "../middlewares/auth.middleware.js";
 import adminMiddleware from "../middlewares/admin.middleware.js";
 import { getAllQueueEntries } from "../controllers/fdstaff/getRequests.controller.js";
-import { streamQueue, getQueueStreamStats } from "../services/queue-sse/index.js";
+import {
+  streamQueue,
+  getQueueStreamStats,
+} from "../services/queue-sse/index.js";
 
 const router = Router();
 
@@ -61,6 +65,7 @@ router.post("/services", addService);
 router.post("/activities", addActivity);
 router.post("/actions", addAction);
 router.post("/form-templates", addFormTemplates);
+router.post("/packages", addPackages);
 
 router.put("/form-templates/:form_id", updateFormTemplate);
 

@@ -180,7 +180,8 @@ const TABLES: {
   {
     table: "packages",
     createSQL: `CREATE TABLE IF NOT EXISTS packages (
-      package_id    SERIAL PRIMARY KEY,
+      id            SERIAL PRIMARY KEY,
+      package_id    VARCHAR(255) UNIQUE NOT NULL,
       package_name  VARCHAR(255) NOT NULL,
       package_price NUMERIC(10,2) NOT NULL,
       status        VARCHAR(50) NOT NULL DEFAULT 'Active',
@@ -188,7 +189,8 @@ const TABLES: {
       updated_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     )`,
     columns: {
-      package_id: "SERIAL PRIMARY KEY",
+      id: "SERIAL PRIMARY KEY",
+      package_id: "VARCHAR(255) UNIQUE NOT NULL",
       package_name: "VARCHAR(255) NOT NULL",
       package_price: "NUMERIC(10,2) NOT NULL",
       status: "VARCHAR(50) NOT NULL DEFAULT 'Active'",
@@ -201,15 +203,13 @@ const TABLES: {
     table: "package_services",
     createSQL: `CREATE TABLE IF NOT EXISTS package_services (
     id          SERIAL PRIMARY KEY,
-    package_id  VARCHAR(255) NOT NULL REFERENCES package(package_id) ON DELETE CASCADE,
-    service_id  VARCHAR(255) NOT NULL REFERENCES services(service_id) ON DELETE RESTRICT
+    package_id  VARCHAR(255) NOT NULL REFERENCES packages(package_id),
+    service_id  VARCHAR(255) NOT NULL REFERENCES services(service_id)
   )`,
     columns: {
       id: "SERIAL PRIMARY KEY",
-      package_id:
-        "VARCHAR(255) NOT NULL REFERENCES package(package_id) ON DELETE CASCADE",
-      service_id:
-        "VARCHAR(255) NOT NULL REFERENCES services(service_id) ON DELETE RESTRICT",
+      package_id: "VARCHAR(255) NOT NULL REFERENCES packages(package_id)",
+      service_id: "VARCHAR(255) NOT NULL REFERENCES services(service_id)",
     },
   },
 
