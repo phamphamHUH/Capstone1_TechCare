@@ -117,7 +117,11 @@ function RequestSummary({ services, queues, room }: RequestSummaryProps) {
   return (
     <div className="w-full h-52 border rounded-3xl border-gray-300 flex items-center justify-around">
       <div className="flex gap-7">
-        <div className="w-24 h-24 bg-blue-100 rounded-full"></div>
+        <img
+          src="/assets/images/reyna-g-logo.png"
+          alt="Reyna G Diagnostic Laboratory"
+          className="w-24 h-24 shrink-0 rounded-full border border-gray-200 bg-white object-contain p-2"
+        />
         <div>
           <h3 className="text-lg text-gray-500">You are in</h3>
           <h1 className="text-3xl font-bold">

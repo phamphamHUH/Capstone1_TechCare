@@ -286,7 +286,7 @@ export default function LaboratoryReport({ report }: LaboratoryReportProps) {
   return (
     <article aria-label={`${template.form_name} laboratory report`}>
       <header className="report-header">
-        <img className="logo" src="/assets/reyna-g-logo.png" alt="Reyna G" />
+        <img className="logo" src="/assets/images/reyna-g-logo.png" alt="Reyna G" />
         <div>
           <h1 className="clinic">Reyna G Diagnostic Medical Clinic</h1>
           <p className="report-type">

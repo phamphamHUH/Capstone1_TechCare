@@ -139,5 +139,5 @@ export const CLINIC_INFO = {
   address: "123 Health St., Manila, Philippines",
   phone: "Tel: (02) 8123 4567",
   email: "Email: info@reynag.com",
-  logoUrl: "/assets/reyna-g-logo.png",
+  logoUrl: "/assets/images/reyna-g-logo.png",
 };

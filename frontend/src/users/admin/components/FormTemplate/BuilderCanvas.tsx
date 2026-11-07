@@ -134,7 +134,7 @@ export default function BuilderCanvas({
       <div className="relative border-b border-gray-100 pb-5">
         <div className="flex flex-col items-center text-center">
           <img
-            src="/assets/reyna-g-logo.png"
+            src="/assets/images/reyna-g-logo.png"
             alt="Reyna G Logo"
             className="w-16 h-16 object-contain mb-1"
             onError={(e) => {
