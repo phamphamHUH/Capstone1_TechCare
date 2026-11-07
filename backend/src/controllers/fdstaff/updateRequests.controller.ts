@@ -79,7 +79,9 @@ export async function updatePatient(
     let hashedPassword = null;
     let imageUrl: string | null = null;
     if (req.file) {
-      const uploaded = await cloudinary.uploader.upload(req.file.path, { folder: "techcare/patients" });
+      const uploaded = await cloudinary.uploader.upload(req.file.path, {
+        folder: "techcare/patients",
+      });
       imageUrl = uploaded.secure_url;
     }
 
@@ -313,7 +315,9 @@ export async function confirmPayment(
     const status = String(found.status).trim().toLowerCase();
     if (!["pending", "unpaid", "paid"].includes(status)) {
       await client.query("ROLLBACK");
-      return res.status(409).json({ message: "A cancelled bill cannot be paid." });
+      return res
+        .status(409)
+        .json({ message: "A cancelled bill cannot be paid." });
     }
 
     const already_paid = status === "paid";
@@ -326,7 +330,9 @@ export async function confirmPayment(
         (discount_type === "PWD" && !found.is_pwd)
       ) {
         await client.query("ROLLBACK");
-        return res.status(400).json({ message: "Patient is not eligible for this discount." });
+        return res
+          .status(400)
+          .json({ message: "Patient is not eligible for this discount." });
       }
 
       const { rows: linkedItems } = await client.query(
@@ -346,22 +352,42 @@ export async function confirmPayment(
       );
 
       // Legacy bills have no linked rows, only their saved item list.
-      const source: Record<string, any>[] = linkedItems.length > 0 ? linkedItems : Array.isArray(found.items) ? found.items : [];
+      const source: Record<string, any>[] =
+        linkedItems.length > 0
+          ? linkedItems
+          : Array.isArray(found.items)
+            ? found.items
+            : [];
       const items = source.map((item) => ({
         ...item,
-        price: item.price === null || item.price === undefined ? NaN : Number(item.price),
+        price:
+          item.price === null || item.price === undefined
+            ? NaN
+            : Number(item.price),
         quantity: Number(item.quantity ?? 1),
       }));
 
       if (
         items.length === 0 ||
-        items.some((item) => !Number.isFinite(item.price) || item.price < 0 || !Number.isInteger(item.quantity) || item.quantity <= 0)
+        items.some(
+          (item) =>
+            !Number.isFinite(item.price) ||
+            item.price < 0 ||
+            !Number.isInteger(item.quantity) ||
+            item.quantity <= 0,
+        )
       ) {
         await client.query("ROLLBACK");
-        return res.status(409).json({ message: "Bill has no valid billable items." });
+        return res
+          .status(409)
+          .json({ message: "Bill has no valid billable items." });
       }
 
-      const subtotal = Math.round(items.reduce((sum, item) => sum + item.price * item.quantity, 0) * 100) / 100;
+      const subtotal =
+        Math.round(
+          items.reduce((sum, item) => sum + item.price * item.quantity, 0) *
+            100,
+        ) / 100;
       const discount_rate = discount_type === "Not Eligible" ? 0 : 20;
       const total = Math.round(subtotal * (100 - discount_rate)) / 100;
       const reference = String(reference_num ?? "").trim();
@@ -369,24 +395,35 @@ export async function confirmPayment(
       if (payment_method !== "Cash" && (!reference || reference.length > 50)) {
         await client.query("ROLLBACK");
         return res.status(400).json({
-          message: "A transfer reference number of at most 50 characters is required.",
+          message:
+            "A transfer reference number of at most 50 characters is required.",
         });
       }
 
       if (payment_method === "Cash") {
-        const received = amount_received === null || amount_received === "" || amount_received === undefined ? NaN : Number(amount_received);
-        if (!Number.isFinite(received) || Math.round(received * 100) < Math.round(total * 100)) {
+        const received =
+          amount_received === null ||
+          amount_received === "" ||
+          amount_received === undefined
+            ? NaN
+            : Number(amount_received);
+        if (
+          !Number.isFinite(received) ||
+          Math.round(received * 100) < Math.round(total * 100)
+        ) {
           await client.query("ROLLBACK");
-          return res.status(400).json({ message: "Amount received is less than the total." });
+          return res
+            .status(400)
+            .json({ message: "Amount received is less than the total." });
         }
         change = (Math.round(received * 100) - Math.round(total * 100)) / 100;
       }
 
       const { rows } = await client.query(
         `UPDATE bills
-         SET status = 'Paid', subtotal = $2, discount_type = $3, discount_rate = $4, discount_pct = $4,
+         SET status = 'Paid', subtotal = $2, discount_type = $3, discount_rate = $4,
              discount_amount = $5, total_amount = $6, payment_method = $7, reference_num = $8, items = $9::jsonb,
-             receipt_id = COALESCE(receipt_id, $10), paid_at = NOW(), billed_at = NOW(), receipt_issued_at = NOW(),
+             invoice_id = COALESCE(invoice_id, $10), paid_at = NOW(), billed_at = NOW(), invoice_issued_at = NOW(),
              received_by = $11, updated_at = NOW()
          WHERE bill_id = $1
          RETURNING *`,
@@ -406,7 +443,10 @@ export async function confirmPayment(
       );
       bill = rows[0];
 
-      await client.query("UPDATE consultation_records SET is_paid = TRUE WHERE bill_id = $1", [bill_id]);
+      await client.query(
+        "UPDATE consultation_records SET is_paid = TRUE WHERE bill_id = $1",
+        [bill_id],
+      );
       await client.query(
         `UPDATE laboratory_requests lr
          SET is_paid = TRUE, status = 'Paid', is_priority = COALESCE($2, lr.is_priority), updated_at = NOW()
@@ -440,31 +480,89 @@ export async function confirmPayment(
       has_laboratory_items = labItems.length > 0;
 
       const unforwarded = labItems.filter((item) => !item.queue_id);
-      if (unforwarded.some((item) => String(item.status).trim().toLowerCase() !== "requested" || !String(item.room ?? "").trim())) {
+      if (
+        unforwarded.some(
+          (item) =>
+            String(item.status).trim().toLowerCase() !== "requested" ||
+            !String(item.room ?? "").trim(),
+        )
+      ) {
         queued = false;
-        forwardingError = "Payment was recorded, but some laboratory tests still need an assigned room before they can be forwarded.";
+        forwardingError =
+          "Payment was recorded, but some laboratory tests still need an assigned room before they can be forwarded.";
         await client.query("ROLLBACK");
       } else {
+        // Group by room only (a bill belongs to one patient).
         const groups = new Map<string, typeof unforwarded>();
         for (const item of unforwarded) {
-          const key = `${item.request_id}|${item.room}`;
-          groups.set(key, [...(groups.get(key) ?? []), item]);
+          groups.set(item.room, [...(groups.get(item.room) ?? []), item]);
         }
+
         for (const group of groups.values()) {
-          const { patient_id, is_priority, room } = group[0];
-          const queue_id = await generateLaboratoryQueueId(client);
-          const queue_number = await generateQueueNumberLaboratory(client, room);
-          await client.query(
-            `INSERT INTO queue_entries (queue_id, patient_id, queue_number, is_priority, status)
-             VALUES ($1, $2, $3, $4, 'Waiting')`,
-            [queue_id, patient_id, queue_number, is_priority === true],
+          const { patient_id, room } = group[0];
+          const groupPriority = group.some((item) => item.is_priority === true);
+
+          // Reuse the patient's open queue for this room, if there is one.
+          const {
+            rows: [existing],
+          } = await client.query(
+            `SELECT q.queue_id
+             FROM queue_entries q
+             WHERE q.patient_id = $1
+               AND q.queue_id LIKE 'LAB-%'
+               AND LOWER(TRIM(q.status)) IN ('waiting', 'serving')
+               AND EXISTS (
+                 SELECT 1
+                 FROM laboratory_request_items lri
+                 JOIN services s ON s.service_id = lri.service_id
+                 WHERE lri.queue_id = q.queue_id AND s.room = $2
+               )
+             ORDER BY q.created_at
+             LIMIT 1`,
+            [patient_id, room],
           );
-          await client.query(
+
+          let queue_id: string;
+
+          if (existing) {
+            queue_id = existing.queue_id;
+            // A priority request makes the whole queue priority.
+            if (groupPriority) {
+              await client.query(
+                `UPDATE queue_entries
+                 SET is_priority = TRUE, updated_at = NOW()
+                 WHERE queue_id = $1 AND is_priority = FALSE`,
+                [queue_id],
+              );
+            }
+          } else {
+            queue_id = await generateLaboratoryQueueId(client);
+            const queue_number = await generateQueueNumberLaboratory(
+              client,
+              room,
+            );
+            await client.query(
+              `INSERT INTO queue_entries (queue_id, patient_id, queue_number, is_priority, status)
+               VALUES ($1, $2, $3, $4, 'Waiting')`,
+              [queue_id, patient_id, queue_number, groupPriority],
+            );
+          }
+
+          const ids = group.map((item) => item.lab_item_id);
+          const { rows: linked } = await client.query(
             `UPDATE laboratory_request_items
              SET queue_id = $1, status = 'Waiting', updated_at = NOW()
-             WHERE lab_item_id = ANY($2::text[])`,
-            [queue_id, group.map((item) => item.lab_item_id)],
+             WHERE lab_item_id = ANY($2::text[])
+               AND queue_id IS NULL AND LOWER(TRIM(status)) = 'requested'
+             RETURNING lab_item_id`,
+            [queue_id, ids],
           );
+          if (linked.length !== ids.length) {
+            throw new Error(
+              "Some laboratory items changed while being forwarded.",
+            );
+          }
+
           queueChanged = true;
         }
         await client.query("COMMIT");
@@ -474,14 +572,19 @@ export async function confirmPayment(
       console.error("Unable to forward paid bill:", { bill_id, error });
       queued = false;
       queueChanged = false;
-      forwardingError = "Payment was recorded, but laboratory forwarding failed. Retry forwarding from the paid bill.";
+      forwardingError =
+        "Payment was recorded, but laboratory forwarding failed. Retry forwarding from the paid bill.";
     }
 
     if (queueChanged) publishQueueChange();
 
     const { is_senior, is_pwd, ...savedBill } = bill;
     return res.status(200).json({
-      message: forwardingError || (already_paid ? "This bill is already paid. No new charge was recorded." : "Payment confirmed successfully."),
+      message:
+        forwardingError ||
+        (already_paid
+          ? "This bill is already paid. No new charge was recorded."
+          : "Payment confirmed successfully."),
       bill: { ...savedBill, status: "Paid" },
       change,
       already_paid,
@@ -492,7 +595,8 @@ export async function confirmPayment(
     await client.query("ROLLBACK").catch(console.error);
     console.error("Unable to record bill payment:", { bill_id, error });
     return res.status(500).json({
-      message: "Payment could not be recorded. Refresh the bill status before trying again.",
+      message:
+        "Payment could not be recorded. Refresh the bill status before trying again.",
     });
   } finally {
     client.release();

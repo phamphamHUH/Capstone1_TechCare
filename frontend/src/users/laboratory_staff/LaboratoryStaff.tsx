@@ -26,35 +26,39 @@ function LaboratoryStaff() {
 
   // Each lab staff member's room is the department on their account.
   const room: string =
-    JSON.parse(sessionStorage.getItem("user") || "{}").department || "Laboratory Room 1";
+    JSON.parse(sessionStorage.getItem("user") || "{}").department ||
+    "Laboratory Room 2";
 
-  const loadData = useCallback(async (background = false) => {
-    if (refreshing.current) return;
-    refreshing.current = true;
-    if (!background) setLoading(true);
-    setError(null);
+  const loadData = useCallback(
+    async (background = false) => {
+      if (refreshing.current) return;
+      refreshing.current = true;
+      if (!background) setLoading(true);
+      setError(null);
 
-    try {
-      const queueResponse = await api.get(
-        `/api/labstaff/laboratory-queues/room/${room}`,
-      );
-      const serviceResponse = await api.get(`/api/labstaff/services/${room}`);
-      setQueues(queueResponse.data ?? []);
-      setServices(serviceResponse.data ?? []);
-    } catch (err) {
-      const message =
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message || "Unable to fetch data.";
-      setError(message);
-      if (!background) {
-        setQueues([]);
-        setServices([]);
+      try {
+        const queueResponse = await api.get(
+          `/api/labstaff/laboratory-queues/room/${room}`,
+        );
+        const serviceResponse = await api.get(`/api/labstaff/services/${room}`);
+        setQueues(queueResponse.data ?? []);
+        setServices(serviceResponse.data ?? []);
+      } catch (err) {
+        const message =
+          (err as { response?: { data?: { message?: string } } })?.response
+            ?.data?.message || "Unable to fetch data.";
+        setError(message);
+        if (!background) {
+          setQueues([]);
+          setServices([]);
+        }
+      } finally {
+        refreshing.current = false;
+        if (!background) setLoading(false);
       }
-    } finally {
-      refreshing.current = false;
-      if (!background) setLoading(false);
-    }
-  }, [room]);
+    },
+    [room],
+  );
   const navItems = [
     {
       page: "dashboard",

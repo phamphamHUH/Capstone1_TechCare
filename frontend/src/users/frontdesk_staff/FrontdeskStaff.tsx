@@ -32,7 +32,9 @@ function FrontdeskStaff() {
   const [queueRequests, setQueueRequests] = useState<QueueRequests[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
-  const [open, setOpen] = useState(() => typeof window === "undefined" || window.innerWidth >= 1024);
+  const [open, setOpen] = useState(
+    () => typeof window === "undefined" || window.innerWidth >= 1024,
+  );
   const [failedSources, setFailedSources] = useState<string[]>([]);
   const latestLoad = useRef(0);
 
@@ -58,18 +60,48 @@ function FrontdeskStaff() {
     const load = ++latestLoad.current;
     setLoading(true);
     const sources = [
-      { url: "/api/fdstaff/services", key: "services", label: "services", set: setServices },
-      { url: "/api/fdstaff/patients", key: "patients", label: "patients", set: setPatients },
-      { url: "/api/fdstaff/queues", key: "queueEntries", label: "queues", set: setQueues },
-      { url: "/api/fdstaff/queue-requests", key: "requests", label: "queue requests", set: setQueueRequests },
-      { url: "/api/fdstaff/billings", key: "bills", label: "bills", set: setBills },
+      {
+        url: "/api/fdstaff/services",
+        key: "services",
+        label: "services",
+        set: setServices,
+      },
+      {
+        url: "/api/fdstaff/patients",
+        key: "patients",
+        label: "patients",
+        set: setPatients,
+      },
+      {
+        url: "/api/fdstaff/queues",
+        key: "queueEntries",
+        label: "queues",
+        set: setQueues,
+      },
+      {
+        url: "/api/fdstaff/queue-requests",
+        key: "requests",
+        label: "queue requests",
+        set: setQueueRequests,
+      },
+      {
+        url: "/api/fdstaff/billings",
+        key: "bills",
+        label: "bills",
+        set: setBills,
+      },
     ];
-    const responses = await Promise.allSettled(sources.map((source) => api.get(source.url)));
+    const responses = await Promise.allSettled(
+      sources.map((source) => api.get(source.url)),
+    );
     if (load !== latestLoad.current) return;
     const failed: string[] = [];
     responses.forEach((response, index) => {
       const source = sources[index];
-      if (response.status === "fulfilled" && Array.isArray(response.value.data?.[source.key])) {
+      if (
+        response.status === "fulfilled" &&
+        Array.isArray(response.value.data?.[source.key])
+      ) {
         source.set(response.value.data[source.key]);
       } else failed.push(source.label);
     });
@@ -78,8 +110,13 @@ function FrontdeskStaff() {
   }, []);
 
   // The billing page shows its own error, so the shell banner covers everything else there.
-  const billingError = failedSources.includes("bills") ? "Bills could not be loaded. Check the connection and try again." : "";
-  const bannerSources = page === "billing" ? failedSources.filter((source) => source !== "bills") : failedSources;
+  const billingError = failedSources.includes("bills")
+    ? "Bills could not be loaded. Check the connection and try again."
+    : "";
+  const bannerSources =
+    page === "billing"
+      ? failedSources.filter((source) => source !== "bills")
+      : failedSources;
 
   const navItems = [
     {
@@ -114,8 +151,7 @@ function FrontdeskStaff() {
     },
   ];
   const currentPage =
-    navItems.find((item) => item.page === page)?.label ??
-    "Dashboard";
+    navItems.find((item) => item.page === page)?.label ?? "Dashboard";
 
   useEffect(() => {
     (async () => {
@@ -123,25 +159,10 @@ function FrontdeskStaff() {
     })();
   }, [loadData]);
 
-  useEffect(() => {
-    const viewport = window.matchMedia("(min-width: 1024px)");
-    const closeMobileNavigation = (event: MediaQueryListEvent) => {
-      if (!event.matches) setOpen(false);
-    };
-    viewport.addEventListener("change", closeMobileNavigation);
-    return () => viewport.removeEventListener("change", closeMobileNavigation);
-  }, []);
-
   return (
-    <div className="frontdesk-shell flex min-h-screen">
-      {open && <button type="button" className="fixed inset-0 z-40 bg-black/30 lg:hidden" aria-label="Close navigation" onClick={() => setOpen(false)} />}
-      <SideBar
-        open={open}
-        page={page}
-        setPage={setPage} 
-        navItems={navItems}
-      />
-      <div className="frontdesk-workspace">
+    <div className="flex min-h-screen">
+      <SideBar open={open} page={page} setPage={setPage} navItems={navItems} />
+      <div className="flex-1 min-w-0">
         <Header
           page={currentPage}
           loading={loading}
@@ -151,7 +172,15 @@ function FrontdeskStaff() {
         />
 
         <div className="pb-6">
-          {bannerSources.length > 0 && <p role="alert" className="mx-6 mb-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-base text-amber-900">Could not refresh {bannerSources.join(", ")}. Use Load Data to try again.</p>}
+          {bannerSources.length > 0 && (
+            <p
+              role="alert"
+              className="mx-6 mb-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-base text-amber-900"
+            >
+              Could not refresh {bannerSources.join(", ")}. Use Load Data to try
+              again.
+            </p>
+          )}
           {page === "dashboard" && (
             <FrontdeskDashboard
               patients={patients}

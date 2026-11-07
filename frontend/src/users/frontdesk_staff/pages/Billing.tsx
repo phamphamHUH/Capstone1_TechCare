@@ -2,7 +2,14 @@ import { useMemo, useState } from "react";
 import axios from "axios";
 import { LoaderCircle, RefreshCw, Search } from "lucide-react";
 import api from "../../../lib/axios";
-import type { Bill, BillDetails, BillingNotice, BillingStatistics, PaymentOptions, PaymentResult } from "../../../interface/Billing";
+import type {
+  Bill,
+  BillDetails,
+  BillingNotice,
+  BillingStatistics,
+  PaymentOptions,
+  PaymentResult,
+} from "../../../interface/Billing";
 import { peso } from "../../../utils/formats";
 import BillingStats from "../components/Billing/BillingStats";
 import BillingTable from "../components/Billing/BillingTable";
@@ -18,7 +25,9 @@ type BillingProps = {
 type Tab = "queue" | "history";
 
 const errorMessage = (cause: unknown, fallback: string) =>
-  (axios.isAxiosError<{ message?: string }>(cause) && cause.response?.data?.message) || fallback;
+  (axios.isAxiosError<{ message?: string }>(cause) &&
+    cause.response?.data?.message) ||
+  fallback;
 
 function Billing({ bills, loading, error, loadData }: BillingProps) {
   const [tab, setTab] = useState<Tab>("queue");
@@ -29,14 +38,22 @@ function Billing({ bills, loading, error, loadData }: BillingProps) {
   const [actionError, setActionError] = useState("");
   const [notice, setNotice] = useState<BillingNotice | null>(null);
 
-  const pending = useMemo(() => bills.filter((bill) => bill.status === "Pending"), [bills]);
-  const paid = useMemo(() => bills.filter((bill) => bill.status === "Paid"), [bills]);
+  const pending = useMemo(
+    () => bills.filter((bill) => bill.status === "Pending"),
+    [bills],
+  );
+  const paid = useMemo(
+    () => bills.filter((bill) => bill.status === "Paid"),
+    [bills],
+  );
 
   const stats: BillingStatistics = {
     total: bills.length,
     pending: pending.length,
     paid: paid.length,
-    awaitingLaboratory: paid.filter((bill) => bill.laboratory_status === "Needs forwarding").length,
+    awaitingLaboratory: paid.filter(
+      (bill) => bill.laboratory_status === "Needs forwarding",
+    ).length,
   };
 
   const visibleBills = useMemo(() => {
@@ -56,10 +73,17 @@ function Billing({ bills, loading, error, loadData }: BillingProps) {
     setNotice(null);
     setOpening(true);
     try {
-      const { data } = await api.get<BillDetails>(`/api/fdstaff/billings/${bill.bill_id}/details`);
+      const { data } = await api.get<BillDetails>(
+        `/api/fdstaff/billings/${bill.bill_id}/details`,
+      );
       setDetails(data);
     } catch (cause) {
-      setActionError(errorMessage(cause, "Bill details could not be loaded. Please try again."));
+      setActionError(
+        errorMessage(
+          cause,
+          "Bill details could not be loaded. Please try again.",
+        ),
+      );
     } finally {
       setOpening(false);
     }
@@ -78,18 +102,33 @@ function Billing({ bills, loading, error, loadData }: BillingProps) {
     setNotice(null);
     let result: PaymentResult;
     try {
-      const { data } = await api.patch<PaymentResult>(`/api/fdstaff/billings/${billId}/pay`, body);
+      const { data } = await api.patch<PaymentResult>(
+        `/api/fdstaff/billings/${billId}/pay`,
+        body,
+      );
       result = data;
     } catch (cause) {
-      setActionError(errorMessage(cause, "The server did not confirm this request. Refresh the bill before trying again."));
+      setActionError(
+        errorMessage(
+          cause,
+          "The server did not confirm this request. Refresh the bill before trying again.",
+        ),
+      );
       setSubmitting(false);
       return;
     }
 
-    const lab = result.has_laboratory_items ? " Laboratory tests are in the queue." : "";
+    const lab = result.has_laboratory_items
+      ? " Laboratory tests are in the queue."
+      : "";
     if (!result.queued) setNotice({ tone: "warning", text: result.message });
-    else if (result.already_paid) setNotice({ tone: "success", text: `No new charge was recorded.${lab}` });
-    else setNotice({ tone: "success", text: `Payment recorded.${result.change > 0 ? ` Change: ${peso(result.change)}.` : ""}${lab}` });
+    else if (result.already_paid)
+      setNotice({ tone: "success", text: `No new charge was recorded.${lab}` });
+    else
+      setNotice({
+        tone: "success",
+        text: `Payment recorded.${result.change > 0 ? ` Change: ${peso(result.change)}.` : ""}${lab}`,
+      });
 
     // The payment is saved by now, so a failed refresh must not look like a failed payment.
     try {
@@ -99,14 +138,16 @@ function Billing({ bills, loading, error, loadData }: BillingProps) {
       ]);
       setDetails(data);
     } catch {
-      setActionError("The payment is saved, but this page could not refresh. Use Back and Refresh to see the latest status.");
+      setActionError(
+        "The payment is saved, but this page could not refresh. Use Back and Refresh to see the latest status.",
+      );
     }
     setSubmitting(false);
   }
 
   if (details) {
     return (
-      <main className="min-w-0 flex-1 px-6 pt-5">
+      <main className="min-w-0 flex-1 px-6">
         <ProcessPayment
           key={details.bill.bill_id}
           bill={details.bill}
@@ -128,21 +169,52 @@ function Billing({ bills, loading, error, loadData }: BillingProps) {
   ];
 
   return (
-    <main className="min-w-0 flex-1 px-6 pt-5" aria-label="Front desk billing">
+    <main className="min-w-0 flex-1 px-6" aria-label="Front desk billing">
       <h1 className="text-2xl font-bold">Billing &amp; Payments</h1>
-      <p className="text-sm font-light text-gray-600">Review patient bills, record payments, and forward paid laboratory tests.</p>
+      <p className="text-sm font-light text-gray-600">
+        Review patient bills, record payments, and forward paid laboratory
+        tests.
+      </p>
 
       {error && (
-        <div role="alert" className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+        <div
+          role="alert"
+          className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+        >
           <span>{error}</span>
-          <button type="button" disabled={loading} onClick={() => void loadData()} className="cursor-pointer rounded border border-red-300 bg-white px-3 py-1 font-medium disabled:opacity-50">Try Again</button>
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => void loadData()}
+            className="cursor-pointer rounded border border-red-300 bg-white px-3 py-1 font-medium disabled:opacity-50"
+          >
+            Try Again
+          </button>
         </div>
       )}
-      {actionError && <p role="alert" className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{actionError}</p>}
+      {actionError && (
+        <p
+          role="alert"
+          className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+        >
+          {actionError}
+        </p>
+      )}
       {stats.awaitingLaboratory > 0 && (
         <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-          {stats.awaitingLaboratory} paid {stats.awaitingLaboratory === 1 ? "bill still needs" : "bills still need"} laboratory forwarding.{" "}
-          <button type="button" className="cursor-pointer underline" onClick={() => setTab("history")}>Open payment history</button> and retry.
+          {stats.awaitingLaboratory} paid{" "}
+          {stats.awaitingLaboratory === 1
+            ? "bill still needs"
+            : "bills still need"}{" "}
+          laboratory forwarding.{" "}
+          <button
+            type="button"
+            className="cursor-pointer underline"
+            onClick={() => setTab("history")}
+          >
+            Open payment history
+          </button>{" "}
+          and retry.
         </p>
       )}
 
@@ -164,7 +236,10 @@ function Billing({ bills, loading, error, loadData }: BillingProps) {
           ))}
         </div>
         <label className="relative min-w-60 flex-1">
-          <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search
+            size={16}
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+          />
           <input
             type="search"
             aria-label="Search bills"
@@ -180,12 +255,23 @@ function Billing({ bills, loading, error, loadData }: BillingProps) {
           onClick={() => void loadData()}
           className="flex h-9 cursor-pointer items-center gap-2 rounded-sm border border-gray-300 px-3 text-sm text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {loading ? <LoaderCircle size={16} className="animate-spin motion-reduce:animate-none" /> : <RefreshCw size={16} />}
+          {loading ? (
+            <LoaderCircle
+              size={16}
+              className="animate-spin motion-reduce:animate-none"
+            />
+          ) : (
+            <RefreshCw size={16} />
+          )}
           Refresh
         </button>
       </div>
 
-      {opening && <p role="status" className="mb-3 text-sm text-gray-500">Loading the selected bill...</p>}
+      {opening && (
+        <p role="status" className="mb-3 text-sm text-gray-500">
+          Loading the selected bill...
+        </p>
+      )}
 
       <BillingTable
         key={`${tab}-${search}`}
