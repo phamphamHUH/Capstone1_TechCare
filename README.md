@@ -1,8 +1,33 @@
-# TechCare: Cloud-Based Integrated Information System for Reyna G. Diagnostic Medical Clinic
+<h1 align="center">TechCare: Cloud-Based Integrated Clinic Information System</h1>
+
+<p align="center">
+  <img width="220" height="220" alt="Reyna G. Diagnostic Medical Clinic Logo"
+       src="https://github.com/user-attachments/assets/39194892-b7a8-45cc-808f-842a5e1376c6" />
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" />
+    <img src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white" />
+  <img src="https://img.shields.io/badge/Express-5-black?logo=express" />
+  <img src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" />
+  <img src="https://img.shields.io/badge/PostgreSQL-Neon-4169E1?logo=postgresql&logoColor=white" />
+  <img src="https://img.shields.io/badge/Real--Time-SSE-orange" />
+</p>
+
+<p align="center">
+  <a href="https://techcare-1.onrender.com/">
+    <strong>Live Application</strong>
+  </a>
+  ·
+  <a href="docs/SETUP.md">
+    <strong>Setup Documentation</strong>
+  </a>
+</p>
+
+---
 
 TechCare is a full-stack clinic management system designed to streamline patient registration, consultation and laboratory queueing, laboratory requests, billing, and administrative operations for Reyna G. Diagnostic Medical Clinic.
 
-**Live Application:** [https://techcare-1.onrender.com/](https://techcare-1.onrender.com/)
 
 ## Group Members
 
@@ -24,7 +49,7 @@ flowchart TD
         A["App.tsx Routes<br/>ProtectedRoute role guard<br/>(enforced in production builds only)"]
         B["Role Dashboards<br/>Admin · Front Desk · Doctor<br/>Laboratory Staff · Patient"]
         C["lib/axios.ts<br/>Bearer token from sessionStorage"]
-        D["Admin QueueingMonitor<br/>reloads queue on queue-changed"]
+        D["Admin, Doctor, Lab Queue Pages<br/>reload queue on queue-changed"]
         E["connectQueueStream.ts<br/>fetch-event-source with auth header"]
     end
 
@@ -32,7 +57,7 @@ flowchart TD
     subgraph BE["Backend: Express 5 · TypeScript · ESM"]
         F["server.ts<br/>connectNeon on boot<br/>syncSchema when IS_PRODUCTION<br/>graceful SSE shutdown"]
         G["app.ts<br/>CORS · JSON body · routers<br/>static frontend/dist + SPA fallback"]
-        H["API Routers<br/>/api/auth · /api/admin · /api/fdstaff<br/>/api/doctor · /api/labstaff · /api/patient<br/>(dev only: /api/test · /api/sse)"]
+        H["API Routers<br/>/api/auth · /api/queue · /api/admin · /api/fdstaff<br/>/api/doctor · /api/labstaff · /api/patient<br/>(dev only: /api/test · /api/sse practice)"]
         I["authMiddleware<br/>verify JWT, load users row"]
         J["Role Middleware<br/>admin: always on<br/>fdstaff · doctor · labstaff: only when IS_PRODUCTION<br/>patientMiddleware: patient lab results"]
         K["Controllers + DTO types<br/>get · post · update · delete per role"]
@@ -42,8 +67,8 @@ flowchart TD
 
     %% ---------------- Queue SSE ----------------
     subgraph SSE["services/queue-sse"]
-        N["queueStream.handlers.ts<br/>GET /api/admin/queue/stream<br/>GET /api/admin/queue/stream/stats"]
-        O["queueStream.hub.ts<br/>connected screens · 25s ping<br/>publishQueueChange, debounced 150 ms"]
+        N["queueStream.handlers.ts<br/>GET /api/queue/stream"]
+        O["queueStream.hub.ts<br/>Map<Response, User><br/>initial snapshot + queue-changed signal"]
     end
 
     %% ---------------- Data and services ----------------
@@ -80,15 +105,8 @@ flowchart TD
     K -->|"after a queue mutation:<br/>publishQueueChange"| O
     O -->|"queue-changed signal only"| E
     E -->|"onQueueChanged"| D
-    D -->|"GET /api/admin/queues<br/>reload today's queue"| C
+    D -->|"role queue REST endpoint<br/>reload today's queue"| C
 
     %% ---------------- Frontend hosting ----------------
     G -.->|"SPA fallback index.html"| A
 ```
-
-
-## Documentation
-
-For detailed setup and deployment instructions, see:
-
-**[TechCare Setup and Deployment Notes](docs/SETUP.md)**

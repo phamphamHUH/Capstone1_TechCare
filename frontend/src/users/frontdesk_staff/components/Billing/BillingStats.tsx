@@ -1,4 +1,4 @@
-import type { BillingStatistics } from "../../../../interface/Billing.ts";
+import type { BillingStatistics } from "../../../../interface/Billing";
 
 type BillingStatsProps = {
   stats: BillingStatistics;
@@ -7,54 +7,49 @@ type BillingStatsProps = {
 function BillingStats({ stats }: BillingStatsProps) {
   const cards = [
     {
-      header: "Total Requests",
-      subHeader: "All pending and processing payments",
-      value: stats.totalRequests,
+      header: "Total Bills",
+      subHeader: "Pending and paid bills",
+      value: stats.total,
       bg: "bg-sky-50",
       border: "border-sky-400",
     },
     {
       header: "Pending Payment",
-      subHeader: "Requests awaiting payments",
-      value: stats.pendingPayment,
+      subHeader: "Bills awaiting payment",
+      value: stats.pending,
       bg: "bg-white",
       border: "border-yellow-400",
     },
     {
-      header: "Paid and Forwarded",
-      subHeader: "Payments already processed",
-      value: stats.paidRequests,
+      header: "Paid",
+      subHeader: "Payments already recorded",
+      value: stats.paid,
       bg: "bg-white",
       border: "border-green-400",
     },
     {
-      header: "Cancelled",
-      subHeader: "Requests that were cancelled",
-      value: stats.cancelledRequests,
+      header: "Awaiting Laboratory",
+      subHeader: "Paid bills needing forwarding",
+      value: stats.awaitingLaboratory,
       bg: "bg-white",
-      border: "border-red-400",
+      border: "border-amber-400",
     },
   ];
 
   return (
-    <div className="my-5 grid grid-cols-4 gap-5">
-      {cards.map((card) => {
-        return (
-          <div
-            key={card.header}
-            className={`rounded-3xl border ${card.border} ${card.bg} px-4 py-2 flex flex-col gap-1`}
-          >
-            <h1 className="text-sm font-bold">{card.header}</h1>
-
-            <p className="text-3xl font-bold leading-none text-gray-950">
-              {card.value}
-            </p>
-            <h3 className="text-xs font-medium text-gray-500">
-              {card.subHeader}
-            </h3>
-          </div>
-        );
-      })}
+    <div className="my-5 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+      {cards.map((card) => (
+        <section
+          key={card.header}
+          className={`flex flex-col gap-1 rounded-3xl border px-4 py-2 ${card.border} ${card.bg}`}
+        >
+          <h2 className="text-sm font-bold">{card.header}</h2>
+          <p className="text-3xl font-bold leading-none text-gray-950">
+            {card.value}
+          </p>
+          <p className="text-xs font-medium text-gray-500">{card.subHeader}</p>
+        </section>
+      ))}
     </div>
   );
 }

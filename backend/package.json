@@ -6,6 +6,7 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:frontdesk": "vitest run --config src/tests/vitest.unit.config.ts",
     "dev": "nodemon --watch src --ext ts --exec tsx src/server.ts",
     "build": "npm install && tsc",
     "start": "node dist/server.js",
@@ -32,6 +33,7 @@
     "ws": "^8.21.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.15",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",

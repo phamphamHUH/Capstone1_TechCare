@@ -18,6 +18,11 @@ export async function deleteTemplate(
       });
     }
 
+    await sql`
+      DELETE FROM form_components
+      WHERE form_id = ${form_id}
+    `;
+
     const [template] = await sql`
       DELETE FROM form_templates
       WHERE form_id = ${form_id}

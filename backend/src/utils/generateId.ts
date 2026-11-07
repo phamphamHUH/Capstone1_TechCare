@@ -287,13 +287,15 @@ export async function generateBillId(client: PoolClient) {
   const day = String(now.getDate()).padStart(2, "0");
 
   const prefix = `${year}-${month}${day}`;
-  const billCreatedToday = await sql`
-    SELECT bill_id
-    FROM bills
-    WHERE bill_id LIKE ${`B-${prefix}-%`}
-    ORDER BY bill_id DESC
-    LIMIT 1
-  `;
+  // Must read on the caller's transaction, or two bills created in one transaction collide.
+  const { rows: billCreatedToday } = await client.query(
+    `SELECT bill_id
+     FROM bills
+     WHERE bill_id LIKE $1
+     ORDER BY bill_id DESC
+     LIMIT 1`,
+    [`B-${prefix}-%`],
+  );
 
   const nextNumber =
     billCreatedToday.length > 0

@@ -5,7 +5,40 @@ import type {
   getMedicalHistoryDetails,
   getMedicalHistoryFull,
   getConsultationRequests,
+  getRoomSpecificServices,
+  getConsultationQueueDetails,
 } from "./dto/get.dto.js";
+
+export async function getRoomSpecificServices(
+  req: Request,
+  res: Response<
+    getRoomSpecificServices.response | getRoomSpecificServices.error
+  >,
+) {
+  const { room } = req.params;
+  if (!room) {
+    return res.status(400).json({
+      message: "Room field is required.",
+    } as getRoomSpecificServices.error);
+  }
+  try {
+    const services = await sql`
+    SELECT * FROM services
+    WHERE room = ${room}
+    ORDER BY service_id ASC
+      `;
+
+    return res.status(200).json({
+      message: "Successfully fetched services.",
+      services,
+    } as getRoomSpecificServices.response);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: "Internal Server Error",
+    } as getRoomSpecificServices.error);
+  }
+}
 
 export async function getConsultationQueues(
   req: Request,
@@ -19,27 +52,120 @@ export async function getConsultationQueues(
     const queues = await sql`
       SELECT
         q.*,
+        cr.consultation_record_id,
+        cr.consultation_type,
+        cr.service_id,
         s.service_name,
         s.service_type,
         s.service_category,
-        s.room
+        s.room,
+        CONCAT_WS(' ', p.first_name, p.last_name)  AS patient_name,
+        DATE_PART('year', AGE(p.birthdate))::int   AS age
       FROM queue_entries q
-      JOIN services s ON s.service_id = q.service_id
+      JOIN consultation_records cr ON cr.queue_id = q.queue_id
+      JOIN services s              ON s.service_id = cr.service_id
+      JOIN patients p              ON p.patient_id = q.patient_id
       WHERE q.queue_id LIKE 'CONS-%'
         AND s.room = ${room}
         AND q.created_at >= CURRENT_DATE
-        AND q.created_at < CURRENT_DATE + INTERVAL '1 day'
+        AND q.created_at <  CURRENT_DATE + INTERVAL '1 day'
       ORDER BY q.queue_number ASC
     `;
 
-    return res
-      .status(200)
-      .json(queues as unknown as getConsultationRequests.response);
+    return res.status(200).json({
+      message: "Successfully fetched consultation queues.",
+      queueEntries: queues,
+    } as unknown as getConsultationRequests.response);
   } catch (error) {
     console.error(error);
     return res.status(500).json({
       message: "Internal Server Error",
     } as getConsultationRequests.error);
+  }
+}
+
+export async function getConsultationQueueDetails(
+  req: Request,
+  res: Response<
+    getConsultationQueueDetails.response | getConsultationQueueDetails.error
+  >,
+) {
+  // GET /api/doctor/consultation-queues/:queue_id/details
+  try {
+    const { queue_id } = req.params;
+
+    if (!queue_id) {
+      return res.status(400).json({
+        message: "queue_id is required.",
+      } as getConsultationQueueDetails.error);
+    }
+
+    const rows = await sql`
+      SELECT
+        -- queue
+        q.queue_id,
+        q.queue_number,
+        q.is_priority,
+        q.status                                     AS queue_status,
+        q.created_at                                 AS queued_at,
+
+        -- consultation record
+        cr.consultation_record_id,
+        cr.consultation_type,
+        cr.status                                    AS consultation_status,
+        cr.is_paid,
+        cr.requested_at,
+
+        -- service
+        s.service_id,
+        s.service_name,
+        s.service_category,
+        s.service_type,
+        s.room,
+        s.price,
+
+        -- patient
+        p.patient_id,
+        p.image_url,
+        CONCAT_WS(' ', p.first_name, p.middle_name, p.last_name, p.suffix)
+                                                     AS patient_name,
+        p.sex,
+        p.birthdate,
+        DATE_PART('year', AGE(p.birthdate))::int     AS age,
+        p.is_pwd,
+        (DATE_PART('year', AGE(p.birthdate)) >= 60)  AS is_senior,
+        p.contact_number,
+        p.blood_type,
+        p.civil_status,
+        p.allergies,
+        p.existing_conditions,
+        p.current_medications,
+        p.guardian_name,
+        p.guardian_relationship,
+        p.guardian_contact
+      FROM queue_entries q
+      JOIN consultation_records cr ON cr.queue_id = q.queue_id
+      JOIN services s              ON s.service_id = cr.service_id
+      JOIN patients p              ON p.patient_id = q.patient_id
+      WHERE q.queue_id = ${queue_id}
+    `;
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        message: "Queue entry not found.",
+      } as getConsultationQueueDetails.error);
+    }
+
+    return res.status(200).json({
+      message: "Successfully fetched queue details.",
+      details: rows[0],
+    } as unknown as getConsultationQueueDetails.response);
+  } catch (error) {
+    console.error("GET CONSULTATION QUEUE DETAILS ERROR:", error);
+
+    return res.status(500).json({
+      message: "Failed to fetch queue details",
+    } as getConsultationQueueDetails.error);
   }
 }
 
@@ -134,6 +260,40 @@ export async function getMedicalHistory(
   }
 }
 
+// laboratory_results stores one row per lab item with a JSON list of tests.
+// The doctor's history screen shows one line per test.
+async function selectLabResultLines(lab_item_id: string) {
+  const rows = await sql`
+    SELECT result_id, results, remarks, verified_by, verified_at, image_url, created_at
+    FROM laboratory_results
+    WHERE lab_item_id = ${lab_item_id}
+    ORDER BY created_at
+  `;
+
+  return rows.flatMap((row) => {
+    const tests: Record<string, any>[] = Array.isArray(row.results) ? row.results : [];
+    const components: Record<string, any>[] = tests[0]?.template_snapshot?.components ?? [];
+
+    return tests.map((test, index) => {
+      const settings = components.find((c) => c.fieldKey === test.field_key)?.settings ?? {};
+      const isLast = index === tests.length - 1;
+      return {
+        result_id: `${row.result_id}-${index}`,
+        result_value: `${test.name}: ${test.result}`,
+        unit: settings.unit || null,
+        reference_range: settings.referenceRange || null,
+        flag: null,
+        // Remarks and verification belong to the whole result, so show them once.
+        remarks: isLast ? row.remarks : null,
+        verified_by: isLast ? row.verified_by : null,
+        verified_at: isLast && row.verified_at ? String(row.verified_at) : null,
+        image_url: row.image_url,
+        created_at: String(row.created_at),
+      };
+    });
+  });
+}
+
 export async function getMedicalHistoryDetails(
   req: Request,
   res: Response<
@@ -169,22 +329,7 @@ export async function getMedicalHistoryDetails(
         } as getMedicalHistoryDetails.error);
       }
 
-      const results = await sql`
-        SELECT
-          result_id,
-          result_value,
-          unit,
-          reference_range,
-          flag,
-          remarks,
-          verified_by,
-          verified_at,
-          image_url,
-          created_at
-        FROM laboratory_results
-        WHERE lab_item_id = ${record_id}
-        ORDER BY created_at
-      `;
+      const results = await selectLabResultLines(String(record_id));
 
       return res.status(200).json({
         message: "Laboratory record and result/s successfully fetched",
@@ -198,21 +343,7 @@ export async function getMedicalHistoryDetails(
         requested_by_role: labDetails.requested_by_role,
         processed_by: labDetails.processed_by,
         processed_by_role: labDetails.processed_by_role,
-        results: results.map(
-          (row) =>
-            ({
-              result_id: Number(row.result_id),
-              result_value: row.result_value,
-              unit: row.unit,
-              reference_range: row.reference_range,
-              flag: row.flag,
-              remarks: row.remarks,
-              verified_by: row.verified_by,
-              verified_at: row.verified_at ? String(row.verified_at) : null,
-              image_url: row.image_url,
-              created_at: String(row.created_at),
-            }) as getMedicalHistoryDetails.laboratoryResult,
-        ),
+        results,
       } as getMedicalHistoryDetails.laboratoryResponse);
     }
 
@@ -229,7 +360,7 @@ export async function getMedicalHistoryDetails(
           CONCAT_WS(' ', u.first_name, u.last_name) AS consulted_by
         FROM consultation_records cr
         JOIN services s ON s.service_id = cr.service_id
-        LEFT JOIN users u ON u.user_id = cr.doctor_id
+        LEFT JOIN users u ON u.user_id = cr.consulted_by
         WHERE cr.consultation_record_id = ${record_id}
       `;
 
@@ -300,10 +431,6 @@ export async function getMedicalHistoryFull(
           lri.lab_item_id,
           lri.status,
           lri.updated_at,
-          lr.result_value,
-          lr.remarks,
-          lr.verified_by,
-          lr.verified_at,
           s.service_name,
           s.room,
           CONCAT_WS(' ', req_u.first_name, req_u.last_name) AS requested_by,
@@ -330,10 +457,7 @@ export async function getMedicalHistoryFull(
         lab_item_id: String(fullLab.lab_item_id),
         status: String(fullLab.status),
         updated_at: String(fullLab.updated_at),
-        result_value: fullLab.result_value,
-        remarks: fullLab.remarks,
-        verified_by: fullLab.verified_by,
-        verified_at: fullLab.verified_at ? String(fullLab.verified_at) : null,
+        results: await selectLabResultLines(String(record_id)),
         service_name: String(fullLab.service_name),
         room: fullLab.room,
         requested_by: fullLab.requested_by,
@@ -359,7 +483,7 @@ export async function getMedicalHistoryFull(
           CONCAT_WS(' ', u.first_name, u.last_name) AS consulted_by
         FROM consultation_records cr
         JOIN services s ON s.service_id = cr.service_id
-        LEFT JOIN users u ON u.user_id = cr.doctor_id
+        LEFT JOIN users u ON u.user_id = cr.consulted_by
         WHERE cr.consultation_record_id = ${record_id}
       `;
 

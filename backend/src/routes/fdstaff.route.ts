@@ -6,7 +6,6 @@ import {
   deleteQueue,
 } from "../controllers/fdstaff/deleteRequest.controller.js";
 import {
-  getAllBilling,
   getAllPatients,
   getAllQueueEntries,
   getMedicalHistory,
@@ -15,8 +14,8 @@ import {
   getQueueRequests,
   getBills,
   getBillDetails,
+  getPatientMedicalHistory,
 } from "../controllers/fdstaff/getRequests.controller.js";
-import { getPatientMedicalHistory } from "../controllers/fdstaff/getMedicalHistory.controller.js";
 import {
   addBills,
   addConsultationRecord,
@@ -43,7 +42,6 @@ if (ENV.IS_PRODUCTION) {
 
 // GET requests
 router.get("/patients", getAllPatients);
-router.get("/billing", getAllBilling);
 router.get("/billings", getBills);
 router.get("/billings/:bill_id/details", getBillDetails);
 router.get("/services", getAllservices);

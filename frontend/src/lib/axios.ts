@@ -9,35 +9,9 @@ import axios from "axios";
 import { ENV } from "./env.config";
 
 const api = axios.create({
-  // Development requests use Vite's /api proxy on the website's own origin.
-  baseURL: import.meta.env.DEV
-    ? ""
-    : ENV.VITE_IS_DEVELOPMENT
-      ? "http://localhost:5000"
-      : ENV.VITE_API_BASE_URL,
-    //   1. Local monolithic (npm run build && npm start, one server on :5000)
-
-    // No VITE_API_BASE_URL set → baseURL = ""
-    // Browser loads page from http://localhost:5000, axios requests go to http://localhost:5000/api/... (relative → same origin)
-    // ✅ Works
-
-    // 2. Prod monolithic (deployed, one service)
-
-    // No VITE_API_BASE_URL set at build → baseURL = ""
-    // Browser loads page from https://techcare-hui6.onrender.com, axios requests go there too
-    // ✅ Works (this was the broken one before — it used to literally try localhost:5000 on a stranger's browser)
-
-    // 3. Local distributed (two terminals, backend on :5000, frontend dev server on :5173)
-
-    // You set VITE_API_BASE_URL=http://localhost:5000 in frontend/.env.local
-    // baseURL = "http://localhost:5000" (env var wins, fallback never used)
-    // ✅ Works exactly like before
-
-    // 4. Prod distributed (separate static frontend + separate backend)
-
-    // You set VITE_API_BASE_URL=https://your-backend.onrender.com at build time on the static host
-    // baseURL = "https://your-backend.onrender.com" (env var wins)
-    // ✅ Works exactly like before
+  // Vite development: relative /api URLs through the proxy in vite.config.ts.
+  // Production: VITE_API_BASE_URL. Empty means same origin (the monolith deployment).
+  baseURL: import.meta.env.DEV ? "" : ENV.VITE_API_BASE_URL,
 });
 
 

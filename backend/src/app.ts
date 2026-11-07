@@ -11,7 +11,8 @@ import fdstaffRoutes from "./routes/fdstaff.route.js";
 import labstaffRoutes from "./routes/labstaff.route.js";
 import doctorRoutes from "./routes/doctor.route.js";
 import patientRoutes from "./routes/patient.route.js";
-import sseRoutes from "./routes/tests/sse.routes.js";
+import queueRoutes from "./routes/queue.route.js";
+import sseTestRoutes from "./routes/tests/sse.routes.js";
 
 const upload = multer({
   dest: "uploads/",
@@ -39,10 +40,11 @@ app.use(express.json());
 
 // ---- TEST ROUTES ----
 app.use("/api/test", testRoutes);
-app.use("/api/sse", sseRoutes);
+app.use("/api/sse", sseTestRoutes);
 //------------------------
 
 app.use("/api/auth", authRoutes);
+app.use("/api/queue", queueRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/fdstaff", fdstaffRoutes);
 app.use("/api/labstaff", labstaffRoutes);

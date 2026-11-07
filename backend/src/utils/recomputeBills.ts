@@ -28,13 +28,17 @@ export async function recomputeBillTotals(client: PoolClient, bill_id: string) {
            SELECT sv.price
            FROM laboratory_request_items lri
            JOIN services sv ON sv.service_id = lri.service_id
+           JOIN laboratory_requests lr ON lr.request_id = lri.request_id
            WHERE lri.bill_id = bb.bill_id
              AND lower(trim(lri.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+             AND lower(trim(lr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
          ) l
        ) s
        WHERE bb.bill_id = $1
      ) t
      WHERE b.bill_id = $1
+       AND lower(trim(b.status)) IN ('pending', 'unpaid')
+       AND (b.items IS NULL OR jsonb_typeof(b.items) <> 'array' OR b.items = '[]'::jsonb)
      RETURNING b.*`,
     [bill_id],
   );

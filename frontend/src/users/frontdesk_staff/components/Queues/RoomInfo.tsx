@@ -1,67 +1,16 @@
-import React from "react";
-import { FlaskConical } from "lucide-react";
+import { FlaskConical, Stethoscope } from "lucide-react";
+import type { QueueEntry } from "../../../../interface/Queue";
 
-function RoomInfo() {
-  return (
-    <div className="px-3 flex flex-col gap-5">
-      <div className="border p-3 rounded-xl border-gray-200">
-        <h1 className="font-bold  text-lg">Laboratory Rooms</h1>
-        <div className="flex border justify-between px-5 py-2 mt-3 rounded-lg border-green-600 bg-green-100 text-green-600">
-          <div className="flex items-center gap-2">
-            <FlaskConical size={15} />
-            <h1>Laboratory Room 1</h1>
-          </div>
-          <div className="flex flex-col justify-center items-center text-xs">
-            <h1 className="font-bold">Available</h1>
-            <h3>Vacant</h3>
-          </div>
-        </div>
-        <div className="flex border justify-between px-5 py-2 mt-3 rounded-lg border-green-600 bg-green-100 text-green-600">
-          <div className="flex items-center gap-2">
-            <FlaskConical size={15} />
-            <h1>Laboratory Room 1</h1>
-          </div>
-          <div className="flex flex-col justify-center items-center text-xs">
-            <h1 className="font-bold">Available</h1>
-            <h3>Vacant</h3>
-          </div>
-        </div>
-        <div className="flex border justify-between px-5 py-2 mt-3 rounded-lg border-yellow-600 bg-yellow-100 text-yellow-600">
-          <div className="flex items-center gap-2">
-            <FlaskConical size={15} />
-            <h1>Laboratory Room 1</h1>
-          </div>
-          <div className="flex flex-col justify-center items-center text-xs">
-            <h1 className="font-bold">In Service</h1>
-            <h3>Serving</h3>
-          </div>
-        </div>
-      </div>
-      <div className="border p-3 rounded-xl border-gray-200">
-        <h1 className="font-bold  text-lg">Consultation Rooms</h1>
-        <div className="flex border justify-between px-5 py-2 mt-3 rounded-lg border-green-600 bg-green-100 text-green-600">
-          <div className="flex items-center gap-2">
-            <FlaskConical size={15} />
-            <h1>Consultation Room 1</h1>
-          </div>
-          <div className="flex flex-col justify-center items-center text-xs">
-            <h1 className="font-bold">Available</h1>
-            <h3>Vacant</h3>
-          </div>
-        </div>
-        <div className="flex border justify-between px-5 py-2 mt-3 rounded-lg border-yellow-600 bg-yellow-100 text-yellow-600">
-          <div className="flex items-center gap-2">
-            <FlaskConical size={15} />
-            <h1>Consultation Room 1</h1>
-          </div>
-          <div className="flex flex-col justify-center items-center text-xs">
-            <h1 className="font-bold">In Service</h1>
-            <h3>Serving</h3>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+export default function RoomInfo({ queues }: { queues: QueueEntry[] }) {
+  const rooms = [...new Set(queues.map((queue) => queue.room).filter(Boolean))].sort();
+  return <aside className="flex flex-col gap-4" aria-label="Room queue status">{["Laboratory", "Consultation"].map((type) => {
+    const names = rooms.filter((room) => queues.some((queue) => queue.room === room && queue.service_type?.toLowerCase() === type.toLowerCase()));
+    return <section key={type} className="rounded-xl border border-gray-200 p-4"><h2 className="mb-3 font-semibold">{type} Rooms</h2>{names.length ? names.map((room) => {
+      const entries = queues.filter((queue) => queue.room === room);
+      const serving = entries.some((queue) => ["in service", "serving", "in progress"].includes(queue.status.toLowerCase()));
+      const waiting = entries.filter((queue) => queue.status.toLowerCase() === "waiting").length;
+      const Icon = type === "Laboratory" ? FlaskConical : Stethoscope;
+      return <div key={room} className={`mb-2 flex items-center justify-between gap-3 rounded-lg border p-3 text-xs ${serving ? "border-amber-200 bg-amber-50 text-amber-800" : "border-blue-100 bg-blue-50 text-blue-800"}`}><span className="flex items-center gap-2"><Icon size={16} />{room}</span><span className="text-right">{serving ? "In Service" : "No active service"}<small className="mt-1 block">{waiting} waiting</small></span></div>;
+    }) : <p className="text-xs text-gray-500">No room queues recorded today.</p>}</section>;
+  })}</aside>;
 }
-
-export default RoomInfo;

@@ -8,6 +8,8 @@ import {
 import { validateLabRequest } from "../../utils/consultationValidation.js";
 import { resolveDoctorId } from "../../utils/resolveDoctorId.js";
 import { generateConsultationRecordID } from "../../utils/generateConsultationId.js";
+import { getOrCreateOpenBill } from "../../utils/getOrCreateBill.js";
+import { recomputeBillTotals } from "../../utils/recomputeBills.js";
 import { validateFindings } from "../../utils/consultationValidation.js";
 import type {
   addLaboratoryRequest,
@@ -82,7 +84,7 @@ export async function addLaboratoryRequest(
 
     if (consultation_record_id) {
       const consultation = await sql`
-        SELECT patient_id, doctor_id
+        SELECT patient_id, consulted_by
         FROM consultation_records
         WHERE consultation_record_id = ${consultation_record_id}
       `;
@@ -97,7 +99,7 @@ export async function addLaboratoryRequest(
             "Consultation record does not belong to the selected patient.",
         } as addLaboratoryRequest.error);
       }
-      if (consultation[0].doctor_id !== requested_by) {
+      if (consultation[0].consulted_by && consultation[0].consulted_by !== requested_by) {
         return res.status(403).json({
           message:
             "You can only order laboratory requests for your own consultations.",
@@ -127,7 +129,7 @@ export async function addLaboratoryRequest(
            requested_at,
            estimated_release_date
          )
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         VALUES ($1, $2, $3, $4, $5, COALESCE($6::timestamp, CURRENT_TIMESTAMP), $7)
          RETURNING *`,
         [
           request_id,
@@ -140,17 +142,21 @@ export async function addLaboratoryRequest(
         ],
       );
 
+      const { bill_id, is_new } = await getOrCreateOpenBill(client, patient_id);
+
       const laboratory_item_result = [];
       for (const service_id of service_ids) {
         const lab_item_id = await generateLaboratoryItemID(client);
         const { rows } = await client.query(
-          `INSERT INTO laboratory_request_items (lab_item_id, request_id, service_id, status)
-           VALUES ($1, $2, $3, 'Requested')
+          `INSERT INTO laboratory_request_items (lab_item_id, request_id, service_id, status, bill_id)
+           VALUES ($1, $2, $3, 'Requested', $4)
            RETURNING *`,
-          [lab_item_id, request_id, service_id],
+          [lab_item_id, request_id, service_id, bill_id],
         );
         laboratory_item_result.push(rows[0]);
       }
+
+      const bill = await recomputeBillTotals(client, bill_id);
 
       await client.query("COMMIT");
 
@@ -158,6 +164,8 @@ export async function addLaboratoryRequest(
         message: "Laboratory request added successfully.",
         request: laboratory_request_result,
         items: laboratory_item_result,
+        bill,
+        is_new_bill: is_new,
       } as addLaboratoryRequest.response);
     } catch (error: any) {
       console.error(error);
@@ -231,7 +239,7 @@ export async function addPrescriptions(
     await client.query("BEGIN");
 
     const { rows: consultation } = await client.query(
-      `SELECT patient_id, doctor_id
+      `SELECT patient_id, consulted_by
        FROM consultation_records
        WHERE consultation_record_id = $1`,
       [consultation_record_id],
@@ -244,7 +252,7 @@ export async function addPrescriptions(
         .json({ message: "Consultation record not found." } as addPrescriptions.error);
     }
 
-    if (consultation[0].doctor_id !== user_id) {
+    if (consultation[0].consulted_by && consultation[0].consulted_by !== user_id) {
       await client.query("ROLLBACK");
       return res.status(403).json({
         message: "You can only prescribe for your own consultations.",
@@ -393,10 +401,10 @@ export async function addConsultationFindings(
       const consultation_record_id = await generateConsultationRecordID(client);
       const { rows } = await client.query(
         `INSERT INTO consultation_records (
-           consultation_record_id, patient_id, doctor_id, service_id,
-           consultation_type, diagnosis, presenting_complaint, physical_examination
+           consultation_record_id, patient_id, requested_by, consulted_by, service_id,
+           consultation_type, diagnosis, presenting_complaint, physical_examination, consulted_at
          )
-         VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7::jsonb, $8::jsonb)
+         VALUES ($1, $2, $3, $3, $4, $5, $6::jsonb, $7::jsonb, $8::jsonb, NOW())
          RETURNING *`,
         [
           consultation_record_id,

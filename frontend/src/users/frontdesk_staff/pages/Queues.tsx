@@ -1,4 +1,5 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
+import { useNavigate } from "react-router";
 import type {
   PriorityFilter,
   QueueEntry,
@@ -11,8 +12,6 @@ import QueueTabs from "../components/Queues/QueueTabs";
 import QueueFilters from "../components/Queues/QueueFilters";
 import QueueTable from "../components/Queues/QueueTable";
 import RoomInfo from "../components/Queues/RoomInfo";
-// import QueueRequestsTable from "../components/Queues/QueueRequestsTable";
-import AddToQueueModal from "../components/Queues/QueueRequestsTable/AddToQueueModal";
 
 type QueuesProps = {
   queues: QueueEntry[];
@@ -36,13 +35,10 @@ function Queues({
   loading,
 }: QueuesProps) {
   const [activeTab, setActiveTab] = useState<QueueTab>("all");
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [serviceFilter, setServiceFilter] = useState("all");
   const [priority, setPriority] = useState<PriorityFilter>("all");
-  const [selectedRequest, setSelectedRequest] = useState<QueueRequests | null>(
-    null,
-  );
-  const closeModal = useCallback(() => setSelectedRequest(null), []);
 
   const serviceOptions = Array.from(
     new Set(
@@ -58,15 +54,15 @@ function Queues({
 
   const stats: QueueStatistics = useMemo(() => {
     const active = queues.filter(
-      (q) => q.status !== "Completed" && q.status !== "Cancelled",
+      (q) => !["completed", "cancelled"].includes(q.status.toLowerCase()),
     );
     return {
       totalQueue: active.length,
       priorityQueue: active.filter((q) => q.is_priority).length,
-      waiting: queues.filter((q) => q.status === "Waiting").length,
-      inService: queues.filter((q) => q.status === "In Service").length,
+      waiting: queues.filter((q) => q.status.toLowerCase() === "waiting").length,
+      inService: queues.filter((q) => ["in service", "in progress", "serving"].includes(q.status.toLowerCase())).length,
       completedToday: queues.filter(
-        (q) => q.status === "Completed" && isToday(q.updated_at),
+        (q) => q.status.toLowerCase() === "completed" && isToday(q.updated_at),
       ).length,
     };
   }, [queues]);
@@ -75,7 +71,7 @@ function Queues({
     const q = search.trim().toLowerCase();
 
     return queues.filter((entry) => {
-      if (activeTab !== "all" && entry.service_type.toLowerCase() !== activeTab)
+      if (activeTab !== "all" && entry.service_type?.toLowerCase() !== activeTab)
         return false;
       if (serviceFilter !== "all" && entry.service_category !== serviceFilter)
         return false;
@@ -98,12 +94,13 @@ function Queues({
           <h1 className="text-2xl font-bold text-gray-80">Queue Management</h1>
           <h3 className="text-sm">View Queue Status and Rooms in Real-Time</h3>
         </div>
-        <button>Add to Queue</button>
+        <button className="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white" onClick={() => navigate("/frontdesk-staff?page=service-request")}>New Service Request</button>
       </div>
 
       <div className="px-6">
         <QueueStats stats={stats} />
-        <QueueTabs activeTab={activeTab} setActiveTab={setActiveTab} />
+        <QueueTabs activeTab={activeTab} setActiveTab={(tab) => { setActiveTab(tab); setServiceFilter("all"); }} />
+        {queueRequests.some((request) => request.record_type === "laboratory") && <p className="my-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">Some paid requests still need laboratory forwarding. <button className="underline" onClick={() => navigate("/frontdesk-staff?page=billing")}>Open Billing</button> to send them.</p>}
         <QueueFilters
           search={search}
           setSearch={setSearch}
@@ -113,28 +110,14 @@ function Queues({
           priority={priority}
           setPriority={setPriority}
         />
-        <div className="grid grid-cols-7">
-          <div className="col-span-5 flex flex-col gap-2">
-            {/* <QueueRequestsTable
-              queueRequests={queueRequests}
-              onAddToQueue={setSelectedRequest}
-            /> */}
-            <QueueTable queues={visibleQueues} />
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-7">
+          <div className="xl:col-span-5 flex flex-col gap-2">
+            <QueueTable queues={visibleQueues} onRefresh={loadData} />
           </div>
-          <div className="col-span-2">
-            <RoomInfo />
+          <div className="xl:col-span-2">
+            <RoomInfo queues={queues} />
           </div>
         </div>
-        {selectedRequest && (
-          <AddToQueueModal
-            request={selectedRequest}
-            onClose={closeModal}
-            onSubmitted={async () => {
-              setSelectedRequest(null);
-              await loadData();
-            }}
-          />
-        )}
       </div>
     </main>
   );
