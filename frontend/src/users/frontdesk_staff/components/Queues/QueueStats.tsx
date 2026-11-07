@@ -15,75 +15,61 @@ function QueueStats({ stats }: QueueProps) {
   const cards = [
     {
       label: "Total Queue",
+      subLabel: "Active queue records",
       value: stats.totalQueue,
-      bg: "bg-sky-50",
-      border: "border-sky-400",
-      iconBg: "bg-sky-200",
       icon: ListOrdered,
     },
     {
       label: "Priority",
+      subLabel: "Active priority patients",
       value: stats.priorityQueue,
-      bg: "bg-green-50",
-      border: "border-green-400",
-      iconBg: "bg-green-200",
       icon: FileExclamationPoint,
     },
     {
       label: "Waiting",
+      subLabel: "Currently waiting",
       value: stats.waiting,
-      bg: "bg-orange-50",
-      border: "border-orange-400",
-      iconBg: "bg-orange-200",
       icon: Loader,
     },
     {
       label: "In Service",
+      subLabel: "Currently being served",
       value: stats.inService,
-      bg: "bg-red-50",
-      border: "border-red-400",
-      iconBg: "bg-red-200",
       icon: ListStart,
     },
     {
       label: "Completed Today",
+      subLabel: "Finished today",
       value: stats.completedToday,
-      bg: "bg-fuchsia-50",
-      border: "border-fuchsia-400",
-      iconBg: "bg-fuchsia-200",
       icon: FileCheck,
     },
   ];
 
   return (
-    <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-      {cards.map((card) => {
-        const Icon = card.icon;
+    <section className="mt-5 mb-6 overflow-hidden rounded-2xl border border-gray-300 bg-gray-300">
+      <div className="grid grid-cols-1 gap-px sm:grid-cols-2 lg:grid-cols-5">
+        {cards.map((card) => {
+          const Icon = card.icon;
 
-        return (
-          <div
-            key={card.label}
-            className={`rounded-xl border ${card.border} ${card.bg} px-4 py-3 mt-5`}
-          >
-            <div className="flex items-center gap-3">
-              <div
-                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${card.iconBg}`}
-              >
-                <Icon size={22} strokeWidth={1.7} className="text-gray-600" />
+          return (
+            <div
+              key={card.label}
+              className="bg-white p-6 sm:last:col-span-2 lg:last:col-span-1"
+            >
+              <div className="mb-4 flex items-center gap-3">
+                <Icon size={20} strokeWidth={1.5} className="shrink-0" />
+
+                <p className="text-sm text-gray-500">{card.label}</p>
               </div>
 
-              <span className="text-xs font-medium text-gray-500">
-                {card.label}
-              </span>
-            </div>
+              <p className="text-3xl font-semibold">{card.value}</p>
 
-            <p className="mt-2 text-center text-3xl font-bold leading-none text-gray-950">
-              {card.value}
-            </p>
-          </div>
-        );
-      })}
-    </div>
+              <p className="mt-2 text-sm text-gray-400">{card.subLabel}</p>
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 

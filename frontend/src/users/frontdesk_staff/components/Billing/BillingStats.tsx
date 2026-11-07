@@ -1,3 +1,4 @@
+import { CircleCheck, Clock, FlaskConical, Receipt } from "lucide-react";
 import type { BillingStatistics } from "../../../../interface/Billing";
 
 type BillingStatsProps = {
@@ -10,47 +11,52 @@ function BillingStats({ stats }: BillingStatsProps) {
       header: "Total Bills",
       subHeader: "Pending and paid bills",
       value: stats.total,
-      bg: "bg-sky-50",
-      border: "border-sky-400",
+      icon: Receipt,
     },
     {
       header: "Pending Payment",
       subHeader: "Bills awaiting payment",
       value: stats.pending,
-      bg: "bg-white",
-      border: "border-yellow-400",
+      icon: Clock,
     },
     {
       header: "Paid",
       subHeader: "Payments already recorded",
       value: stats.paid,
-      bg: "bg-white",
-      border: "border-green-400",
+      icon: CircleCheck,
     },
     {
       header: "Awaiting Laboratory",
       subHeader: "Paid bills needing forwarding",
       value: stats.awaitingLaboratory,
-      bg: "bg-white",
-      border: "border-amber-400",
+      icon: FlaskConical,
     },
   ];
 
   return (
-    <div className="my-5 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
-      {cards.map((card) => (
-        <section
-          key={card.header}
-          className={`flex flex-col gap-1 rounded-3xl border px-4 py-2 ${card.border} ${card.bg}`}
-        >
-          <h2 className="text-sm font-bold">{card.header}</h2>
-          <p className="text-3xl font-bold leading-none text-gray-950">
-            {card.value}
-          </p>
-          <p className="text-xs font-medium text-gray-500">{card.subHeader}</p>
-        </section>
-      ))}
-    </div>
+    <section className="my-5 overflow-hidden rounded-2xl border border-gray-300 bg-gray-300">
+      <div className="grid grid-cols-1 gap-px sm:grid-cols-2 xl:grid-cols-4">
+        {cards.map((card) => {
+          const Icon = card.icon;
+
+          return (
+            <div key={card.header} className="bg-white p-6">
+              <div className="mb-4 flex items-center gap-3">
+                <Icon size={20} strokeWidth={1.5} className="shrink-0" />
+
+                <h2 className="text-sm font-normal text-gray-500">
+                  {card.header}
+                </h2>
+              </div>
+
+              <p className="text-3xl font-semibold">{card.value}</p>
+
+              <p className="mt-2 text-sm text-gray-400">{card.subHeader}</p>
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
