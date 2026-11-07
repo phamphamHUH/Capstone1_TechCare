@@ -1,4 +1,3 @@
-
 export namespace addUser {
   export interface body {
     username: string;
@@ -201,5 +200,21 @@ export namespace addFormTemplates {
   export interface error {
     message?: string;
     error?: string;
+  }
+}
+
+export namespace addPackages {
+  export interface response {
+    message: string;
+    package: {
+      package_id: string;
+      package_name: string;
+      price: string;
+      services: string[];
+    };
+  }
+
+  export interface error {
+    message: string;
   }
 }

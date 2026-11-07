@@ -1,4 +1,4 @@
-import ServiceFilters from "./ServiceList/ServiceFilters";
+import ServiceFilters from "./ServiceFilters";
 import type { SortOrder, Service } from "../../../../interface/Service";
 import { Syringe } from "lucide-react";
 

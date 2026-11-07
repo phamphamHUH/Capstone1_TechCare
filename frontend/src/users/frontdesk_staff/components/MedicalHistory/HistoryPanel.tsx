@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import HistoryFilters from "./HistoryPanel/HistoryFilters";
-import HistoryTimeline from "./HistoryPanel/HistoryTimeline";
+import HistoryFilters from "./HistoryFilters";
+import HistoryTimeline from "./HistoryTimeline";
 import type {
   HistoryRecord,
   Pagination,
-} from "../../../../../interface/HistoryRecord";
+} from "../../../../interface/HistoryRecord";
 import api from "#lib/axios";
 
 type HistoryPanelProps = {

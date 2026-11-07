@@ -8,6 +8,7 @@ import type {
   updateUser,
   updateUserStatus,
   updateFormTemplate,
+  updateService,
 } from "./dto/update.dto.js";
 
 // =========================
@@ -180,7 +181,7 @@ export async function updateUserStatus(
         targetId: user_id as string,
         metadata: { reason: "self-deactivation attempt" },
       });
-      
+
       return res.status(400).json({
         message: `You can't ${account_status ? "activate" : "deactivate"} your own account.`,
       } as updateUserStatus.error);
@@ -341,7 +342,7 @@ export async function updateFormTemplate(
         `;
       }),
     ]);
-    
+
     const [formUpdated] = results[1];
     const componentsUpdated = results.slice(3).flat();
 
@@ -356,5 +357,116 @@ export async function updateFormTemplate(
     return res.status(500).json({
       message: "Internal Server Error",
     } as updateFormTemplate.error);
+  }
+}
+
+export async function updateService(
+  req: Request,
+  res: Response<updateService.response | updateService.error>,
+) {
+  try {
+    const { service_id } = req.params as { service_id: string };
+    const {
+      service_name,
+      service_category,
+      service_type,
+      room,
+      price,
+      active,
+    } = req.body;
+
+    if (isNaN(Number(price)) || Number(price) < 0) {
+      return res.status(400).json({
+        message: "Price must be a valid non-negative number",
+      } as updateService.error);
+    }
+
+    if (service_id.startsWith("P-")) {
+      if (!service_name) {
+        return res.status(400).json({
+          message: "Package name is required",
+        } as updateService.error);
+      }
+
+      const duplicatePackage = await sql`
+        SELECT package_id
+        FROM packages
+        WHERE package_name = ${service_name} AND package_id <> ${service_id}
+      `;
+
+      if (duplicatePackage.length > 0) {
+        return res.status(409).json({
+          message: "Package name already exists",
+        } as updateService.error);
+      }
+
+      const updatedPackage = await sql`
+        UPDATE packages
+        SET package_name = ${service_name},
+            package_price = ${Number(price)},
+            status = ${active === false ? "Inactive" : "Active"},
+            updated_at = NOW()
+        WHERE package_id = ${service_id}
+        RETURNING *
+      `;
+
+      if (updatedPackage.length === 0) {
+        return res.status(404).json({
+          message: "Package not found",
+        } as updateService.error);
+      }
+
+      return res.status(200).json({
+        message: "Package updated successfully!",
+        service: updatedPackage[0],
+      } as unknown as updateService.response);
+    }
+
+    if (!service_name || !service_category || !service_type || !room) {
+      return res.status(400).json({
+        message: "All fields are required",
+      } as updateService.error);
+    }
+
+    const duplicate = await sql`
+      SELECT service_id
+      FROM services
+      WHERE service_name = ${service_name} AND service_id <> ${service_id}
+    `;
+
+    if (duplicate.length > 0) {
+      return res.status(409).json({
+        message: "Service name already exists",
+      } as updateService.error);
+    }
+
+    const updated = await sql`
+      UPDATE services
+      SET service_name = ${service_name},
+          service_category = ${service_category},
+          service_type = ${service_type},
+          room = ${room},
+          price = ${Number(price)},
+          active = ${active === true},
+          updated_at = NOW()
+      WHERE service_id = ${service_id}
+      RETURNING *
+    `;
+
+    if (updated.length === 0) {
+      return res.status(404).json({
+        message: "Service not found",
+      } as updateService.error);
+    }
+
+    return res.status(200).json({
+      message: "Service updated successfully!",
+      service: updated[0],
+    } as updateService.response);
+  } catch (error) {
+    console.error("UPDATE SERVICE ERROR:", error);
+    return res.status(500).json({
+      message: "error on service controller",
+    } as updateService.error);
   }
 }

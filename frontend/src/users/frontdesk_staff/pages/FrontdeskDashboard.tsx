@@ -17,10 +17,6 @@ function FrontdeskDashboard({
   bills,
   patients,
   queues,
-  open,
-  setOpen,
-  loadData,
-  loading,
 }: FrontdeskDashboardProps) {
   const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
 

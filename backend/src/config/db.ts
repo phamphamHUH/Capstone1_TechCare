@@ -136,30 +136,11 @@ const TABLES: TableDefinition[] = [
   },
 
   {
-    table: "bills",
+    table: "package_services",
     columns: {
       id: "SERIAL PRIMARY KEY",
-      bill_id: "VARCHAR(255) UNIQUE NOT NULL",
-      patient_id: "VARCHAR(255) NOT NULL REFERENCES patients(patient_id)",
-      status: "VARCHAR(20) NOT NULL DEFAULT 'Pending'",
-      items: "JSONB",
-      discount_pct: "NUMERIC(5,2)",
-      receipt_id: "VARCHAR(50)",
-      receipt_issued_at: "TIMESTAMP",
-      billed_at: "TIMESTAMP",
-      subtotal: "NUMERIC(12,2) NOT NULL DEFAULT 0",
-      discount_type: "VARCHAR(50)",
-      discount_rate: "NUMERIC(5,2)",
-      discount_amount: "NUMERIC(12,2) NOT NULL DEFAULT 0",
-      discount_id_no: "VARCHAR(100)",
-      discounted_by: "VARCHAR(255) REFERENCES users(user_id)",
-      total_amount: "NUMERIC(12,2) NOT NULL DEFAULT 0",
-      payment_method: "VARCHAR(30) NOT NULL DEFAULT 'Cash'",
-      paid_at: "TIMESTAMP",
-      reference_num: "VARCHAR(50)",
-      received_by: "VARCHAR(255) REFERENCES users(user_id)",
-      created_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
-      updated_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      package_id: "VARCHAR(255) NOT NULL REFERENCES packages(package_id)",
+      service_id: "VARCHAR(255) NOT NULL REFERENCES services(service_id)",
     },
   },
 
@@ -173,6 +154,32 @@ const TABLES: TableDefinition[] = [
       is_priority: "BOOLEAN NOT NULL DEFAULT FALSE",
       skip_count: "INTEGER NOT NULL DEFAULT 0",
       status: "VARCHAR(20) NOT NULL DEFAULT 'waiting'",
+      created_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      updated_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
+    },
+  },
+
+  {
+    table: "bills",
+    columns: {
+      id: "SERIAL PRIMARY KEY",
+      bill_id: "VARCHAR(255) UNIQUE NOT NULL",
+      patient_id: "VARCHAR(255) NOT NULL REFERENCES patients(patient_id)",
+      items: "JSONB",
+      status: "VARCHAR(20) NOT NULL DEFAULT 'Pending'",
+      invoice_id: "VARCHAR(50)",
+      invoice_issued_at: "TIMESTAMP",
+      billed_at: "TIMESTAMP",
+      subtotal: "NUMERIC(12,2) NOT NULL DEFAULT 0",
+      discount_type: "VARCHAR(50)",
+      discount_rate: "NUMERIC(5,2)",
+      discount_amount: "NUMERIC(12,2) NOT NULL DEFAULT 0",
+      discount_id_no: "VARCHAR(100)",
+      total_amount: "NUMERIC(12,2) NOT NULL DEFAULT 0",
+      payment_method: "VARCHAR(30) NOT NULL DEFAULT 'Cash'",
+      paid_at: "TIMESTAMP",
+      reference_num: "VARCHAR(50)",
+      received_by: "VARCHAR(255) REFERENCES users(user_id)",
       created_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
       updated_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
     },
@@ -310,8 +317,7 @@ const TABLES: TableDefinition[] = [
       id: "SERIAL PRIMARY KEY",
       form_component_id: "VARCHAR(255) UNIQUE NOT NULL",
       form_id: "VARCHAR(255) NOT NULL REFERENCES form_templates(form_id)",
-      type_id:
-        "VARCHAR(255) NOT NULL REFERENCES form_component_types(type_id)",
+      type_id: "VARCHAR(255) NOT NULL REFERENCES form_component_types(type_id)",
       label: "VARCHAR(255) NOT NULL",
       field_key: "VARCHAR(255) NOT NULL",
       display_order: "INTEGER NOT NULL",
@@ -376,8 +382,7 @@ function quoteIdentifier(identifier: string): string {
 
 function generateCreateTableSQL(table: TableDefinition): string {
   const definitions = Object.entries(table.columns).map(
-    ([column, definition]) =>
-      `${quoteIdentifier(column)} ${definition}`,
+    ([column, definition]) => `${quoteIdentifier(column)} ${definition}`,
   );
 
   return `
@@ -436,9 +441,7 @@ export async function syncSchema(onlyTables?: string[]): Promise<void> {
       ? TABLES.filter((table) => onlyTables.includes(table.table))
       : TABLES;
 
-    const configuredTableNames = configuredTables.map(
-      (table) => table.table,
-    );
+    const configuredTableNames = configuredTables.map((table) => table.table);
 
     // ---------------------------------------------------------------
     // 1. GET EXISTING TABLES
@@ -451,9 +454,7 @@ export async function syncSchema(onlyTables?: string[]): Promise<void> {
         AND table_type = 'BASE TABLE'
     `) as { table_name: string }[];
 
-    const existingTableNames = existingTableRows.map(
-      (row) => row.table_name,
-    );
+    const existingTableNames = existingTableRows.map((row) => row.table_name);
 
     // ---------------------------------------------------------------
     // 2. DROP EXTRA TABLES
@@ -468,9 +469,7 @@ export async function syncSchema(onlyTables?: string[]): Promise<void> {
       );
 
       for (const tableName of tablesToDrop) {
-        console.log(
-          `[schema-sync] dropping extra table "${tableName}"`,
-        );
+        console.log(`[schema-sync] dropping extra table "${tableName}"`);
 
         await sql.query(
           `DROP TABLE IF EXISTS ${quoteIdentifier(tableName)} CASCADE`,
@@ -483,8 +482,7 @@ export async function syncSchema(onlyTables?: string[]): Promise<void> {
     // ---------------------------------------------------------------
 
     for (const tableDefinition of configuredTables) {
-      const { table: tableName, columns: desiredColumns } =
-        tableDefinition;
+      const { table: tableName, columns: desiredColumns } = tableDefinition;
 
       // -------------------------------------------------------------
       // TABLE DOES NOT EXIST
@@ -575,9 +573,7 @@ export async function syncSchema(onlyTables?: string[]): Promise<void> {
       // -------------------------------------------------------------
 
       if (columnsToAdd.length === 0 && columnsToDrop.length === 0) {
-        console.log(
-          `[schema-sync] ${tableName}: already in sync`,
-        );
+        console.log(`[schema-sync] ${tableName}: already in sync`);
 
         continue;
       }
@@ -609,10 +605,7 @@ export async function syncSchema(onlyTables?: string[]): Promise<void> {
               `PRIMARY KEY constraint.`,
           );
 
-          definition = definition.replace(
-            /\s+PRIMARY\s+KEY\b/i,
-            "",
-          );
+          definition = definition.replace(/\s+PRIMARY\s+KEY\b/i, "");
         }
 
         const isNotNull = /\bNOT\s+NULL\b/i.test(definition);
@@ -636,10 +629,7 @@ export async function syncSchema(onlyTables?: string[]): Promise<void> {
         // -----------------------------------------------------------
 
         if (isNotNull && !hasDefault) {
-          const nullableDefinition = definition.replace(
-            /\s+NOT\s+NULL\b/i,
-            "",
-          );
+          const nullableDefinition = definition.replace(/\s+NOT\s+NULL\b/i, "");
 
           await sql.query(`
             ALTER TABLE ${quoteIdentifier(tableName)}
@@ -700,19 +690,12 @@ export async function syncSchema(onlyTables?: string[]): Promise<void> {
         `);
       }
 
-      console.log(
-        `[schema-sync] ${tableName}: schema updated`,
-      );
+      console.log(`[schema-sync] ${tableName}: schema updated`);
     }
 
-    console.log(
-      "[schema-sync] database schema synchronized successfully",
-    );
+    console.log("[schema-sync] database schema synchronized successfully");
   } catch (error) {
-    console.error(
-      "[schema-sync] Error synchronizing database schema:",
-      error,
-    );
+    console.error("[schema-sync] Error synchronizing database schema:", error);
 
     throw error;
   }

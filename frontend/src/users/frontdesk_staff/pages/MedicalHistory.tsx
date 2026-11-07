@@ -22,11 +22,8 @@ type MedicalHistoryProps = {
   loading: boolean;
 };
 function MedicalHistory({
-  open,
   patients,
   selectedPatient,
-  setOpen,
-  loadData,
   loading,
 }: MedicalHistoryProps) {
   const [, setSearchParams] = useSearchParams();

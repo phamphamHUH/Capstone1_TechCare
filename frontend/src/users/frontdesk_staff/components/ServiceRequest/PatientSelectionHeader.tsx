@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import { User, Phone, Home } from "lucide-react";
 import type { Patient } from "../../../../interface/Patient";
 import calculateAge from "../../../../utils/calculateAge";
-import PatientSearchModal from "./RequestFooter/PatientSearchModal";
+import PatientSearchModal from "./PatientSearchModal";
 import { formatPatientAddress } from "../../../../utils/formats";
 
 type PatientSelectionHeaderProps = {

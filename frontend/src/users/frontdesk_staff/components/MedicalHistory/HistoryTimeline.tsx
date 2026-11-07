@@ -7,7 +7,7 @@ import {
 import type {
   HistoryRecord,
   Pagination,
-} from "../../../../../../interface/HistoryRecord";
+} from "../../../../interface/HistoryRecord";
 
 type HistoryTimelineProps = {
   records: HistoryRecord[];

@@ -13,6 +13,22 @@ export namespace acceptConsultationQueue {
   }
 }
 
+export namespace completeConsultationQueueEntry {
+  export interface body {
+    room: string;
+  }
+
+  export interface response {
+    message: string;
+    queue: Record<string, unknown>;
+    collected_item_count: number;
+  }
+
+  export interface error {
+    message: string;
+  }
+}
+
 export namespace cancelConsultationQueue {
   export interface body {
     room: string;

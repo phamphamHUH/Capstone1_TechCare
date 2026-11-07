@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import HistoryPanel from "./MedicalHistoryTab/HistoryPanel";
-import VisitDetails from "./MedicalHistoryTab/VisitDetails";
+import HistoryPanel from "./HistoryPanel";
+import VisitDetails from "./VisitDetails";
 import type { HistoryRecord } from "../../../../interface/HistoryRecord";
 
 type MedicalHistoryTabProps = {

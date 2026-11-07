@@ -14,13 +14,18 @@ import {
   addActivity,
   addAction,
   addFormTemplates,
+  addPackages,
 } from "../controllers/admin/postRequests.controller.js";
 import {
   updateFormTemplate,
+  updateService,
   updateUser,
   updateUserStatus,
 } from "../controllers/admin/updateRequests.controller.js";
-import { deleteTemplate } from "../controllers/admin/deleteRequest.controller.js";
+import {
+  deleteTemplate,
+  deleteService,
+} from "../controllers/admin/deleteRequest.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import authMiddleware from "../middlewares/auth.middleware.js";
 import adminMiddleware from "../middlewares/admin.middleware.js";
@@ -53,11 +58,14 @@ router.post("/services", addService);
 router.post("/activities", addActivity);
 router.post("/actions", addAction);
 router.post("/form-templates", addFormTemplates);
+router.post("/packages", addPackages);
 
 router.put("/form-templates/:form_id", updateFormTemplate);
 
 router.patch("/users/:user_id", upload.single("image"), updateUser);
 router.patch("/users/status/:user_id", updateUserStatus);
+router.patch("/services/:service_id/edit", updateService);
 
 router.delete("/form-templates/:form_id", deleteTemplate);
+router.delete("/services/:service_id/delete", deleteService);
 export default router;

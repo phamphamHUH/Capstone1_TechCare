@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Search, X } from "lucide-react";
 import api from "#lib/axios";
-import type { Patient } from "../../../../../interface/Patient";
+import type { Patient } from "../../../../interface/Patient";
 
 type PatientSearchModalProps = {
   onClose: () => void;

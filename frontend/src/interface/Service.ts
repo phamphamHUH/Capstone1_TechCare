@@ -9,6 +9,7 @@ export interface Service {
   service_category: string;
   created_at: string;
   updated_at: string;
+  service_ids?: string[];
 }
 
 export type SortOrder = "newest" | "oldest" | "a-z" | "z-a";

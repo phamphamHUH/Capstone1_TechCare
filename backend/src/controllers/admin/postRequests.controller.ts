@@ -1,4 +1,3 @@
-
 import { sql } from "../../config/db.js";
 import cloudinary from "../../config/cloudinary.js";
 import bcrypt from "bcryptjs";
@@ -8,6 +7,7 @@ import {
   generateUserId,
   generateServiceId,
   generateActivityId,
+  generatePackageId,
 } from "../../utils/generateId.js";
 import type {
   addUser,
@@ -15,6 +15,7 @@ import type {
   addActivity,
   addAction,
   addFormTemplates,
+  addPackages,
 } from "./dto/post.dto.js";
 
 ///// the token generation on add user is just for testing purposes,
@@ -364,8 +365,7 @@ export async function addAction(
   res: Response<addAction.response | addAction.error>,
 ) {
   try {
-    const { action_name, action_description, module, is_sensitive } =
-      req.body;
+    const { action_name, action_description, module, is_sensitive } = req.body;
 
     if (!action_name || !module) {
       return res.status(400).json({
@@ -514,5 +514,90 @@ export async function addFormTemplates(
     return res.status(500).json({
       message: "Internal Server Error",
     } as addFormTemplates.error);
+  }
+}
+
+// =========================
+// ADD PACKAGES
+// =========================
+export async function addPackages(
+  req: Request,
+  res: Response<addPackages.response | addPackages.error>,
+) {
+  try {
+    const { package_name, price, services } = req.body;
+
+    if (
+      !package_name ||
+      price === undefined ||
+      price === null ||
+      !Array.isArray(services) ||
+      services.length === 0
+    ) {
+      return res.status(400).json({
+        message: "Package name, price, and at least one service are required",
+      } as addPackages.error);
+    }
+
+    if (isNaN(Number(price)) || Number(price) < 0) {
+      return res.status(400).json({
+        message: "Price must be a valid non-negative number",
+      } as addPackages.error);
+    }
+
+    const serviceIds: string[] = [...new Set(services.map(String))];
+
+    const existingPackage = await sql`
+      SELECT package_id
+      FROM packages
+      WHERE package_name = ${package_name}
+    `;
+
+    if (existingPackage.length > 0) {
+      return res.status(409).json({
+        message: "Package already exists",
+      } as addPackages.error);
+    }
+
+    const foundServices = await sql`
+      SELECT service_id
+      FROM services
+      WHERE service_id = ANY(${serviceIds}::text[])
+    `;
+
+    if (foundServices.length !== serviceIds.length) {
+      return res.status(404).json({
+        message: "One or more services were not found",
+      } as addPackages.error);
+    }
+
+    const packageId = await generatePackageId();
+
+    const newPackage = await sql`
+      INSERT INTO packages (package_id, package_name, package_price)
+      VALUES (${packageId}, ${package_name}, ${Number(price)})
+      RETURNING *
+    `;
+
+    try {
+      await sql`
+        INSERT INTO package_services (package_id, service_id)
+        SELECT ${packageId}, unnest(${serviceIds}::text[])
+      `;
+    } catch (error) {
+      await sql`DELETE FROM packages WHERE package_id = ${packageId}`;
+      throw error;
+    }
+
+    return res.status(201).json({
+      message: "Package added successfully!",
+      package: { ...newPackage[0], services: serviceIds },
+    } as addPackages.response);
+  } catch (error) {
+    console.error("ADD PACKAGE ERROR:", error);
+
+    return res.status(500).json({
+      message: "error on package controller",
+    } as addPackages.error);
   }
 }
