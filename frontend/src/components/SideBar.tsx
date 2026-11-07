@@ -16,7 +16,7 @@ function SideBar({ open, page, setPage, navItems }: SideBarProps) {
         <>
           <div className="flex items-center justify-start gap-2 h-24 border-b border-gray-300  px-2 mb-6">
             <img
-              src="/assets/reyna-g-logo.png"
+              src="/assets/images/reyna-g-logo.png"
               alt="Logo"
               className="w-20 h-20 object-contain"
             />
