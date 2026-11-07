@@ -92,7 +92,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function PatientRegistration({ open, setOpen, loadData, loading }: PatientRegistrationProps) {
+function PatientRegistration({ loadData }: PatientRegistrationProps) {
   const [form, setForm] = useState<FormState>(initialForm);
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);

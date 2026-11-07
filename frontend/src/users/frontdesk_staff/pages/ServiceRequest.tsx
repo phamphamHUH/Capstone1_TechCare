@@ -18,9 +18,6 @@ const PAGE_SIZE = 10;
 
 function ServiceRequest({
   services,
-  loading,
-  open,
-  setOpen,
   loadData,
 }: ServiceRequestProps) {
   const [activeTab, setActiveTab] = useState("laboratory");

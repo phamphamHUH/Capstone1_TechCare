@@ -22,7 +22,6 @@ import type { Bill } from "../../interface/Billing";
 import type { Service } from "../../interface/Service";
 import MedicalHistory from "./pages/MedicalHistory";
 import type { Patient } from "../../interface/Patient";
-import "./frontdesk.css";
 
 function FrontdeskStaff() {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
@@ -41,20 +40,13 @@ function FrontdeskStaff() {
   const [searchParams, setSearchParams] = useSearchParams();
   const patientIdParam = searchParams.get("patient_id");
 
-  const page = searchParams.get("page") ?? "dashboard"; // this  looks at the URL
-  // "Look at the URL and check if there is a page value.
-  // If there is one, use it. If there is no page value, use dashboard as the default."
-
-  // searchParams.get("page")       // Get the value of "page"
-  // searchParams.has("page")       // Check if "page" exists
-  // searchParams.set("page", "billing") // Set a value (used internally)
-  // searchParams.delete("page")    // Remove a parameter
-  // searchParams.entries()         // Get all key-value pairs
+  const page = searchParams.get("page") ?? "dashboard";
 
   function setPage(newPage: string) {
     if (newPage === page) return;
     setSearchParams({ page: newPage });
   }
+
   const loadData = useCallback(async () => {
     // Only the newest refresh may update state, so a slow response cannot overwrite a newer one.
     const load = ++latestLoad.current;

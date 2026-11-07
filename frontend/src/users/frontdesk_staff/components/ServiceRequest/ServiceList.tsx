@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { Syringe, Trash2, Plus } from "lucide-react";
 import api from "#lib/axios";
 import type { Service } from "../../../../interface/Service";
-import RequestSuccessModal from "./ServiceList/RequestSuccessModal";
+import RequestSuccessModal from "./RequestSuccessModal";
 import ConfirmDialog from "../../../../components/ConfirmDialog";
 
 type ServiceListProps = {

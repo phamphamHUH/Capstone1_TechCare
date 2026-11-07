@@ -22,10 +22,7 @@ function PatientRecords({
   patients,
   selectedPatient,
   setSelectedPatient,
-  open,
-  setOpen,
   loadData,
-  loading,
 }: PatientRecordProps) {
   const [showEditPatient, setShowEditPatient] = useState(false);
   const [search, setSearch] = useState("");

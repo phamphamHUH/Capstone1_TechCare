@@ -1,5 +1,5 @@
 import { ChevronDown, Search } from "lucide-react";
-import type { SortOrder } from "../../../../../interface/Service";
+import type { SortOrder } from "../../../../interface/Service";
 
 type ServiceFiltersProps = {
   search: string;

@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from "react";
-import { useNavigate } from "react-router";
+import React, { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router";
 import type {
   PriorityFilter,
   QueueEntry,
@@ -12,6 +12,7 @@ import QueueTabs from "../components/Queues/QueueTabs";
 import QueueFilters from "../components/Queues/QueueFilters";
 import QueueTable from "../components/Queues/QueueTable";
 import RoomInfo from "../components/Queues/RoomInfo";
+import { connectQueueStream } from "../../../services/queue-sse/connectQueueStream";
 
 type QueuesProps = {
   queues: QueueEntry[];
@@ -26,19 +27,20 @@ const isToday = (iso: string) =>
   new Date(iso).toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }) ===
   new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
 
-function Queues({
-  queues,
-  queueRequests,
-  open,
-  setOpen,
-  loadData,
-  loading,
-}: QueuesProps) {
+function Queues({ queues, queueRequests, loadData }: QueuesProps) {
   const [activeTab, setActiveTab] = useState<QueueTab>("all");
-  const navigate = useNavigate();
+  const [, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState("");
   const [serviceFilter, setServiceFilter] = useState("all");
   const [priority, setPriority] = useState<PriorityFilter>("all");
+
+  useEffect(() => {
+    const closeQueueStream = connectQueueStream({
+      onQueueChanged: loadData,
+    });
+
+    return closeQueueStream;
+  }, [loadData]);
 
   const serviceOptions = Array.from(
     new Set(
@@ -94,13 +96,29 @@ function Queues({
           <h1 className="text-2xl font-bold text-gray-80">Queue Management</h1>
           <h3 className="text-sm">View Queue Status and Rooms in Real-Time</h3>
         </div>
-        <button className="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white" onClick={() => navigate("/frontdesk-staff?page=service-request")}>New Service Request</button>
+        <button
+          className="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white"
+          onClick={() => setSearchParams({ page: "service-request" })}
+        >
+          New Service Request
+        </button>
       </div>
 
       <div className="px-6">
         <QueueStats stats={stats} />
         <QueueTabs activeTab={activeTab} setActiveTab={(tab) => { setActiveTab(tab); setServiceFilter("all"); }} />
-        {queueRequests.some((request) => request.record_type === "laboratory") && <p className="my-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">Some paid requests still need laboratory forwarding. <button className="underline" onClick={() => navigate("/frontdesk-staff?page=billing")}>Open Billing</button> to send them.</p>}
+        {queueRequests.some((request) => request.record_type === "laboratory") && (
+          <p className="my-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+            Some paid requests still need laboratory forwarding.{" "}
+            <button
+              className="underline"
+              onClick={() => setSearchParams({ page: "billing" })}
+            >
+              Open Billing
+            </button>{" "}
+            to send them.
+          </p>
+        )}
         <QueueFilters
           search={search}
           setSearch={setSearch}
