@@ -102,67 +102,22 @@ export namespace skipQueueEntry {
   }
 }
 
-export namespace confirmLabRequestPayment {
-  export interface response {
-    message: string;
-    request: Record<string, unknown>[];
-    queued: boolean;
-    queues: Record<string, unknown>[];
-    bill: Record<string, unknown> | null;
-  }
-
-  export interface error {
-    message: string;
-  }
-}
-
 export namespace confirmPayment {
-  export type Bill = {
-    id: number;
-    bill_id: string;
-    patient_id: string;
-    status: string;
-
-    subtotal: string;
-    discount_type: string | null;
-    discount_rate: string | null;
-    discount_amount: string;
-    discounted_by: string | null;
-    total_amount: string;
-
-    payment_method: string;
-    reference_num: string | null;
-    paid_at: string | null;
-    received_by: string | null;
-
-    created_at: string;
-    updated_at: string;
-  };
-
-  export interface queueEntry {
-    id: number;
-    queue_id: string;
-    patient_id: string;
-    patient_name: string;
-    birthdate: string;
-    queue_number: number;
-    service_id: string;
-    service_name: string;
-    service_type: string;
-    service_category: string;
-    room: string;
-    is_priority: boolean;
-    status: string;
-    created_at: string;
-    updated_at: string;
-    [key: string]: unknown;
+  export interface body {
+    payment_method?: "Cash" | "Instapay/QRpH";
+    discount_type?: "Not Eligible" | "Senior Citizen" | "PWD";
+    amount_received?: number | string | null;
+    reference_num?: string | null;
+    priority?: boolean;
   }
 
   export interface response {
     message: string;
-    bill: Bill;
+    bill: Record<string, unknown>;
     change: number;
-    queues: queueEntry[];
+    already_paid: boolean;
+    queued: boolean; // false: payment is safe, forwarding can be retried
+    has_laboratory_items: boolean;
   }
 
   export interface error {

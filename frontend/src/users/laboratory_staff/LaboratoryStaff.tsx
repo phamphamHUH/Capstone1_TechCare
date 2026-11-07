@@ -24,35 +24,41 @@ function LaboratoryStaff() {
     setSearchParams({ page: newPage });
   }
 
-  const room = "Laboratory Room 2";
+  // Each lab staff member's room is the department on their account.
+  const room: string =
+    JSON.parse(sessionStorage.getItem("user") || "{}").department ||
+    "Laboratory Room 2";
 
-  const loadData = useCallback(async (background = false) => {
-    if (refreshing.current) return;
-    refreshing.current = true;
-    if (!background) setLoading(true);
-    setError(null);
+  const loadData = useCallback(
+    async (background = false) => {
+      if (refreshing.current) return;
+      refreshing.current = true;
+      if (!background) setLoading(true);
+      setError(null);
 
-    try {
-      const queueResponse = await api.get(
-        `/api/labstaff/laboratory-queues/room/${room}`,
-      );
-      const serviceResponse = await api.get(`/api/labstaff/services/${room}`);
-      setQueues(queueResponse.data ?? []);
-      setServices(serviceResponse.data ?? []);
-    } catch (err) {
-      const message =
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message || "Unable to fetch data.";
-      setError(message);
-      if (!background) {
-        setQueues([]);
-        setServices([]);
+      try {
+        const queueResponse = await api.get(
+          `/api/labstaff/laboratory-queues/room/${room}`,
+        );
+        const serviceResponse = await api.get(`/api/labstaff/services/${room}`);
+        setQueues(queueResponse.data ?? []);
+        setServices(serviceResponse.data ?? []);
+      } catch (err) {
+        const message =
+          (err as { response?: { data?: { message?: string } } })?.response
+            ?.data?.message || "Unable to fetch data.";
+        setError(message);
+        if (!background) {
+          setQueues([]);
+          setServices([]);
+        }
+      } finally {
+        refreshing.current = false;
+        if (!background) setLoading(false);
       }
-    } finally {
-      refreshing.current = false;
-      if (!background) setLoading(false);
-    }
-  }, []);
+    },
+    [room],
+  );
   const navItems = [
     {
       page: "dashboard",
@@ -78,21 +84,6 @@ function LaboratoryStaff() {
     })();
   }, [loadData, page]);
 
-  useEffect(() => {
-    if (page !== "laboratory-requests") return;
-    const refresh = () => {
-      if (document.visibilityState === "visible") void loadData(true);
-    };
-    window.addEventListener("focus", refresh);
-    document.addEventListener("visibilitychange", refresh);
-    const timer = window.setInterval(refresh, 15000);
-    return () => {
-      window.removeEventListener("focus", refresh);
-      document.removeEventListener("visibilitychange", refresh);
-      window.clearInterval(timer);
-    };
-  }, [loadData, page]);
-
   return (
     <div className="flex min-h-screen cursor-default">
       <SideBar open={open} page={page} setPage={setPage} navItems={navItems} />
@@ -101,7 +92,7 @@ function LaboratoryStaff() {
           open={open}
           setOpen={setOpen}
           loading={loading}
-          loadData={() => loadData()}
+          loadData={loadData}
         />
       )}
 
@@ -113,7 +104,7 @@ function LaboratoryStaff() {
           services={services}
           loading={loading}
           error={error}
-          loadData={() => loadData()}
+          loadData={loadData}
           room={room}
         />
       )}

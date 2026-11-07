@@ -154,8 +154,10 @@ VITE_API_BASE_URL=https://techcare-hui6.onrender.com
 
 | Variable | Description |
 |---|---|
-| `VITE_IS_DEVELOPMENT` | Selects the frontend's development or production configuration. |
-| `VITE_API_BASE_URL` | Base URL used by the frontend to send API requests. |
+| `VITE_API_BASE_URL` | Base URL used by production builds. Leave it empty when the backend serves the frontend. `vite dev` ignores it and uses the `/api` proxy. |
+| `API_PROXY_TARGET` | Optional shell variable that points the `vite dev` proxy somewhere other than `http://localhost:5000`. |
+
+`VITE_IS_DEVELOPMENT` is no longer read and can be removed from existing `.env` files.
 
 Vite exposes variables prefixed with `VITE_` to browser-side code. **Never store passwords, database URLs containing credentials, JWT signing secrets, or Cloudinary API secrets in frontend environment variables.**
 

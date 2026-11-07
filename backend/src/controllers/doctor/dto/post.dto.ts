@@ -13,6 +13,8 @@ export namespace addLaboratoryRequest {
     message: string;
     request: Record<string, unknown>[];
     items: Record<string, unknown>[];
+    bill: Record<string, unknown>;
+    is_new_bill: boolean;
   }
 
   export interface error {

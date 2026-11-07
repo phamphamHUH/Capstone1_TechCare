@@ -81,35 +81,6 @@ export namespace getPrintablePatientRecord {
   }
 }
 
-export namespace getAllBilling {
-  export interface bill {
-    bill_id: number | string;
-    patient_id: string;
-    services_ids?: number[];
-    discount_pct: number | string | null;
-    total_amount: number | string | null;
-    payment_method: string | null;
-    record_type?: "bill" | "laboratory_confirmation";
-    request_id?: string;
-    status: string;
-    receipt_id?: string | null;
-    receipt_issued_at?: string | null;
-    billed_at?: string;
-    created_at?: string;
-    [key: string]: unknown;
-  }
-
-  export interface response {
-    billing: bill[];
-    message?: string;
-  }
-
-  export interface error {
-    error: string;
-    message?: string;
-  }
-}
-
 export namespace getAllQueueEntries {
   export interface queueEntry {
     id: number;
@@ -198,19 +169,35 @@ export namespace getQueueRequests {
 
 export namespace getBills {
   export interface bill {
-    record_type: "laboratory" | string;
-    request_id: string;
+    bill_id: string;
     patient_id: string;
     patient_name: string;
-    is_paid: boolean;
-    requested_by: string;
-    requester_role: string;
+    sex: string | null;
+    birthdate: string | null;
+    age: number | null;
+    is_senior: boolean;
+    is_pwd: boolean;
+    status: "Pending" | "Paid";
+    // NUMERIC columns arrive as strings
+    subtotal: string;
+    discount_type: string | null;
+    discount_amount: string;
+    total_amount: string;
+    payment_method: string | null;
+    reference_num: string | null;
+    invoice_id: string | null;
+    paid_at: string | null;
     created_at: string;
-    [key: string]: unknown;
+    services: string[];
+    laboratory_status:
+      | "No laboratory tests"
+      | "Waiting for payment"
+      | "Needs forwarding"
+      | "Forwarded";
+    is_priority: boolean;
   }
 
   export interface response {
-    message: string;
     bills: bill[];
   }
 
@@ -220,47 +207,21 @@ export namespace getBills {
 }
 
 export namespace getBillDetails {
-  export interface BillDetails {
-    bill_id: string;
-    patient_id: string;
-    patient_name: string;
-    sex: string;
-    birthdate: string; // DATE, "YYYY-MM-DD" in JSON
-    age: number;
-    is_senior: boolean; // age >= 60
-    is_pwd: boolean;
-
-    status: "Pending" | "Paid" | "Cancelled";
-
-    // NUMERIC columns arrive as strings
-    subtotal: string;
-    discount_type: "Senior Citizen" | "PWD" | null;
-    discount_rate: string | null;
-    discount_id_no: string | null;
-    discount_amount: string;
-    total_amount: string;
-
-    payment_method: "Cash" | "Instapay/QRph" | null;
-    amount_tendered: string | null;
-    reference_no: string | null;
-    paid_at: string | null;
-    created_at: string;
-  }
-
   export interface BillItem {
-    line_type: "consultation" | "laboratory";
-    item_id: string; // consultation_record_id or lab_item_id
-    service_id: string;
+    line_type?: "consultation" | "laboratory";
+    item_id?: string; // consultation_record_id or lab_item_id
+    request_id?: string | null;
+    service_id?: string;
     service_name: string;
-    service_category: string;
-    price: string; // DECIMAL(10,2) arrives as a string
-    status: string;
-    created_at: string;
+    service_category?: string;
+    price: string | number | null; // null: older paid bill with no recorded price
+    quantity?: number;
+    status?: string;
+    created_at?: string;
   }
 
   export interface response {
-    message: string;
-    bill: BillDetails;
+    bill: getBills.bill;
     items: BillItem[];
   }
 
@@ -422,10 +383,81 @@ export namespace getPatientMedicalHistory {
     labItems: number;
   }
 
+  export interface doctor {
+    user_id: string | null;
+    full_name: string;
+    department: string | null;
+    role: string | null;
+  }
+
+  export interface service {
+    service_id: string | null;
+    service_name: string | null;
+    service_type: string | null;
+    room: string | null;
+  }
+
+  export interface consultation {
+    consultation_record_id: string;
+    queue_id: string | null;
+    findings: unknown;
+    status: string;
+    consulted_at: string;
+    updated_at: string;
+    doctor: doctor;
+    visit: {
+      queue_id: string | null;
+      queue_number: number | null;
+      is_priority: boolean | null;
+      status: string | null;
+      service: service;
+    };
+  }
+
+  export interface laboratoryResult {
+    result_id: string;
+    lab_item_id: string;
+    result_value: string;
+    unit: string | null;
+    reference_range: string | null;
+    flag: string | null;
+    remarks: string | null;
+    verified_by: string | null;
+    image_url: string | null;
+    verified_at: string | null;
+    created_at: string;
+  }
+
+  export interface laboratoryItem {
+    lab_item_id: string;
+    request_id: string;
+    service_id: string;
+    queue_id?: string | null;
+    status: string;
+    created_at: string;
+    updated_at: string;
+    service_name: string | null;
+    service_type: string | null;
+    room: string | null;
+    results: laboratoryResult[];
+  }
+
+  export interface laboratoryRequest {
+    request_id: string;
+    consultation_record_id: string | null;
+    doctor_id: string | null;
+    status: string;
+    is_paid: boolean;
+    requested_at: string;
+    updated_at: string;
+    doctor: doctor;
+    items: laboratoryItem[];
+  }
+
   export interface response {
     patient: Record<string, unknown>;
-    consultations: Record<string, unknown>[];
-    labRequests: Record<string, unknown>[];
+    consultations: consultation[];
+    labRequests: laboratoryRequest[];
     summary: summary;
   }
 

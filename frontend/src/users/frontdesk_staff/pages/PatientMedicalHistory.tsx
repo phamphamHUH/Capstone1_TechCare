@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
 import { ArrowLeft } from "lucide-react";
 import type { Patient } from "../../../interface/Patient";
+import type { Bill } from "../../../interface/Billing";
 import api from "../../../lib/axios";
 import Header from "../../../components/Header";
 import { formatPatientAddress } from "../../../utils/formats";
@@ -27,7 +28,7 @@ interface QueueEntry {
 }
 
 interface BillingRecord {
-  id: number;
+  id: string;
   patient_id: string;
   amount: number;
   status: string;
@@ -101,10 +102,18 @@ function PatientMedicalHistory({
 
       // Fetch all billing records and filter for this patient
       try {
-        const billingResponse = await api.get(`/api/fdstaff/billing`);
-        const patientBilling = billingResponse.data.billing.filter(
-          (bill: BillingRecord) => bill.patient_id === patientId,
-        );
+        const billingResponse = await api.get(`/api/fdstaff/billings`);
+        const patientBilling = (billingResponse.data.bills as Bill[])
+          .filter((bill) => bill.patient_id === patientId)
+          .map((bill) => ({
+            id: bill.bill_id,
+            patient_id: bill.patient_id,
+            amount: Number(bill.total_amount ?? 0),
+            status: bill.status.toLowerCase(),
+            description: bill.services.join(", "),
+            created_at: bill.created_at,
+            updated_at: bill.paid_at ?? bill.created_at,
+          }));
         setBillingRecords(patientBilling);
       } catch (error) {
         console.log("Billing records not available:", error);

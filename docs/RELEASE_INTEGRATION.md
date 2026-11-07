@@ -7,7 +7,7 @@ Integrated release commit: `fa674ea2c2cabe416c0cd5cbb2cc1693559b4834`.
 
 The nine conflicting files were resolved together around release's bill-based payment contract. The integration retains the feature branch's larger fonts, billing layout, confirmation/result dialogs, exact custom discounts, and invoice print/PDF output.
 
-- Front desk queue/history now read `GET /api/fdstaff/billings?status=Pending|Paid`.
+- Front desk queue, history and statistics all derive from one `GET /api/fdstaff/billings` response.
 - Bill service details load from `GET /api/fdstaff/billings/:bill_id/details`.
 - Payment and forwarding recovery use `PATCH /api/fdstaff/billings/:bill_id/pay`.
 - Payment fields match release: `payment_method`, `discount_type`, `amount_received`, `reference_num`, and `priority`. Bank transfers require a reference; senior and PWD eligibility are checked on the server.

@@ -52,8 +52,8 @@ router.post("/laboratory-results/:lab_item_id", saveLaboratoryResult);
 
 // PATCH ROUTES
 router.patch("/laboratory-requests/analysis/start", startLaboratoryAnalysis);
-// SSE TRIGGER ROUTES: these 4 change queue_entries, so each controller calls
-// publishQueueChange() and every Queue Monitor updates instantly.
+// Queue mutations publish through the shared stream so the doctor, lab, and
+// admin queue pages all refresh together.
 router.patch("/laboratory-queues/:queue_id/accept", acceptQueueEntry); // status -> serving
 router.patch("/laboratory-queues/:queue_id/skip", skipQueueEntry); // moved back in the queue
 router.patch("/laboratory-queues/:queue_id/cancel", cancelQueueEntry); // status -> cancelled

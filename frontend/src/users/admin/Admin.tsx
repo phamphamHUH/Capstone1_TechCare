@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
 import {
@@ -57,8 +56,8 @@ function Admin() {
       icon: <Users size={20} />,
     },
     {
-      page: "service-pricing",
-      label: "Service Pricing",
+      page: "service-management",
+      label: "Service Management",
       icon: <BadgeDollarSign size={20} />,
     },
     {
@@ -79,24 +78,23 @@ function Admin() {
   ];
 
   const currentPage =
-    navItems.find((item) => item.page === page)?.label ??
-    "Dashboard";
+    navItems.find((item) => item.page === page)?.label ?? "Dashboard";
 
   const loadData = useCallback(async () => {
     setLoading(true);
 
     try {
-      const [
-        serviceResponse,
-        userResponse,
-        activityResponse,
-      ] = await Promise.all([
-        api.get("/api/admin/services"),
-        api.get("/api/admin/users"),
-        api.get("/api/admin/activities"),
-      ]);
+      const [serviceResponse, userResponse, activityResponse] =
+        await Promise.all([
+          api.get("/api/admin/services"),
+          api.get("/api/admin/users"),
+          api.get("/api/admin/activities"),
+        ]);
 
-      setServices(serviceResponse.data.services ?? []);
+      setServices([
+        ...(serviceResponse.data.services ?? []),
+        ...(serviceResponse.data.packages ?? []),
+      ]);
       setUsers(userResponse.data.users ?? []);
       setActivities(activityResponse.data.activities ?? []);
     } catch (error) {
@@ -110,38 +108,32 @@ function Admin() {
   useEffect(() => {
     async function action() {
       await loadData();
-    };
-    action()
+    }
+    action();
   }, [loadData]);
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <SideBar
-        open={open}
-        page={page}
-        setPage={setPage}
-        navItems={navItems}
-      />
+      <SideBar open={open} page={page} setPage={setPage} navItems={navItems} />
 
       <div className="flex-1 min-w-0">
-        {page !== "queueing-monitor" && <Header
-          page={currentPage}
-          loading={loading}
-          open={open}
-          setOpen={setOpen}
-          loadData={loadData}
-        />}
-        {page === "queueing-monitor" && <button
-          onClick={() => setOpen(!open)}
-          className="text-2xl"
-        >
-          ☰
-        </button>}
+        {page !== "queueing-monitor" && (
+          <Header
+            page={currentPage}
+            loading={loading}
+            open={open}
+            setOpen={setOpen}
+            loadData={loadData}
+          />
+        )}
+        {page === "queueing-monitor" && (
+          <button onClick={() => setOpen(!open)} className="text-2xl">
+            ☰
+          </button>
+        )}
 
         <div className="pb-6">
-          {page === "dashboard" && (
-            <AdminDashboard users={users} />
-          )}
+          {page === "dashboard" && <AdminDashboard users={users} />}
 
           {page === "user-management" && (
             <UserManagement
@@ -153,7 +145,7 @@ function Admin() {
             />
           )}
 
-          {page === "service-pricing" && (
+          {page === "service-management" && (
             <ServicePricingManagement
               loading={loading}
               services={services}
@@ -185,9 +177,7 @@ function Admin() {
 
           {!navItems.some((item) => item.page === page) && (
             <div className="mx-6 rounded-xl border border-gray-200 bg-white p-8 text-center">
-              <h2 className="font-semibold text-gray-800">
-                Page not found
-              </h2>
+              <h2 className="font-semibold text-gray-800">Page not found</h2>
               <button
                 type="button"
                 onClick={() => setPage("dashboard")}

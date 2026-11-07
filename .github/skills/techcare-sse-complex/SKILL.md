@@ -1,5 +1,5 @@
 ---
-name: techcare-sse-realtime
+name: techcare-sse-complex
 description: Full-stack Server-Sent Events for TechCare - the live Queue Monitor pattern. Use when adding or debugging any realtime/live-update feature (queue board, lab board, notifications), writing a stream hub, the Express SSE route, publish-after-commit calls, the fetch-event-source client with auth header, reconnect/backoff, or a React hook. Trigger on SSE, EventSource, event-stream, publishQueueChange, live monitor, realtime, WebSocket replacement.
 ---
 
