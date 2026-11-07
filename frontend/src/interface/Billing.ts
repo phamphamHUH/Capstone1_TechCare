@@ -9,17 +9,23 @@ export type Bill = {
   is_senior: boolean;
   is_pwd: boolean;
   status: "Pending" | "Paid";
+  image_url: string | null;
   subtotal: number | string | null;
   discount_type: string | null;
   discount_amount: number | string | null;
   total_amount: number | string | null;
   payment_method: string | null;
   reference_num: string | null;
-  receipt_id: string | null;
+  invoice_id: string | null;
   paid_at: string | null;
+  received_by: string | null;
   created_at: string;
   services: string[];
-  laboratory_status: "No laboratory tests" | "Waiting for payment" | "Needs forwarding" | "Forwarded";
+  laboratory_status:
+    | "No laboratory tests"
+    | "Waiting for payment"
+    | "Needs forwarding"
+    | "Forwarded";
   is_priority: boolean;
 };
 

@@ -213,10 +213,14 @@ export async function addBills(
       reference_num = "",
     } = req.body as addBills.body;
 
+    const user_id =
+      req.user?.user_id ?? (!ENV.IS_PRODUCTION ? "U-26-1001-0004" : undefined);
+
     const validPaymentMethods = ["Cash", "Instapay/QRpH"];
     const validStatuses = ["Paid", "Pending"];
     const discount = Number(discount_pct);
-    const fixedDiscount = discount_amount === undefined ? null : Number(discount_amount);
+    const fixedDiscount =
+      discount_amount === undefined ? null : Number(discount_amount);
 
     if (
       !patient_id ||
@@ -225,15 +229,26 @@ export async function addBills(
       !Number.isFinite(discount) ||
       discount < 0 ||
       discount > 100 ||
-      (discount_type !== undefined && !["Not Eligible", "Senior Citizen", "PWD", "Custom"].includes(discount_type)) ||
-      ((discount_type === "Senior Citizen" || discount_type === "PWD") && (discount !== 20 || fixedDiscount !== null)) ||
-      (fixedDiscount !== null && (!Number.isFinite(fixedDiscount) || fixedDiscount < 0 || discount !== 0)) ||
+      (discount_type !== undefined &&
+        !["Not Eligible", "Senior Citizen", "PWD", "Custom"].includes(
+          discount_type,
+        )) ||
+      ((discount_type === "Senior Citizen" || discount_type === "PWD") &&
+        (discount !== 20 || fixedDiscount !== null)) ||
+      (fixedDiscount !== null &&
+        (!Number.isFinite(fixedDiscount) ||
+          fixedDiscount < 0 ||
+          discount !== 0)) ||
       !validPaymentMethods.includes(payment_method) ||
-      (payment_method !== "Cash" && (typeof reference_num !== "string" || !reference_num.trim() || reference_num.trim().length > 50)) ||
+      (payment_method !== "Cash" &&
+        (typeof reference_num !== "string" ||
+          !reference_num.trim() ||
+          reference_num.trim().length > 50)) ||
       !validStatuses.includes(status)
     ) {
       return res.status(400).json({
-        message: "A patient, services, valid discount, payment method and status are required.",
+        message:
+          "A patient, services, valid discount, payment method and status are required.",
       } as addBills.error);
     }
 
@@ -241,10 +256,17 @@ export async function addBills(
       COALESCE(birthdate::date <= ((NOW() AT TIME ZONE 'Asia/Manila')::date - INTERVAL '60 years')::date, false) AS is_senior,
       COALESCE(is_pwd, false) AS is_pwd FROM patients WHERE patient_id = ${patient_id}`;
     if (!patient.length) {
-      return res.status(404).json({ message: "Patient not found." } as addBills.error);
+      return res
+        .status(404)
+        .json({ message: "Patient not found." } as addBills.error);
     }
-    if ((discount_type === "Senior Citizen" && !patient[0].is_senior) || (discount_type === "PWD" && !patient[0].is_pwd)) {
-      return res.status(400).json({ message: "Patient is not eligible for this discount." });
+    if (
+      (discount_type === "Senior Citizen" && !patient[0].is_senior) ||
+      (discount_type === "PWD" && !patient[0].is_pwd)
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Patient is not eligible for this discount." });
     }
 
     const selected = await sql`
@@ -266,12 +288,29 @@ export async function addBills(
       quantity: 1,
     }));
     const subtotal = items.reduce((sum, item) => sum + item.price, 0);
-    if (items.some((item) => !Number.isFinite(item.price) || item.price < 0) || (fixedDiscount !== null && fixedDiscount > subtotal)) {
-      return res.status(400).json({ message: "Service prices must be valid and the discount cannot exceed the subtotal." });
+    if (
+      items.some((item) => !Number.isFinite(item.price) || item.price < 0) ||
+      (fixedDiscount !== null && fixedDiscount > subtotal)
+    ) {
+      return res.status(400).json({
+        message:
+          "Service prices must be valid and the discount cannot exceed the subtotal.",
+      });
     }
-    const total_amount = Math.round((fixedDiscount === null ? subtotal * (1 - discount / 100) : subtotal - fixedDiscount) * 100) / 100;
-    const savedDiscount = fixedDiscount === null ? discount : subtotal > 0 ? Math.round(fixedDiscount / subtotal * 10000) / 100 : 0;
-    const receipt_id = status === "Paid" ? `R-${randomUUID().slice(0, 12).toUpperCase()}` : null;
+    const total_amount =
+      Math.round(
+        (fixedDiscount === null
+          ? subtotal * (1 - discount / 100)
+          : subtotal - fixedDiscount) * 100,
+      ) / 100;
+    const savedDiscount =
+      fixedDiscount === null
+        ? discount
+        : subtotal > 0
+          ? Math.round((fixedDiscount / subtotal) * 10000) / 100
+          : 0;
+    const invoice_id =
+      status === "Paid" ? `I-${randomUUID().slice(0, 12).toUpperCase()}` : null;
     const client = await pool.connect();
     let bill: Record<string, any>;
     try {
@@ -280,9 +319,9 @@ export async function addBills(
       const bill_id = await generateBillId(client);
       const { rows } = await client.query(
         `INSERT INTO bills (
-           bill_id, patient_id, items, discount_pct, total_amount, payment_method, status,
-           receipt_id, receipt_issued_at, billed_at, subtotal, discount_type, discount_rate,
-           discount_amount, paid_at, reference_num
+           bill_id, patient_id, items,  total_amount, payment_method, status,
+           invoice_id, invoice_issued_at, billed_at, subtotal, discount_type, discount_rate,
+           discount_amount, paid_at, reference_num, received_by
          )
          VALUES ($1, $2, $3::jsonb, $4, $5, $6, $7, $8, $9, NOW(), $10, $11, $4, $12, $13, $14)
          RETURNING *`,
@@ -290,17 +329,21 @@ export async function addBills(
           bill_id,
           patient_id,
           JSON.stringify(items),
-          savedDiscount,
           total_amount,
           payment_method,
           status,
-          receipt_id,
-          receipt_id ? new Date().toISOString() : null,
+          invoice_id,
+          invoice_id ? new Date().toISOString() : null,
           subtotal,
-          savedDiscount ? (discount_type && discount_type !== "Not Eligible" ? discount_type : "Custom") : null,
+          savedDiscount
+            ? discount_type && discount_type !== "Not Eligible"
+              ? discount_type
+              : "Custom"
+            : null,
           Math.round((subtotal - total_amount) * 100) / 100,
           status === "Paid" ? new Date().toISOString() : null,
           payment_method === "Cash" ? null : reference_num,
+          user_id,
         ],
       );
       bill = rows[0];
@@ -446,7 +489,8 @@ export async function addLaboratoryRequest(
   res: Response<addLaboratoryRequest.response | addLaboratoryRequest.error>,
 ) {
   const { patient_id, services } = req.body as addLaboratoryRequest.body;
-  const user_id = req.user?.user_id ?? (!ENV.IS_PRODUCTION ? "U-26-1001-0004" : undefined);
+  const user_id =
+    req.user?.user_id ?? (!ENV.IS_PRODUCTION ? "U-26-1001-0004" : undefined);
 
   if (
     !patient_id ||
@@ -525,7 +569,8 @@ export async function addConsultationRecord(
     service_id,
     is_priority = false,
   } = req.body as addConsultationRecord.body;
-  const user_id = req.user?.user_id ?? (!ENV.IS_PRODUCTION ? "U-26-1001-0004" : undefined);
+  const user_id =
+    req.user?.user_id ?? (!ENV.IS_PRODUCTION ? "U-26-1001-0004" : undefined);
 
   if (!patient_id || !user_id || !service_id) {
     return res.status(400).json({

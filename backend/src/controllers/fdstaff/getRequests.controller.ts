@@ -347,7 +347,7 @@ export async function getQueueRequests(
 function selectBills(billId: string | null) {
   return sql`
     SELECT b.bill_id, b.patient_id, b.items, b.discount_type, b.discount_amount, b.payment_method,
-      b.reference_num, b.receipt_id, b.paid_at, b.created_at,
+      b.reference_num, b.invoice_id, b.paid_at, b.created_at,
       CASE WHEN LOWER(TRIM(b.status)) = 'paid' THEN 'Paid' ELSE 'Pending' END AS status,
       CASE WHEN LOWER(TRIM(b.status)) <> 'paid' AND lines.count > 0 THEN lines.subtotal ELSE b.subtotal END AS subtotal,
       CASE WHEN LOWER(TRIM(b.status)) <> 'paid' AND lines.count > 0 THEN lines.subtotal ELSE b.total_amount END AS total_amount,
@@ -367,11 +367,13 @@ function selectBills(billId: string | null) {
       END AS laboratory_status,
       lab.has_priority AS is_priority,
       CONCAT_WS(' ', p.first_name, p.last_name) AS patient_name,
+      CONCAT_WS(' ', u.first_name, u.last_name) AS received_by,
       p.sex, p.birthdate, DATE_PART('year', AGE(p.birthdate))::int AS age,
       COALESCE(DATE_PART('year', AGE(p.birthdate)) >= 60, false) AS is_senior,
       COALESCE(p.is_pwd, false) AS is_pwd
     FROM bills b
     JOIN patients p ON p.patient_id = b.patient_id
+    LEFT JOIN users u ON u.user_id = b.received_by
     LEFT JOIN LATERAL (
       SELECT ARRAY_AGG(l.service_name::text ORDER BY l.created_at, l.service_name) AS names,
         SUM(l.price) AS subtotal, COUNT(*) AS count
@@ -408,7 +410,9 @@ export async function getBills(
   // GET /api/fdstaff/billings
   try {
     const rows = await selectBills(null);
-    const bills = rows.map(({ items, ...bill }) => bill) as unknown as getBills.bill[];
+    const bills = rows.map(
+      ({ items, ...bill }) => bill,
+    ) as unknown as getBills.bill[];
     return res.status(200).json({ bills });
   } catch (error) {
     console.error("Unable to load bills:", error);
@@ -447,7 +451,8 @@ export async function getBillDetails(
     const { items: savedItems, ...bill } = rows[0];
     const saved = Array.isArray(savedItems) ? savedItems : [];
     // Paid bills keep the prices that were charged, never today's catalog prices.
-    const items = bill.status === "Paid" || linkedItems.length === 0 ? saved : linkedItems;
+    const items =
+      bill.status === "Paid" || linkedItems.length === 0 ? saved : linkedItems;
 
     return res.status(200).json({
       bill: bill as unknown as getBills.bill,
@@ -455,7 +460,9 @@ export async function getBillDetails(
     });
   } catch (error) {
     console.error("Unable to load bill details:", error);
-    return res.status(500).json({ message: "Bill details could not be loaded." });
+    return res
+      .status(500)
+      .json({ message: "Bill details could not be loaded." });
   }
 }
 
@@ -829,9 +836,7 @@ async function resolveLabItemsTable(): Promise<
   return null;
 }
 
-function buildFullName(
-  parts: Array<string | null | undefined>
-): string {
+function buildFullName(parts: Array<string | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
 }
 
@@ -840,9 +845,7 @@ function buildFullName(
 
 export async function getPatientMedicalHistory(
   req: Request<{ patient_id: string }>,
-  res: Response<
-    MedicalHistoryDTO.response | MedicalHistoryDTO.error
-  >
+  res: Response<MedicalHistoryDTO.response | MedicalHistoryDTO.error>,
 ) {
   try {
     const { patient_id } = req.params;
@@ -994,7 +997,6 @@ export async function getPatientMedicalHistory(
 
         ORDER BY r.created_at DESC
       `) as MedicalHistoryLabResultRow[];
-
     } else if (labItemsTable === "request_items") {
       labItems = (await sql`
         SELECT
@@ -1047,14 +1049,10 @@ export async function getPatientMedicalHistory(
     // GROUP LAB RESULTS BY LAB ITEM
     // ===================================================================
 
-    const resultsByLabItemId = new Map<
-      string,
-      MedicalHistoryLabResultRow[]
-    >();
+    const resultsByLabItemId = new Map<string, MedicalHistoryLabResultRow[]>();
 
     for (const result of labResults) {
-      const existing =
-        resultsByLabItemId.get(result.lab_item_id) ?? [];
+      const existing = resultsByLabItemId.get(result.lab_item_id) ?? [];
 
       existing.push(result);
 
@@ -1064,14 +1062,10 @@ export async function getPatientMedicalHistory(
     // GROUP LAB ITEMS BY REQUEST
     // ===================================================================
 
-    const itemsByRequestId = new Map<
-      string,
-      MedicalHistoryLabItemRow[]
-    >();
+    const itemsByRequestId = new Map<string, MedicalHistoryLabItemRow[]>();
 
     for (const item of labItems) {
-      const existing =
-        itemsByRequestId.get(item.request_id) ?? [];
+      const existing = itemsByRequestId.get(item.request_id) ?? [];
 
       existing.push(item);
 
@@ -1083,8 +1077,7 @@ export async function getPatientMedicalHistory(
 
     const consultationHistory: MedicalHistoryDTO.response["consultations"] =
       consultations.map((consultation) => ({
-        consultation_record_id:
-          consultation.consultation_record_id,
+        consultation_record_id: consultation.consultation_record_id,
         queue_id: consultation.queue_id,
         findings: consultation.findings,
         status: consultation.status,
@@ -1123,28 +1116,26 @@ export async function getPatientMedicalHistory(
 
     const labRequestHistory: MedicalHistoryDTO.response["labRequests"] =
       labRequests.map((request) => {
-        const items = (
-          itemsByRequestId.get(request.request_id) ?? []
-        ).map((item) => ({
-          lab_item_id: item.lab_item_id,
-          request_id: item.request_id,
-          service_id: item.service_id,
-          queue_id: item.queue_id,
-          status: item.status,
-          created_at: item.created_at,
-          updated_at: item.updated_at,
-          service_name: item.service_name,
-          service_type: item.service_type,
-          room: item.room,
+        const items = (itemsByRequestId.get(request.request_id) ?? []).map(
+          (item) => ({
+            lab_item_id: item.lab_item_id,
+            request_id: item.request_id,
+            service_id: item.service_id,
+            queue_id: item.queue_id,
+            status: item.status,
+            created_at: item.created_at,
+            updated_at: item.updated_at,
+            service_name: item.service_name,
+            service_type: item.service_type,
+            room: item.room,
 
-          results:
-            resultsByLabItemId.get(item.lab_item_id) ?? [],
-        }));
+            results: resultsByLabItemId.get(item.lab_item_id) ?? [],
+          }),
+        );
 
         return {
           request_id: request.request_id,
-          consultation_record_id:
-            request.consultation_record_id,
+          consultation_record_id: request.consultation_record_id,
           doctor_id: request.doctor_id,
           status: request.status,
           is_paid: request.is_paid,
@@ -1183,7 +1174,6 @@ export async function getPatientMedicalHistory(
     };
 
     return res.status(200).json(response);
-
   } catch (error) {
     console.error("getPatientMedicalHistory error:", error);
 

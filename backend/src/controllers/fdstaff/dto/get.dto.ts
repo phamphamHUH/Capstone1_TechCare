@@ -1,4 +1,3 @@
-
 export namespace getAllPatients {
   export interface patient {
     id?: number;
@@ -186,11 +185,15 @@ export namespace getBills {
     total_amount: string;
     payment_method: string | null;
     reference_num: string | null;
-    receipt_id: string | null;
+    invoice_id: string | null;
     paid_at: string | null;
     created_at: string;
     services: string[];
-    laboratory_status: "No laboratory tests" | "Waiting for payment" | "Needs forwarding" | "Forwarded";
+    laboratory_status:
+      | "No laboratory tests"
+      | "Waiting for payment"
+      | "Needs forwarding"
+      | "Forwarded";
     is_priority: boolean;
   }
 

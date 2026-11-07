@@ -124,18 +124,7 @@ const TABLES: TableDefinition[] = [
 
   {
     table: "packages",
-    createSQL: `CREATE TABLE IF NOT EXISTS packages (
-      id            SERIAL PRIMARY KEY,
-      package_id    VARCHAR(255) UNIQUE NOT NULL,
-      package_name  VARCHAR(255) NOT NULL,
-      package_price NUMERIC(10,2) NOT NULL,
-      status        VARCHAR(50) NOT NULL DEFAULT 'Active',
-      created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-    )`,
     columns: {
-      id: "SERIAL PRIMARY KEY",
-      package_id: "VARCHAR(255) UNIQUE NOT NULL",
       id: "SERIAL PRIMARY KEY",
       package_id: "VARCHAR(255) UNIQUE NOT NULL",
       package_name: "VARCHAR(255) NOT NULL",
@@ -148,11 +137,6 @@ const TABLES: TableDefinition[] = [
 
   {
     table: "package_services",
-    createSQL: `CREATE TABLE IF NOT EXISTS package_services (
-    id          SERIAL PRIMARY KEY,
-    package_id  VARCHAR(255) NOT NULL REFERENCES packages(package_id),
-    service_id  VARCHAR(255) NOT NULL REFERENCES services(service_id)
-  )`,
     columns: {
       id: "SERIAL PRIMARY KEY",
       package_id: "VARCHAR(255) NOT NULL REFERENCES packages(package_id)",
@@ -170,6 +154,32 @@ const TABLES: TableDefinition[] = [
       is_priority: "BOOLEAN NOT NULL DEFAULT FALSE",
       skip_count: "INTEGER NOT NULL DEFAULT 0",
       status: "VARCHAR(20) NOT NULL DEFAULT 'waiting'",
+      created_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      updated_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
+    },
+  },
+
+  {
+    table: "bills",
+    columns: {
+      id: "SERIAL PRIMARY KEY",
+      bill_id: "VARCHAR(255) UNIQUE NOT NULL",
+      patient_id: "VARCHAR(255) NOT NULL REFERENCES patients(patient_id)",
+      items: "JSONB",
+      status: "VARCHAR(20) NOT NULL DEFAULT 'Pending'",
+      invoice_id: "VARCHAR(50)",
+      invoice_issued_at: "TIMESTAMP",
+      billed_at: "TIMESTAMP",
+      subtotal: "NUMERIC(12,2) NOT NULL DEFAULT 0",
+      discount_type: "VARCHAR(50)",
+      discount_rate: "NUMERIC(5,2)",
+      discount_amount: "NUMERIC(12,2) NOT NULL DEFAULT 0",
+      discount_id_no: "VARCHAR(100)",
+      total_amount: "NUMERIC(12,2) NOT NULL DEFAULT 0",
+      payment_method: "VARCHAR(30) NOT NULL DEFAULT 'Cash'",
+      paid_at: "TIMESTAMP",
+      reference_num: "VARCHAR(50)",
+      received_by: "VARCHAR(255) REFERENCES users(user_id)",
       created_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
       updated_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
     },
