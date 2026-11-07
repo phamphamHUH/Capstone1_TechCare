@@ -149,7 +149,7 @@ function EditService({ service, services, onClose, loadData }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-3/7 bg-white py-4 px-6 shadow-xl rounded-lg">
+      <div className="w-4/11 bg-white py-4 px-6 shadow-xl rounded-lg">
         <div className="mb-5 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-semibold">

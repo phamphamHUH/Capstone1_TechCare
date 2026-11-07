@@ -17,13 +17,15 @@ import {
   addPackages,
 } from "../controllers/admin/postRequests.controller.js";
 import {
-  deleteService,
   updateFormTemplate,
   updateService,
   updateUser,
   updateUserStatus,
 } from "../controllers/admin/updateRequests.controller.js";
-import { deleteTemplate } from "../controllers/admin/deleteRequest.controller.js";
+import {
+  deleteTemplate,
+  deleteService,
+} from "../controllers/admin/deleteRequest.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import authMiddleware from "../middlewares/auth.middleware.js";
 import adminMiddleware from "../middlewares/admin.middleware.js";

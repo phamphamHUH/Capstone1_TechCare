@@ -2,6 +2,7 @@ import AddService from "../components/ServicePricing/AddService";
 import { isAxiosError } from "axios";
 import UniversalModal from "../../../components/UniversalModal";
 import {
+  AlertCircle,
   PlusIcon,
   Search,
   ChevronDown,
@@ -59,6 +60,8 @@ function ServicePricing({ services, loadData }: ServicePricingProps) {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [page, setPage] = useState(1);
 
@@ -117,33 +120,34 @@ function ServicePricing({ services, loadData }: ServicePricingProps) {
 
     try {
       setDeleting(true);
-
-      const response = await api.delete(
-        `/api/admin/services/${encodeURIComponent(selectedService.service_id)}`,
+      await api.delete(
+        `/api/admin/services/${encodeURIComponent(selectedService.service_id)}/delete`,
       );
-
-      alert(response.data.message);
-
       setShowDeleteModal(false);
       setSelectedService(null);
-
       await loadData();
     } catch (error: unknown) {
-      console.error("DELETE SERVICE ERROR:", error);
+      console.log("DELETE FAILED:", error);
 
       if (isAxiosError<{ message?: string }>(error)) {
-        alert(
+        console.log("STATUS:", error.response?.status);
+        console.log("BACKEND MESSAGE:", error.response?.data?.message);
+
+        setErrorMessage(
           error.response?.data?.message ||
             "Failed to delete service. Please try again.",
         );
       } else {
-        alert("An unexpected error occurred. Please try again.");
+        setErrorMessage("An unexpected error occurred.");
       }
+
+      setShowDeleteModal(false);
+      setSelectedService(null);
+      setShowErrorModal(true);
     } finally {
       setDeleting(false);
     }
   };
-
   useEffect(() => {
     loadData();
   }, [loadData]);
@@ -428,6 +432,24 @@ function ServicePricing({ services, loadData }: ServicePricingProps) {
             },
           ]}
           closeOnOverlayClick={true}
+        />
+      )}
+
+      {showErrorModal && (
+        <UniversalModal
+          isOpen={showErrorModal}
+          onClose={() => setShowErrorModal(false)}
+          title="Unable to Delete"
+          description={errorMessage}
+          type="danger"
+          icon={<AlertCircle size={25} strokeWidth={1.8} />}
+          actions={[
+            {
+              label: "Okay",
+              onClick: () => setShowErrorModal(false),
+              variant: "danger",
+            },
+          ]}
         />
       )}
     </div>
