@@ -4,6 +4,7 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 import axios from "axios";
 import api from "../lib/axios";
 import ClinicSlideshow from "./components/ClinicSlideshow";
+import LoginVideo from "./components/LoginVideo";
 
 const inputClass =
   "h-11 w-full rounded-md border border-gray-300 bg-white px-3 text-base text-gray-900 focus:border-sky-700 focus:outline-none focus:ring-1 focus:ring-sky-700";
@@ -91,34 +92,34 @@ function LoginPage() {
   }, []);
 
   return (
-    <div className="min-h-screen w-full bg-gray-100 flex items-center justify-center p-4 sm:p-6 lg:p-10">
-      <div className="w-full max-w-6xl bg-white rounded-lg border border-gray-200 p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+    <div className="relative min-h-screen w-full bg-gray-100 flex items-center justify-center p-4 sm:p-6 lg:p-10">
+      <ClinicSlideshow />
 
-        <div className="w-full h-full flex flex-col justify-center">
-          <ClinicSlideshow />
-        </div>
+      <div className="relative z-10 w-full max-w-6xl bg-white/45 backdrop-blur-sm rounded-lg border border-gray-200 p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
 
-        <div className="w-full flex items-center justify-center py-4 sm:py-8 px-4 sm:px-8 lg:px-12">
+        <LoginVideo />
+
+        <div className="w-full flex items-center justify-center px-4 sm:px-8 lg:px-12">
           <div className="w-full max-w-md">
 
-            <div className="flex flex-col items-center justify-center mb-6">
+            <div className="flex items-center justify-between gap-4 mb-6">
+              <div>
+                <h1 className="text-2xl font-semibold text-gray-900">
+                  Welcome back
+                </h1>
+                <p className="text-gray-800 text-sm mt-1">
+                  Please sign in to continue.
+                </p>
+              </div>
+
               <img
-                src="/assets/reyna-g-logo.png"
+                src="/assets/images/reyna-g-logo.png"
                 alt="Reyna G Diagnostic Laboratory"
-                className="h-20 sm:h-24 object-contain mb-1"
+                className="h-20 shrink-0 object-contain"
                 onError={(e) => {
                   e.currentTarget.style.display = "none";
                 }}
               />
-            </div>
-
-            <div className="text-left mb-6">
-              <h1 className="text-2xl font-semibold text-gray-900">
-                Welcome back
-              </h1>
-              <p className="text-gray-600 text-sm mt-1">
-                Please sign in to continue.
-              </p>
             </div>
 
             {errorMessage && (
@@ -211,7 +212,7 @@ function LoginPage() {
                 </div>
 
                 {showResetHelp && (
-                  <p className="mt-2 text-sm text-gray-600">
+                  <p className="mt-2 text-sm text-gray-800">
                     Please contact the administrator or front desk to reset your
                     password.
                   </p>
@@ -228,7 +229,7 @@ function LoginPage() {
               </button>
             </form>
 
-            <p className="mt-8 text-center text-sm text-gray-600">
+            <p className="mt-5 text-center text-sm text-gray-800">
               No account? Visit the front desk for registration.
             </p>
 
