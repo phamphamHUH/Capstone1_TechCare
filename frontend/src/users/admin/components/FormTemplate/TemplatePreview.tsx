@@ -70,7 +70,7 @@ export default function TemplatePreview({
           <div className="flex items-center justify-between border-b-2 border-sky-600 pb-4">
             <div className="flex items-center gap-4">
               <img
-                src="/assets/reyna-g-logo.png"
+                src="/assets/images/reyna-g-logo.png"
                 alt="Clinic Logo"
                 className="w-16 h-16 object-contain"
                 onError={(e) => {

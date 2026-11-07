@@ -192,7 +192,7 @@ function PrescriptionsView({ patient, patientId }: Props) {
             <div className="mx-auto max-w-4xl rounded-xl border border-slate-200 bg-white p-6">
               <header className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-300 pb-4">
                 <div className="flex items-center gap-3">
-                  <img src="/assets/reyna-g-logo.png" alt="Reyna G" className="h-10 w-10 object-contain" />
+                  <img src="/assets/images/reyna-g-logo.png" alt="Reyna G" className="h-10 w-10 object-contain" />
                   <div>
                     <h2 className="text-xs font-extrabold text-slate-900">
                       REYNA G DIAGNOSTIC MEDICAL CLINIC

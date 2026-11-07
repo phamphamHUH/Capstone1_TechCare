@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ClipboardList, FlaskConical, ReceiptText } from "lucide-react";
 import type { Patient } from "../../../interface/Patient";
 import type { Bill } from "../../../interface/Billing";
 import api from "../../../lib/axios";
@@ -325,26 +325,39 @@ function PatientMedicalHistory({
       <div className="px-6 py-8">
         {/* Overview Tab */}
         {activeTab === "overview" && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-6 bg-blue-50 rounded-lg">
-              <p className="text-gray-600 text-sm">Total Visits</p>
-              <p className="text-3xl font-bold text-blue-600 mt-2">
-                {queueHistory.length}
-              </p>
+          <section className="overflow-hidden rounded-2xl border border-gray-300 bg-gray-300">
+            <div className="grid grid-cols-1 gap-px md:grid-cols-3">
+              {[
+                {
+                  label: "Total Visits",
+                  subLabel: "Queue records",
+                  value: queueHistory.length,
+                  icon: ClipboardList,
+                },
+                {
+                  label: "Lab Requests",
+                  subLabel: "Laboratory requests",
+                  value: labRequests.length,
+                  icon: FlaskConical,
+                },
+                {
+                  label: "Billing Records",
+                  subLabel: "Bills on record",
+                  value: billingRecords.length,
+                  icon: ReceiptText,
+                },
+              ].map(({ label, subLabel, value, icon: Icon }) => (
+                <div key={label} className="bg-white p-6">
+                  <div className="mb-4 flex items-center gap-3">
+                    <Icon size={20} strokeWidth={1.5} className="shrink-0" />
+                    <p className="text-sm text-gray-500">{label}</p>
+                  </div>
+                  <p className="text-3xl font-semibold">{value}</p>
+                  <p className="mt-2 text-sm text-gray-400">{subLabel}</p>
+                </div>
+              ))}
             </div>
-            <div className="p-6 bg-green-50 rounded-lg">
-              <p className="text-gray-600 text-sm">Lab Requests</p>
-              <p className="text-3xl font-bold text-green-600 mt-2">
-                {labRequests.length}
-              </p>
-            </div>
-            <div className="p-6 bg-orange-50 rounded-lg">
-              <p className="text-gray-600 text-sm">Billing Records</p>
-              <p className="text-3xl font-bold text-orange-600 mt-2">
-                {billingRecords.length}
-              </p>
-            </div>
-          </div>
+          </section>
         )}
 
         {/* Visit History Tab */}

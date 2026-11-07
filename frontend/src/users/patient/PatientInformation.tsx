@@ -51,7 +51,7 @@ function PatientInformation() {
       <header className="fixed left-0 right-0 top-0 z-30 flex h-[70px] items-center border-b border-slate-200 bg-white">
         <div className={`flex h-full items-center border-r border-slate-200 px-4 transition-all ${sidebarOpen ? "w-[160px]" : "w-[72px]"}`}>
           <img
-            src="/assets/reyna-g-logo.png"
+            src="/assets/images/reyna-g-logo.png"
             alt="Reyna G"
             className="h-11 w-11 object-contain"
           />

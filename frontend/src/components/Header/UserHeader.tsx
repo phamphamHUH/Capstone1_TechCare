@@ -1,4 +1,4 @@
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, UserRound } from "lucide-react";
 import { useNavigate } from "react-router";
 
 function UserHeader() {
@@ -20,11 +20,20 @@ function UserHeader() {
 
   return (
     <div className="flex items-center gap-3 border-l border-gray-300 px-2">
-      <img
-        src={user?.profile_photo || "/assets/images.jpg"}
-        alt="profile"
-        className="w-12 h-12 rounded-full border"
-      />
+      {user.profile_photo ? (
+        <img
+          src={user.profile_photo}
+          alt="profile"
+          className="w-12 h-12 rounded-full border"
+        />
+      ) : (
+        <div
+          aria-hidden="true"
+          className="w-12 h-12 shrink-0 rounded-full border bg-gray-100 text-gray-500 flex items-center justify-center"
+        >
+          <UserRound size={24} strokeWidth={1.5} />
+        </div>
+      )}
 
       <div className="flex flex-col">
         <h1 className="text-lg font-semibold">
