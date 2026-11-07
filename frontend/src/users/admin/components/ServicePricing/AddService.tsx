@@ -146,7 +146,7 @@ function AddService({ loadData, onClose, services }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-3/7 bg-white py-4 px-6 shadow-xl rounded-lg">
+      <div className="w-4/11 bg-white py-4 px-6 shadow-xl rounded-lg">
         <div className="mb-5 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-semibold">Add Service</h2>
@@ -179,6 +179,8 @@ function AddService({ loadData, onClose, services }: Props) {
                   setServiceTab("single-service");
                   setPrice("");
                   setServiceName("");
+                  setSelectedServices([]);
+                  setCheckedServices([]);
                 }}
               />
               <FlaskConical size={25} />
@@ -380,11 +382,11 @@ function AddService({ loadData, onClose, services }: Props) {
                 )}
               </div>
 
-              <div className="w-full overflow-x-auto rounded-lg border border-gray-200 mt-5">
+              <div className="w-full overflow-x-auto rounded-lg border border-gray-200 mt-3">
                 <table className="w-full text-left text-xs">
                   <thead className="bg-gray-50 text-gray-600">
                     <tr>
-                      <th className="px-4 py-3">
+                      <th className="px-4 py-1">
                         <input
                           type="checkbox"
                           checked={allSelected}
@@ -392,12 +394,12 @@ function AddService({ loadData, onClose, services }: Props) {
                           className="cursor-pointer accent-sky-600"
                         />
                       </th>
-                      <th className="px-4 py-3 font-semibold">Service Name</th>
-                      <th className="px-4 py-3 font-semibold">
+                      <th className="px-4 py-1 font-semibold">Service Name</th>
+                      <th className="px-4 py-1 font-semibold">
                         Service Category
                       </th>
-                      <th className="px-4 py-3 font-semibold">Price</th>
-                      <th className="px-4 py-3 pl-7 text-center">
+                      <th className="px-4 py-1 font-semibold">Price</th>
+                      <th className="px-4 py-1 pl-7 text-center">
                         <button type="button">
                           <Trash size={15} />
                         </button>
@@ -468,9 +470,9 @@ function AddService({ loadData, onClose, services }: Props) {
                       <tr>
                         <td
                           colSpan={5}
-                          className="px-4 py-6 text-center text-gray-400"
+                          className="px-4 py-2 text-center text-gray-400"
                         >
-                          No services found.
+                          Search services to include.
                         </td>
                       </tr>
                     )}
@@ -480,7 +482,7 @@ function AddService({ loadData, onClose, services }: Props) {
             </div>
           </div>
         )}
-        <div className="flex items-center justify-between border-t mt-5 py-2">
+        <div className="flex items-center justify-between border-t border-gray-300 mt-5 py-2">
           <div className=" border-gray-200">
             <div className="flex items-center gap-2 ">
               <button

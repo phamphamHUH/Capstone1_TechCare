@@ -142,7 +142,7 @@ export async function generatePackageId() {
     nextNumber = Number(existingPackages[0].service_id.slice(-3)) + 1;
   }
   const sequence = String(nextNumber).padStart(3, "0");
-  return `S-${prefix}-${sequence}`;
+  return `P-${prefix}-${sequence}`;
 }
 
 export async function generateActivityId() {

@@ -1,7 +1,17 @@
 import AddService from "../components/ServicePricing/AddService";
-import { PlusIcon, Search, ChevronDown } from "lucide-react";
+import { isAxiosError } from "axios";
+import UniversalModal from "../../../components/UniversalModal";
+import {
+  PlusIcon,
+  Search,
+  ChevronDown,
+  AlertTriangle,
+  Trash2,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import type { Service } from "../../../interface/Service";
+import EditService from "../components/ServicePricing/EditService";
+import api from "#lib/axios";
 
 type ServicePricingProps = {
   services: Service[];
@@ -16,7 +26,7 @@ type ServiceFilter =
   | "consultation"
   | "laboratory"
   | "imaging"
-  | "packages";
+  | "package";
 type StatusFilter = "all" | "active" | "inactive";
 
 const PAGE_SIZE = 15;
@@ -46,6 +56,10 @@ function ServicePricing({ services, loadData }: ServicePricingProps) {
   const [showAddService, setShowAddService] = useState(false);
   const [servicesFilter, setServicesFilter] = useState<ServiceFilter>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [page, setPage] = useState(1);
 
   const filteredService = services.filter((service) => {
@@ -98,6 +112,38 @@ function ServicePricing({ services, loadData }: ServicePricingProps) {
     setPage(1);
   };
 
+  const handleDeleteService = async () => {
+    if (!selectedService) return;
+
+    try {
+      setDeleting(true);
+
+      const response = await api.delete(
+        `/api/admin/services/${encodeURIComponent(selectedService.service_id)}`,
+      );
+
+      alert(response.data.message);
+
+      setShowDeleteModal(false);
+      setSelectedService(null);
+
+      await loadData();
+    } catch (error: unknown) {
+      console.error("DELETE SERVICE ERROR:", error);
+
+      if (isAxiosError<{ message?: string }>(error)) {
+        alert(
+          error.response?.data?.message ||
+            "Failed to delete service. Please try again.",
+        );
+      } else {
+        alert("An unexpected error occurred. Please try again.");
+      }
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   useEffect(() => {
     loadData();
   }, [loadData]);
@@ -126,6 +172,19 @@ function ServicePricing({ services, loadData }: ServicePricingProps) {
           onClose={() => setShowAddService(false)}
           loadData={loadData}
           services={services}
+        />
+      )}
+
+      {showEditModal && selectedService && (
+        <EditService
+          key={selectedService.service_id}
+          service={selectedService}
+          services={services}
+          onClose={() => {
+            setSelectedService(null);
+            setShowEditModal(false);
+          }}
+          loadData={loadData}
         />
       )}
 
@@ -188,7 +247,7 @@ function ServicePricing({ services, loadData }: ServicePricingProps) {
               <option value="consultation">Consultation</option>
               <option value="laboratory">Laboratory</option>
               <option value="imaging">Imaging</option>
-              <option value="packages">Packages</option>
+              <option value="package">Package</option>
             </select>
             <ChevronDown size={15} className={chevronClass} />
           </label>
@@ -252,9 +311,29 @@ function ServicePricing({ services, loadData }: ServicePricingProps) {
                     {service.active ? "Active" : "Inactive"}
                   </td>
                   <td className="px-4 py-3 text-gray-600">
-                    <button className="border border-sky-600 px-2 py-1 rounded-md text-sky-600 cursor-pointer">
-                      View/Edit
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowEditModal(true);
+                          setSelectedService(service);
+                        }}
+                        className="border border-sky-600 px-2 py-1 rounded-md text-sky-600"
+                      >
+                        View/Edit
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedService(service);
+                          setShowDeleteModal(true);
+                        }}
+                        className="border border-red-500 px-2 py-1 rounded-md text-red-500 hover:bg-red-500 hover:text-white"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -317,6 +396,40 @@ function ServicePricing({ services, loadData }: ServicePricingProps) {
           </div>
         )}
       </div>
+      {showDeleteModal && selectedService && (
+        <UniversalModal
+          isOpen={showDeleteModal}
+          onClose={() => {
+            setShowDeleteModal(false);
+            setSelectedService(null);
+          }}
+          title={`Delete ${
+            selectedService.service_id.startsWith("P-") ? "Package" : "Service"
+          }?`}
+          description={`Are you sure you want to delete "${selectedService.service_name}"? This action cannot be undone.`}
+          type="danger"
+          icon={<AlertTriangle size={25} strokeWidth={1.8} />}
+          actions={[
+            {
+              label: "Cancel",
+              onClick: () => {
+                setShowDeleteModal(false);
+                setSelectedService(null);
+              },
+              variant: "secondary",
+              disabled: deleting,
+            },
+            {
+              label: "Yes, Delete",
+              onClick: handleDeleteService,
+              icon: <Trash2 size={14} />,
+              variant: "danger",
+              loading: deleting,
+            },
+          ]}
+          closeOnOverlayClick={true}
+        />
+      )}
     </div>
   );
 }

@@ -1,4 +1,3 @@
-
 export namespace getAllUsers {
   export interface user {
     id: number;
@@ -72,7 +71,7 @@ export namespace getAllActivities {
 // GET ALL SERVICES
 // =========================
 export namespace getAllservices {
-  export interface service {
+  export interface Service {
     id: number;
     service_id: string;
     service_type: string;
@@ -85,8 +84,24 @@ export namespace getAllservices {
     updated_at: string;
   }
 
+  export interface ServicePackage {
+    id: number;
+    service_id: string;
+    service_name: string;
+    service_type: "package";
+    service_category: string;
+    price: string;
+    room: string;
+    active: boolean;
+    service_ids: string[];
+    service_names: string[];
+    created_at: string;
+    updated_at: string;
+  }
+
   export interface response {
-    services: service[];
+    services: Service[];
+    packages: ServicePackage[];
   }
 
   export interface error {
@@ -156,7 +171,6 @@ export namespace getAllFormTemplates {
 // GET FORM TEMPLATE BY ID
 // =========================
 export namespace getFormTemplateById {
-
   export interface template {
     id: number;
     form_id: string;

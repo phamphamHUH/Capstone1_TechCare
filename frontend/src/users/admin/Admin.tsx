@@ -91,7 +91,10 @@ function Admin() {
           api.get("/api/admin/activities"),
         ]);
 
-      setServices(serviceResponse.data.services ?? []);
+      setServices([
+        ...(serviceResponse.data.services ?? []),
+        ...(serviceResponse.data.packages ?? []),
+      ]);
       setUsers(userResponse.data.users ?? []);
       setActivities(activityResponse.data.activities ?? []);
     } catch (error) {
