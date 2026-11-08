@@ -58,6 +58,15 @@ export type QueueStatistics = {
 export type QueueTab = "all" | "laboratory" | "consultation";
 export type PriorityFilter = "all" | "yes" | "none";
 
+// Which stat card is selected on the Queues page ("all" = none selected).
+export type QueueStatFilter =
+  | "all"
+  | "active"
+  | "priority"
+  | "waiting"
+  | "in-service"
+  | "completed-today";
+
 // The state of the live connection to the backend.
 export type QueueStreamStatus =
   | "connecting"

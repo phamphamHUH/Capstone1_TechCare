@@ -4,6 +4,7 @@ import type {
   PriorityFilter,
   QueueEntry,
   QueueRequests,
+  QueueStatFilter,
   QueueStatistics,
   QueueTab,
 } from "../../../interface/Queue";
@@ -27,12 +28,32 @@ const isToday = (iso: string) =>
   new Date(iso).toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }) ===
   new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
 
+// Status rules shared by the stat card counts and the stat card filters,
+// so a card's number always matches the rows it shows when clicked.
+const statusOf = (q: QueueEntry) => q.status.toLowerCase();
+const isActive = (q: QueueEntry) => !["completed", "cancelled"].includes(statusOf(q));
+const isWaiting = (q: QueueEntry) => statusOf(q) === "waiting";
+const isInService = (q: QueueEntry) =>
+  ["in service", "in progress", "serving"].includes(statusOf(q));
+const isCompletedToday = (q: QueueEntry) =>
+  statusOf(q) === "completed" && isToday(q.updated_at);
+
+const STAT_FILTERS: Record<QueueStatFilter, (q: QueueEntry) => boolean> = {
+  all: () => true,
+  active: isActive,
+  priority: (q) => isActive(q) && q.is_priority,
+  waiting: isWaiting,
+  "in-service": isInService,
+  "completed-today": isCompletedToday,
+};
+
 function Queues({ queues, queueRequests, loadData }: QueuesProps) {
   const [activeTab, setActiveTab] = useState<QueueTab>("all");
   const [, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState("");
   const [serviceFilter, setServiceFilter] = useState("all");
   const [priority, setPriority] = useState<PriorityFilter>("all");
+  const [statFilter, setStatFilter] = useState<QueueStatFilter>("all");
 
   useEffect(() => {
     const closeQueueStream = connectQueueStream({
@@ -55,17 +76,15 @@ function Queues({ queues, queueRequests, loadData }: QueuesProps) {
   ).filter(Boolean);
 
   const stats: QueueStatistics = useMemo(() => {
-    const active = queues.filter(
-      (q) => !["completed", "cancelled"].includes(q.status.toLowerCase()),
-    );
+    const count = (filter: QueueStatFilter) =>
+      queues.filter(STAT_FILTERS[filter]).length;
+
     return {
-      totalQueue: active.length,
-      priorityQueue: active.filter((q) => q.is_priority).length,
-      waiting: queues.filter((q) => q.status.toLowerCase() === "waiting").length,
-      inService: queues.filter((q) => ["in service", "in progress", "serving"].includes(q.status.toLowerCase())).length,
-      completedToday: queues.filter(
-        (q) => q.status.toLowerCase() === "completed" && isToday(q.updated_at),
-      ).length,
+      totalQueue: count("active"),
+      priorityQueue: count("priority"),
+      waiting: count("waiting"),
+      inService: count("in-service"),
+      completedToday: count("completed-today"),
     };
   }, [queues]);
 
@@ -73,6 +92,7 @@ function Queues({ queues, queueRequests, loadData }: QueuesProps) {
     const q = search.trim().toLowerCase();
 
     return queues.filter((entry) => {
+      if (!STAT_FILTERS[statFilter](entry)) return false;
       if (activeTab !== "all" && entry.service_type?.toLowerCase() !== activeTab)
         return false;
       if (serviceFilter !== "all" && entry.service_category !== serviceFilter)
@@ -87,7 +107,7 @@ function Queues({ queues, queueRequests, loadData }: QueuesProps) {
         return false;
       return true;
     });
-  }, [queues, activeTab, serviceFilter, priority, search]);
+  }, [queues, statFilter, activeTab, serviceFilter, priority, search]);
 
   return (
     <main className="flex-1 min-w-0 ">
@@ -105,7 +125,11 @@ function Queues({ queues, queueRequests, loadData }: QueuesProps) {
       </div>
 
       <div className="px-6">
-        <QueueStats stats={stats} />
+        <QueueStats
+          stats={stats}
+          activeFilter={statFilter}
+          onFilterChange={setStatFilter}
+        />
         <QueueTabs activeTab={activeTab} setActiveTab={(tab) => { setActiveTab(tab); setServiceFilter("all"); }} />
         {queueRequests.some((request) => request.record_type === "laboratory") && (
           <p className="my-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
