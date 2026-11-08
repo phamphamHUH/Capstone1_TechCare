@@ -13,6 +13,7 @@ import ResultReleaseControl from "./ResultReleaseControl";
 import {
   REPORT_FRAME_HTML,
   REPORT_MIN_HEIGHT,
+  REPORT_PAPER_LABEL,
   REPORT_WIDTH,
   waitForReportAssets,
 } from "./laboratoryPrint";
@@ -228,7 +229,7 @@ function ReportPreview({ report }: ReportPreviewProps) {
         <div className="flex flex-wrap items-center gap-2 border-b border-gray-300 bg-white px-4 py-3 text-sm">
           <Eye size={15} className="text-sky-600" />
           <h2 className="font-semibold">Print Preview</h2>
-          <span className="text-gray-500">A4 · Portrait</span>
+          <span className="text-gray-500">{REPORT_PAPER_LABEL}</span>
           <span
             className={`ml-auto rounded-full px-2.5 py-1 text-xs ${report.resultId ? "bg-sky-50 text-sky-700" : "bg-amber-50 text-amber-700"}`}
           >
@@ -279,8 +280,9 @@ function ReportPreview({ report }: ReportPreviewProps) {
         </div>
       </div>
       <p className="mt-3 text-xs leading-relaxed text-gray-500">
-        The print dialog shows final page breaks. Use A4 paper and turn off
-        browser headers and footers.
+        Use 8.5 × 13 inch long bond paper in portrait at 100% scale, with browser
+        headers and footers off. The report uses only the top half; the bottom
+        half stays blank.
       </p>
       {body && createPortal(<LaboratoryReport report={report} />, body)}
     </>
