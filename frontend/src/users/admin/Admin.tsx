@@ -117,20 +117,13 @@ function Admin() {
       <SideBar open={open} page={page} setPage={setPage} navItems={navItems} />
 
       <div className="flex-1 min-w-0">
-        {page !== "queueing-monitor" && (
-          <Header
-            page={currentPage}
-            loading={loading}
-            open={open}
-            setOpen={setOpen}
-            loadData={loadData}
-          />
-        )}
-        {page === "queueing-monitor" && (
-          <button onClick={() => setOpen(!open)} className="text-2xl">
-            ☰
-          </button>
-        )}
+        <Header
+          page={currentPage}
+          loading={loading}
+          open={open}
+          setOpen={setOpen}
+          loadData={loadData}
+        />
 
         <div className="pb-6">
           {page === "dashboard" && <AdminDashboard users={users} />}
