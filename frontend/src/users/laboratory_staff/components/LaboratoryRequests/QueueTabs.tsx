@@ -2,6 +2,7 @@ import { type Dispatch, type SetStateAction } from "react";
 
 export type MainFilter =
   | "all"
+  | "priority"
   | "waiting"
   | "serving"
   | "completed"

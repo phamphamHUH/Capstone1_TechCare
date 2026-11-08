@@ -1,13 +1,11 @@
 import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import api from "../../../../lib/axios";
-import QueueTabs from "./QueueTabs";
+import QueueTabs, { type MainFilter } from "./QueueTabs";
 import QueueTable from "./QueueTable";
 import type { LaboratoryItem } from "../../../../interface/LaboratoryItem";
 import type { PriorityFilter, QueueEntry } from "../../../../interface/Queue";
 import type { Service } from "../../../../interface/Service";
 import QueueFilters from "./LaboratoryQueuePanel/QueueFilter";
-
-type MainFilter = "all" | "waiting" | "serving" | "completed" | "skipped";
 
 type RequestTableProps = {
   queues: QueueEntry[];
@@ -24,6 +22,7 @@ type RequestTableProps = {
 
 const mainFilterValues: { label: string; value: MainFilter }[] = [
   { label: "All", value: "all" },
+  { label: "Priority", value: "priority" },
   { label: "Waiting", value: "waiting" },
   { label: "Serving", value: "serving" },
   { label: "Completed", value: "completed" },
@@ -91,15 +90,20 @@ function LaboratoryQueuePanel({
     };
   }, [openQueueAccordion]);
 
+  // Which tab a queue entry belongs to. "All" and "Priority" leave out
+  // completed entries; the other tabs match the status.
+  const matchesTab = (queue: QueueEntry, tab: MainFilter) => {
+    const status = queue.status?.toLowerCase();
+    if (tab === "all") return status !== "completed";
+    if (tab === "priority") return queue.is_priority && status !== "completed";
+    return status === tab;
+  };
+
   // SERVICE OPTIONS (based on the active status tab)
   const serviceOptions = Array.from(
     new Set(
       queues
-        .filter(
-          (q) =>
-            activeMainTab === "all" ||
-            q.status?.toLowerCase() === activeMainTab,
-        )
+        .filter((q) => matchesTab(q, activeMainTab))
         .map((q) => q.service_category),
     ),
   )
@@ -121,12 +125,7 @@ function LaboratoryQueuePanel({
 
   const filterQueues = queues
     .filter((queue) => {
-      const status = queue.status?.toLowerCase();
-
-      const matchesStatus =
-        activeMainTab === "all"
-          ? status !== "completed"
-          : status === activeMainTab;
+      const matchesStatus = matchesTab(queue, activeMainTab);
 
       const matchesSearch =
         !searchLower ||
@@ -153,7 +152,7 @@ function LaboratoryQueuePanel({
       const status = queue.status?.toLowerCase();
 
       if (status !== "completed") counts.all += 1;
-      if (queue.is_priority) counts.priority += 1;
+      if (queue.is_priority && status !== "completed") counts.priority += 1;
 
       switch (status) {
         case "waiting":
