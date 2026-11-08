@@ -89,7 +89,7 @@ TechCare-main/
 │   └── src/
 │       ├── main.tsx, App.tsx    # BrowserRouter + Routes
 │       ├── auth/                # LoginPage, SignupPage (dead), ClinicSlideshow, LeftSideBackground
-│       ├── components/          # shared SideBar.tsx, Header.tsx, Header/UserHeader.tsx
+│       ├── components/          # shared SideBar.tsx (+ sidebar/SidebarUserMenu.tsx: profile + logout dropdown), Header.tsx (☰, title, reload icon), UniversalModal, ConfirmDialog
 │       ├── lib/                 # axios.ts, env.config.ts, ProtectedRoute.tsx, utils.ts, protectRoute.ts (empty)
 │       ├── interface/           # shared TS types: Activity, Billing, FormTemplate, HistoryRecord, Patient, Queue, Service, User, lab types
 │       ├── services/queue-sse/connectQueueStream.ts   # SSE client
@@ -257,6 +257,9 @@ Only routes that exist in the code are listed. ✅ = works against the current s
 | GET | `/activities` | `getAllActivities` | `activity_logs` JOIN `actions`, newest first |
 | GET | `/users` | `getAllUsers` | explicit column list, no password hash |
 | GET | `/form-templates`, `/form-templates/:form_id` | list (filters `service_id`, `status`) / template + components |
+| GET | `/analytics/sales?range=` | `getSalesAnalytics` | admin dashboard. `range` = `today`/`7d`/`30d` (default)/`12mo`, else 400. Paid-bill totals vs previous period, outstanding now, timeline buckets (hour/day/month, empty ones included), by payment method, per service from the `bills.items` snapshot (before discounts) |
+| GET | `/analytics/services?range=` | `getServiceAnalytics` | service catalog ("inventory"): every service with price, active, orders in range (consultation records + lab items, not cancelled), last ordered |
+| GET | `/analytics/bills?range=` | `getAnalyticsBills` | bills behind the sales tiles: paid in range (newest first) and all unpaid now (oldest first), with patient names |
 | POST | `/add-user` | `addUser` | multipart, optional `image` → Cloudinary `techcare/user_photos`; requires username, password, names, sex, email, contact, address, birthdate, role, date_hired; 409 on duplicate username/email/contact; returns user without hash |
 | POST | `/services` | `addService` | requires `service_name, price, service_type, service_category, room` |
 | POST | `/activities` | `addActivity` | writes legacy `system_activity` for `req.user` |
@@ -359,7 +362,23 @@ Each role folder keeps one shell component that owns page state and data loading
 
 Data is passed down as props; there is no React Query/SWR or global store. Use `lib/axios.ts` (`api`), never raw `fetch`/`axios`, except the SSE client.
 
-- **admin**: pages `AdminDashboard`, `UserManagement`, `ServicePricing`, `ActivityMonitoring`, `QueueingMonitor` (SSE, full-screen board, `components/QueueMonitor/QueueColumn`), `FormTemplate` (drag-and-drop builder: `TemplateBuilder`, `BuilderCanvas`, `ComponentPalette`, `ComponentSettings`, `TemplatePreview`, `TemplateLibrary`, `sampleTemplates`). Shell loads services, users and activities.
+#### Nested component folders (required for new code)
+When a component has child components that only it uses, put them in a folder **named after the parent, next to the parent file**. The parent imports its own children; pages never import a grandchild directly.
+
+```
+components/<Feature>/
+├── Parent.tsx               imports ./Parent/ChildA, ./Parent/ChildB
+├── Parent/
+│   ├── ChildA.tsx
+│   ├── ChildB.tsx
+│   └── ChildA/              nest again if ChildA has its own children
+├── Leaf.tsx                 no children → stays flat
+└── formatters.ts            helpers shared across the whole feature stay at the feature root
+```
+
+Existing examples: `laboratory_staff/components/LaboratoryRequests/LaboratoryQueuePanel.tsx` + `LaboratoryQueuePanel/QueueFilter.tsx`; `admin/components/Dashboard/DetailModal.tsx` + `DetailModal/{SalesDetails,InventoryDetails,DetailParts}.tsx`; `components/SideBar.tsx` + `components/sidebar/SidebarUserMenu.tsx` (lowercase folder, predates the rule). When moving files, use `git mv` and fix relative imports (one more `../` per level). Older feature folders are still flat; restructure them only when you touch them.
+
+- **admin**: pages `AdminDashboard` (sales + service-catalog "inventory" analytics only: range buttons, clickable KPI tiles that open `components/Dashboard/DetailModal`, revenue column chart, top-selling services, scrollable service catalog; charts are plain HTML/Tailwind, no chart library; consultation `#2a78d6`, laboratory `#1baf7a`), `UserManagement`, `ServicePricing`, `ActivityMonitoring`, `QueueingMonitor` (SSE, full-screen board, `components/QueueMonitor/QueueColumn`), `FormTemplate` (drag-and-drop builder: `TemplateBuilder`, `BuilderCanvas`, `ComponentPalette`, `ComponentSettings`, `TemplatePreview`, `TemplateLibrary`, `sampleTemplates`). Shell loads services, users and activities, plus `/api/admin/analytics/{sales,services}` for the selected range (types in `interface/Analytics.ts`); the header reload button refreshes both.
 - **frontdesk_staff**: pages `FrontdeskDashboard`, `PatientRegistration` (+ `IdCard` via html2canvas), `PatientRecords`, `Queues`, `QueueManagement`, `ServiceRequest` (consultation/lab requests), `Billing` (unpaid lab confirmation + payment history), `PatientMedicalHistory`, `MedicalHistory` (history timeline components); `Test.tsx` is a leftover. Shell loads services, patients, queues, queue-requests, unpaid lab requests.
 - **laboratory_staff**: pages `LabstaffDashboard`, `LaboratoryRequests` (queue panel, accept/skip/complete), `LaboratoryResults` (analysis list, form-template driven `ResultEntry`, release control, print view `laboratoryPrint.ts`, `laboratoryValidation.ts`, `reportTemplates.ts`, adapters/API modules). `room` is hardcoded to `"Laboratory Room 2"` in `LaboratoryStaff.tsx`.
 - **doctor**: pages `DoctorDashboard`, `Consultation` / `PrescriptionPage` (`consultation/*`, `prescription/*` components), `ConsultationQueue`, `DigitizedDocument`, `MedicalHistory` (`/api/doctor/medical-history`), `LaboratoryRequest` (`ConsultationWorkspace`). The prescription components still use `mockData.ts`. Validation mirrors the backend (`consultation/validation.ts`).
@@ -417,7 +436,8 @@ Frontend `.env.local`: `VITE_IS_DEVELOPMENT=true`, `VITE_API_BASE_URL=http://loc
 - **Queue changes**: any write to `queue_entries` should end with `publishQueueChange()` after commit, and status comparisons should use `LOWER(status)`.
 - **Audit**: new code should log through `logActivity()` with an `actions` row, not `system_activity`.
 - **Never `SELECT *` a user and return it**: strip `password_hash` (the existing code does `const { password_hash, ...safe } = row`).
-- **Frontend**: follow the shell + `?page=` + `pages/` + `components/<Feature>/` pattern; reuse `components/SideBar` and `Header`; shared types live in `src/interface/`.
+- **Frontend**: follow the shell + `?page=` + `pages/` + `components/<Feature>/` pattern, with child-only components nested in a `Parent/` folder beside `Parent.tsx` (see "Nested component folders"); reuse `components/SideBar` and `Header`; shared types live in `src/interface/`.
+- **Analytics dates**: bill/record timestamps are UTC in `TIMESTAMP` columns; group and filter with `col AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Manila'` against Manila bounds from `utils/analyticsRange.ts` (`resolveAnalyticsRange`).
 
 ## Known Issues & Gotchas (verified against the code)
 

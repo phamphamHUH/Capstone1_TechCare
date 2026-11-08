@@ -1,3 +1,5 @@
+import SidebarUserMenu from "./sidebar/SidebarUserMenu";
+
 type SideBarProps = {
   open: boolean;
   page: string;
@@ -8,7 +10,7 @@ type SideBarProps = {
 function SideBar({ open, page, setPage, navItems }: SideBarProps) {
   return (
     <aside
-      className={`select-none bg-white border-r border-gray-300 text-black  transition-all duration-300 ${
+      className={`select-none sticky top-0 flex h-screen shrink-0 flex-col bg-white border-r border-gray-300 text-black  transition-all duration-300 ${
         open ? "w-64" : "w-0 p-0"
       }`}
     >
@@ -44,6 +46,11 @@ function SideBar({ open, page, setPage, navItems }: SideBarProps) {
               </a>
             ))}
           </nav>
+
+          {/* Profile + logout menu pinned to the bottom */}
+          <div className="mt-auto border-t border-gray-300 px-3 py-3">
+            <SidebarUserMenu />
+          </div>
         </>
       )}
     </aside>

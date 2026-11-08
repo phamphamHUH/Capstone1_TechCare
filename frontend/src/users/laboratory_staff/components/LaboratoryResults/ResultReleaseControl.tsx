@@ -32,16 +32,16 @@ export function ReleaseConfirmationContent({
   cancelRef,
 }: ReleaseConfirmationContentProps) {
   return (
-    <div className="font-sans text-xs text-[#253c60]">
-      <header className="flex items-start gap-3 border-b border-[#e0eafa] p-5">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#e1f5ff] text-[#1aa8ff]">
+    <div className="font-sans text-sm text-gray-900">
+      <header className="flex items-start gap-3 border-b border-gray-300 p-5">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-sky-50 text-sky-600">
           <Globe size={21} />
         </span>
         <div>
-          <Dialog.Title className="text-base font-bold">
+          <Dialog.Title className="text-lg font-semibold">
             Release Laboratory Result
           </Dialog.Title>
-          <Dialog.Description className="mt-1 text-[11px] leading-relaxed text-[#839abe]">
+          <Dialog.Description className="mt-1 text-sm leading-relaxed text-gray-500">
             Confirm release of this saved laboratory result. Patient online
             access is shown only when confirmed by the server.
           </Dialog.Description>
@@ -49,13 +49,13 @@ export function ReleaseConfirmationContent({
         <Dialog.Close
           disabled={pending}
           aria-label="Close release confirmation"
-          className="ml-auto cursor-pointer rounded p-1 text-[#8ca1bf] hover:bg-sky-50 focus-visible:outline-sky-500 disabled:cursor-not-allowed"
+          className="ml-auto cursor-pointer rounded p-1 text-gray-500 hover:bg-sky-50 focus-visible:outline-sky-500 disabled:cursor-not-allowed"
         >
           <X size={17} />
         </Dialog.Close>
       </header>
       <div className="p-5">
-        <dl className="grid grid-cols-2 gap-4 rounded border border-[#dce9fa] bg-[#f0f7fd] p-3 text-[11px] [&_dt]:mb-1 [&_dt]:text-[10px] [&_dt]:text-[#839abe] [&_dd]:wrap-anywhere">
+        <dl className="grid grid-cols-2 gap-4 rounded-lg border border-gray-300 bg-gray-50 p-3 text-sm [&_dt]:mb-1 [&_dt]:text-xs [&_dt]:text-gray-500 [&_dd]:wrap-anywhere">
           <div>
             <dt>Patient</dt>
             <dd className="font-semibold">
@@ -75,7 +75,7 @@ export function ReleaseConfirmationContent({
             <dd>{report.resultId || "Not saved"}</dd>
           </div>
         </dl>
-        <p className="my-4 text-[11px] leading-relaxed">
+        <p className="my-4 text-sm leading-relaxed">
           Review the patient details and result before confirming release.
         </p>
         {unavailableReason && (
@@ -83,11 +83,11 @@ export function ReleaseConfirmationContent({
         )}
         {error && <AnalysisNotice error>{error}</AnalysisNotice>}
       </div>
-      <footer className="flex flex-wrap justify-end gap-2 border-t border-[#e0eafa] p-4">
+      <footer className="flex flex-wrap justify-end gap-2 border-t border-gray-300 p-4">
         <Dialog.Close
           ref={cancelRef}
           disabled={pending}
-          className="cursor-pointer rounded border border-[#e1eaf6] px-4 py-2 text-[11px] text-[#188bff] hover:bg-sky-50 focus-visible:outline-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
+          className="min-h-9 cursor-pointer rounded-md border border-gray-300 px-4 py-2 text-sm text-sky-700 hover:bg-sky-50 focus-visible:outline-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Cancel
         </Dialog.Close>
@@ -195,14 +195,14 @@ export default function ResultReleaseControl({
     <>
       <section
         aria-label="Result release and online availability"
-        className="mt-4 flex flex-wrap items-center gap-3 rounded border border-[#dce9fa] bg-[#f8fcff] p-4"
+        className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-gray-300 bg-gray-50 p-4"
       >
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#e1f5ff] text-[#1aa8ff]">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-sky-50 text-sky-600">
           <Globe size={18} />
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="text-xs font-semibold">Result Release</h2>
-          <p className="mt-1 text-[11px] text-[#839abe]">
+          <h2 className="text-base font-semibold">Result Release</h2>
+          <p className="mt-1 text-sm text-gray-500">
             {available
               ? "This result is available online for the patient."
               : released
@@ -210,14 +210,14 @@ export default function ResultReleaseControl({
                 : "Review and release the saved laboratory result."}
           </p>
           {releasedAt && (
-            <p className="mt-1 text-[10px] text-[#839abe]">
+            <p className="mt-1 text-xs text-gray-500">
               Released: {formatLabDate(releasedAt)}
             </p>
           )}
         </div>
         <span
           role="status"
-          className={`rounded-full px-2.5 py-1 text-[10px] ${available ? "bg-green-50 text-green-700" : "bg-[#edf3f9] text-[#6e86a6]"}`}
+          className={`rounded-full px-2.5 py-1 text-xs ${available ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"}`}
         >
           {status}
         </span>
@@ -230,7 +230,7 @@ export default function ResultReleaseControl({
             setError("");
             setOpen(true);
           }}
-          className="inline-flex cursor-pointer items-center justify-center gap-2 rounded border border-[#188bff] bg-[#188bff] px-4 py-2 text-[11px] font-medium text-white hover:bg-[#0879eb] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+          className="inline-flex min-h-9 cursor-pointer items-center justify-center gap-2 rounded-md border border-sky-500 bg-sky-500 px-4 py-2 text-sm font-medium text-white hover:bg-sky-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
         >
           <Send size={13} />
           {released ? "Released" : "Release Result"}
@@ -248,7 +248,7 @@ export default function ResultReleaseControl({
             <Dialog.Popup
               initialFocus={cancelRef}
               finalFocus={triggerRef}
-              className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-xl border border-[#dce9fa] bg-white shadow-xl outline-none"
+              className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl border border-gray-300 bg-white shadow-xl outline-none"
             >
               <ReleaseConfirmationContent
                 report={report}

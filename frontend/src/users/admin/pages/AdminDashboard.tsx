@@ -1,195 +1,303 @@
-
+import { useCallback, useState, type ReactNode } from "react";
 import {
-  Users,
-  UserCheck,
-  Stethoscope,
-  FlaskConical,
-  ClipboardList,
-  Activity,
-  ShieldCheck,
+  Banknote,
+  Receipt,
+  Calculator,
+  BadgePercent,
+  Hourglass,
+  TrendingUp,
+  PieChart,
+  Trophy,
+  Package,
+  PackageCheck,
+  PackageX,
+  Tag,
+  ShoppingCart,
+  CircleSlash,
 } from "lucide-react";
 
-import type { User } from "../../../interface/User";
+import type {
+  AnalyticsRange,
+  SalesAnalytics,
+  ServiceAnalytics,
+} from "../../../interface/Analytics";
+import StatTile from "../components/Dashboard/StatTile";
+import RevenueChart from "../components/Dashboard/RevenueChart";
+import SalesBreakdown from "../components/Dashboard/SalesBreakdown";
+import TopServicesTable from "../components/Dashboard/TopServicesTable";
+import ServiceCatalogTable from "../components/Dashboard/ServiceCatalogTable";
+import DetailModal, { type OpenDetail } from "../components/Dashboard/DetailModal";
+import type { SalesDetailKind } from "../components/Dashboard/DetailModal/SalesDetails";
+import type { InventoryDetailKind } from "../components/Dashboard/DetailModal/InventoryDetails";
+import {
+  RANGE_OPTIONS,
+  formatNumber,
+  formatPeso,
+  formatPesoWhole,
+  percentChange,
+} from "../components/Dashboard/formatters";
 
 type AdminDashboardProps = {
-  users: User[];
+  range: AnalyticsRange;
+  setRange: (range: AnalyticsRange) => void;
+  sales: SalesAnalytics | null;
+  services: ServiceAnalytics | null;
+  loading: boolean;
+  error: string | null;
 };
 
-function AdminDashboard({ users }: AdminDashboardProps) {
-  const doctors = users.filter(
-    (user) => user.role === "doctor",
-  ).length;
+const iconProps = { size: 20, strokeWidth: 1.5 };
 
-  const labStaff = users.filter(
-    (user) => user.role === "laboratory-staff",
-  ).length;
+// Admin dashboard: sales analytics and service catalog ("inventory") analytics.
+function AdminDashboard({
+  range,
+  setRange,
+  sales,
+  services,
+  loading,
+  error,
+}: AdminDashboardProps) {
+  const rangeOption = RANGE_OPTIONS.find((option) => option.value === range) ?? RANGE_OPTIONS[2];
+  const summary = sales?.summary;
+  const catalog = services?.summary;
 
-  const frontDeskStaff = users.filter(
-    (user) => user.role === "frontdesk-staff",
-  ).length;
+  const [openDetail, setOpenDetail] = useState<OpenDetail | null>(null);
+  const closeDetail = useCallback(() => setOpenDetail(null), []);
+  const openSales = (kind: SalesDetailKind) => () => setOpenDetail({ group: "sales", kind });
+  const openInventory = (kind: InventoryDetailKind) => () => setOpenDetail({ group: "inventory", kind });
 
-  const patients = users.filter(
-    (user) => user.role === "patient",
-  ).length;
-
-  // Assumes User.active is a boolean.
-  const activeUsers = users.filter(
-    (user) => user.active === true,
-  ).length;
+  const periodLabel = range === "today" ? "Today" : `Last ${rangeOption.label}`;
 
   return (
     <main className="min-w-0">
-      <div className="space-y-6 px-6">
-        {/* Dashboard summary */}
-        <section className="bg-white border border-gray-300 rounded-2xl overflow-hidden">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-gray-300">
-            <SummaryItem
-              icon={<Users size={20} strokeWidth={1.5} />}
-              label="Total Users"
-              value={users.length}
-              description="Registered accounts"
-            />
-
-            <SummaryItem
-              icon={<UserCheck size={20} strokeWidth={1.5} />}
-              label="Active Users"
-              value={activeUsers}
-              description="Currently active accounts"
-            />
-
-            <SummaryItem
-              icon={<Activity size={20} strokeWidth={1.5} />}
-              label="Today's Activity"
-              value="—"
-              description="Activity summary unavailable"
-            />
-
-            <SummaryItem
-              icon={<ShieldCheck size={20} strokeWidth={1.5} />}
-              label="System Status"
-              value="Operational"
-              description="Status not verified by this page"
-              valueClassName="text-xl"
-            />
+      <div className={`space-y-6 px-6 transition-opacity ${loading ? "opacity-60" : ""}`}>
+        {/* Range selector */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">Sales &amp; Service Analytics</h2>
+            <p className="text-sm text-gray-500">
+              Paid bills and service orders · Manila time
+            </p>
           </div>
-        </section>
 
-        {/* Users by role */}
-        <section className="bg-white border border-gray-300 rounded-2xl overflow-hidden">
-          <div className="px-6 py-5 border-b border-gray-300">
-            <div className="flex items-center gap-3">
-              <ClipboardList size={20} strokeWidth={1.5} />
+          <div role="group" aria-label="Date range" className="inline-flex rounded-lg border border-gray-300 bg-white p-0.5">
+            {RANGE_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setRange(option.value)}
+                aria-pressed={range === option.value}
+                className={`rounded-md px-3 py-1.5 text-sm cursor-pointer transition-colors ${
+                  range === option.value
+                    ? "bg-sky-500 font-medium text-white"
+                    : "text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
-              <div>
-                <h2 className="text-lg font-semibold">
-                  System Overview
-                </h2>
+        {error && (
+          <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+            {error}
+          </p>
+        )}
 
-                <p className="text-sm text-gray-500 mt-1">
-                  Overview of registered users by role
-                </p>
+        {!sales && !services && loading && (
+          <p className="py-16 text-center text-sm text-gray-400">Loading analytics…</p>
+        )}
+
+        {/* ================= SALES ================= */}
+        {summary && sales && (
+          <>
+            <section className="bg-white border border-gray-300 rounded-2xl overflow-hidden">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-gray-300">
+                <StatTile
+                  icon={<Banknote {...iconProps} />}
+                  label="Revenue"
+                  onClick={openSales("revenue")}
+                  value={formatPesoWhole(summary.revenue)}
+                  caption={`vs ${rangeOption.previous}`}
+                  change={percentChange(summary.revenue, summary.previous_revenue)}
+                  changeLabel={`${rangeOption.previous}: ${formatPeso(summary.previous_revenue)}`}
+                />
+                <StatTile
+                  icon={<Receipt {...iconProps} />}
+                  label="Paid Bills"
+                  onClick={openSales("paid-bills")}
+                  value={formatNumber(summary.paid_bills)}
+                  caption={`vs ${rangeOption.previous}`}
+                  change={percentChange(summary.paid_bills, summary.previous_paid_bills)}
+                  changeLabel={`${rangeOption.previous}: ${summary.previous_paid_bills}`}
+                />
+                <StatTile
+                  icon={<Calculator {...iconProps} />}
+                  label="Average Bill"
+                  onClick={openSales("average-bill")}
+                  value={formatPesoWhole(summary.average_bill)}
+                  caption="Per paid bill"
+                />
+                <StatTile
+                  icon={<BadgePercent {...iconProps} />}
+                  label="Discounts Given"
+                  onClick={openSales("discounts")}
+                  value={formatPesoWhole(summary.discounts)}
+                  caption={`From ${formatPesoWhole(summary.gross_sales)} gross`}
+                />
+                <StatTile
+                  icon={<Hourglass {...iconProps} />}
+                  label="Outstanding"
+                  onClick={openSales("outstanding")}
+                  value={formatPesoWhole(summary.pending_amount)}
+                  caption={`${summary.pending_bills} unpaid ${summary.pending_bills === 1 ? "bill" : "bills"} now`}
+                />
               </div>
+            </section>
+
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+              <Panel
+                className="xl:col-span-2"
+                icon={<TrendingUp {...iconProps} />}
+                title="Revenue Over Time"
+                subtitle={`Paid bills after discounts, by ${sales.bucket}`}
+              >
+                <div className="px-6 pt-10 pb-6">
+                  <RevenueChart timeline={sales.timeline} bucket={sales.bucket} />
+                </div>
+              </Panel>
+
+              <Panel
+                icon={<PieChart {...iconProps} />}
+                title="Sales Breakdown"
+                subtitle={periodLabel}
+              >
+                <div className="p-6">
+                  <SalesBreakdown
+                    serviceTypes={sales.service_types}
+                    paymentMethods={sales.payment_methods}
+                  />
+                </div>
+              </Panel>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-gray-300">
-            <RoleSummary
-              icon={<Stethoscope size={22} strokeWidth={1.5} />}
-              label="Doctors"
-              value={doctors}
-              description="Registered doctors"
-            />
+            <Panel
+              icon={<Trophy {...iconProps} />}
+              title="Top-Selling Services"
+              subtitle="Ranked by revenue, before discounts"
+            >
+              <TopServicesTable services={sales.services} />
+            </Panel>
+          </>
+        )}
 
-            <RoleSummary
-              icon={<FlaskConical size={22} strokeWidth={1.5} />}
-              label="Laboratory Staff"
-              value={labStaff}
-              description="Registered laboratory staff"
-            />
+        {/* ================= SERVICE CATALOG (INVENTORY) ================= */}
+        {catalog && services && (
+          <>
+            <section className="bg-white border border-gray-300 rounded-2xl overflow-hidden">
+              <div className="px-6 py-5 border-b border-gray-300">
+                <div className="flex items-center gap-3">
+                  <Package {...iconProps} />
+                  <div>
+                    <h2 className="text-lg font-semibold">Service Inventory</h2>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Services offered and how often each was ordered
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-            <RoleSummary
-              icon={<ClipboardList size={22} strokeWidth={1.5} />}
-              label="Front Desk Staff"
-              value={frontDeskStaff}
-              description="Registered front desk staff"
-            />
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-gray-300">
+                <StatTile
+                  icon={<PackageCheck {...iconProps} />}
+                  label="Active Services"
+                  onClick={openInventory("active")}
+                  value={formatNumber(catalog.active_services)}
+                  caption={`${catalog.consultation_services} consultation · ${catalog.laboratory_services} laboratory`}
+                />
+                <StatTile
+                  icon={<PackageX {...iconProps} />}
+                  label="Inactive Services"
+                  onClick={openInventory("inactive")}
+                  value={formatNumber(catalog.inactive_services)}
+                  caption={`Of ${catalog.total_services} total`}
+                />
+                <StatTile
+                  icon={<Tag {...iconProps} />}
+                  label="Average Price"
+                  onClick={openInventory("average-price")}
+                  value={formatPesoWhole(catalog.average_price)}
+                  caption="Across active services"
+                />
+                <StatTile
+                  icon={<ShoppingCart {...iconProps} />}
+                  label="Orders"
+                  onClick={openInventory("orders")}
+                  value={formatNumber(catalog.total_orders)}
+                  caption="Consultations + lab tests"
+                />
+                <StatTile
+                  icon={<CircleSlash {...iconProps} />}
+                  label="Not Ordered"
+                  onClick={openInventory("not-ordered")}
+                  value={formatNumber(catalog.unused_active_services)}
+                  caption="Active services with no orders"
+                />
+              </div>
+            </section>
 
-            <RoleSummary
-              icon={<Users size={22} strokeWidth={1.5} />}
-              label="Patients"
-              value={patients}
-              description="Registered patients"
-            />
-          </div>
-        </section>
+            <Panel
+              icon={<Package {...iconProps} />}
+              title="Service Catalog"
+              subtitle="Sorted by orders in the selected period"
+              bodyClassName="pt-4"
+            >
+              <ServiceCatalogTable services={services.services} />
+            </Panel>
+          </>
+        )}
       </div>
+
+      {/* Tile detail modal */}
+      {openDetail && (
+        <DetailModal
+          detail={openDetail}
+          range={range}
+          periodLabel={periodLabel}
+          previousLabel={rangeOption.previous}
+          sales={sales}
+          services={services}
+          onClose={closeDetail}
+        />
+      )}
     </main>
   );
 }
 
-type SummaryItemProps = {
-  icon: React.ReactNode;
-  label: string;
-  value: string | number;
-  description: string;
-  valueClassName?: string;
+type PanelProps = {
+  icon: ReactNode;
+  title: string;
+  subtitle: string;
+  children: ReactNode;
+  className?: string;
+  bodyClassName?: string;
 };
 
-function SummaryItem({
-  icon,
-  label,
-  value,
-  description,
-  valueClassName = "text-3xl",
-}: SummaryItemProps) {
+function Panel({ icon, title, subtitle, children, className = "", bodyClassName = "" }: PanelProps) {
   return (
-    <div className="p-6">
-      <div className="flex items-center gap-3 mb-4">
-        {icon}
-        <p className="text-sm text-gray-500">{label}</p>
-      </div>
-
-      <p className={`${valueClassName} font-semibold`}>
-        {value}
-      </p>
-
-      <p className="text-sm text-gray-400 mt-2">
-        {description}
-      </p>
-    </div>
-  );
-}
-
-type RoleSummaryProps = {
-  icon: React.ReactNode;
-  label: string;
-  value: number;
-  description: string;
-};
-
-function RoleSummary({
-  icon,
-  label,
-  value,
-  description,
-}: RoleSummaryProps) {
-  return (
-    <div className="p-6">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-sm text-gray-500">{label}</p>
-          <p className="text-3xl font-semibold mt-2">
-            {value}
-          </p>
+    <section className={`bg-white border border-gray-300 rounded-2xl overflow-hidden min-w-0 ${className}`}>
+      <div className="px-6 py-5 border-b border-gray-300">
+        <div className="flex items-center gap-3">
+          {icon}
+          <div>
+            <h2 className="text-lg font-semibold">{title}</h2>
+            <p className="text-sm text-gray-500 mt-1">{subtitle}</p>
+          </div>
         </div>
-
-        {icon}
       </div>
-
-      <p className="text-sm text-gray-400 mt-3">
-        {description}
-      </p>
-    </div>
+      <div className={bodyClassName}>{children}</div>
+    </section>
   );
 }
 

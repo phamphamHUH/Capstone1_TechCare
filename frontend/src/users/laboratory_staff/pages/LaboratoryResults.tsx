@@ -144,7 +144,7 @@ function LaboratoryResults({ open, setOpen, room }: LaboratoryResultsProps) {
         setOpen={setOpen}
         loadData={reloadRequests}
       />
-      <div className="px-3 pb-9 sm:px-6 xl:px-7">
+      <div className="px-4 pb-9 sm:px-6">
         <div hidden={Boolean(selectedRequest || printRequest)}>
           {resultError && (
             <div className="pt-4">
@@ -157,7 +157,7 @@ function LaboratoryResults({ open, setOpen, room }: LaboratoryResultsProps) {
           )}
           {actionError && <AnalysisNotice error>{actionError}</AnalysisNotice>}
           {starting && (
-            <p role="status" className="py-2 text-xs text-sky-600">
+            <p role="status" className="py-2 text-sm text-sky-700">
               Starting analysis...
             </p>
           )}

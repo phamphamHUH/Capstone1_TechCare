@@ -64,6 +64,27 @@ export async function updatePatient(
       } as updatePatient.error);
     }
 
+    // multipart/form-data sends everything as strings, so blank inputs arrive as "".
+    // Numeric/date columns can't accept "", so convert blanks to null.
+    const toNumberOrNull = (value: unknown): number | null => {
+      if (value === undefined || value === null || String(value).trim() === "") {
+        return null;
+      }
+      const n = Number(value);
+      return Number.isFinite(n) ? n : NaN;
+    };
+
+    const height = toNumberOrNull(height_cm);
+    const weight = toNumberOrNull(weight_kg);
+
+    if (Number.isNaN(height) || Number.isNaN(weight)) {
+      return res.status(400).json({
+        message: "Height and weight must be valid numbers.",
+      } as updatePatient.error);
+    }
+
+    const birthdateValue = birthdate?.trim() ? birthdate : null;
+
     const existingPatient = await sql`
             SELECT patient_id
             FROM patients
@@ -90,43 +111,44 @@ export async function updatePatient(
     }
 
     const [updatedPatient] = await sql`
-            UPDATE patients
-            SET
-                username = COALESCE(${username}, username),
-                password_hash = COALESCE(${hashedPassword}, password_hash),
-                first_name = COALESCE(${first_name}, first_name),
-                middle_name = COALESCE(${middle_name}, middle_name),
-                last_name = COALESCE(${last_name}, last_name),
-                suffix = COALESCE(${suffix}, suffix),
-                sex = COALESCE(${sex}, sex),
-                email = COALESCE(${email}, email),
-                street = COALESCE(${street}, street),
-                barangay = COALESCE(${barangay}, barangay),
-                city = COALESCE(${city}, city),
-                province = COALESCE(${province}, province),
-                zip_code = COALESCE(${zip_code}, zip_code),
-                contact_number = COALESCE(${contact_number}, contact_number),
-                civil_status = COALESCE(${civil_status}, civil_status),
-                blood_type = COALESCE(${blood_type}, blood_type),
-                birthdate = COALESCE(${birthdate}, birthdate),
-                guardian_name = COALESCE(${guardian_name}, guardian_name),
-                guardian_relationship = COALESCE(${guardian_relationship}, guardian_relationship),
-                guardian_contact = COALESCE(${guardian_contact}, guardian_contact),
-                allergies = COALESCE(${allergies}, allergies),
-                existing_conditions = COALESCE(${existing_conditions}, existing_conditions),
-                current_medications = COALESCE(${current_medications}, current_medications),
-                previous_surgeries = COALESCE(${previous_surgeries}, previous_surgeries),
-                previous_hospitalizations = COALESCE(${previous_hospitalizations}, previous_hospitalizations),
-                family_medical_history = COALESCE(${family_medical_history}, family_medical_history),
-                smoking_status = COALESCE(${smoking_status}, smoking_status),
-                alcohol_consumption = COALESCE(${alcohol_consumption}, alcohol_consumption),
-                height_cm = COALESCE(${height_cm}, height_cm),
-                weight_kg = COALESCE(${weight_kg}, weight_kg),
-                image_url = COALESCE(${imageUrl}, image_url),
-                updated_at = CURRENT_TIMESTAMP
-            WHERE patient_id = ${patient_id}
-            RETURNING *;
-        `;
+      UPDATE patients
+      SET
+        username = COALESCE(${username}, username),
+        password_hash = COALESCE(${hashedPassword}, password_hash),
+        first_name = COALESCE(${first_name}, first_name),
+        middle_name = COALESCE(${middle_name}, middle_name),
+        last_name = COALESCE(${last_name}, last_name),
+        suffix = COALESCE(${suffix}, suffix),
+        sex = COALESCE(${sex}, sex),
+        email = COALESCE(${email}, email),
+        street = COALESCE(${street}, street),
+        barangay = COALESCE(${barangay}, barangay),
+        city = COALESCE(${city}, city),
+        province = COALESCE(${province}, province),
+        zip_code = COALESCE(${zip_code}, zip_code),
+        contact_number = COALESCE(${contact_number}, contact_number),
+        civil_status = COALESCE(${civil_status}, civil_status),
+        blood_type = COALESCE(${blood_type}, blood_type),
+        birthdate = COALESCE(${birthdateValue}, birthdate),
+        guardian_name = COALESCE(${guardian_name}, guardian_name),
+        guardian_relationship = COALESCE(${guardian_relationship}, guardian_relationship),
+        guardian_contact = COALESCE(${guardian_contact}, guardian_contact),
+        allergies = COALESCE(${allergies}, allergies),
+        existing_conditions = COALESCE(${existing_conditions}, existing_conditions),
+        current_medications = COALESCE(${current_medications}, current_medications),
+        previous_surgeries = COALESCE(${previous_surgeries}, previous_surgeries),
+        previous_hospitalizations = COALESCE(${previous_hospitalizations}, previous_hospitalizations),
+        family_medical_history = COALESCE(${family_medical_history}, family_medical_history),
+        smoking_status = COALESCE(${smoking_status}, smoking_status),
+        alcohol_consumption = COALESCE(${alcohol_consumption}, alcohol_consumption),
+        height_cm = COALESCE(${height}, height_cm),
+        weight_kg = COALESCE(${weight}, weight_kg),
+        image_url = COALESCE(${imageUrl}, image_url),
+        updated_at = CURRENT_TIMESTAMP
+      WHERE patient_id = ${patient_id}
+      RETURNING *;
+    `;
+
     const age = calculateAge(updatedPatient.birthdate);
 
     return res.status(200).json({
