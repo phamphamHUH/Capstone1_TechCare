@@ -17,6 +17,7 @@ export type Patient = {
   civil_status: string;
   blood_type?: string;
   birthdate: string;
+  is_pwd: boolean;
   height_cm?: number | null;
   weight_kg?: number | null;
   allergies?: string | null;

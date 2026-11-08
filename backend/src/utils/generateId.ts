@@ -381,7 +381,7 @@ export async function generateConsultationQueueId(client: PoolClient) {
   const { rows } = await client.query(
     `SELECT queue_id
      FROM queue_entries
-     WHERE queue_id LIKE 'CON-%'
+     WHERE queue_id LIKE 'CONS-%'
      ORDER BY SPLIT_PART(queue_id, '-', 2)::int DESC
      LIMIT 1`,
   );
@@ -389,7 +389,7 @@ export async function generateConsultationQueueId(client: PoolClient) {
   const last = rows[0]?.queue_id;
   const nextNumber = last ? Number(last.split("-")[1]) + 1 : 1;
 
-  return `CON-${String(nextNumber).padStart(4, "0")}`;
+  return `CONS-${String(nextNumber).padStart(4, "0")}`;
 }
 
 export async function generateLaboratoryQueueId(client: PoolClient) {
@@ -411,7 +411,7 @@ export async function generateQueueNumberConsultation(client: PoolClient) {
   const { rows } = await client.query(
     `SELECT COALESCE(MAX(queue_number), 0) + 1 AS next
      FROM queue_entries
-     WHERE queue_id LIKE 'CON-%'
+     WHERE queue_id LIKE 'CONS-%'
        AND (created_at AT TIME ZONE 'Asia/Manila')::date =
            (NOW() AT TIME ZONE 'Asia/Manila')::date`,
   );
