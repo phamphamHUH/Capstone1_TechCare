@@ -1,6 +1,10 @@
-export const REPORT_WIDTH = 794; // A4 at 96 dpi; browser printing uses physical mm.
-export const REPORT_MIN_HEIGHT = 1123;
+import { CLINIC_INFO } from "../../../../lib/clinicInfo";
 
+// Full portrait long bond sheet; the report occupies only its top half.
+export const REPORT_WIDTH = 816;
+export const REPORT_MIN_HEIGHT = 1248;
+export const REPORT_PAPER_LABEL = "Long bond · 8.5 × 13 in · Portrait · Top half only";
+export const REPORT_LOGO = CLINIC_INFO.logoUrl;
 
 export const REPORT_FRAME_HTML = /* HTML */ `<!doctype html>
   <html lang="en">
@@ -16,15 +20,15 @@ export const REPORT_FRAME_HTML = /* HTML */ `<!doctype html>
         }
         body {
           margin: 0;
+          padding: 6px 24px 0;
+          width: 816px;
+          min-height: 1248px;
           background: white;
-          color: #243956;
+          color: #181818;
           font:
-            12px/1.5 Arial,
+            11px/1.25 Arial,
             Helvetica,
             sans-serif;
-          padding: 53px;
-          width: 794px;
-          min-height: 1123px;
         }
         h1,
         h2,
@@ -37,100 +41,148 @@ export const REPORT_FRAME_HTML = /* HTML */ `<!doctype html>
         img {
           max-width: 100%;
         }
+        .report-sheet {
+          position: relative;
+          isolation: isolate;
+          display: flex;
+          flex-direction: column;
+          min-height: 0;
+        }
+        .report-sheet > :not(.watermark) {
+          position: relative;
+          z-index: 1;
+        }
+        .watermark {
+          position: absolute;
+          z-index: 0;
+          top: 145px;
+          left: 50%;
+          width: 355px;
+          height: 355px;
+          object-fit: contain;
+          transform: translateX(-50%);
+          opacity: 0.075;
+          pointer-events: none;
+        }
         .report-header {
           display: flex;
-          gap: 16px;
           align-items: center;
-          border-bottom: 2px solid #36b3e9;
-          padding-bottom: 20px;
-          margin-bottom: 18px;
+          justify-content: center;
+          gap: 12px;
+          margin: 0;
           break-inside: avoid;
         }
+        .logo-frame {
+          position: relative;
+          width: 90px;
+          height: 80px;
+          overflow: hidden;
+          flex-shrink: 0;
+        }
         .logo {
-          width: 58px;
-          height: 58px;
+          position: absolute;
+          left: -17px;
+          top: -21px;
+          width: 125px;
+          height: 125px;
+          max-width: none;
           object-fit: contain;
         }
+        .clinic-details {
+          text-align: center;
+        }
         .clinic {
-          font-size: 17px;
-          line-height: 1.3;
-          color: #203757;
+          color: #318b67;
+          font-size: 23px;
+          font-weight: 800;
+          line-height: 1.1;
+          letter-spacing: -0.7px;
         }
-        .muted {
-          color: #6d7e94;
+        .clinic-address {
+          margin-top: 4px;
+          font-size: 12px;
+          font-weight: 700;
         }
-        .small {
-          font-size: 10px;
-        }
-        .report-type {
-          font-size: 10px;
-          letter-spacing: 1px;
-          margin-top: 5px;
-          color: #1686b4;
+        .clinic-contact {
+          font-size: 11px;
+          font-weight: 700;
         }
         .report-state {
-          margin: 0 0 18px;
-          padding: 9px 12px;
-          border: 1px solid #b8c9da;
-          background: #f3f7fb;
-          font-size: 11px;
+          margin: 0 0 6px;
+          text-align: center;
+          font-size: 10px;
+          font-weight: bold;
           break-inside: avoid;
         }
         .draft {
-          border-color: #d9ab4c;
-          background: #fff9ec;
-          color: #875c12;
+          color: #8a341e;
         }
         .patient {
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 12px 18px;
-          border: 1px solid #d9e6ef;
-          background: #f4f9fd;
-          padding: 14px;
-          margin-bottom: 24px;
+          grid-template-columns: 1.05fr 1fr;
+          margin-bottom: 0;
+          border-top: 1px solid #bcc7b8;
+          border-left: 1px solid #bcc7b8;
           break-inside: avoid;
         }
+        .patient > div {
+          display: flex;
+          align-items: baseline;
+          gap: 6px;
+          min-width: 0;
+          min-height: 20px;
+          padding: 3px 6px;
+          border-right: 1px solid #bcc7b8;
+          border-bottom: 1px solid #bcc7b8;
+        }
+        .patient > div:nth-child(n + 3) {
+          background: rgba(185, 205, 164, 0.48);
+        }
         .patient dt {
-          font-size: 9px;
-          color: #72859d;
-          margin-bottom: 3px;
+          flex-shrink: 0;
+          font-weight: bold;
           text-transform: uppercase;
-          letter-spacing: 0.3px;
         }
         .patient dd {
-          font-size: 11px;
+          min-width: 0;
           overflow-wrap: anywhere;
         }
         .patient-name {
           font-weight: bold;
+          text-transform: uppercase;
+        }
+        .report-body {
+          flex: 0 0 auto;
         }
         .report-title {
+          margin-bottom: 2px;
           font-size: 18px;
           text-align: center;
-          margin: 0 0 3px;
-          color: #203757;
+          text-decoration: underline;
+          text-underline-offset: 3px;
+          text-transform: uppercase;
+          break-after: avoid;
         }
         .report-category {
-          text-align: center;
-          margin-bottom: 20px;
-          color: #72859d;
-          font-size: 10px;
-        }
-        .section-heading {
+          margin: -2px 0 4px;
           font-size: 12px;
           font-weight: bold;
-          color: #233f62;
-          border-bottom: 1px solid #dce7f0;
-          padding: 12px 0 6px;
-          margin: 8px 0;
+          text-align: center;
+          text-transform: uppercase;
+          break-after: avoid;
+        }
+        .section-heading {
+          margin: 8px 0 4px;
+          font-size: 11px;
+          font-weight: bold;
+          text-transform: uppercase;
           break-after: avoid;
         }
         table {
           width: 100%;
           border-collapse: collapse;
           table-layout: fixed;
-          margin: 0 0 16px;
+          margin-bottom: 0;
           font-size: 11px;
         }
         thead {
@@ -144,48 +196,87 @@ export const REPORT_FRAME_HTML = /* HTML */ `<!doctype html>
         }
         th,
         td {
-          padding: 8px;
-          vertical-align: top;
-          border-bottom: 1px solid #e4ebf2;
+          padding: 2px 6px;
+          height: 19px;
+          vertical-align: middle;
+          border: 1px solid #bcc7b8;
           text-align: inherit;
           overflow-wrap: anywhere;
           white-space: pre-wrap;
         }
-        th {
-          font-size: 10px;
-          color: #647e9e;
-          background: #edf6fc;
-          font-weight: normal;
+        thead th {
+          font-weight: bold;
+          text-align: center;
+          text-transform: uppercase;
         }
-        th:first-child {
-          width: 32%;
+        tbody tr:nth-child(odd) > * {
+          background: rgba(185, 205, 164, 0.48);
+        }
+        .parameters {
+          text-align: center;
+        }
+        .parameters .test-column {
+          width: 38%;
+        }
+        .parameters .value-column {
+          width: 25%;
+        }
+        .parameters .reference-column {
+          width: 37%;
+        }
+        .parameters tbody th {
+          font-weight: bold;
+        }
+        .microscopy {
+          text-align: left;
+        }
+        .microscopy th,
+        .microscopy td {
+          height: 18px;
+          padding-top: 1px;
+          padding-bottom: 1px;
+        }
+        .microscopy th {
+          width: 28%;
+          font-weight: bold;
+        }
+        .microscopy td {
+          width: 22%;
+        }
+        .microscopy-single th,
+        .microscopy-single td {
+          width: 50%;
         }
         .result-value {
           font-weight: bold;
-          color: #203757;
         }
         .flag {
+          margin-left: 5px;
           font-size: 9px;
           font-weight: bold;
         }
         .abnormal {
-          color: #a14426;
+          color: #8a341e;
+        }
+        .small,
+        .muted {
+          font-size: 9px;
+          color: #484848;
         }
         .field {
           display: inline-block;
           vertical-align: top;
-          padding: 6px 10px 12px 0;
+          padding: 4px 8px 6px 0;
           break-inside: avoid;
           overflow-wrap: anywhere;
           white-space: pre-wrap;
         }
         .field-label {
-          font-size: 10px;
-          color: #72859d;
+          font-weight: bold;
         }
         .field-value {
           font-weight: bold;
-          margin-top: 3px;
+          margin-top: 2px;
         }
         .static-text,
         .notes p {
@@ -193,42 +284,82 @@ export const REPORT_FRAME_HTML = /* HTML */ `<!doctype html>
           overflow-wrap: anywhere;
         }
         .static-text {
-          margin: 8px 0 14px;
+          margin: 4px 0;
         }
         .report-image {
           display: block;
-          max-height: 250px;
+          max-height: 150px;
           object-fit: contain;
-          margin: 12px 0;
+          margin: 6px 0;
         }
         .divider {
           border: 0;
-          border-top: 1px solid #bed1e2;
-          margin: 14px 0;
+          border-top: 1px solid #bcc7b8;
+          margin: 6px 0;
         }
         .notes {
-          margin: 10px 0 24px;
+          margin: 0;
+          min-height: 24px;
         }
         .notes h3 {
-          font-size: 12px;
-          margin-bottom: 8px;
+          font-size: 11px;
+          text-decoration: underline;
           break-after: avoid;
         }
         .notes p {
-          font-size: 11px;
+          margin: 0;
         }
         .report-footer {
-          margin-top: 28px;
-          border-top: 1px solid #dbe6ef;
-          padding-top: 12px;
-          font-size: 10px;
-          line-height: 1.7;
+          margin: 0;
+          padding-top: 0;
           break-inside: avoid;
           overflow-wrap: anywhere;
         }
+        .signatures {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 20px;
+          text-align: center;
+        }
+        .signature-heading {
+          min-height: 15px;
+          font-size: 11px;
+          font-weight: bold;
+        }
+        .signature-name {
+          min-height: 30px;
+          padding-top: 14px;
+          border-bottom: 1px solid #777;
+          font-weight: bold;
+        }
+        .signature-role {
+          margin-top: 4px;
+          font-size: 10px;
+        }
+        .license {
+          margin-top: 2px;
+          font-size: 10px;
+        }
+        .report-meta {
+          margin-top: 6px;
+          font-size: 8px;
+          line-height: 1.3;
+          color: #484848;
+          text-align: center;
+        }
+        .visually-hidden {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          padding: 0;
+          overflow: hidden;
+          clip-path: inset(50%);
+          white-space: nowrap;
+        }
         @page {
-          size: A4 portrait;
-          margin: 14mm;
+          size: 8.5in 13in;
+          /* Small top inset, quarter-inch sides, and a blank bottom half. */
+          margin: 0.0625in 0.25in 6.5in;
         }
         @media print {
           html,
@@ -242,12 +373,6 @@ export const REPORT_FRAME_HTML = /* HTML */ `<!doctype html>
           body {
             print-color-adjust: exact;
             -webkit-print-color-adjust: exact;
-          }
-          .report-header {
-            padding-bottom: 14px;
-          }
-          .report-title {
-            break-after: avoid;
           }
           a {
             color: inherit;

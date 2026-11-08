@@ -134,10 +134,4 @@ export const COMMON_MEDICATIONS: Array<Omit<Medication, "id">> = [
   },
 ];
 
-export const CLINIC_INFO = {
-  name: "Reyna G Diagnostic Medical Clinic",
-  address: "123 Health St., Manila, Philippines",
-  phone: "Tel: (02) 8123 4567",
-  email: "Email: info@reynag.com",
-  logoUrl: "/assets/images/reyna-g-logo.png",
-};
+// Clinic details moved to src/lib/clinicInfo.ts (shared by every printout).
