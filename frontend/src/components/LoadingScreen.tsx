@@ -1,4 +1,5 @@
 import { LoaderCircle } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { cn } from "../lib/utils";
 
 type LoadingSpinnerProps = {
@@ -19,6 +20,65 @@ export function LoadingSpinner({ size = 24, className }: LoadingSpinnerProps) {
         className,
       )}
     />
+  );
+}
+
+/** Repeating color reveal indicates activity while the caller waits for its request. */
+export function LoadingLogo({ size = 96, className }: LoadingSpinnerProps) {
+  const fillRef = useRef<HTMLImageElement>(null);
+
+  useEffect(() => {
+    const image = fillRef.current;
+    if (!image) return;
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let animation: Animation | undefined;
+
+    function updateAnimation() {
+      animation?.cancel();
+      animation = undefined;
+      if (reducedMotion.matches || !image?.animate) return;
+
+      animation = image.animate(
+        [
+          { clipPath: "inset(100% 0 0 0)", opacity: 1, offset: 0 },
+          { clipPath: "inset(0 0 0 0)", opacity: 1, offset: 0.3 },
+          { clipPath: "inset(0 0 0 0)", opacity: 1, offset: 0.94 },
+          { clipPath: "inset(0 0 0 0)", opacity: 0, offset: 0.98 },
+          { clipPath: "inset(100% 0 0 0)", opacity: 0, offset: 1 },
+        ].map((frame) => ({ ...frame, easing: "ease-in-out" })),
+        { duration: 2000, iterations: Infinity },
+      );
+    }
+
+    updateAnimation();
+    reducedMotion.addEventListener("change", updateAnimation);
+    return () => {
+      animation?.cancel();
+      reducedMotion.removeEventListener("change", updateAnimation);
+    };
+  }, []);
+
+  return (
+    <span
+      aria-hidden="true"
+      className={cn("relative inline-block shrink-0 align-middle", className)}
+      style={{ width: size, height: size }}
+    >
+      <img
+        src="/assets/images/reyna-g-logo.png"
+        alt=""
+        draggable={false}
+        className="block h-full w-full select-none object-contain opacity-[0.22] grayscale"
+      />
+      <img
+        ref={fillRef}
+        src="/assets/images/reyna-g-logo.png"
+        alt=""
+        draggable={false}
+        className="absolute inset-0 block h-full w-full select-none object-contain"
+      />
+    </span>
   );
 }
 
@@ -53,23 +113,7 @@ export default function LoadingScreen({
         className,
       )}
     >
-      {variant === "page" ? (
-        <img
-          src="/assets/images/reyna-g-logo.png"
-          alt=""
-          className="h-20 w-20 object-contain"
-        />
-      ) : null}
-      {inline ? (
-        <LoadingSpinner size={16} className="text-[#008bff]" />
-      ) : (
-        <span
-          aria-hidden="true"
-          className="flex size-14 items-center justify-center rounded-full bg-[#e7f3ff] text-[#008bff]"
-        >
-          <LoadingSpinner size={28} />
-        </span>
-      )}
+      <LoadingLogo size={inline ? 28 : variant === "page" ? 144 : 96} />
       <div className="min-w-0">
         <p className={cn(!inline && "text-sm font-semibold text-[#0b4278]")}>
           {message}
