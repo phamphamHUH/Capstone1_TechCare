@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Phone, Search, UserPlus, X, Check } from "lucide-react";
 import api from "#lib/axios";
 import type { Patient } from "../../../../interface/Patient";
+import calculateAge from "../../../../utils/calculateAge";
+import { formatAge } from "../../../../utils/formats";
 
 type PatientSearchModalProps = {
   onClose: () => void;
@@ -18,19 +20,6 @@ const fullName = (p: Patient) =>
 
 const initials = (p: Patient) =>
   `${p.first_name?.charAt(0) ?? ""}${p.last_name?.charAt(0) ?? ""}`.toUpperCase();
-
-const getAge = (birthdate?: string | null) => {
-  if (!birthdate) return null;
-  const birth = new Date(birthdate);
-  if (Number.isNaN(birth.getTime())) return null;
-  const now = new Date();
-  let age = now.getFullYear() - birth.getFullYear();
-  const beforeBirthday =
-    now.getMonth() < birth.getMonth() ||
-    (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate());
-  if (beforeBirthday) age -= 1;
-  return age;
-};
 
 const FILTERS: { label: string; value: PatientFilter }[] = [
   { label: "All Patients", value: "all" },
@@ -87,7 +76,7 @@ function PatientSearchModal({
 
     return patients
       .filter((p) => {
-        const age = getAge(p.birthdate);
+        const age = calculateAge(p.birthdate);
 
         const matchesFilter =
           filter === "all" ||
@@ -200,7 +189,7 @@ function PatientSearchModal({
             <ul className="flex flex-col gap-3">
               {filtered.map((p) => {
                 const selected = selectedId === p.patient_id;
-                const age = getAge(p.birthdate);
+                const age = calculateAge(p.birthdate);
 
                 return (
                   <li key={p.patient_id}>
@@ -245,8 +234,7 @@ function PatientSearchModal({
                         </p>
                         <p className="flex items-center gap-1 text-xs text-gray-500">
                           <span>
-                            {p.sex}
-                            {age !== null ? `, ${age} yrs old` : ""}
+                            {p.sex} {formatAge(p.birthdate, age)}
                           </span>
                           {p.contact_number && (
                             <>

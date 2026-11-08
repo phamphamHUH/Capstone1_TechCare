@@ -12,6 +12,60 @@ type RoomSummaryPanelProps = {
 function RoomSummaryPanel({ roomLabel, onViewServices }: RoomSummaryPanelProps) {
   const active = true;
 
+  const serviceStats: Stat[] = [
+    {
+      label: "All",
+      subLabel: "In this room",
+      value: services.length,
+      icon: Layers,
+    },
+    {
+      label: "Active",
+      subLabel: "Available now",
+      value: services.filter((service) => service.active).length,
+      icon: CircleCheck,
+    },
+    {
+      label: "Inactive",
+      subLabel: "Not available",
+      value: services.filter((service) => !service.active).length,
+      icon: CircleOff,
+    },
+  ];
+
+  const queueStats: Stat[] = [
+    {
+      label: "Priority",
+      subLabel: "Priority patients",
+      value: queues.filter((queue) => queue.is_priority).length,
+      icon: FileExclamationPoint,
+    },
+    {
+      label: "Serving",
+      subLabel: "Being served",
+      value: queues.filter(
+        (queue) => queue.status.toLocaleLowerCase() === "serving",
+      ).length,
+      icon: ListStart,
+    },
+    {
+      label: "Waiting",
+      subLabel: "Currently waiting",
+      value: queues.filter(
+        (queue) => queue.status.toLocaleLowerCase() === "waiting",
+      ).length,
+      icon: Loader,
+    },
+    {
+      label: "Collected",
+      subLabel: "Completed",
+      value: queues.filter(
+        (queue) => queue.status.toLocaleLowerCase() === "Completed",
+      ).length,
+      icon: FileCheck,
+    },
+  ];
+
   return (
     <section className="flex w-full flex-wrap items-center justify-between gap-3 rounded-2xl border border-gray-300 bg-white px-4 py-3">
       <div className="flex items-center gap-3">

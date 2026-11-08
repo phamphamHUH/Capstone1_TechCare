@@ -217,7 +217,7 @@ function LaboratoryQueuePanel({
           {error}
         </div>
       ) : filterQueues.length === 0 ? (
-        <div className="w-full mb-8 rounded-xl border border-gray-200 bg-gray-100 p-4 text-center text-sm">
+        <div className="w-full mb-8  border border-gray-200 bg-gray-100 p-4 text-center text-sm">
           No laboratory requests found.
         </div>
       ) : (

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { FlaskConical, Stethoscope, MousePointerClick } from "lucide-react";
 import api from "#lib/axios";
-import type { HistoryRecord } from "../../../../interface/HistoryRecord";
+import type { HistoryRecord } from "../../interface/HistoryRecord";
 
 type Json = string | number | boolean | null | Json[] | { [k: string]: Json };
 
