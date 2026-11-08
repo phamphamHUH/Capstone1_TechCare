@@ -31,7 +31,8 @@ test("prints actual metadata and values, preserving zero, false, order and table
   const html = markup();
   assert.match(html, /Admin section/);
   assert.ok(html.indexOf("Admin section") < html.indexOf("Admin column"));
-  assert.match(html, /class="result-value"[^>]*>0<\/td>/);
+  // Zero is kept, and the abnormal flag sits inside the result cell (no separate Flag column).
+  assert.match(html, /class="result-value"[^>]*>0<span class="flag abnormal">Below<\/span><\/td>/);
   assert.match(html, />No<\/td>/);
   assert.match(html, /1 – 5/);
   assert.match(html, /Below/);
@@ -61,8 +62,12 @@ test("drafts remain labeled; saved reports show only supplied verification", () 
   assert.match(markup({ ...report, resultId: "RESULT-1" }), /Verification not recorded/);
 });
 
-test("isolated print document defines A4, repeating table headers and row pagination", () => {
-  assert.match(REPORT_FRAME_HTML, /@page\s*\{\s*size:\s*A4 portrait;\s*margin:\s*14mm;?\s*\}/);
+test("isolated print document defines half long bond paper, repeating table headers and row pagination", () => {
+  // Long bond (8.5 × 13 in) with a 6.5 in bottom margin, so the result fills the top half.
+  assert.match(
+    REPORT_FRAME_HTML,
+    /@page\s*\{\s*size:\s*8\.5in 13in;(?:\s*\/\*[\s\S]*?\*\/)?\s*margin:\s*0\.0625in 0\.25in 6\.5in;?\s*\}/,
+  );
   assert.match(REPORT_FRAME_HTML, /thead\s*\{\s*display:\s*table-header-group;?\s*\}/);
   assert.match(REPORT_FRAME_HTML, /tr\s*\{\s*break-inside:\s*avoid;?\s*\}/);
   assert.doesNotMatch(REPORT_FRAME_HTML, /<script|Laboratory Requests|Save Result/);

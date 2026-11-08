@@ -4,6 +4,7 @@ import type { LaboratoryReportData } from "../../../../interface/LaboratoryAnaly
 import { formatLabDate } from "./AnalysisList";
 import { resultFlag } from "./laboratoryValidation";
 import { REPORT_LOGO, reportText, safeReportImage } from "./laboratoryPrint";
+import { CLINIC_INFO } from "../../../../lib/clinicInfo";
 
 function referenceRange(component: BuilderComponent) {
   if (component.settings.referenceRange) {
@@ -386,13 +387,13 @@ export default function LaboratoryReport({ report }: LaboratoryReportProps) {
           <img className="logo" src={REPORT_LOGO} alt="Reyna G" />
         </div>
         <div className="clinic-details">
-          <h1 className="clinic">REYNA G. DIAGNOSTIC LABORATORY</h1>
+          <h1 className="clinic">{CLINIC_INFO.laboratoryName.toUpperCase()}</h1>
           <p className="clinic-address">
-            C-57 BANGUS ST., KAPITBAHAYAN NBBS NAVOTAS
+            {CLINIC_INFO.address.toUpperCase()}
           </p>
-          <p className="clinic-contact">TEL #: 8984-2005</p>
+          <p className="clinic-contact">TEL #: {CLINIC_INFO.phone}</p>
           <p className="clinic-contact">
-            DOH ACCREDITATION NO.: 13-0662-24-CL-2
+            DOH ACCREDITATION NO.: {CLINIC_INFO.dohAccreditationNo}
           </p>
         </div>
       </header>

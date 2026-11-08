@@ -1,8 +1,10 @@
+import { CLINIC_INFO } from "../../../../lib/clinicInfo";
+
 // Full portrait long bond sheet; the report occupies only its top half.
 export const REPORT_WIDTH = 816;
 export const REPORT_MIN_HEIGHT = 1248;
 export const REPORT_PAPER_LABEL = "Long bond · 8.5 × 13 in · Portrait · Top half only";
-export const REPORT_LOGO = "/assets/images/reyna-g-logo.png";
+export const REPORT_LOGO = CLINIC_INFO.logoUrl;
 
 export const REPORT_FRAME_HTML = /* HTML */ `<!doctype html>
   <html lang="en">

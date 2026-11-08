@@ -133,10 +133,11 @@ export async function completeConsultationQueueEntry(
 
     await client.query("COMMIT");
 
-    // Fire off the SSE stream updates
-    for (const notify of [publishQueueChange, publishDoctorQueueChange]) {
-      try { notify(); }
-      catch (error) { console.error("Consultation completed, but queue notification failed:", error); }
+    // Tell every live queue screen to reload (one shared SSE hub for all roles).
+    try {
+      publishQueueChange();
+    } catch (error) {
+      console.error("Consultation completed, but queue notification failed:", error);
     }
 
     return res.status(200).json({

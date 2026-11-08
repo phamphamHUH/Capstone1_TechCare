@@ -6,7 +6,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import type { Prescription, PrintOptions } from "./types";
-import { CLINIC_INFO } from "./mockData";
+import { CLINIC_INFO } from "../../../../lib/clinicInfo";
 
 interface PrescriptionPreviewViewProps {
   prescription: Prescription;
@@ -76,7 +76,7 @@ export default function PrescriptionPreviewView({
                     {CLINIC_INFO.address}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {CLINIC_INFO.phone} • {CLINIC_INFO.email}
+                    Tel: {CLINIC_INFO.phone}
                   </p>
                 </div>
               )}
