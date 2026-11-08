@@ -83,7 +83,7 @@ function MedicalHistoryTab({ patientId }: MedicalHistoryTabProps) {
   return (
     <div className="grid grid-cols-7 gap-5 mb-5">
       {/* MAIN PANEL */}
-      <main className="col-span-5 border shadow-lg rounded-xl px-5 py-6 border-gray-200 h-fit">
+      <main className="col-span-5 border shadow-lg rounded-md px-5 py-6 border-gray-200 h-fit">
         <h1 className="font-bold">Medical History</h1>
         <span className="text-gray-500 text-sm">
           View the patient's past visits, services, and records
@@ -195,7 +195,7 @@ function MedicalHistoryTab({ patientId }: MedicalHistoryTabProps) {
         )}
       </main>
 
-      <aside className="col-span-2 border shadow-lg rounded-xl px-5 py-6 border-gray-200  h-fit">
+      <aside className="col-span-2 border shadow-lg rounded-md px-5 py-6 border-gray-200  h-fit">
         <VisitDetails selectedRecord={selectedRecord} />
       </aside>
     </div>
