@@ -1,3 +1,4 @@
+import LoadingScreen from "../../../components/LoadingScreen";
 import AddService from "../components/ServicePricing/AddService";
 import { isAxiosError } from "axios";
 import UniversalModal from "../../../components/UniversalModal";
@@ -52,7 +53,7 @@ function formatPrice(price: number): string {
   }).format(price);
 }
 
-function ServicePricing({ services, loadData }: ServicePricingProps) {
+function ServicePricing({ services, loadData, loading }: ServicePricingProps) {
   const [search, setSearch] = useState("");
   const [showAddService, setShowAddService] = useState(false);
   const [servicesFilter, setServicesFilter] = useState<ServiceFilter>("all");
@@ -348,7 +349,7 @@ function ServicePricing({ services, loadData }: ServicePricingProps) {
                     colSpan={8}
                     className="px-4 py-6 text-center text-gray-500"
                   >
-                    No services found.
+                    {loading ? <LoadingScreen message="Loading services..." /> : "No services found."}
                   </td>
                 </tr>
               )}

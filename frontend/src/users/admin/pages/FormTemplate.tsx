@@ -1,3 +1,4 @@
+import LoadingScreen from "../../../components/LoadingScreen";
 import { useEffect, useState, useCallback } from "react";
 import api from "#lib/axios";
 import TemplateLibrary from "../components/FormTemplate/TemplateLibrary";
@@ -6,7 +7,7 @@ import {
   dbComponentToBuilderComponent,
   type FormTemplate as FormTemplateData,
 } from "../../../interface/FormTemplate";
-import { Loader2 } from "lucide-react";
+
 
 export interface ServiceOption {
   service_id: string;
@@ -160,12 +161,7 @@ export default function FormTemplate() {
       <div className="mt-4 px-6">
         {/* CHANGED: Conditional UI rendering for Loading, Error, or Template Views */}
         {fetching ? (
-          <div className="flex h-64 items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
-            <span className="ml-2 text-sm text-gray-500">
-              Loading form templates...
-            </span>
-          </div>
+          <LoadingScreen variant="page" message="Loading form templates..." />
         ) : fetchError ? (
           <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center text-red-600">
             <p className="font-semibold">{fetchError}</p>

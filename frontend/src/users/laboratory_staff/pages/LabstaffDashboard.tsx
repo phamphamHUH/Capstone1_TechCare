@@ -1,3 +1,4 @@
+import LoadingScreen from "../../../components/LoadingScreen";
 import Header from "#components/Header";
 
 type LaboratoryDashboardProps = {
@@ -22,6 +23,7 @@ function LabstaffDashboard({
         setOpen={setOpen}
         loadData={loadData}
       />
+      {loading && <LoadingScreen variant="page" message="Loading laboratory data..." />}
     </main>
   );
 }

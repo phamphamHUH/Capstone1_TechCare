@@ -1,3 +1,4 @@
+import LoadingScreen from "../../../../components/LoadingScreen";
 import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import api from "../../../../lib/axios";
 import QueueTabs, { type MainFilter } from "./QueueTabs";
@@ -206,9 +207,7 @@ function LaboratoryQueuePanel({
       />
 
       {loading ? (
-        <div className="w-full mb-8 rounded-xl border border-gray-200 bg-gray-100 p-4 text-center text-sm">
-          Loading {loadingLabel}laboratory queues...
-        </div>
+        <LoadingScreen message={`Loading ${loadingLabel}laboratory queues...`} />
       ) : error ? (
         <div
           role="alert"

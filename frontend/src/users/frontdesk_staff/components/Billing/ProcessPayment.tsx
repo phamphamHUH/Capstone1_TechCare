@@ -1,16 +1,6 @@
+import { LoadingSpinner } from "../../../../components/LoadingScreen";
 import { useRef, useState } from "react";
-import {
-  Download,
-  Eye,
-  FlagTriangleRight,
-  Info,
-  LoaderCircle,
-  MoveLeft,
-  Percent,
-  Printer,
-  QrCode,
-  WalletMinimal,
-} from "lucide-react";
+import { Download, Eye, FlagTriangleRight, Info, MoveLeft, Percent, Printer, QrCode, WalletMinimal } from "lucide-react";
 import type {
   Bill,
   BillItem,
@@ -667,10 +657,7 @@ function ProcessPayment({
               className="flex cursor-pointer items-center gap-2 rounded-sm border border-gray-300 px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {printing ? (
-                <LoaderCircle
-                  size={14}
-                  className="animate-spin motion-reduce:animate-none"
-                />
+                <LoadingSpinner size={14} />
               ) : (
                 <Printer size={14} />
               )}
@@ -695,10 +682,7 @@ function ProcessPayment({
             className="flex cursor-pointer items-center gap-2 rounded-sm border border-sky-600 bg-sky-600 px-4 py-2 text-white disabled:cursor-not-allowed disabled:opacity-60"
           >
             {submitting && (
-              <LoaderCircle
-                size={14}
-                className="animate-spin motion-reduce:animate-none"
-              />
+              <LoadingSpinner size={14} />
             )}
             {submitting ? "Forwarding..." : "Retry Laboratory Forwarding"}
           </button>
@@ -711,10 +695,7 @@ function ProcessPayment({
             className="flex cursor-pointer items-center gap-2 rounded-sm border border-sky-600 bg-sky-600 px-4 py-2 text-white disabled:cursor-not-allowed disabled:border-gray-300 disabled:bg-gray-300"
           >
             {submitting && (
-              <LoaderCircle
-                size={14}
-                className="animate-spin motion-reduce:animate-none"
-              />
+              <LoadingSpinner size={14} />
             )}
             {submitting ? "Saving..." : "Confirm & Record Payment"}
           </button>

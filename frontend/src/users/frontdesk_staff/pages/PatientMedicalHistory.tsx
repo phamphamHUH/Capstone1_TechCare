@@ -1,3 +1,4 @@
+import LoadingScreen from "../../../components/LoadingScreen";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
 import { ArrowLeft, ClipboardList, FlaskConical, ReceiptText } from "lucide-react";
@@ -147,7 +148,7 @@ function PatientMedicalHistory({
           page="Patient Medical History"
         />
         <div className="flex items-center justify-center h-96">
-          <p className="text-gray-500">Loading patient data...</p>
+          <LoadingScreen message="Loading patient data..." />
         </div>
       </main>
     );

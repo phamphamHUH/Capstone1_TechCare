@@ -1,3 +1,4 @@
+import LoadingScreen from "../../../components/LoadingScreen";
 import { Users, Clock, List, Receipt, ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
 import type { Patient } from "../../../interface/Patient";
@@ -53,6 +54,7 @@ function FrontdeskDashboard({
   patients,
   queues,
   setPage,
+  loading,
 }: FrontdeskDashboardProps) {
   const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
 
@@ -77,6 +79,10 @@ function FrontdeskDashboard({
   const pendingBills = bills.filter((bill) => bill.status === "Pending").length;
 
   const goToQueues = () => setPage("queues");
+
+  if (loading && !patients.length && !bills.length && !queues.length) {
+    return <LoadingScreen variant="page" message="Loading dashboard..." />;
+  }
 
   return (
     <main className="flex-1 min-w-0">

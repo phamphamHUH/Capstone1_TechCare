@@ -1,3 +1,4 @@
+import LoadingScreen from "../../../../components/LoadingScreen";
 import { useEffect, useState } from "react";
 import { X, UserRound } from "lucide-react";
 import api from "../../../../lib/axios";
@@ -77,9 +78,7 @@ function RequestCard({ onClose, queueIdCard }: InformationCardProps) {
               </div>
             ) : null}
             {detailLoading ? (
-              <div className="rounded-xl border border-gray-200 bg-gray-100 p-4 text-sm">
-                Loading laboratory requests...
-              </div>
+              <LoadingScreen message="Loading laboratory requests..." />
             ) : requestDetail ? (
               <div className="flex w-full-h-full gap-6">
                 <div className="w-full h-full max-w-1/3 rounded-lg shadow-sm bg-white ">

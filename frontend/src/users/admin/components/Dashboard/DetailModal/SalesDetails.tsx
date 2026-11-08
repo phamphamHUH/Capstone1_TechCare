@@ -1,3 +1,4 @@
+import LoadingScreen from "../../../../../components/LoadingScreen";
 import { useEffect, useState } from "react";
 import api from "../../../../../lib/axios";
 import type {
@@ -105,7 +106,7 @@ function SalesDetails({ kind, range, previousLabel, sales }: SalesDetailsProps) 
     return <p role="alert" className="m-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</p>;
   }
   if (!data) {
-    return <p className="px-6 py-16 text-center text-sm text-gray-400">Loading bills…</p>;
+    return <LoadingScreen message="Loading bills…" />;
   }
 
   const paid = data.paid;

@@ -1,3 +1,4 @@
+import LoadingScreen from "../../../components/LoadingScreen";
 import { useCallback, useState, type ReactNode } from "react";
 import {
   Banknote,
@@ -106,7 +107,7 @@ function AdminDashboard({
         )}
 
         {!sales && !services && loading && (
-          <p className="py-16 text-center text-sm text-gray-400">Loading analytics…</p>
+          <LoadingScreen message="Loading analytics…" />
         )}
 
         {/* ================= SALES ================= */}

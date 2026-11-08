@@ -15,7 +15,7 @@ function LaboratoryStaff() {
   const [requestItems, setRequestItems] = useState<Request[]>([]);
   const [queues, setQueues] = useState<QueueEntry[]>([]);
   const [services, setServices] = useState<Service[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const refreshing = useRef(false);
 

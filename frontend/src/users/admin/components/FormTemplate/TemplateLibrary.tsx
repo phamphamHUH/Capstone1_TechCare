@@ -1,18 +1,10 @@
+import { LoadingSpinner } from "../../../../components/LoadingScreen";
 import { useMemo, useState } from "react";
 import api from "#lib/axios";
 import type { FormTemplate } from "../../../../interface/FormTemplate";
 import { dbComponentToBuilderComponent } from "../../../../interface/FormTemplate";
 import type { ServiceOption } from "../../pages/FormTemplate";
-import {
-  Search,
-  Clock,
-  Eye,
-  Edit,
-  Trash2,
-  X,
-  Plus,
-  Loader2,
-} from "lucide-react";
+import { Search, Clock, Eye, Edit, Trash2, X, Plus } from "lucide-react";
 import TemplatePreview from "./TemplatePreview";
 
 interface TemplateLibraryProps {
@@ -399,7 +391,7 @@ export default function TemplateLibrary({
                 className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-sky-300 text-sky-600 hover:bg-sky-50 text-xs font-bold transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {previewLoadingId === selectedTemplate.form_id ? (
-                  <Loader2 size={14} className="animate-spin" />
+                  <LoadingSpinner size={14} />
                 ) : (
                   <Eye size={14} />
                 )}

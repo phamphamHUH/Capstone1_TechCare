@@ -1,3 +1,4 @@
+import LoadingScreen from "../../../../components/LoadingScreen";
 import { useMemo, useState } from "react";
 import {
   CalendarDays,
@@ -374,7 +375,7 @@ export default function AnalysisList({
                         colSpan={9}
                         className="h-48 text-center text-gray-500"
                       >
-                        Loading laboratory requests...
+                        <LoadingScreen message="Loading laboratory requests..." />
                       </td>
                     </tr>
                   ) : !visible.length ? (

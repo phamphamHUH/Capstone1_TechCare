@@ -1,6 +1,7 @@
+import { LoadingSpinner } from "../components/LoadingScreen";
 import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import axios from "axios";
 import api from "../lib/axios";
 import ClinicSlideshow from "./components/ClinicSlideshow";
@@ -224,7 +225,7 @@ function LoginPage() {
                 disabled={loading}
                 className="w-full h-11 bg-sky-700 hover:bg-sky-800 disabled:opacity-70 disabled:cursor-not-allowed text-white text-base font-medium rounded-md flex items-center justify-center gap-2 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700"
               >
-                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                {loading && <LoadingSpinner className="w-4 h-4" />}
                 {loading ? "Signing in…" : "Log in"}
               </button>
             </form>

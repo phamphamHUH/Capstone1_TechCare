@@ -1,6 +1,7 @@
+import LoadingScreen from "../../../../components/LoadingScreen";
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
-import { AlertCircle, Loader2, Search } from "lucide-react";
+import { AlertCircle, Search } from "lucide-react";
 import calculateAge from "../../../../utils/calculateAge.ts";
 import PrescriptionManager from "../prescription/PrescriptionManager.tsx";
 import type { PatientInfo } from "../prescription/types.ts";
@@ -219,9 +220,7 @@ export default function ConsultationWorkspace({ initialTab = "consultation" }: P
 
   if (patientLoading || !patient) {
     return (
-      <div className="py-20 flex items-center justify-center text-xs text-gray-500" role="status">
-        <Loader2 size={18} className="animate-spin text-sky-500 mr-2" /> Loading patient...
-      </div>
+      <LoadingScreen message="Loading patient..." />
     );
   }
 

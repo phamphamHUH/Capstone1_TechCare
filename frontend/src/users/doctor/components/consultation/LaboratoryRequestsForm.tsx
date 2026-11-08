@@ -1,5 +1,6 @@
+import LoadingScreen, { LoadingSpinner } from "../../../../components/LoadingScreen";
 import { useEffect, useMemo, useState } from "react";
-import { AlertCircle, CalendarDays, CheckCircle2, Check, Loader2, RefreshCw, Search, X } from "lucide-react";
+import { AlertCircle, CalendarDays, CheckCircle2, Check, RefreshCw, Search, X } from "lucide-react";
 import calculateAge from "../../../../utils/calculateAge.ts";
 import {
   fetchLaboratoryServices,
@@ -207,9 +208,7 @@ export default function LaboratoryRequestForm({ patient, consultationRecordId, o
           <h4 className="text-xs font-bold text-gray-900 mb-2">{query.trim() ? "Search Results" : "Common Tests"}</h4>
 
           {loading ? (
-            <div className="py-10 flex items-center justify-center text-xs text-gray-500" role="status">
-              <Loader2 size={16} className="animate-spin text-sky-500 mr-2" /> Loading tests...
-            </div>
+            <LoadingScreen message="Loading tests..." />
           ) : loadError ? (
             <div className="py-8 text-center" role="alert">
               <p className="text-xs text-red-600 mb-3">{loadError}</p>
@@ -385,7 +384,7 @@ export default function LaboratoryRequestForm({ patient, consultationRecordId, o
           disabled={submitting}
           className="flex items-center gap-2 px-6 py-2 bg-sky-500 hover:bg-sky-600 disabled:bg-sky-300 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer disabled:cursor-wait"
         >
-          {submitting && <Loader2 size={13} className="animate-spin" />}
+          {submitting && <LoadingSpinner size={13} />}
           {submitting ? "Submitting..." : "Submit Request"}
         </button>
       </div>

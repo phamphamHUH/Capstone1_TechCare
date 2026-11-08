@@ -1,3 +1,4 @@
+import LoadingScreen from "../../../components/LoadingScreen";
 import { useEffect, useMemo, useState } from "react";
 import { FileText, Pill, Search } from "lucide-react";
 import PatientSummaryCard from "../components/PatientSummaryCard";
@@ -127,9 +128,7 @@ function PrescriptionsView({ patient, patientId }: Props) {
 
           <div className="max-h-[430px] overflow-y-auto p-2">
             {loading ? (
-              <div className="flex h-64 items-center justify-center text-xs text-slate-400">
-                Loading prescriptions...
-              </div>
+              <LoadingScreen message="Loading prescriptions..." />
             ) : error ? (
               <div className="flex h-64 items-center justify-center text-xs text-rose-500">{error}</div>
             ) : filtered.length === 0 ? (

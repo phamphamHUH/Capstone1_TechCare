@@ -1,3 +1,4 @@
+import LoadingScreen from "../../../../components/LoadingScreen";
 import {
   FlaskConical,
   Stethoscope,
@@ -67,20 +68,7 @@ function HistoryTimeline({
 }: HistoryTimelineProps) {
   // First load: nothing to show yet
   if (loading && records.length === 0) {
-    return (
-      <ul className="mt-2 animate-pulse">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <li
-            key={i}
-            className="ml-8 flex items-center gap-4 border-b border-gray-100 py-3"
-          >
-            <div className="h-8 w-24 rounded bg-gray-100" />
-            <div className="size-10 rounded-xl bg-gray-100" />
-            <div className="h-8 flex-1 rounded bg-gray-100" />
-          </li>
-        ))}
-      </ul>
-    );
+    return <LoadingScreen message="Loading medical history..." />;
   }
 
   if (records.length === 0) {

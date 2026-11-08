@@ -1,3 +1,4 @@
+import LoadingScreen from "../../../components/LoadingScreen";
 import { ChevronRight } from "lucide-react";
 import PatientHeader from "../components/MedicalHistory/PatientHeader";
 import type { Patient } from "../../../interface/Patient";
@@ -54,7 +55,7 @@ function MedicalHistory({
           )}
         </>
       ) : loading ? (
-        <p className="px-6 py-10 text-gray-400">Loading...</p>
+        <LoadingScreen message="Loading patients..." />
       ) : (
         <p className="px-6 py-10 text-gray-400">Patient not found.</p>
       )}

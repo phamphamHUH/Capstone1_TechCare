@@ -1,3 +1,4 @@
+import LoadingScreen from "../../../../components/LoadingScreen";
 import { useEffect, useState } from "react";
 import { X, UserRound, FileText } from "lucide-react";
 import api from "../../../../lib/axios";
@@ -106,9 +107,7 @@ function InformationCard({ onClose, queueIdCard, room }: InformationCardProps) {
 
           <div className="w-full h-full px-5 py-3 overflow-y-auto">
             {detailLoading ? (
-              <div className="rounded-xl border border-gray-200 bg-gray-100 p-4 text-sm">
-                Loading laboratory request...
-              </div>
+              <LoadingScreen message="Loading laboratory request..." />
             ) : detailError ? (
               <div
                 role="alert"

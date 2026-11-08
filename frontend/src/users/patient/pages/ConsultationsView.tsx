@@ -1,3 +1,4 @@
+import LoadingScreen from "../../../components/LoadingScreen";
 import { useEffect, useMemo, useState } from "react";
 import {
   CalendarDays,
@@ -144,9 +145,7 @@ function ConsultationsView({ patient, patientId }: Props) {
 
           <div className="min-h-[380px] p-3">
             {loading ? (
-              <div className="flex h-72 items-center justify-center text-sm text-slate-400">
-                Loading consultation history...
-              </div>
+              <LoadingScreen message="Loading consultation history..." />
             ) : error ? (
               <div className="flex h-72 items-center justify-center text-sm text-rose-500">
                 {error}

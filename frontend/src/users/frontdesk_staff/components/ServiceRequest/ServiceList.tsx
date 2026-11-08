@@ -1,3 +1,4 @@
+import { LoadingSpinner } from "../../../../components/LoadingScreen";
 import { useRef, useState } from "react";
 import {
   Syringe,
@@ -194,7 +195,7 @@ function ServiceList({
                      bg-blue-600 gap-1 hover:bg-blue-700
                      disabled:cursor-not-allowed disabled:bg-gray-300 disabled:hover:bg-gray-300"
         >
-          <Plus size={15} />
+          {submitting ? <LoadingSpinner size={15} /> : <Plus size={15} />}
           {submitting ? "Submitting..." : "Submit Request"}
         </button>
       </div>

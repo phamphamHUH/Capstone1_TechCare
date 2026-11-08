@@ -1,3 +1,4 @@
+import LoadingScreen from "../../../../components/LoadingScreen";
 import { useState, type Dispatch, type SetStateAction } from "react";
 import QueueTable from "./QueueTable";
 import type { PriorityFilter, QueueEntry } from "../../../../interface/Queue";
@@ -221,9 +222,7 @@ function ConsultationQueuePanel({
       </div>
 
       {loading ? (
-        <div className="w-full mb-8 border border-gray-200 bg-gray-100 p-4 text-center text-sm">
-          Loading {loadingLabel}consultation queues...
-        </div>
+        <LoadingScreen message={`Loading ${loadingLabel}consultation queues...`} />
       ) : error ? (
         <div
           role="alert"

@@ -1,3 +1,4 @@
+import LoadingScreen from "../../../components/LoadingScreen";
 import { useEffect, useState } from "react";
 import ActivityDetails from "../components/ActivityMonitoring/ActivityDetails";
 import ActivityTable from "../components/ActivityMonitoring/ActivityTable";
@@ -24,6 +25,7 @@ type ActivityMonitoringModalProps = {
 function ActivityMonitoring({
   activities,
   loadData,
+  loading,
 }: ActivityMonitoringModalProps) {
   useEffect(() => {
     loadData();
@@ -104,6 +106,10 @@ function ActivityMonitoring({
 
       return sort === "newest" ? dateB - dateA : dateA - dateB;
     });
+
+  if (loading && activities.length === 0) {
+    return <LoadingScreen variant="page" message="Loading activity logs..." />;
+  }
 
   return (
     <main className="flex-1 min-w-0">

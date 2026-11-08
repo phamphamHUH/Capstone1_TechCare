@@ -1,3 +1,4 @@
+import { LoadingSpinner } from "./LoadingScreen";
 import {
   useEffect,
   useRef,
@@ -6,14 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import { Dialog } from "@base-ui/react/dialog";
-import {
-  CircleCheck,
-  CircleX,
-  Info,
-  LoaderCircle,
-  TriangleAlert,
-  X,
-} from "lucide-react";
+import { CircleCheck, CircleX, Info, TriangleAlert, X } from "lucide-react";
 import { cn } from "../lib/utils";
 
 export type ModalType = "info" | "success" | "warning" | "danger";
@@ -238,10 +232,7 @@ export default function UniversalModal({
                       )}
                     >
                       {loading ? (
-                        <LoaderCircle
-                          size={15}
-                          className="shrink-0 animate-spin motion-reduce:animate-none"
-                        />
+                        <LoadingSpinner size={15} className="shrink-0" />
                       ) : (
                         action.icon
                       )}

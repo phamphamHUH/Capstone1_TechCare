@@ -1,3 +1,4 @@
+import LoadingScreen from "../../../components/LoadingScreen";
 import { useEffect, useState } from "react";
 import { Search, UserPlus } from "lucide-react";
 
@@ -18,7 +19,8 @@ type UserManagementProps = {
 
 function UserManagement({
   users,
-  loadData
+  loadData,
+  loading,
 }: UserManagementProps) {
   const [showAddUser, setShowAddUser] = useState(false);
   const [showUpdateUser, setShowUpdateUser] = useState(false);
@@ -118,7 +120,9 @@ function UserManagement({
                 USER GRID
             ========================== */}
 
-      {filteredUsers.length > 0 ? (
+      {loading && users.length === 0 ? (
+        <LoadingScreen message="Loading users..." />
+      ) : filteredUsers.length > 0 ? (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6 px-6">
           {filteredUsers.map((user) => (
             <UserCardSquare

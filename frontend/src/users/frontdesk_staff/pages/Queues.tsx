@@ -1,3 +1,4 @@
+import LoadingScreen from "../../../components/LoadingScreen";
 import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 import type {
@@ -47,7 +48,7 @@ const STAT_FILTERS: Record<QueueStatFilter, (q: QueueEntry) => boolean> = {
   "completed-today": isCompletedToday,
 };
 
-function Queues({ queues, queueRequests, loadData }: QueuesProps) {
+function Queues({ queues, queueRequests, loadData, loading }: QueuesProps) {
   const [activeTab, setActiveTab] = useState<QueueTab>("all");
   const [, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState("");
@@ -108,6 +109,10 @@ function Queues({ queues, queueRequests, loadData }: QueuesProps) {
       return true;
     });
   }, [queues, statFilter, activeTab, serviceFilter, priority, search]);
+
+  if (loading && !queues.length && !queueRequests.length) {
+    return <LoadingScreen variant="page" message="Loading queues..." />;
+  }
 
   return (
     <main className="flex-1 min-w-0 ">

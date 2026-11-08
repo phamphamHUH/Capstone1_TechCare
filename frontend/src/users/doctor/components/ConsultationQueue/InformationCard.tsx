@@ -1,3 +1,4 @@
+import LoadingScreen from "../../../../components/LoadingScreen";
 import { useEffect, useState } from "react";
 import { X, FileText, Info } from "lucide-react";
 import api from "../../../../lib/axios";
@@ -145,9 +146,7 @@ function InformationCard({ onClose, queueIdCard }: InformationCardProps) {
         {/* Body */}
         <div className="flex-1 flex items-center justify-center overflow-y-auto bg-gray-50 px-8 py-5">
           {detailLoading ? (
-            <div className="rounded-xl w-full text-center border border-gray-200 bg-white p-4 text-sm">
-              Loading consultation...
-            </div>
+            <LoadingScreen message="Loading consultation..." />
           ) : detailError ? (
             <div
               role="alert"

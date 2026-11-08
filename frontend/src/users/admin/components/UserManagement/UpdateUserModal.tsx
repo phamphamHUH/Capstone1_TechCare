@@ -1,3 +1,4 @@
+import { LoadingSpinner } from "../../../../components/LoadingScreen";
 import { useRef, useState } from "react";
 import type { User } from "../../../../interface/User";
 import {
@@ -820,7 +821,7 @@ function UpdateUserModal({
               disabled={saving}
               className="flex items-center gap-2 rounded-xl bg-gray-900 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <Save size={16} />
+              {saving ? <LoadingSpinner size={16} /> : <Save size={16} />}
 
               {saving ? "Saving..." : "Save Changes"}
             </button>

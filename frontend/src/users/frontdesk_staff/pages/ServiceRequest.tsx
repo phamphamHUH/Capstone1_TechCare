@@ -1,3 +1,4 @@
+import LoadingScreen from "../../../components/LoadingScreen";
 import React, { useState } from "react";
 import ServiceTypeTabs from "../components/ServiceRequest/ServiceTypeTabs";
 import ServiceSelectionPanel from "../components/ServiceRequest/ServiceSelectionPanel";
@@ -17,7 +18,7 @@ type ServiceRequestProps = {
 
 const PAGE_SIZE = 10;
 
-function ServiceRequest({ services, loadData, setPage }: ServiceRequestProps) {
+function ServiceRequest({ services, loadData, setPage, loading }: ServiceRequestProps) {
   const [activeTab, setActiveTab] = useState("laboratory");
   const [patient, setPatient] = useState<Patient | null>(null);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
@@ -95,6 +96,10 @@ function ServiceRequest({ services, loadData, setPage }: ServiceRequestProps) {
     });
   };
   const clearServices = () => setSelectedServices([]);
+
+  if (loading && services.length === 0) {
+    return <LoadingScreen variant="page" message="Loading available services..." />;
+  }
 
   return (
     <main className="flex-1 min-w-0 pb-5">

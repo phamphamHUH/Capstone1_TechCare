@@ -1,6 +1,7 @@
+import LoadingScreen, { LoadingSpinner } from "../../../components/LoadingScreen";
 import { useMemo, useState } from "react";
 import axios from "axios";
-import { LoaderCircle, RefreshCw, Search } from "lucide-react";
+import { RefreshCw, Search } from "lucide-react";
 import api from "../../../lib/axios";
 import type {
   Bill,
@@ -287,10 +288,7 @@ function Billing({ bills, loading, error, loadData }: BillingProps) {
           className="flex h-9 cursor-pointer items-center gap-2 rounded-sm border border-gray-300 px-3 text-sm text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading ? (
-            <LoaderCircle
-              size={16}
-              className="animate-spin motion-reduce:animate-none"
-            />
+            <LoadingSpinner size={16} />
           ) : (
             <RefreshCw size={16} />
           )}
@@ -299,9 +297,7 @@ function Billing({ bills, loading, error, loadData }: BillingProps) {
       </div>
 
       {opening && (
-        <p role="status" className="mb-3 text-sm text-gray-500">
-          Loading the selected bill...
-        </p>
+        <LoadingScreen message="Loading the selected bill..." variant="inline" className="py-3" />
       )}
 
       <BillingTable

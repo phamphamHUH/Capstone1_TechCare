@@ -1,3 +1,4 @@
+import { LoadingSpinner } from "../../../../components/LoadingScreen";
 import { useRef, useState } from "react";
 import type { Patient } from "../../../../interface/Patient";
 import { X, Mail, Phone, MapPin, Save, ArrowLeft, Camera } from "lucide-react";
@@ -450,7 +451,7 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
               disabled={saving}
               className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <Save size={16} />
+              {saving ? <LoadingSpinner size={16} /> : <Save size={16} />}
               {saving ? "Saving..." : "Save Changes"}
             </button>
           </div>

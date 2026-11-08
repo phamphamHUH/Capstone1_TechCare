@@ -1,3 +1,4 @@
+import LoadingScreen from "../../../components/LoadingScreen";
 import { useEffect, useState } from "react";
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 import {
@@ -500,10 +501,10 @@ function VisitDetails({
         <StatusPill status={sel?.status} />
       </div>
 
-      {!sel || loading ? (
-        <p className="py-10 text-center text-xs text-slate-500">
-          {!sel ? "Select a record to see its details." : "Loading details..."}
-        </p>
+      {!sel ? (
+        <p className="py-10 text-center text-xs text-slate-500">Select a record to see its details.</p>
+      ) : loading ? (
+        <LoadingScreen message="Loading details..." />
       ) : (
         <div className="mt-4 space-y-5">
           <div className="flex items-center gap-3">
@@ -655,9 +656,7 @@ function FullRecordModal({
         </div>
 
         {loading && (
-          <p className="py-10 text-center text-sm text-slate-500">
-            Loading record...
-          </p>
+          <LoadingScreen message="Loading record..." />
         )}
         {error && (
           <div className="mt-4">
@@ -954,9 +953,7 @@ function MedicalHistoryContent({
                 Enter a patient ID to view their medical history.
               </p>
             ) : list.loading ? (
-              <p className="p-10 text-center text-sm text-slate-500">
-                Loading medical history...
-              </p>
+              <LoadingScreen message="Loading medical history..." />
             ) : list.error ? (
               <ErrorBox message={list.error} />
             ) : records.length === 0 ? (

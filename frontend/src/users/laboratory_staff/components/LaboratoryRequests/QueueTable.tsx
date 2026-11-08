@@ -1,3 +1,4 @@
+import LoadingScreen from "../../../../components/LoadingScreen";
 
 import { ChevronDown, ChevronUp } from "lucide-react";
 import React, { useState, type Dispatch, type SetStateAction } from "react";
@@ -244,9 +245,7 @@ function QueueTable({
                 <tr className="border-b border-gray-300 bg-gray-50">
                   <td colSpan={8} className="p-4">
                     {accordionLoading ? (
-                      <p className="text-sm text-gray-500">
-                        Loading laboratory items...
-                      </p>
+                      <LoadingScreen message="Loading laboratory items..." />
                     ) : accordionError ? (
                       <p className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
                         {accordionError}

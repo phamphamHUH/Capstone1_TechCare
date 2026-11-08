@@ -1,3 +1,4 @@
+import { LoadingSpinner } from "../../../../components/LoadingScreen";
 import { useState } from "react";
 import { X, Search, Trash } from "lucide-react";
 import api from "../../../../lib/axios";
@@ -444,6 +445,7 @@ function EditService({ service, services, onClose, loadData }: Props) {
               onClick={saveService}
               disabled={submitting}
             >
+              {submitting && <LoadingSpinner size={16} className="mr-2 inline-block align-middle" />}
               {submitting ? "Saving..." : "Save Changes"}
             </button>
           </div>

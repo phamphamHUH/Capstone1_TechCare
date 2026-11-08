@@ -1,5 +1,6 @@
+import LoadingScreen from "../../../../components/LoadingScreen";
 import { useState } from "react";
-import { LoaderCircle, ReceiptText } from "lucide-react";
+import { ReceiptText } from "lucide-react";
 import type { Bill } from "../../../../interface/Billing";
 import { formatDateTime, peso } from "../../../../utils/formats";
 
@@ -156,13 +157,7 @@ function BillingTable({
       {rows.length === 0 && (
         <div className="flex flex-col items-center gap-2 px-4 py-16 text-center text-gray-400">
           {loading ? (
-            <>
-              <LoaderCircle
-                size={28}
-                className="animate-spin motion-reduce:animate-none"
-              />
-              <p role="status">Loading bills...</p>
-            </>
+            <LoadingScreen message="Loading bills..." className="min-h-0 py-0" />
           ) : (
             <>
               <ReceiptText size={28} />

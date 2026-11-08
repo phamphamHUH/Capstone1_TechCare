@@ -39,11 +39,11 @@ function Admin() {
   const [analyticsRange, setAnalyticsRange] = useState<AnalyticsRange>("30d");
   const [salesAnalytics, setSalesAnalytics] = useState<SalesAnalytics | null>(null);
   const [serviceAnalytics, setServiceAnalytics] = useState<ServiceAnalytics | null>(null);
-  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
   const [analyticsError, setAnalyticsError] = useState<string | null>(null);
   const latestAnalyticsRequest = useRef(0);
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(true);
 
   const [searchParams, setSearchParams] = useSearchParams();

@@ -1,5 +1,6 @@
+import { LoadingSpinner } from "../../../../components/LoadingScreen";
 import { useMemo, useRef, useState } from "react";
-import { AlertCircle, CheckCircle2, Loader2, Plus, Trash2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, Plus, Trash2 } from "lucide-react";
 import type {
   DiagnosisRow,
   DiagnosisType,
@@ -267,7 +268,7 @@ export default function ConsultationFindingsForm({
           disabled={saving}
           className="flex items-center gap-2 px-6 py-2 bg-sky-500 hover:bg-sky-600 disabled:bg-sky-300 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer disabled:cursor-wait"
         >
-          {saving && <Loader2 size={13} className="animate-spin" />}
+          {saving && <LoadingSpinner size={13} />}
           {saving ? "Saving..." : "Next: Prescription →"}
         </button>
       </div>

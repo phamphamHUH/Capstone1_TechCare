@@ -1,3 +1,4 @@
+import LoadingScreen from "../../../components/LoadingScreen";
 import { useState } from "react";
 import type { Patient } from "../../../interface/Patient";
 import { Search } from "lucide-react";
@@ -23,6 +24,7 @@ function PatientRecords({
   selectedPatient,
   setSelectedPatient,
   loadData,
+  loading,
 }: PatientRecordProps) {
   const [showEditPatient, setShowEditPatient] = useState(false);
   const [search, setSearch] = useState("");
@@ -35,6 +37,10 @@ function PatientRecords({
       patient.email.toLowerCase().includes(q)
     );
   });
+
+  if (loading && patients.length === 0 && !showEditPatient) {
+    return <LoadingScreen variant="page" message="Loading patient records..." />;
+  }
 
   return (
     <main className="flex-1 min-w-0">
