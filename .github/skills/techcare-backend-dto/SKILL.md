@@ -1,6 +1,6 @@
 ---
 name: techcare-backend-dto
-description: Backend DTO conventions and reference for TechCare - the TypeScript namespaces in backend/src/controllers/<role>/dto/*.dto.ts, how controllers use them with Response<ns.response | ns.error>, what the compiler does and does not check, how database types map to DTO fields, error shapes, an index of every namespace, and DTOs known to disagree with the schema or their controller. Use this skill whenever adding or changing an API endpoint, request body, response shape, query parameter or error response, whenever editing a *.dto.ts file or a typed controller, when a frontend type disagrees with what the API returns, or when asked what an endpoint accepts or returns, even if the user never says "DTO".
+description: Backend DTO conventions and reference for TechCare - the TypeScript namespaces in backend/src/controllers/ROLE/dto/*.dto.ts, how controllers type res with each namespace's response and error types, what the compiler does and does not check, how database types map to DTO fields, error shapes, an index of every namespace, and DTOs known to disagree with the schema or their controller. Use this skill whenever adding or changing an API endpoint, request body, response shape, query parameter or error response, whenever editing a *.dto.ts file or a typed controller, when a frontend type disagrees with what the API returns, or when asked what an endpoint accepts or returns, even if the user never says "DTO".
 ---
 
 # Backend DTOs

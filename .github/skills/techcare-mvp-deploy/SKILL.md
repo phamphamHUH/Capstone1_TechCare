@@ -1,6 +1,6 @@
 ---
 name: techcare-mvp-deploy
-description: Build or convert a TechCare-style project into a lean, deployment-ready MVP. Use when the goal is "just make it work and deploy it" - no generateId.ts logic, no syncSchema, no IS_PRODUCTION toggles, no demo routes, no hardcoded users - while KEEPING the same folder architecture (controllers/<role>/{get,post,update,delete}Requests + dto, routes, middlewares, config, services) so the code stays readable. Covers the full stack: env validation, Neon DB, SQL migrations with DB-generated IDs, auth, role guards, one worked CRUD + atomic queue example, optional SSE, React shell, Vite config, and a Render monolith deploy. Trigger on "MVP", "deploy", "production ready", "simplify", "strip dev logic", "just ship it".
+description: Build or convert a TechCare-style project into a lean, deployment-ready MVP. Use when the goal is "just make it work and deploy it" - no generateId.ts logic, no syncSchema, no IS_PRODUCTION toggles, no demo routes, no hardcoded users - while KEEPING the same folder architecture (controllers/ROLE/{get,post,update,delete}Requests + dto, routes, middlewares, config, services) so the code stays readable. Covers the full stack: env validation, Neon DB, SQL migrations with DB-generated IDs, auth, role guards, one worked CRUD + atomic queue example, optional SSE, React shell, Vite config, and a Render monolith deploy. Trigger on "MVP", "deploy", "production ready", "simplify", "strip dev logic", "just ship it".
 ---
 
 # TechCare MVP (deployment-ready, same architecture)
