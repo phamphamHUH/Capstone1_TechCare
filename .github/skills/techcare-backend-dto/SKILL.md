@@ -148,7 +148,7 @@ Handlers come from the same role unless noted.
 
 | File | Namespaces |
 |---|---|
-| `admin/dto/get.dto.ts` | `getAllUsers`, `getAllActivities`, `getAllservices` (lowercase s), `getMyActivities`, `getAllFormTemplates`, `getFormTemplateById` |
+| `admin/dto/get.dto.ts` | `getAllUsers`, `getAllActivities`, `getAllservices` (lowercase s), `getMyActivities`, `getAllFormTemplates`, `getFormTemplateById`, `getSalesAnalytics`, `getServiceAnalytics`, `getAnalyticsBills` (the three analytics ones are imported with `as …DTO` aliases, convert NUMERIC/COUNT with `Number()` so money is `number`, and return literals without casts) |
 | `admin/dto/post.dto.ts` | `addUser`, `addService`, `addActivity`, `addAction`, `addFormTemplates` |
 | `admin/dto/update.dto.ts` | `updateUser`, `updateUserStatus`, `updateFormTemplate` |
 | `admin/dto/delete.dto.ts` | `deleteTemplate` |
