@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Info } from "lucide-react";
 import api from "../../../lib/axios";
 import { connectQueueStream } from "../../../services/queue-sse/connectQueueStream";
 import QueueColumn from "../components/QueueMonitor/QueueColumn";
@@ -13,12 +14,12 @@ type QueueingMonitorProps = {
 
 // Label + color of the badge for each connection status.
 const STATUS_BADGE: Record<QueueStreamStatus, { label: string; style: string }> = {
-  connecting: { label: "Connecting…", style: "bg-amber-500/20 text-amber-300" },
-  live: { label: "Live", style: "bg-emerald-500/20 text-emerald-300" },
-  reconnecting: { label: "Reconnecting…", style: "bg-amber-500/20 text-amber-300" },
+  connecting: { label: "Connecting…", style: "bg-amber-100 text-amber-700" },
+  live: { label: "Live", style: "bg-emerald-100 text-emerald-700" },
+  reconnecting: { label: "Reconnecting…", style: "bg-amber-100 text-amber-700" },
   unauthorized: {
     label: "Session expired — log in again",
-    style: "bg-red-500/20 text-red-300",
+    style: "bg-red-100 text-red-700",
   },
 };
 
@@ -78,12 +79,14 @@ function QueueingMonitor(_props: QueueingMonitorProps) {
   return (
     <div
       ref={screenRef}
-      className="mx-6 flex min-h-[80vh] flex-col rounded-2xl bg-slate-900 p-6 text-white"
+      className="mx-6 flex min-h-[80vh] flex-col rounded-2xl bg-slate-100 p-3 text-slate-900"
     >
       {/* HEADER: title, connection badge, clock, fullscreen */}
-      <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <header className="mb-3 flex flex-wrap items-center justify-between gap-3 px-1">
         <div className="flex items-center gap-3">
-          <h2 className="text-2xl font-bold tracking-tight">Queue Monitor</h2>
+          <h2 className="text-2xl font-bold tracking-tight text-blue-950">
+            Queue Monitor
+          </h2>
           <span
             className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-medium ${STATUS_BADGE[status].style}`}
           >
@@ -94,13 +97,13 @@ function QueueingMonitor(_props: QueueingMonitorProps) {
           </span>
         </div>
 
-        <div className="flex items-center gap-4 text-slate-300">
-          <span className="text-xl tabular-nums">
+        <div className="flex items-center gap-4 text-slate-600">
+          <span className="text-xl font-semibold tabular-nums text-blue-950">
             {currentTime.toLocaleTimeString()}
           </span>
           <button
             onClick={handleFullscreen}
-            className="rounded-lg border border-slate-600 px-3 py-1.5 text-sm hover:bg-slate-800"
+            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm hover:bg-slate-50"
           >
             Fullscreen
           </button>
@@ -108,7 +111,7 @@ function QueueingMonitor(_props: QueueingMonitorProps) {
       </header>
 
       {/* BOARD: one column per service type */}
-      <div className={`grid flex-1 gap-6 lg:grid-cols-2 ${isLive ? "" : "opacity-50"}`}>
+      <div className={`grid flex-1 gap-3 lg:grid-cols-2 ${isLive ? "" : "opacity-50"}`}>
         <QueueColumn
           title="Consultation"
           entries={queueEntries.filter((entry) => entry.service_type === "consultation")}
@@ -119,10 +122,16 @@ function QueueingMonitor(_props: QueueingMonitorProps) {
         />
       </div>
 
-      <footer className="mt-4 text-right text-xs text-slate-500">
-        {lastUpdated
-          ? `Last update ${lastUpdated.toLocaleTimeString()}`
-          : "Waiting for first update…"}
+      <footer className="mt-3 flex flex-wrap items-center justify-between gap-2 px-1 text-sm">
+        <span className="flex items-center gap-2 text-blue-950">
+          <Info className="h-4 w-4 fill-blue-600 text-white" />
+          Please wait for your number to be called.
+        </span>
+        <span className="text-xs text-slate-500">
+          {lastUpdated
+            ? `Last update ${lastUpdated.toLocaleTimeString()}`
+            : "Waiting for first update…"}
+        </span>
       </footer>
     </div>
   );
