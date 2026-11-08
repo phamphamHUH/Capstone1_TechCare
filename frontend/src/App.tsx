@@ -1,4 +1,5 @@
-import { Navigate, Route, Routes } from "react-router";
+import { useEffect } from "react";
+import { Navigate, Route, Routes, useLocation } from "react-router";
 import LoginPage from "./auth/LoginPage";
 import SignupPage from "./auth/SignupPage";
 import Admin from "./users/admin/Admin";
@@ -12,7 +13,16 @@ import MessageSSERecieve from "./users/test/sse_message/MessageSSEReceive";
 import MessageSSESend from "./users/test/sse_message/MessageSSESend";
 import QueueSendSSE from "./users/test/sse_queue/QueueSendSSE";
 import QueueReceiveSSE from "./users/test/sse_queue/QueueReceiveSSE";
+
 function App() {
+  const { pathname } = useLocation();
+
+  // Re-read the role on every route change. Login saves it to
+  // sessionStorage before navigate(), so no page reload is needed.
+  useEffect(() => {
+    document.title = sessionStorage.getItem("role") || "TechCare";
+  }, [pathname]);
+
   return (
     <div className="select-none">
       <Routes>
