@@ -1,4 +1,3 @@
-
 export interface Queue {
   id: number;
   queue_id: string;
@@ -16,9 +15,15 @@ export interface Queue {
 export interface QueueEntry {
   id: number;
   queue_id: string;
+  consultation_record_id: string;
+  consultation_type: string;
   patient_id: string;
   patient_name: string;
   birthdate: string;
+  contact_number: string;
+  sex: string;
+  image_url: string;
+  is_pwd: boolean;
   queue_number: number;
   service_id: string;
   service_name: string;

@@ -15,6 +15,7 @@ type ConsultationQueueProps = {
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   loading: boolean;
   error: string | null;
+  setSelectedQueue: React.Dispatch<React.SetStateAction<QueueEntry | null>>;
 };
 
 function ConsultationQueue({
@@ -24,16 +25,13 @@ function ConsultationQueue({
   loadData,
   loading,
   error,
+  setSelectedQueue,
 }: ConsultationQueueProps) {
   const [openQueueAccordion, setOpenQueueAccordion] = useState<string | null>(
     null,
   );
   const [openInformationCard, setOpenInformationCard] = useState(false);
   const [queueIdCard, setQueueIdCard] = useState<string | null>(null);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
 
   useEffect(() => {
     const closeQueueStream = connectQueueStream({
@@ -57,6 +55,7 @@ function ConsultationQueue({
         setOpenQueueAccordion={setOpenQueueAccordion}
         setOpenInformationCard={setOpenInformationCard}
         setQueueIdCard={setQueueIdCard}
+        setSelectedQueue={setSelectedQueue}
       />
       {openInformationCard && (
         <InformationCard

@@ -1,6 +1,6 @@
 import SideBar from "#components/SideBar";
 import Header from "#components/Header";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   LayoutGrid,
   ListOrdered,
@@ -18,6 +18,7 @@ import Consultation from "./pages/Consultation";
 import type { Service } from "../../interface/Service";
 import type { QueueEntry } from "../../interface/Queue";
 import api from "#lib/axios";
+import ActiveConsultation from "./pages/ActiveConsultation";
 
 function Doctor() {
   const [open, setOpen] = useState(true);
@@ -25,7 +26,10 @@ function Doctor() {
   const [error, setError] = useState<string | null>(null);
   const [services, setServices] = useState<Service[]>([]);
   const [queues, setQueues] = useState<QueueEntry[]>([]);
+  const [selectedQueue, setSelectedQueue] = useState<QueueEntry | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const room = "Consultation Room";
 
   const page = searchParams.get("page") ?? "dashboard";
 
@@ -59,6 +63,11 @@ function Doctor() {
       icon: <ListOrdered size={20} />,
     },
     {
+      page: "active-consultation",
+      label: "Active Consultation",
+      icon: <Stethoscope size={20} />,
+    },
+    {
       page: "medical-history",
       label: "Medical History",
       icon: <FileClock size={20} />,
@@ -69,10 +78,11 @@ function Doctor() {
       icon: <FileText size={20} />,
     },
   ];
-  const room = "Consultation Room";
+
   const currentPage =
     navItems.find((item) => item.page === page)?.label ?? "Dashboard";
 
+  // FETCH SERVICES AND CONSULTATION QUEUES
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
@@ -81,21 +91,39 @@ function Doctor() {
       const servicesRes = await api.get(
         `/api/doctor/services/${encodeURIComponent(room)}`,
       );
+
       setServices(servicesRes.data?.services ?? []);
 
       const queuesRes = await api.get(
         `/api/doctor/consultation-queues/room/${encodeURIComponent(room)}`,
       );
-      console.log(queuesRes);
-      setQueues(queuesRes.data?.queueEntries ?? []);
-      console.log(queues);
+
+      const fetchedQueues: QueueEntry[] = queuesRes.data?.queueEntries ?? [];
+
+      setQueues(fetchedQueues);
+
+      // RESTORE THE CURRENTLY SERVING CONSULTATION
+      const servingQueue = fetchedQueues.find(
+        (queue) => queue.status?.toLowerCase() === "serving",
+      );
+
+      setSelectedQueue(servingQueue ?? null);
     } catch (err) {
       console.error("Error loading doctor data:", err);
       setError("Could not load consultation data.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [room]);
+
+  // FETCH DATA WHEN DOCTOR PAGE MOUNTS
+  useEffect(() => {
+    const initialize = async () => {
+      await loadData();
+    };
+
+    void initialize();
+  }, [loadData]);
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -141,7 +169,12 @@ function Doctor() {
               open={open}
               setOpen={setOpen}
               loadData={loadData}
+              setSelectedQueue={setSelectedQueue}
             />
+          )}
+
+          {page === "active-consultation" && (
+            <ActiveConsultation selectedQueue={selectedQueue} room={room} />
           )}
 
           {page === "medical-history" && (

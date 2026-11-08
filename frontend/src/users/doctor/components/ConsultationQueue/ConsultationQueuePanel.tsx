@@ -17,6 +17,7 @@ type RequestTableProps = {
   setQueueIdCard: Dispatch<SetStateAction<string | null>>;
   loadData: () => Promise<void>;
   room: string;
+  setSelectedQueue: React.Dispatch<React.SetStateAction<QueueEntry | null>>;
 };
 
 const mainFilterValues: { label: string; value: MainFilter }[] = [
@@ -37,6 +38,7 @@ function ConsultationQueuePanel({
   setQueueIdCard,
   room,
   loadData,
+  setSelectedQueue,
 }: RequestTableProps) {
   // MAIN STATUS TABS AND ADDITIONAL FILTERS
   const [activeMainTab, setActiveMainTab] = useState<MainFilter>("all");
@@ -243,6 +245,7 @@ function ConsultationQueuePanel({
             setQueueIdCard={setQueueIdCard}
             room={room}
             loadData={loadData}
+            setSelectedQueue={setSelectedQueue}
           />
         </div>
       )}

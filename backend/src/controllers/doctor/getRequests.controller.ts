@@ -59,8 +59,13 @@ export async function getConsultationQueues(
         s.service_type,
         s.service_category,
         s.room,
+        p.patient_id,
         CONCAT_WS(' ', p.first_name, p.last_name)  AS patient_name,
-        DATE_PART('year', AGE(p.birthdate))::int   AS age
+        p.birthdate,
+        p.contact_number,
+        p.image_url,
+        p.is_pwd,
+        p.sex
       FROM queue_entries q
       JOIN consultation_records cr ON cr.queue_id = q.queue_id
       JOIN services s              ON s.service_id = cr.service_id
@@ -71,7 +76,7 @@ export async function getConsultationQueues(
         AND q.created_at <  CURRENT_DATE + INTERVAL '1 day'
       ORDER BY q.queue_number ASC
     `;
-
+    console.log(queues);
     return res.status(200).json({
       message: "Successfully fetched consultation queues.",
       queueEntries: queues,
