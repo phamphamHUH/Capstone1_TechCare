@@ -79,19 +79,25 @@ function RoomSummaryPanel({
     {
       label: "Serving",
       subLabel: "Being served",
-      value: queues.filter((queue) => queue.status === "Serving").length,
+      value: queues.filter(
+        (queue) => queue.status.toLocaleLowerCase() === "serving",
+      ).length,
       icon: ListStart,
     },
     {
       label: "Waiting",
       subLabel: "Currently waiting",
-      value: queues.filter((queue) => queue.status === "Waiting").length,
+      value: queues.filter(
+        (queue) => queue.status.toLocaleLowerCase() === "waiting",
+      ).length,
       icon: Loader,
     },
     {
       label: "Collected",
       subLabel: "Completed",
-      value: queues.filter((queue) => queue.status === "Completed").length,
+      value: queues.filter(
+        (queue) => queue.status.toLocaleLowerCase() === "Completed",
+      ).length,
       icon: FileCheck,
     },
   ];
