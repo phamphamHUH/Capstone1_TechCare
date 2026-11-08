@@ -182,7 +182,7 @@ function ReportPreview({ report }: ReportPreviewProps) {
             void print();
           }}
           disabled={!ready || printing}
-          className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-[#36b3e9] px-4 py-2 text-[11px] font-medium text-white hover:bg-[#239ed2] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-sky-500 px-4 py-2 text-sm font-medium text-white hover:bg-sky-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {printing ? (
             <LoaderCircle
@@ -198,12 +198,12 @@ function ReportPreview({ report }: ReportPreviewProps) {
           type="button"
           onClick={() => setFit(false)}
           aria-pressed={!fit}
-          className="ml-auto cursor-pointer rounded px-2 py-1 text-[11px] text-[#839abe] hover:text-sky-600 focus-visible:outline-sky-500"
+          className="ml-auto cursor-pointer rounded px-2 py-1 text-sm text-gray-500 hover:text-sky-600 focus-visible:outline-sky-500"
         >
           Actual size
         </button>
         <span
-          className="w-10 text-right text-[10px] text-[#839abe]"
+          className="w-10 text-right text-xs text-gray-500"
           aria-label={`Preview zoom ${Math.round(scale * 100)} percent`}
         >
           {Math.round(scale * 100)}%
@@ -224,13 +224,13 @@ function ReportPreview({ report }: ReportPreviewProps) {
           </AnalysisButton>
         </>
       )}
-      <div className="mt-1 overflow-hidden rounded-md border border-[#e0eafa]">
-        <div className="flex flex-wrap items-center gap-2 border-b border-[#e0eafa] bg-white px-4 py-3 text-[11px]">
-          <Eye size={15} className="text-[#36b3e9]" />
+      <div className="mt-1 overflow-hidden rounded-2xl border border-gray-300">
+        <div className="flex flex-wrap items-center gap-2 border-b border-gray-300 bg-white px-4 py-3 text-sm">
+          <Eye size={15} className="text-sky-600" />
           <h2 className="font-semibold">Print Preview</h2>
-          <span className="text-[#839abe]">A4 · Portrait</span>
+          <span className="text-gray-500">A4 · Portrait</span>
           <span
-            className={`ml-auto rounded-full px-2.5 py-1 text-[10px] ${report.resultId ? "bg-sky-50 text-sky-700" : "bg-amber-50 text-amber-700"}`}
+            className={`ml-auto rounded-full px-2.5 py-1 text-xs ${report.resultId ? "bg-sky-50 text-sky-700" : "bg-amber-50 text-amber-700"}`}
           >
             {report.resultId ? "Saved result" : "Draft · Not saved"}
           </span>
@@ -238,7 +238,7 @@ function ReportPreview({ report }: ReportPreviewProps) {
         {!ready && !previewError && (
           <p
             role="status"
-            className="flex items-center justify-center gap-2 bg-[#f5f8fc] py-3 text-[11px] text-[#839abe]"
+            className="flex items-center justify-center gap-2 bg-gray-50 py-3 text-sm text-gray-500"
           >
             <LoaderCircle
               size={14}
@@ -249,7 +249,7 @@ function ReportPreview({ report }: ReportPreviewProps) {
         )}
         <div
           ref={containerRef}
-          className="max-h-[75vh] min-h-80 overflow-auto bg-[#f1f5f9] p-4"
+          className="max-h-[75vh] min-h-80 overflow-auto bg-gray-100 p-4"
           aria-busy={!ready && !previewError}
         >
           <div
@@ -278,7 +278,7 @@ function ReportPreview({ report }: ReportPreviewProps) {
           </div>
         </div>
       </div>
-      <p className="mt-3 text-[10px] leading-relaxed text-[#839abe]">
+      <p className="mt-3 text-xs leading-relaxed text-gray-500">
         The print dialog shows final page breaks. Use A4 paper and turn off
         browser headers and footers.
       </p>
@@ -358,10 +358,10 @@ export default function PrintResultView({
 
   return (
     <section
-      className="min-w-0 bg-white pt-4 pb-6 font-sans text-xs text-[#253c60]"
+      className="min-w-0 bg-white pb-6 font-sans text-sm text-gray-900"
       aria-labelledby="print-result-heading"
     >
-      <header className="flex flex-wrap items-start gap-4 border-b border-[#d8dce1] pb-4">
+      <header className="flex flex-wrap items-start gap-4 border-b border-gray-300 pb-4">
         <AnalysisButton variant="secondary" onClick={onBack}>
           <ArrowLeft size={13} />
           {backLabel}
@@ -371,11 +371,11 @@ export default function PrintResultView({
             ref={headingRef}
             tabIndex={-1}
             id="print-result-heading"
-            className="text-lg font-bold tracking-tight outline-none"
+            className="text-2xl font-semibold outline-none"
           >
             Print Result
           </h1>
-          <p className="mt-1 text-[11px] text-[#839abe]">
+          <p className="mt-1 text-sm text-gray-500">
             Generate a printable laboratory result in official format.
           </p>
         </div>
@@ -383,7 +383,7 @@ export default function PrintResultView({
       {loading ? (
         <p
           role="status"
-          className="flex min-h-64 items-center justify-center gap-2 text-[#839abe]"
+          className="flex min-h-64 items-center justify-center gap-2 text-gray-500"
         >
           <LoaderCircle
             size={18}
@@ -404,10 +404,10 @@ export default function PrintResultView({
       ) : report ? (
         <>
           {loaded.length > 1 && (
-            <label className="mt-4 flex flex-wrap items-center gap-3 text-[11px]">
+            <label className="mt-4 flex flex-wrap items-center gap-3 text-sm">
               Report
               <select
-                className="max-w-full rounded border border-[#dce7f8] bg-white p-2 outline-sky-400"
+                className="max-w-full rounded border border-gray-300 bg-white p-2 outline-sky-400"
                 value={selectedIndex}
                 onChange={(event) => setSelected(Number(event.target.value))}
               >

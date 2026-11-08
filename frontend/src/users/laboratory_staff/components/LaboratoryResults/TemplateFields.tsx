@@ -16,8 +16,8 @@ type TemplateFieldsProps = {
 const limit = (value: string | number | undefined) =>
   value === "" || value === undefined ? undefined : Number(value);
 const inputClass =
-  "h-7 w-full min-w-0 rounded-sm border border-[#dce7f8] bg-white px-2 py-1 text-[11px] text-[#304a71] outline-none placeholder:text-[#a3b3c9] focus:border-sky-400 focus:ring-2 focus:ring-sky-50 aria-invalid:border-rose-400 aria-invalid:bg-rose-50 disabled:opacity-50";
-const errorClass = "mt-1 text-[10px] leading-relaxed text-rose-700";
+  "h-9 w-full min-w-0 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 outline-none placeholder:text-gray-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-50 aria-invalid:border-rose-400 aria-invalid:bg-rose-50 disabled:opacity-50";
+const errorClass = "mt-1 text-xs leading-relaxed text-rose-700";
 
 type FieldInputProps = {
   component: BuilderComponent;
@@ -104,19 +104,19 @@ function TableField({
   return (
     <div>
       <div className="w-full overflow-x-auto">
-        <table className="w-full min-w-[300px] border-collapse text-left text-[10px]">
+        <table className="w-full min-w-[300px] border-collapse text-left text-xs">
           <thead>
             <tr>
               {columns.map((column) => (
                 <th
-                  className="bg-[#f0f7fd] p-2 font-medium text-[#8298b6]"
+                  className="bg-gray-50 p-2 font-medium text-gray-500"
                   scope="col"
                   key={column.id}
                 >
                   {column.header}
                 </th>
               ))}
-              <th className="bg-[#f0f7fd] p-2" scope="col">
+              <th className="bg-gray-50 p-2" scope="col">
                 <span className="sr-only">Remove row</span>
               </th>
             </tr>
@@ -129,7 +129,7 @@ function TableField({
 
                   return (
                     <td
-                      className="border-b border-[#eff4fa] p-1.5"
+                      className="border-b border-gray-200 p-1.5"
                       key={column.id}
                     >
                       <input
@@ -165,7 +165,7 @@ function TableField({
                     </td>
                   );
                 })}
-                <td className="border-b border-[#eff4fa] p-1.5">
+                <td className="border-b border-gray-200 p-1.5">
                   <AnalysisButton
                     variant="link"
                     compact
@@ -235,9 +235,9 @@ export default function TemplateFields({
     <>
       {groups.map((group) => (
         <section key={group.key} className="mb-5" aria-label={group.title}>
-          <h3 className="mb-1.5 text-xs font-semibold">{group.title}</h3>
+          <h3 className="mb-3 text-base font-semibold">{group.title}</h3>
           <div
-            className="hidden grid-cols-[1.15fr_1.6fr_1.1fr_.42fr] gap-3 bg-[#f0f7fd] px-2 py-1.5 text-[10px] text-[#7f98bb] sm:grid"
+            className="hidden grid-cols-[1.15fr_1.6fr_1.1fr_.42fr] gap-3 rounded-lg bg-gray-50 px-2 py-2 text-xs font-medium text-gray-600 sm:grid"
             aria-hidden="true"
           >
             <span>Parameter</span>
@@ -258,7 +258,7 @@ export default function TemplateFields({
             if (component.type === "static_text") {
               return (
                 <p
-                  className={`p-2 text-[11px] leading-relaxed whitespace-pre-wrap text-[#7790b0] ${alignment}`}
+                  className={`p-2 text-sm leading-relaxed whitespace-pre-wrap text-gray-500 ${alignment}`}
                   key={component.id}
                 >
                   {settings.staticText || component.label}
@@ -269,7 +269,7 @@ export default function TemplateFields({
             if (component.type === "line_divider") {
               return (
                 <hr
-                  className={`my-3 border-[#e0eafa] ${settings.dividerStyle === "dashed" ? "border-dashed" : settings.dividerStyle === "dotted" ? "border-dotted" : "border-solid"}`}
+                  className={`my-3 border-gray-300 ${settings.dividerStyle === "dashed" ? "border-dashed" : settings.dividerStyle === "dotted" ? "border-dotted" : "border-solid"}`}
                   key={component.id}
                 />
               );
@@ -306,7 +306,7 @@ export default function TemplateFields({
             if (component.type === "checkbox" || component.type === "table") {
               return (
                 <div
-                  className="border-b border-[#eff4fa] px-2 py-3"
+                  className="border-b border-gray-200 px-2 py-3"
                   key={component.id}
                 >
                   <fieldset
@@ -316,10 +316,10 @@ export default function TemplateFields({
                     aria-invalid={Boolean(error)}
                     aria-describedby={error ? `result-${key}-error` : undefined}
                   >
-                    <legend className="mb-2 text-xs">
+                    <legend className="mb-2 text-sm">
                       {component.label}
                       {(settings.required || rules.required) && (
-                        <span className="text-[#8a9cb6]">{" *"}</span>
+                        <span className="text-gray-500">{" *"}</span>
                       )}
                     </legend>
                     {component.type === "table" ? (
@@ -332,7 +332,7 @@ export default function TemplateFields({
                         disabled={disabled}
                       />
                     ) : settings.checkboxOptions?.length ? (
-                      <div className="flex flex-wrap gap-3 text-[11px]">
+                      <div className="flex flex-wrap gap-3 text-sm">
                         {settings.checkboxOptions.map((option) => {
                           const selected = Array.isArray(values[key])
                             ? (values[key] as string[])
@@ -344,7 +344,7 @@ export default function TemplateFields({
                               key={option}
                             >
                               <input
-                                className="accent-[#188bff]"
+                                className="accent-sky-500"
                                 type="checkbox"
                                 checked={selected.includes(option)}
                                 onChange={(event) =>
@@ -364,9 +364,9 @@ export default function TemplateFields({
                         })}
                       </div>
                     ) : (
-                      <label className="flex items-center gap-1.5 text-[11px]">
+                      <label className="flex items-center gap-1.5 text-sm">
                         <input
-                          className="accent-[#188bff]"
+                          className="accent-sky-500"
                           type="checkbox"
                           checked={values[key] === true}
                           onChange={(event) =>
@@ -388,13 +388,13 @@ export default function TemplateFields({
 
             return (
               <div
-                className="grid grid-cols-2 items-center gap-x-3 gap-y-1 border-b border-[#eff4fa] px-2 py-2 text-[11px] sm:grid-cols-[1.15fr_1.6fr_1.1fr_.42fr] sm:py-1.5"
+                className="grid grid-cols-1 items-center gap-x-3 gap-y-2 border-b border-gray-200 px-2 py-3 text-sm sm:grid-cols-[1.15fr_1.6fr_1.1fr_.42fr]"
                 key={component.id}
               >
                 <label htmlFor={`result-${key}`}>
                   {component.label}
                   {(settings.required || rules.required) && (
-                    <span className="text-[9px] text-[#8a9cb6]">{" *"}</span>
+                    <span className="text-xs text-gray-500">{" *"}</span>
                   )}
                 </label>
                 <div className="relative min-w-0">
@@ -413,17 +413,17 @@ export default function TemplateFields({
                   )}
                   {flag && !error && (
                     <span
-                      className={`mt-1 inline-block rounded-sm px-1 text-[9px] ${flag === (rules.flagLabels?.normal || "Normal") ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"}`}
+                      className={`mt-1 inline-block rounded-sm px-1 text-xs ${flag === (rules.flagLabels?.normal || "Normal") ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"}`}
                     >
                       {flag}
                     </span>
                   )}
                 </div>
-                <span className="text-[10px] text-[#8ba0c1]">
+                <span className="text-xs text-gray-500">
                   <span className="sm:hidden">{"Reference: "}</span>
                   {reference}
                 </span>
-                <span className="text-[10px] text-[#8ba0c1]">
+                <span className="text-xs text-gray-500">
                   {settings.unit || "—"}
                 </span>
               </div>
