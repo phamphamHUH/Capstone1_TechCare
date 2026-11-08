@@ -8,11 +8,13 @@ import { formatPatientAddress } from "../../../../utils/formats";
 type PatientSelectionHeaderProps = {
   patient: Patient | null;
   onSelectPatient: (patient: Patient) => void;
+  onRegister: () => void;
 };
 
 function PatientSelectionHeader({
   patient,
   onSelectPatient,
+  onRegister,
 }: PatientSelectionHeaderProps) {
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -33,9 +35,10 @@ function PatientSelectionHeader({
     patient?.last_name?.charAt(0) ?? ""
   }`;
 
-  // TODO: replace with real patient fields
-  const isSeniorCitizen = false;
-  const isPWD = false;
+  const handleRegister = () => {
+    setModalOpen(false);
+    onRegister();
+  };
 
   return (
     <>
@@ -58,12 +61,12 @@ function PatientSelectionHeader({
             <div className="flex flex-col gap-1">
               <div className="flex gap-2 items-center">
                 <h1 className="font-bold text-xl">{fullName}</h1>
-                {isSeniorCitizen && (
+                {calculateAge(patient.birthdate) >= 60 && (
                   <h1 className="rounded-full text-xs bg-sky-100 px-3 py-0.5 text-sky-600">
                     Senior Citizen
                   </h1>
                 )}
-                {isPWD && (
+                {patient.is_pwd && (
                   <h1 className="rounded-full bg-orange-100 px-3 py-0.5 text-orange-600">
                     PWD
                   </h1>
@@ -115,7 +118,11 @@ function PatientSelectionHeader({
       </div>
 
       {modalOpen && (
-        <PatientSearchModal onClose={closeModal} onSelect={handleSelect} />
+        <PatientSearchModal
+          onClose={closeModal}
+          onSelect={handleSelect}
+          onRegister={handleRegister}
+        />
       )}
     </>
   );

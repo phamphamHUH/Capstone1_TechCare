@@ -224,6 +224,7 @@ function FrontdeskStaff() {
               setOpen={setOpen}
               loadData={loadData}
               loading={loading}
+              setPage={setPage}
             />
           )}
 
