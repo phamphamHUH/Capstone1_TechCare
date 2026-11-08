@@ -4,10 +4,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import type {
-  HistoryRecord,
-  Pagination,
-} from "../../../../interface/HistoryRecord";
+import type { HistoryRecord, Pagination } from "../../interface/HistoryRecord";
 
 type HistoryTimelineProps = {
   records: HistoryRecord[];

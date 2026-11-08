@@ -10,8 +10,8 @@ import type {
 import { useDebounce } from "../../../../utils/debounce";
 import axios from "axios";
 import api from "#lib/axios";
-import HistoryTimeline from "./HistoryTimeline";
-import VisitDetails from "./VisitDetails";
+import HistoryTimeline from "#components/MedicalHistory/HistoryTimeline";
+import VisitDetails from "#components/MedicalHistory/VisitDetails";
 
 type MedicalHistoryTabProps = {
   patientId: string | null;
