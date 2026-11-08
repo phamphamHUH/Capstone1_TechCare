@@ -76,7 +76,6 @@ export async function getConsultationQueues(
         AND q.created_at <  CURRENT_DATE + INTERVAL '1 day'
       ORDER BY q.queue_number ASC
     `;
-    console.log(queues);
     return res.status(200).json({
       message: "Successfully fetched consultation queues.",
       queueEntries: queues,

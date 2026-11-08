@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import type { QueueEntry } from "../../../interface/Queue";
 import { formatAge, formatDateTime } from "../../../utils/formats";
 import calculateAge from "../../../utils/calculateAge";
+import MedicalHistoryTab from "../components/ActiveConsultation/MedicalHistoryTab";
 
 type ActiveConsultationProps = {
   selectedQueue: QueueEntry | null;
@@ -139,7 +140,9 @@ function ActiveConsultation({ selectedQueue, room }: ActiveConsultationProps) {
           {/* TAB CONTENT */}
           <section>
             {activeTab === "overview" && <div>overviewness</div>}
-            {activeTab === "medical-history" && <div>medical-history</div>}
+            {activeTab === "medical-history" && (
+              <MedicalHistoryTab patientId={selectedQueue.patient_id} />
+            )}
             {activeTab === "laboratory-results" && <div>lab</div>}
             {activeTab === "file-attachments" && <div>file</div>}
           </section>
