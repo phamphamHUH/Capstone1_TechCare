@@ -1,4 +1,4 @@
-import UserHeader from "./Header/UserHeader";
+import SidebarUserMenu from "./sidebar/SidebarUserMenu";
 
 type SideBarProps = {
   open: boolean;
@@ -49,7 +49,7 @@ function SideBar({ open, page, setPage, navItems }: SideBarProps) {
 
           {/* Profile + logout menu pinned to the bottom */}
           <div className="mt-auto border-t border-gray-300 px-3 py-3">
-            <UserHeader />
+            <SidebarUserMenu />
           </div>
         </>
       )}

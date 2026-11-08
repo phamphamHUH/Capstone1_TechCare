@@ -5,7 +5,7 @@ import api from "../../lib/axios";
 
 // Profile card shown at the bottom of the sidebar.
 // Clicking it opens a small menu with the Logout button.
-function UserHeader() {
+function SidebarUserMenu() {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [logoutStatus, setLogoutStatus] = useState("Logout");
@@ -117,4 +117,4 @@ function UserHeader() {
   );
 }
 
-export default UserHeader;
+export default SidebarUserMenu;
