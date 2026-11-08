@@ -1,5 +1,11 @@
 import { useRef, useState } from "react";
-import { Syringe, Trash2, Plus } from "lucide-react";
+import {
+  Syringe,
+  Trash2,
+  Plus,
+  TriangleAlert,
+  CircleAlert,
+} from "lucide-react";
 import api from "#lib/axios";
 import type { Service } from "../../../../interface/Service";
 import RequestSuccessModal from "./RequestSuccessModal";
@@ -26,6 +32,7 @@ function ServiceList({
 }: ServiceListProps) {
   const [submitting, setSubmitting] = useState(false);
   const pending = useRef(false);
+  const headingRef = useRef<HTMLHeadingElement>(null);
   const [removing, setRemoving] = useState<Service | null>(null);
   const [clearing, setClearing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,7 +70,10 @@ function ServiceList({
         });
 
         setSuccess({
-          requestId: (Array.isArray(res.data.request) ? res.data.request[0] : res.data.request)?.request_id,
+          requestId: (Array.isArray(res.data.request)
+            ? res.data.request[0]
+            : res.data.request
+          )?.request_id,
           count: selectedServices.length,
         });
       } else {
@@ -96,7 +106,11 @@ function ServiceList({
     <>
       <div className="flex flex-col flex-1 min-h-0">
         <div className="flex items-center justify-between mb-5 pb-5 border-b border-gray-200">
-          <h1 className="font-bold text-lg">
+          <h1
+            ref={headingRef}
+            tabIndex={-1}
+            className="font-bold text-lg outline-none"
+          >
             {activeTab === "laboratory"
               ? `Selected Laboratory Services (${servicesList.length})`
               : "Select Consultation Service"}
@@ -184,8 +198,38 @@ function ServiceList({
           {submitting ? "Submitting..." : "Submit Request"}
         </button>
       </div>
-      {removing && <ConfirmDialog tone="warning" title="Remove Service?" confirmLabel="Remove" description={`Are you sure you want to remove "${removing.service_name}" from the selected services?`} onCancel={() => setRemoving(null)} onConfirm={() => { onToggleService(removing.service_id); setRemoving(null); }} />}
-      {clearing && <ConfirmDialog tone="warning" title="Discard Changes?" confirmLabel="Discard Changes" cancelLabel="Keep Editing" description="Clear all selected services? This will discard the current service selection." onCancel={() => setClearing(false)} onConfirm={() => { onClearAll(); setClearing(false); }} />}
+      {removing && (
+        <ConfirmDialog
+          tone="warning"
+          icon={TriangleAlert}
+          confirmIcon={Trash2}
+          returnFocusRef={headingRef}
+          title="Remove Service?"
+          confirmLabel="Remove"
+          description={`Are you sure you want to remove "${removing.service_name}" from the selected services?`}
+          onCancel={() => setRemoving(null)}
+          onConfirm={() => {
+            onToggleService(removing.service_id);
+            setRemoving(null);
+          }}
+        />
+      )}
+      {clearing && (
+        <ConfirmDialog
+          tone="warning"
+          icon={CircleAlert}
+          returnFocusRef={headingRef}
+          title="Discard Changes?"
+          confirmLabel="Discard Changes"
+          cancelLabel="Keep Editing"
+          description="You have unsaved service selections. Discarding them will clear the selected services."
+          onCancel={() => setClearing(false)}
+          onConfirm={() => {
+            onClearAll();
+            setClearing(false);
+          }}
+        />
+      )}
       {success && (
         <RequestSuccessModal
           requestId={success.requestId}

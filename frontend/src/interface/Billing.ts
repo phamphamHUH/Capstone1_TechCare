@@ -65,6 +65,15 @@ export type PaymentResult = {
   has_laboratory_items: boolean;
 };
 
+export type PaymentOutcome =
+  | { status: "failed" }
+  | {
+      status: "recorded";
+      alreadyPaid: boolean;
+      invoiceReady: boolean;
+      forwarded: boolean;
+    };
+
 export type BillingStatistics = {
   total: number;
   pending: number;

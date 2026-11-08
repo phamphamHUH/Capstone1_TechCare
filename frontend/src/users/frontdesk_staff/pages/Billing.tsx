@@ -8,6 +8,7 @@ import type {
   BillingNotice,
   BillingStatistics,
   PaymentOptions,
+  PaymentOutcome,
   PaymentResult,
 } from "../../../interface/Billing";
 import { peso } from "../../../utils/formats";
@@ -96,7 +97,10 @@ function Billing({ bills, loading, error, loadData }: BillingProps) {
   }
 
   // Paying and retrying forwarding use the same endpoint. A paid bill is never charged twice.
-  async function submitPayment(billId: string, body: Partial<PaymentOptions>) {
+  async function submitPayment(
+    billId: string,
+    body: Partial<PaymentOptions>,
+  ): Promise<PaymentOutcome> {
     setSubmitting(true);
     setActionError("");
     setNotice(null);
@@ -115,7 +119,15 @@ function Billing({ bills, loading, error, loadData }: BillingProps) {
         ),
       );
       setSubmitting(false);
-      return;
+      return { status: "failed" };
+    }
+
+    if (result?.bill?.bill_id !== billId || result.bill.status !== "Paid") {
+      setActionError(
+        "The server did not confirm a paid bill. Refresh the bill before trying again.",
+      );
+      setSubmitting(false);
+      return { status: "failed" };
     }
 
     const lab = result.has_laboratory_items
@@ -131,18 +143,37 @@ function Billing({ bills, loading, error, loadData }: BillingProps) {
       });
 
     // The payment is saved by now, so a failed refresh must not look like a failed payment.
-    try {
-      const [{ data }] = await Promise.all([
-        api.get<BillDetails>(`/api/fdstaff/billings/${billId}/details`),
-        loadData(),
-      ]);
-      setDetails(data);
-    } catch {
+    const [detailResponse, listResponse] = await Promise.allSettled([
+      api.get<BillDetails>(`/api/fdstaff/billings/${billId}/details`),
+      loadData(),
+    ]);
+    let invoiceReady = false;
+    if (detailResponse.status === "fulfilled") {
+      const data = detailResponse.value.data;
+      if (
+        data?.bill?.bill_id === billId &&
+        data.bill.status === "Paid" &&
+        Array.isArray(data.items)
+      ) {
+        setDetails(data);
+        invoiceReady = Boolean(
+          data.bill.payment_method &&
+            data.bill.payment_method !== "Not recorded",
+        );
+      }
+    }
+    if (!invoiceReady || listResponse.status === "rejected") {
       setActionError(
         "The payment is saved, but this page could not refresh. Use Back and Refresh to see the latest status.",
       );
     }
     setSubmitting(false);
+    return {
+      status: "recorded",
+      alreadyPaid: Boolean(result.already_paid),
+      invoiceReady,
+      forwarded: Boolean(result.queued && result.has_laboratory_items),
+    };
   }
 
   if (details) {

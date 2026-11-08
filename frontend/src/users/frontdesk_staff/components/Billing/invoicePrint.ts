@@ -57,6 +57,8 @@ export const INVOICE_CSS = `
   }
 `;
 
+export const INVOICE_FRAME_HTML = `<!doctype html><html lang="en"><head><meta charset="utf-8" /><title>Invoice</title><style>${INVOICE_CSS}</style></head><body></body></html>`;
+
 export async function waitForInvoiceAssets(doc: Document) {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
@@ -91,13 +93,33 @@ export async function waitForInvoiceAssets(doc: Document) {
   }
 }
 
-/** Isolate the saved invoice from the application and wait for its assets before printing. */
-export async function printInvoice(invoice: HTMLElement, title: string) {
-  const previousFocus = document.activeElement;
+export async function createInvoiceFrame(invoice: HTMLElement, title: string) {
   const frame = document.createElement("iframe");
   frame.title = "Printable Invoice";
   frame.setAttribute("sandbox", "allow-same-origin allow-modals");
   frame.style.cssText = `position:fixed;left:-10000px;top:0;width:${INVOICE_PRINT_WIDTH}px;height:${INVOICE_PRINT_HEIGHT}px;border:0`;
+  try {
+    document.body.appendChild(frame);
+    const doc = frame.contentDocument;
+    if (!doc || !frame.contentWindow)
+      throw new Error("Unable to prepare the invoice. Please try again.");
+    doc.open();
+    doc.write(INVOICE_FRAME_HTML);
+    doc.close();
+    doc.title = title;
+    doc.body.innerHTML = invoice.innerHTML;
+    await waitForInvoiceAssets(doc);
+    return frame;
+  } catch (cause) {
+    frame.remove();
+    throw cause;
+  }
+}
+
+/** Isolate the saved invoice from the application and wait for its assets before printing. */
+export async function printInvoice(invoice: HTMLElement, title: string) {
+  const previousFocus = document.activeElement;
+  const frame = await createInvoiceFrame(invoice, title);
   let cleanupTimer: ReturnType<typeof setTimeout> | undefined;
   const cleanup = () => {
     clearTimeout(cleanupTimer);
@@ -110,27 +132,12 @@ export async function printInvoice(invoice: HTMLElement, title: string) {
   };
 
   try {
-    document.body.appendChild(frame);
-    const doc = frame.contentDocument;
-    if (!doc || !frame.contentWindow)
-      throw new Error(
-        "Unable to open the printable invoice. Please try again.",
-      );
-    doc.open();
-    doc.write(
-      '<!doctype html><html lang="en"><head><meta charset="utf-8" /></head><body></body></html>',
-    );
-    doc.close();
-    doc.title = title;
-    const style = doc.createElement("style");
-    style.textContent = INVOICE_CSS;
-    doc.head.appendChild(style);
-    doc.body.innerHTML = invoice.innerHTML;
-    await waitForInvoiceAssets(doc);
-    frame.contentWindow.addEventListener("afterprint", cleanup, { once: true });
+    frame.contentWindow!.addEventListener("afterprint", cleanup, {
+      once: true,
+    });
     cleanupTimer = setTimeout(cleanup, 60_000);
-    frame.contentWindow.focus();
-    frame.contentWindow.print();
+    frame.contentWindow!.focus();
+    frame.contentWindow!.print();
   } catch (cause) {
     cleanup();
     throw cause;
