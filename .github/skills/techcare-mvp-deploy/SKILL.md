@@ -632,7 +632,7 @@ export default function App() {
   );
 }
 ```
-Role shell pattern (`users/<role>/<Role>.tsx` with `?page=` + `pages/` + `components/<Feature>/`) is unchanged, see **techcare-feature-scaffold**.
+Role shell pattern (`users/<role>/<Role>.tsx` with `?page=` + `pages/` + `components/<Feature>/`) is unchanged, see **techcare-feature-scaffold**. Keep the nested component folder rule: a component's child-only components live in a `Parent/` folder beside `Parent.tsx` (e.g. `DetailModal.tsx` + `DetailModal/SalesDetails.tsx`); feature-wide helpers stay at the feature root.
 
 ## 3. Deploy (Render monolith, one service)
 
