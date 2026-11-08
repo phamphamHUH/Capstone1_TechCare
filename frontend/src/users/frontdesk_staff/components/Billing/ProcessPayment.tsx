@@ -19,6 +19,8 @@ import type {
 } from "../../../../interface/Billing";
 import ConfirmDialog from "../../../../components/ConfirmDialog";
 import { formatAge, formatDateTime, peso } from "../../../../utils/formats";
+import InvoiceDocument from "./InvoiceDocument";
+import { printInvoice } from "./invoicePrint";
 
 type ProcessPaymentProps = {
   bill: Bill;
@@ -39,34 +41,6 @@ const itemPrice = (item: BillItem) =>
   item.price === null
     ? "Not recorded"
     : peso(Number(item.price) * (item.quantity ?? 1));
-
-const INVOICE_CSS = `
-  @page { size: A4 portrait; margin: 12mm; }
-  body { margin: 0; color: #111827; font-family: Arial, sans-serif; font-size: 14px; line-height: 1.5; }
-  h2, h3, p { margin: 0 0 4px; }
-  table { width: 100%; border-collapse: collapse; margin: 16px 0; }
-  th, td { padding: 8px 6px; border-bottom: 1px solid #d1d5db; text-align: left; }
-  tr { break-inside: avoid; }
-  dl { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; margin: 12px 0; }
-  dd { margin: 0; text-align: right; }
-`;
-
-// Prints only the invoice, in a separate frame, so the sidebar and header stay out of it.
-function printInvoice(invoice: HTMLElement, title: string) {
-  const frame = document.createElement("iframe");
-  frame.title = "Printable Invoice";
-  frame.style.cssText =
-    "position:fixed;left:-10000px;top:0;width:794px;height:1123px;border:0";
-  document.body.appendChild(frame);
-  const doc = frame.contentDocument!;
-  doc.title = title;
-  doc.head.innerHTML = `<style>${INVOICE_CSS}</style>`;
-  doc.body.innerHTML = invoice.innerHTML;
-  frame.contentWindow!.focus();
-  frame.contentWindow!.print();
-  // Long enough for the print dialog, then clean up.
-  window.setTimeout(() => frame.remove(), 60_000);
-}
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -95,6 +69,8 @@ function ProcessPayment({
   const [cash, setCash] = useState("");
   const [reference, setReference] = useState("");
   const [confirming, setConfirming] = useState(false);
+  const [printing, setPrinting] = useState(false);
+  const [printError, setPrintError] = useState("");
   const invoiceRef = useRef<HTMLElement>(null);
 
   const isPending = bill.status === "Pending";
@@ -143,6 +119,26 @@ function ProcessPayment({
       reference_num: method === "Cash" ? "" : reference.trim(),
       priority,
     });
+  }
+
+  async function handlePrintInvoice() {
+    if (printing || !invoiceRef.current) return;
+    setPrinting(true);
+    setPrintError("");
+    try {
+      await printInvoice(
+        invoiceRef.current,
+        `Invoice ${bill.invoice_id || bill.bill_id}`,
+      );
+    } catch (cause) {
+      setPrintError(
+        cause instanceof Error
+          ? cause.message
+          : "Unable to print the invoice. Please try again.",
+      );
+    } finally {
+      setPrinting(false);
+    }
   }
 
   return (
@@ -479,6 +475,14 @@ function ProcessPayment({
         </aside>
       </div>
 
+      {printError && (
+        <p
+          role="alert"
+          className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+        >
+          {printError}
+        </p>
+      )}
       <div className="mt-5 flex flex-wrap justify-end gap-3 text-xs">
         <button
           type="button"
@@ -491,14 +495,20 @@ function ProcessPayment({
         {!isPending && amountRecorded && (
           <button
             type="button"
-            onClick={() =>
-              invoiceRef.current &&
-              printInvoice(invoiceRef.current, `Invoice ${bill.bill_id}`)
-            }
-            className="flex cursor-pointer items-center gap-2 rounded-sm border border-gray-300 px-4 py-2"
+            onClick={() => void handlePrintInvoice()}
+            disabled={printing}
+            aria-busy={printing}
+            className="flex cursor-pointer items-center gap-2 rounded-sm border border-gray-300 px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <Printer size={14} />
-            Print Invoice
+            {printing ? (
+              <LoaderCircle
+                size={14}
+                className="animate-spin motion-reduce:animate-none"
+              />
+            ) : (
+              <Printer size={14} />
+            )}
+            {printing ? "Preparing Invoice..." : "Print Invoice"}
           </button>
         )}
         {needsForwarding && (
@@ -537,55 +547,7 @@ function ProcessPayment({
 
       {!isPending && amountRecorded && (
         <section ref={invoiceRef} hidden>
-          <h2>Reyna G Medical Clinic</h2>
-          <p>Diagnostic &amp; Medical Services</p>
-          <h3>Invoice {bill.invoice_id ?? bill.bill_id}</h3>
-          <p>Bill ID: {bill.bill_id}</p>
-          <p>
-            Patient: {bill.patient_name} ({bill.patient_id})
-          </p>
-          <p>Paid: {paid ? `${paid.date}, ${paid.time}` : "Not recorded"}</p>
-          <p>Frontdesk Staff: {bill.received_by}</p>
-          <table>
-            <thead>
-              <tr>
-                <th>Service</th>
-                <th>Category</th>
-                <th>Price</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item, index) => (
-                <tr key={item.item_id ?? index}>
-                  <td>{item.service_name}</td>
-                  <td>{item.service_category ?? "-"}</td>
-                  <td>{itemPrice(item)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <dl>
-            <dt>Subtotal</dt>
-            <dd>{peso(bill.subtotal)}</dd>
-            <dt>
-              Discount {bill.discount_type ? `(${bill.discount_type})` : ""}
-            </dt>
-            <dd>{peso(bill.discount_amount)}</dd>
-            <dt>
-              <strong>Total Paid</strong>
-            </dt>
-            <dd>
-              <strong>{peso(bill.total_amount)}</strong>
-            </dd>
-            <dt>Payment Method</dt>
-            <dd>{bill.payment_method}</dd>
-            {bill.reference_num && (
-              <>
-                <dt>Reference</dt>
-                <dd>{bill.reference_num}</dd>
-              </>
-            )}
-          </dl>
+          <InvoiceDocument bill={bill} items={items} />
         </section>
       )}
 
