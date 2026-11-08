@@ -202,7 +202,7 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
             <button
               onClick={onClose}
               disabled={saving}
-              className="flex h-9 w-9 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-gray-400 transition hover:bg-red-100 hover:text-red-900 disabled:opacity-50"
             >
               <ArrowLeft size={19} />
             </button>
@@ -215,7 +215,7 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
           <button
             onClick={onClose}
             disabled={saving}
-            className="flex h-10 w-10 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-gray-400 transition hover:bg-red-100 hover:text-red-900 disabled:opacity-50"
           >
             <X size={20} />
           </button>
@@ -291,6 +291,30 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
 
           {/* Cards */}
           <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {/* Personal */}
+            <Card title="Personal Information" wide>
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                <TextInput label="First Name" value={form.first_name} onChange={set("first_name")} />
+                <TextInput label="Middle Name" value={form.middle_name} onChange={set("middle_name")} />
+                <TextInput label="Last Name" value={form.last_name} onChange={set("last_name")} />
+                <TextInput label="Suffix" value={form.suffix} onChange={set("suffix")} />
+                <SelectInput
+                  label="Sex"
+                  value={form.sex}
+                  onChange={set("sex")}
+                  options={SEX_OPTIONS}
+                  placeholder="Select sex"
+                />
+                <TextInput label="Birthdate" type="date" value={form.birthdate} onChange={set("birthdate")} />
+                <div>
+                  <label className={labelClass}>Age</label>
+                  <div className="rounded-xl bg-gray-50 px-3 py-2.5 text-sm font-semibold text-gray-700">
+                    {age || "—"}
+                  </div>
+                </div>
+              </div>
+            </Card>
+
             {/* Contact */}
             <Card title="Contact Information">
               <div className="space-y-5">
@@ -374,30 +398,6 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
               </div>
             </Card>
 
-            {/* Personal */}
-            <Card title="Personal Information" wide>
-              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                <TextInput label="First Name" value={form.first_name} onChange={set("first_name")} />
-                <TextInput label="Middle Name" value={form.middle_name} onChange={set("middle_name")} />
-                <TextInput label="Last Name" value={form.last_name} onChange={set("last_name")} />
-                <TextInput label="Suffix" value={form.suffix} onChange={set("suffix")} />
-                <SelectInput
-                  label="Sex"
-                  value={form.sex}
-                  onChange={set("sex")}
-                  options={SEX_OPTIONS}
-                  placeholder="Select sex"
-                />
-                <TextInput label="Birthdate" type="date" value={form.birthdate} onChange={set("birthdate")} />
-                <div>
-                  <label className={labelClass}>Age</label>
-                  <div className="rounded-xl bg-gray-50 px-3 py-2.5 text-sm font-semibold text-gray-700">
-                    {age || "—"}
-                  </div>
-                </div>
-              </div>
-            </Card>
-
             {/* Guardian */}
             <Card title="Guardian Information (If Minor)" wide>
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -439,7 +439,7 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
             <button
               onClick={onClose}
               disabled={saving}
-              className="flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-100 disabled:opacity-50"
+              className="flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-red-100 hover:text-red-900 disabled:opacity-50"
             >
               <ArrowLeft size={16} />
               Cancel
@@ -448,7 +448,7 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="flex items-center gap-2 rounded-xl bg-gray-900 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Save size={16} />
               {saving ? "Saving..." : "Save Changes"}
