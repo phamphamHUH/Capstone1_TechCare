@@ -26,7 +26,7 @@ function LoginVideo() {
   const pauseLabel = paused ? "Play video" : "Pause video";
 
   return (
-    <div className="relative overflow-hidden rounded-md bg-black">
+    <div className="group relative overflow-hidden rounded-md bg-black">
       <video
         ref={videoRef}
         src={LOGIN_VIDEO}
@@ -38,7 +38,8 @@ function LoginVideo() {
         onPause={() => setPaused(true)}
         className="block aspect-video w-full"
       />
-      <div className="absolute right-3 top-3 flex gap-2">
+      {/* Controls only show while hovering the video (or tabbing to them). */}
+      <div className="absolute right-3 top-3 flex gap-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100 focus-within:opacity-100">
         <button
           type="button"
           onClick={togglePaused}

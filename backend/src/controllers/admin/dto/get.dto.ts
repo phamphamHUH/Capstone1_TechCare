@@ -207,3 +207,158 @@ export namespace getFormTemplateById {
     error?: string;
   }
 }
+
+// =========================
+// GET SALES ANALYTICS
+// GET /api/admin/analytics/sales?range=today|7d|30d|12mo
+// Money is NUMERIC in the database; the controller converts it with Number().
+// =========================
+export namespace getSalesAnalytics {
+  export interface query {
+    range?: string;
+  }
+
+  export interface summary {
+    revenue: number; // SUM(bills.total_amount) of paid bills, after discounts
+    gross_sales: number; // SUM(bills.subtotal), before discounts
+    discounts: number; // SUM(bills.discount_amount)
+    paid_bills: number;
+    average_bill: number;
+    previous_revenue: number; // same-length period right before this one
+    previous_paid_bills: number;
+    pending_amount: number; // unpaid bills right now, not limited to the range
+    pending_bills: number;
+  }
+
+  export interface timelinePoint {
+    bucket: string; // Manila time "YYYY-MM-DDTHH:MM:SS", start of the hour/day/month
+    revenue: number;
+    bills: number;
+  }
+
+  export interface paymentMethod {
+    payment_method: string;
+    revenue: number;
+    bills: number;
+  }
+
+  export interface serviceType {
+    service_type: string; // "consultation", "laboratory" or "other"
+    revenue: number; // line totals before bill discounts
+    quantity: number;
+  }
+
+  export interface serviceSales {
+    service_id: string | null; // null for legacy bill items without an id
+    service_name: string;
+    service_type: string;
+    service_category: string | null;
+    quantity: number;
+    revenue: number; // line totals before bill discounts
+  }
+
+  export interface response {
+    message: string;
+    range: string;
+    bucket: "hour" | "day" | "month";
+    start: string;
+    end: string;
+    summary: summary;
+    timeline: timelinePoint[];
+    payment_methods: paymentMethod[];
+    service_types: serviceType[];
+    services: serviceSales[];
+  }
+
+  export interface error {
+    message: string;
+  }
+}
+
+// =========================
+// GET ANALYTICS BILLS
+// GET /api/admin/analytics/bills?range=today|7d|30d|12mo
+// The bills behind the sales tiles: paid bills in the range, and every
+// unpaid bill right now (not limited to the range).
+// =========================
+export namespace getAnalyticsBills {
+  export interface query {
+    range?: string;
+  }
+
+  export interface bill {
+    bill_id: string;
+    patient_id: string;
+    patient_name: string | null; // null when the patient row is missing
+    status: string; // "Paid" or "Pending"
+    subtotal: number;
+    discount_type: string | null;
+    discount_amount: number;
+    total_amount: number;
+    payment_method: string | null; // only meaningful for paid bills
+    item_count: number;
+    created_at: string; // Manila time "YYYY-MM-DDTHH:MM:SS"
+    paid_at: string | null; // Manila time
+  }
+
+  export interface response {
+    message: string;
+    range: string;
+    start: string;
+    end: string;
+    paid: bill[]; // newest payment first
+    pending: bill[]; // oldest first
+  }
+
+  export interface error {
+    message: string;
+  }
+}
+
+// =========================
+// GET SERVICE (CATALOG) ANALYTICS
+// GET /api/admin/analytics/services?range=today|7d|30d|12mo
+// "Orders" are consultation records and laboratory request items created in
+// the range, excluding cancelled/rejected ones.
+// =========================
+export namespace getServiceAnalytics {
+  export interface query {
+    range?: string;
+  }
+
+  export interface service {
+    service_id: string;
+    service_name: string;
+    service_type: string;
+    service_category: string | null;
+    room: string;
+    price: number;
+    active: boolean;
+    orders: number; // in the selected range
+    last_ordered_at: string | null; // Manila time, all time, "YYYY-MM-DDTHH:MM:SS"
+  }
+
+  export interface summary {
+    total_services: number;
+    active_services: number;
+    inactive_services: number;
+    consultation_services: number;
+    laboratory_services: number;
+    average_price: number; // of active services
+    total_orders: number;
+    unused_active_services: number; // active services with no orders in the range
+  }
+
+  export interface response {
+    message: string;
+    range: string;
+    start: string;
+    end: string;
+    summary: summary;
+    services: service[];
+  }
+
+  export interface error {
+    message: string;
+  }
+}

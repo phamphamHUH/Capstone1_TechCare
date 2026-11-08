@@ -7,6 +7,9 @@ import {
   getAllActivities,
   getAllFormTemplates,
   getFormTemplateById,
+  getSalesAnalytics,
+  getServiceAnalytics,
+  getAnalyticsBills,
 } from "../controllers/admin/getRequests.controller.js";
 import {
   addUser,
@@ -52,6 +55,11 @@ router.get("/activities", getAllActivities);
 router.get("/users", getAllUsers);
 router.get("/form-templates", getAllFormTemplates);
 router.get("/form-templates/:form_id", getFormTemplateById);
+
+// Admin dashboard: ?range=today|7d|30d|12mo (default 30d)
+router.get("/analytics/sales", getSalesAnalytics);
+router.get("/analytics/services", getServiceAnalytics);
+router.get("/analytics/bills", getAnalyticsBills);
 
 router.post("/add-user", upload.single("image"), addUser);
 router.post("/services", addService);

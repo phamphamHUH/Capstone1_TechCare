@@ -322,7 +322,7 @@ function ServicePricing({ services, loadData }: ServicePricingProps) {
                           setShowEditModal(true);
                           setSelectedService(service);
                         }}
-                        className="border border-sky-600 px-2 py-1 rounded-md text-sky-600"
+                        className="border border-sky-600 px-2 py-1 rounded-md transition text-sky-600 cursor-pointer hover:bg-sky-600 hover:text-white"
                       >
                         View/Edit
                       </button>
@@ -333,7 +333,7 @@ function ServicePricing({ services, loadData }: ServicePricingProps) {
                           setSelectedService(service);
                           setShowDeleteModal(true);
                         }}
-                        className="border border-red-500 px-2 py-1 rounded-md text-red-500 hover:bg-red-500 hover:text-white"
+                        className="border border-red-500 px-2 py-1 rounded-md transition text-red-500 hover:bg-red-500 hover:text-white cursor-pointer"
                       >
                         Delete
                       </button>

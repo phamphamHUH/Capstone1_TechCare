@@ -12,14 +12,12 @@ type ServiceRequestProps = {
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   loadData: () => Promise<void>;
   loading: boolean;
+  setPage: (page: string) => void;
 };
 
 const PAGE_SIZE = 10;
 
-function ServiceRequest({
-  services,
-  loadData,
-}: ServiceRequestProps) {
+function ServiceRequest({ services, loadData, setPage }: ServiceRequestProps) {
   const [activeTab, setActiveTab] = useState("laboratory");
   const [patient, setPatient] = useState<Patient | null>(null);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
@@ -28,25 +26,25 @@ function ServiceRequest({
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortOrder>("a-z");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [page, setPage] = useState(1);
+  const [pageNumber, setPageNumber] = useState(1);
 
   // reset to page 1 whenever a filter changes (in handlers, not in an effect)
   const handleSearch = (value: string) => {
     setSearch(value);
-    setPage(1);
+    setPageNumber(1);
   };
   const handleSort = (value: SortOrder) => {
     setSort(value);
-    setPage(1);
+    setPageNumber(1);
   };
   const handleCategory = (value: string) => {
     setCategoryFilter(value);
-    setPage(1);
+    setPageNumber(1);
   };
   const handleTab = (tab: string) => {
     setActiveTab(tab);
     setCategoryFilter("all");
-    setPage(1);
+    setPageNumber(1);
   };
 
   // FILTER + SORT + PAGINATE
@@ -64,7 +62,7 @@ function ServiceRequest({
     );
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const currentPage = Math.min(page, totalPages);
+  const currentPage = Math.min(pageNumber, totalPages);
   const pageItems = filtered.slice(
     (currentPage - 1) * PAGE_SIZE,
     currentPage * PAGE_SIZE,
@@ -101,7 +99,11 @@ function ServiceRequest({
   return (
     <main className="flex-1 min-w-0 pb-5">
       <h1 className="text-2xl font-bold px-6">Select Service Type</h1>
-      <PatientSelectionHeader patient={patient} onSelectPatient={setPatient} />
+      <PatientSelectionHeader
+        patient={patient}
+        onSelectPatient={setPatient}
+        onRegister={() => setPage("patient-registration")}
+      />
       <ServiceTypeTabs
         activeTab={activeTab}
         setActiveTab={handleTab}
@@ -122,7 +124,7 @@ function ServiceRequest({
             onToggleService={toggleService}
             selectedServices={selectedServices}
             pagination={pagination}
-            onPageChange={setPage}
+            onPageChange={setPageNumber}
           />
         </div>
         <div className="col-span-2 px-8 py-5 flex flex-col justify-between">
@@ -133,7 +135,10 @@ function ServiceRequest({
             patientId={patient?.patient_id ?? null}
             onToggleService={toggleService}
             onClearAll={clearServices}
-            onSubmitted={async () => { setPatient(null); await loadData(); }}
+            onSubmitted={async () => {
+              setPatient(null);
+              await loadData();
+            }}
           />
         </div>
       </div>

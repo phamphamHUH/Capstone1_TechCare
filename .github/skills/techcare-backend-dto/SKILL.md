@@ -1,6 +1,6 @@
 ---
 name: techcare-backend-dto
-description: Backend DTO conventions and reference for TechCare - the TypeScript namespaces in backend/src/controllers/<role>/dto/*.dto.ts, how controllers use them with Response<ns.response | ns.error>, what the compiler does and does not check, how database types map to DTO fields, error shapes, an index of every namespace, and DTOs known to disagree with the schema or their controller. Use this skill whenever adding or changing an API endpoint, request body, response shape, query parameter or error response, whenever editing a *.dto.ts file or a typed controller, when a frontend type disagrees with what the API returns, or when asked what an endpoint accepts or returns, even if the user never says "DTO".
+description: Backend DTO conventions and reference for TechCare - the TypeScript namespaces in backend/src/controllers/ROLE/dto/*.dto.ts, how controllers type res with each namespace's response and error types, what the compiler does and does not check, how database types map to DTO fields, error shapes, an index of every namespace, and DTOs known to disagree with the schema or their controller. Use this skill whenever adding or changing an API endpoint, request body, response shape, query parameter or error response, whenever editing a *.dto.ts file or a typed controller, when a frontend type disagrees with what the API returns, or when asked what an endpoint accepts or returns, even if the user never says "DTO".
 ---
 
 # Backend DTOs
@@ -148,7 +148,7 @@ Handlers come from the same role unless noted.
 
 | File | Namespaces |
 |---|---|
-| `admin/dto/get.dto.ts` | `getAllUsers`, `getAllActivities`, `getAllservices` (lowercase s), `getMyActivities`, `getAllFormTemplates`, `getFormTemplateById` |
+| `admin/dto/get.dto.ts` | `getAllUsers`, `getAllActivities`, `getAllservices` (lowercase s), `getMyActivities`, `getAllFormTemplates`, `getFormTemplateById`, `getSalesAnalytics`, `getServiceAnalytics`, `getAnalyticsBills` (the three analytics ones are imported with `as …DTO` aliases, convert NUMERIC/COUNT with `Number()` so money is `number`, and return literals without casts) |
 | `admin/dto/post.dto.ts` | `addUser`, `addService`, `addActivity`, `addAction`, `addFormTemplates` |
 | `admin/dto/update.dto.ts` | `updateUser`, `updateUserStatus`, `updateFormTemplate` |
 | `admin/dto/delete.dto.ts` | `deleteTemplate` |
