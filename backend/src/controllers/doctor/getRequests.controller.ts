@@ -271,11 +271,15 @@ async function selectLabResultLines(lab_item_id: string) {
   `;
 
   return rows.flatMap((row) => {
-    const tests: Record<string, any>[] = Array.isArray(row.results) ? row.results : [];
-    const components: Record<string, any>[] = tests[0]?.template_snapshot?.components ?? [];
+    const tests: Record<string, any>[] = Array.isArray(row.results)
+      ? row.results
+      : [];
+    const components: Record<string, any>[] =
+      tests[0]?.template_snapshot?.components ?? [];
 
     return tests.map((test, index) => {
-      const settings = components.find((c) => c.fieldKey === test.field_key)?.settings ?? {};
+      const settings =
+        components.find((c) => c.fieldKey === test.field_key)?.settings ?? {};
       const isLast = index === tests.length - 1;
       return {
         result_id: `${row.result_id}-${index}`,

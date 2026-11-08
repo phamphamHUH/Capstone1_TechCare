@@ -86,7 +86,9 @@ function Doctor() {
       const queuesRes = await api.get(
         `/api/doctor/consultation-queues/room/${encodeURIComponent(room)}`,
       );
+      console.log(queuesRes);
       setQueues(queuesRes.data?.queueEntries ?? []);
+      console.log(queues);
     } catch (err) {
       console.error("Error loading doctor data:", err);
       setError("Could not load consultation data.");
