@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import {
   LayoutGrid,
@@ -24,11 +24,24 @@ import api from "../../lib/axios";
 import type { User } from "../../interface/User";
 import type { Service } from "../../interface/Service";
 import type { Activity } from "../../interface/Activity";
+import type {
+  AnalyticsRange,
+  SalesAnalytics,
+  ServiceAnalytics,
+} from "../../interface/Analytics";
 
 function Admin() {
   const [users, setUsers] = useState<User[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
+
+  // Dashboard analytics, reloaded whenever the date range changes.
+  const [analyticsRange, setAnalyticsRange] = useState<AnalyticsRange>("30d");
+  const [salesAnalytics, setSalesAnalytics] = useState<SalesAnalytics | null>(null);
+  const [serviceAnalytics, setServiceAnalytics] = useState<ServiceAnalytics | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
+  const latestAnalyticsRequest = useRef(0);
 
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(true);
@@ -112,6 +125,46 @@ function Admin() {
     action();
   }, [loadData]);
 
+  const loadAnalytics = useCallback(async () => {
+    // Ignore answers to older requests when the range is switched quickly.
+    latestAnalyticsRequest.current += 1;
+    const thisRequest = latestAnalyticsRequest.current;
+
+    setAnalyticsLoading(true);
+    setAnalyticsError(null);
+
+    try {
+      const params = { range: analyticsRange };
+      const [salesResponse, serviceResponse] = await Promise.all([
+        api.get<SalesAnalytics>("/api/admin/analytics/sales", { params }),
+        api.get<ServiceAnalytics>("/api/admin/analytics/services", { params }),
+      ]);
+      if (thisRequest !== latestAnalyticsRequest.current) return;
+
+      setSalesAnalytics(salesResponse.data);
+      setServiceAnalytics(serviceResponse.data);
+    } catch (error) {
+      if (thisRequest !== latestAnalyticsRequest.current) return;
+      console.error("Error loading analytics:", error);
+      setAnalyticsError("Could not load analytics. Use the reload button to try again.");
+    } finally {
+      if (thisRequest === latestAnalyticsRequest.current) setAnalyticsLoading(false);
+    }
+  }, [analyticsRange]);
+
+  // Load analytics on mount and whenever the range changes.
+  useEffect(() => {
+    async function action() {
+      await loadAnalytics();
+    }
+    action();
+  }, [loadAnalytics]);
+
+  // The header's reload button refreshes everything.
+  const reloadAll = useCallback(async () => {
+    await Promise.all([loadData(), loadAnalytics()]);
+  }, [loadData, loadAnalytics]);
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       <SideBar open={open} page={page} setPage={setPage} navItems={navItems} />
@@ -119,14 +172,23 @@ function Admin() {
       <div className="flex-1 min-w-0">
         <Header
           page={currentPage}
-          loading={loading}
+          loading={loading || analyticsLoading}
           open={open}
           setOpen={setOpen}
-          loadData={loadData}
+          loadData={reloadAll}
         />
 
         <div className="pb-6">
-          {page === "dashboard" && <AdminDashboard users={users} />}
+          {page === "dashboard" && (
+            <AdminDashboard
+              range={analyticsRange}
+              setRange={setAnalyticsRange}
+              sales={salesAnalytics}
+              services={serviceAnalytics}
+              loading={analyticsLoading}
+              error={analyticsError}
+            />
+          )}
 
           {page === "user-management" && (
             <UserManagement
