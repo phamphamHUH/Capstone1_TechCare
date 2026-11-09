@@ -6,9 +6,16 @@ import { formatAge, formatPatientAddress } from "../../../../utils/formats";
 type PatientTableProps = {
   patients: Patient[];
   onEdit?: (patient: Patient) => void;
+  onResetPassword?: (patient: Patient) => void;
+  onResendVerification?: (patient: Patient) => void;
 };
 
-function PatientTable({ patients, onEdit }: PatientTableProps) {
+function PatientTable({
+  patients,
+  onEdit,
+  onResetPassword,
+  onResendVerification,
+}: PatientTableProps) {
   const [, setSearchParams] = useSearchParams();
 
   const handleViewHistory = (patientId: string) => {
@@ -39,7 +46,7 @@ function PatientTable({ patients, onEdit }: PatientTableProps) {
             <th className="px-4 py-2 text-center font-medium">
               Health Records
             </th>
-            <th className="px-4 py-2 text-center font-medium">Edit Info</th>
+            <th className="px-4 py-2 text-center font-medium">Account</th>
           </tr>
         </thead>
         <tbody>
@@ -92,6 +99,15 @@ function PatientTable({ patients, onEdit }: PatientTableProps) {
                       {patient.contact_number}
                     </div>
                     <div className="text-xs text-gray-400">{patient.email}</div>
+
+                    {/* Email verification: unverified patients get no emails */}
+                    {patient.pending_email ? (
+                      <span className="text-xs text-amber-700">New email not confirmed yet</span>
+                    ) : patient.is_verified ? (
+                      <span className="text-xs text-green-700">Email verified</span>
+                    ) : (
+                      <span className="text-xs text-gray-500">Email not verified</span>
+                    )}
                   </td>
 
                   <td className="px-4 py-1 text-gray-700">
@@ -118,13 +134,33 @@ function PatientTable({ patients, onEdit }: PatientTableProps) {
                   </td>
 
                   <td className="px-4 py-1 text-center">
-                    <button
-                      type="button"
-                      onClick={() => onEdit?.(patient)}
-                      className="underline cursor-pointer"
-                    >
-                      Edit
-                    </button>
+                    <div className="flex flex-col items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => onEdit?.(patient)}
+                        className="underline cursor-pointer"
+                      >
+                        Edit
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => onResetPassword?.(patient)}
+                        className="text-xs text-sky-700 underline cursor-pointer"
+                      >
+                        Reset password
+                      </button>
+
+                      {(!patient.is_verified || patient.pending_email) && (
+                        <button
+                          type="button"
+                          onClick={() => onResendVerification?.(patient)}
+                          className="text-xs text-sky-700 underline cursor-pointer"
+                        >
+                          Resend verification
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );

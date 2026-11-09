@@ -24,6 +24,12 @@ export const ENV = {
   CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
   DEV_DOCTOR_LOGIN: process.env.DEV_DOCTOR_LOGIN === "true",
 
+  // Email (Brevo). Without BREVO_API_KEY, emails are printed to the console.
+  BREVO_API_KEY: process.env.BREVO_API_KEY || "",
+  EMAIL_FROM: process.env.EMAIL_FROM || "", // sender verified in Brevo
+  EMAIL_FROM_NAME: process.env.EMAIL_FROM_NAME || "Reyna G Diagnostic Clinic",
+  APP_URL: process.env.APP_URL || "http://localhost:5173", // frontend, used in email links
+
   IS_PRODUCTION: process.env.IS_PRODUCTION === "true",
   CORS_ORIGIN:
     process.env.CORS_ORIGIN ||

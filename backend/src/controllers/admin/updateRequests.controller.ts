@@ -9,7 +9,9 @@ import type {
   updateUserStatus,
   updateFormTemplate,
   updateService,
+  resetUserPassword,
 } from "./dto/update.dto.js";
+import { MIN_PASSWORD_LENGTH } from "../../utils/emailToken.js";
 
 // =========================
 // UPDATE USER
@@ -468,5 +470,51 @@ export async function updateService(
     return res.status(500).json({
       message: "error on service controller",
     } as updateService.error);
+  }
+}
+
+// =========================
+// RESET EMPLOYEE PASSWORD
+// =========================
+// PATCH /api/admin/users/:user_id/password
+// The admin types the new password and gives it to the employee.
+export async function resetUserPassword(
+  req: Request,
+  res: Response<resetUserPassword.response | resetUserPassword.error>,
+) {
+  try {
+    const { user_id } = req.params;
+    const { password } = req.body as resetUserPassword.body;
+
+    if (!password || password.length < MIN_PASSWORD_LENGTH) {
+      return res.status(400).json({
+        message: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`,
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Also cancels any "forgot password" link they requested.
+    const [user] = await sql`
+      UPDATE users
+      SET password_hash = ${hashedPassword},
+          reset_token = NULL,
+          reset_expires_at = NULL,
+          updated_at = NOW()
+      WHERE user_id = ${user_id}
+      RETURNING username
+    `;
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    return res.status(200).json({
+      message: `Password for ${user.username} has been reset.`,
+    });
+  } catch (error) {
+    console.error("RESET USER PASSWORD ERROR:", error);
+
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 }

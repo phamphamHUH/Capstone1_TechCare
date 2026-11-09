@@ -100,6 +100,13 @@ function UserCardSquare({
               {user.active ? "Active" : "Not Active"}
             </span>
           </div>
+
+          {/* Email not confirmed yet: they can't log in */}
+          {user.is_verified === false && (
+            <span className="rounded bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+              Email not verified
+            </span>
+          )}
         </div>
       </div>
     </div>

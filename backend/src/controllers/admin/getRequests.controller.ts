@@ -29,7 +29,7 @@ export async function getAllUsers(
         suffix, sex, email, contact_number, emergency_contact_name,
         emergency_contact, address, birthdate, role, department,
         employment_status, date_hired, shift_start, shift_end,
-        last_login, account_status, profile_photo, active,
+        last_login, account_status, profile_photo, active, is_verified,
         created_at, updated_at
       FROM users
     `;
