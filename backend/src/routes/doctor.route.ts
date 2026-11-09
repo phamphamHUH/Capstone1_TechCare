@@ -7,12 +7,12 @@ import {
   acceptConsultationQueue,
   cancelConsultationQueue,
   completeConsultationQueueEntry,
+  addConsultationFindings,
 } from "../controllers/doctor/updateRequests.controller.js";
 import { getReleasedLaboratoryResults } from "../controllers/labstaff/getRequests.controller.js";
 import {
   addLaboratoryRequest,
   addPrescriptions,
-  addConsultationFindings,
 } from "../controllers/doctor/postRequests.controller.js";
 import {
   getConsultationQueueDetails,
@@ -32,7 +32,6 @@ if (ENV.IS_PRODUCTION) {
 }
 // POST requests
 router.post("/laboratory-requests", addLaboratoryRequest);
-router.post("/consultations", addConsultationFindings);
 router.post("/prescriptions/:consultation_record_id", addPrescriptions);
 // GET requests
 router.get("/laboratory-results/:result_id", getReleasedLaboratoryResults);
@@ -55,8 +54,15 @@ router.get(
 );
 
 router.patch("/consultation-queues/:queue_id/accept", acceptConsultationQueue);
-router.patch("/consultation-queues/:queue_id/complete", completeConsultationQueueEntry);
+router.patch(
+  "/consultation-queues/:queue_id/complete",
+  completeConsultationQueueEntry,
+);
 router.patch("/consultation-queues/:queue_id/cancel", cancelConsultationQueue);
 router.patch("/consultation-queues/:queue_id/skip", skipConsultationQueueEntry);
+router.patch(
+  "/consultation-records/:consultation_record_id/findings",
+  addConsultationFindings,
+);
 
 export default router;

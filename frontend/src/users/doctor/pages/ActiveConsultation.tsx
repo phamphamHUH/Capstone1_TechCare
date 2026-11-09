@@ -3,19 +3,20 @@ import type { QueueEntry } from "../../../interface/Queue";
 import { formatAge, formatDateTime } from "../../../utils/formats";
 import calculateAge from "../../../utils/calculateAge";
 import MedicalHistoryTab from "../components/ActiveConsultation/MedicalHistoryTab";
+import Overview from "../components/ActiveConsultation/Overview";
 
 type ActiveConsultationProps = {
   selectedQueue: QueueEntry | null;
-  room: string;
 };
 
-type ConsultationTabs =
+export type ConsultationTabs =
   | "overview"
   | "medical-history"
   | "laboratory-results"
-  | "file-attachments";
+  | "file-attachments"
+  | "prescription";
 
-function ActiveConsultation({ selectedQueue, room }: ActiveConsultationProps) {
+function ActiveConsultation({ selectedQueue }: ActiveConsultationProps) {
   const [activeTab, setActiveTab] = useState<ConsultationTabs>("overview");
 
   const initials = (selectedQueue?.patient_name ?? "")
@@ -112,7 +113,7 @@ function ActiveConsultation({ selectedQueue, room }: ActiveConsultationProps) {
               <span>•</span>
               <p>{selectedQueue.consultation_record_id}</p>
               <span>•</span>
-              <p>{room}</p>
+              <p>{selectedQueue.room}</p>
               <span>•</span>
               <p>In Consultation</p>
             </div>
@@ -139,12 +140,19 @@ function ActiveConsultation({ selectedQueue, room }: ActiveConsultationProps) {
           </section>
           {/* TAB CONTENT */}
           <section>
-            {activeTab === "overview" && <div>overviewness</div>}
+            {activeTab === "overview" && (
+              <Overview
+                key={selectedQueue?.consultation_record_id}
+                selectedQueue={selectedQueue}
+                onProceed={() => setActiveTab("prescription")}
+              />
+            )}
             {activeTab === "medical-history" && (
               <MedicalHistoryTab patientId={selectedQueue.patient_id} />
             )}
             {activeTab === "laboratory-results" && <div>lab</div>}
             {activeTab === "file-attachments" && <div>file</div>}
+            {activeTab === "prescription" && <div>prescription</div>}
           </section>
         </>
       ) : (
