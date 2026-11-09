@@ -1,3 +1,4 @@
+import ErrorMessage from "../../../../components/ErrorMessage";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { FlaskConical } from "lucide-react";
 
@@ -37,10 +38,11 @@ export function AnalysisNotice({
   children,
   error = false,
 }: AnalysisNoticeProps) {
+  if (error) return <ErrorMessage className="mb-3">{children}</ErrorMessage>;
   return (
     <div
-      role={error ? "alert" : "status"}
-      className={`mb-3 rounded-lg border px-3 py-2.5 text-sm leading-relaxed ${error ? "border-rose-200 bg-rose-50 text-rose-700" : "border-sky-200 bg-sky-50 text-sky-800"}`}
+      role="status"
+      className={`mb-3 rounded-lg border px-3 py-2.5 text-sm leading-relaxed border-sky-200 bg-sky-50 text-sky-800`}
     >
       {children}
     </div>

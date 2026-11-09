@@ -1,3 +1,4 @@
+import EmptyState from "../../../../components/EmptyState";
 import { CalendarDays, Clock3, FileText, Folder, UserRound } from "lucide-react";
 import type { Activity } from "../../../../interface/Activity.ts";
 
@@ -27,9 +28,7 @@ function ActivityDetails({ activity }: ActivityDetailsProps) {
         <div className="border-b border-gray-100 px-4 py-4">
           <h3 className="text-base font-semibold text-gray-700">Activity Details</h3>
         </div>
-        <div className="flex flex-1 items-center justify-center p-6 text-center text-sm text-gray-400">
-          No activity selected.
-        </div>
+        <EmptyState message="No activity selected." />
       </aside>
     );
   }

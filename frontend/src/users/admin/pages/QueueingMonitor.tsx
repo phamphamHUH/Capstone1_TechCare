@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Info } from "lucide-react";
+import ErrorMessage from "../../../components/ErrorMessage";
 import api from "../../../lib/axios";
 import { connectQueueStream } from "../../../services/queue-sse/connectQueueStream";
 import QueueColumn from "../components/QueueMonitor/QueueColumn";
@@ -28,6 +29,7 @@ function QueueingMonitor(_props: QueueingMonitorProps) {
   const [queueEntries, setQueueEntries] = useState<QueueEntry[]>([]);
   const [status, setStatus] = useState<QueueStreamStatus>("connecting");
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [error, setError] = useState("");
   const [currentTime, setCurrentTime] = useState(new Date());
 
   // Used for the Fullscreen button.
@@ -42,6 +44,7 @@ function QueueingMonitor(_props: QueueingMonitorProps) {
   }, []);
 
   const loadQueue = useCallback(async () => {
+    setError("");
     latestRequest.current += 1;
     const thisRequest = latestRequest.current;
 
@@ -52,7 +55,9 @@ function QueueingMonitor(_props: QueueingMonitorProps) {
       setQueueEntries(res.data.queueEntries);
       setLastUpdated(new Date());
     } catch (error) {
+      if (thisRequest !== latestRequest.current) return;
       console.error("Error loading queue entries:", error);
+      setError("Unable to load queue entries. Please try again.");
     }
   }, []);
 
@@ -111,6 +116,7 @@ function QueueingMonitor(_props: QueueingMonitorProps) {
       </header>
 
       {/* BOARD: one column per service type */}
+      {error && <ErrorMessage className="mb-3">{error}</ErrorMessage>}
       <div className={`grid flex-1 gap-3 lg:grid-cols-2 ${isLive ? "" : "opacity-50"}`}>
         <QueueColumn
           title="Consultation"

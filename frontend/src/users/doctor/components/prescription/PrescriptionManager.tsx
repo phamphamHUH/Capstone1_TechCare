@@ -1,12 +1,6 @@
+import EmptyState from "../../../../components/EmptyState";
 import React, { useState } from "react";
-import {
-  FilePlus2,
-  FileText,
-  Plus,
-  CheckCircle,
-  Eye,
-  Pill,
-} from "lucide-react";
+import { FileText, Plus, CheckCircle, Eye, Pill } from "lucide-react";
 import type {
   Medication,
   PatientInfo,
@@ -347,27 +341,11 @@ export default function PrescriptionManager({
             {activeTab === "prescription" ? (
               savedPrescriptions.length === 0 ? (
                 /* No Prescription Yet Empty State */
-                <div className="py-16 flex flex-col items-center justify-center text-center">
-                  <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
-                    <FilePlus2 size={32} strokeWidth={1.5} />
-                  </div>
-
-                  <h3 className="text-base font-bold text-gray-900">
-                    No Prescription Yet
-                  </h3>
-                  <p className="text-xs text-gray-500 mt-1 mb-6 max-w-sm">
-                    Add prescribed medications for this consultation.
-                  </p>
-
-                  <button
-                    type="button"
-                    onClick={() => setViewMode("create")}
-                    className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer"
-                  >
-                    <Plus size={16} />
-                    <span>Create Prescription</span>
+                <EmptyState message="No prescriptions found." description="Add prescribed medications for this consultation." action={
+                  <button type="button" onClick={() => setViewMode("create")} className="inline-flex items-center gap-2 rounded-md bg-sky-500 px-4 py-2 text-sm font-medium text-white hover:bg-sky-600">
+                    <Plus size={16} />Create Prescription
                   </button>
-                </div>
+                } />
               ) : (
                 /* Active / Saved Prescriptions for this Consultation */
                 <div className="flex flex-col gap-6">

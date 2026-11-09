@@ -1,3 +1,4 @@
+import ErrorMessage from "../../components/ErrorMessage";
 import { useMemo, useState } from "react";
 import { FileClock, LogOut, Menu, Pill } from "lucide-react";
 import { useNavigate } from "react-router";
@@ -37,12 +38,7 @@ function PatientInformation() {
   if (!patient || !patientId) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
-        <div className="max-w-md rounded-xl border border-slate-200 bg-white p-6 text-center shadow-sm">
-          <h1 className="text-lg font-bold text-slate-900">Patient account not found</h1>
-          <p className="mt-2 text-sm text-slate-500">
-            The frontend could not find a patient ID in the current login session.
-          </p>
-        </div>
+        <ErrorMessage className="max-w-md">Patient account not found. Please sign in again to access your records.</ErrorMessage>
       </div>
     );
   }

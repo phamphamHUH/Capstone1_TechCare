@@ -1,14 +1,9 @@
+import FieldError from "../../../../components/FieldError";
+import EmptyState from "../../../../components/EmptyState";
+import ErrorMessage from "../../../../components/ErrorMessage";
+import { LoadingSpinner } from "../../../../components/LoadingScreen";
 import { useRef, useState } from "react";
-import {
-  FlagTriangleRight,
-  Info,
-  LoaderCircle,
-  MoveLeft,
-  Percent,
-  Printer,
-  QrCode,
-  WalletMinimal,
-} from "lucide-react";
+import { Download, Eye, FlagTriangleRight, Info, MoveLeft, Percent, Printer, QrCode, WalletMinimal } from "lucide-react";
 import type {
   Bill,
   BillItem,
@@ -16,9 +11,13 @@ import type {
   DiscountType,
   PaymentMethod,
   PaymentOptions,
+  PaymentOutcome,
 } from "../../../../interface/Billing";
-import ConfirmDialog from "../../../../components/ConfirmDialog";
 import { formatAge, formatDateTime, peso } from "../../../../utils/formats";
+import InvoiceDocument from "./InvoiceDocument";
+import { printInvoice } from "./invoicePrint";
+import BillingModal, { type BillingModalKind } from "./BillingModal";
+import InvoicePreview from "./InvoicePreview";
 
 type ProcessPaymentProps = {
   bill: Bill;
@@ -27,8 +26,8 @@ type ProcessPaymentProps = {
   error: string;
   notice: BillingNotice | null;
   onBack: () => void;
-  onPay: (options: PaymentOptions) => Promise<void>;
-  onRetryForwarding: () => Promise<void>;
+  onPay: (options: PaymentOptions) => Promise<PaymentOutcome>;
+  onRetryForwarding: () => Promise<PaymentOutcome>;
 };
 
 const cardClass = "rounded-md border border-gray-200 bg-white p-4";
@@ -39,34 +38,6 @@ const itemPrice = (item: BillItem) =>
   item.price === null
     ? "Not recorded"
     : peso(Number(item.price) * (item.quantity ?? 1));
-
-const INVOICE_CSS = `
-  @page { size: A4 portrait; margin: 12mm; }
-  body { margin: 0; color: #111827; font-family: Arial, sans-serif; font-size: 14px; line-height: 1.5; }
-  h2, h3, p { margin: 0 0 4px; }
-  table { width: 100%; border-collapse: collapse; margin: 16px 0; }
-  th, td { padding: 8px 6px; border-bottom: 1px solid #d1d5db; text-align: left; }
-  tr { break-inside: avoid; }
-  dl { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; margin: 12px 0; }
-  dd { margin: 0; text-align: right; }
-`;
-
-// Prints only the invoice, in a separate frame, so the sidebar and header stay out of it.
-function printInvoice(invoice: HTMLElement, title: string) {
-  const frame = document.createElement("iframe");
-  frame.title = "Printable Invoice";
-  frame.style.cssText =
-    "position:fixed;left:-10000px;top:0;width:794px;height:1123px;border:0";
-  document.body.appendChild(frame);
-  const doc = frame.contentDocument!;
-  doc.title = title;
-  doc.head.innerHTML = `<style>${INVOICE_CSS}</style>`;
-  doc.body.innerHTML = invoice.innerHTML;
-  frame.contentWindow!.focus();
-  frame.contentWindow!.print();
-  // Long enough for the print dialog, then clean up.
-  window.setTimeout(() => frame.remove(), 60_000);
-}
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -94,12 +65,30 @@ function ProcessPayment({
   const [method, setMethod] = useState<PaymentMethod>("Cash");
   const [cash, setCash] = useState("");
   const [reference, setReference] = useState("");
-  const [confirming, setConfirming] = useState(false);
+  const [modal, setModal] = useState<BillingModalKind | null>(null);
+  const [modalError, setModalError] = useState("");
+  const [paymentOutcome, setPaymentOutcome] = useState<Extract<
+    PaymentOutcome,
+    { status: "recorded" }
+  > | null>(null);
+  const [showInvoice, setShowInvoice] = useState(false);
+  const returnFocusRef = useRef<HTMLElement>(null);
+  const previewHeadingRef = useRef<HTMLHeadingElement>(null);
+  const pageHeadingRef = useRef<HTMLHeadingElement>(null);
+  const retryingForwarding = useRef(false);
+  const forwardedFromRetry = useRef(false);
+  const [forwardError, setForwardError] = useState("");
+  const focusPreviewOnClose = useRef(false);
+  const [printing, setPrinting] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [printError, setPrintError] = useState("");
   const invoiceRef = useRef<HTMLElement>(null);
 
   const isPending = bill.status === "Pending";
   const needsForwarding = bill.laboratory_status === "Needs forwarding";
-  const amountRecorded = bill.payment_method !== "Not recorded";
+  const amountRecorded = Boolean(
+    bill.payment_method && bill.payment_method !== "Not recorded",
+  );
 
   // The server recomputes all of this when the payment is submitted.
   const subtotal = round2(
@@ -117,6 +106,7 @@ function ProcessPayment({
     method === "Cash" && Math.round(received * 100) < Math.round(total * 100);
   const missingReference = method !== "Cash" && !reference.trim();
   const canPay =
+    !paymentOutcome &&
     items.length > 0 &&
     cash !== "." &&
     !insufficient &&
@@ -135,14 +125,139 @@ function ProcessPayment({
     .join("");
 
   async function confirmPayment() {
-    setConfirming(false);
-    await onPay({
-      payment_method: method,
-      discount_type: discount,
-      amount_received: method === "Cash" ? received : null,
-      reference_num: method === "Cash" ? "" : reference.trim(),
-      priority,
-    });
+    if (!canPay) return;
+    setModalError("");
+    try {
+      const outcome = await onPay({
+        payment_method: method,
+        discount_type: discount,
+        amount_received: method === "Cash" ? received : null,
+        reference_num: method === "Cash" ? "" : reference.trim(),
+        priority,
+      });
+      if (outcome.status === "recorded") {
+        forwardedFromRetry.current = false;
+        setPaymentOutcome(outcome);
+        setModal("received");
+      } else {
+        setModal("failed");
+      }
+    } catch {
+      setModal("failed");
+      setModalError(
+        "The payment could not be confirmed. Refresh this bill before retrying.",
+      );
+    }
+  }
+
+  async function retryForwarding(trigger: HTMLElement) {
+    if (submitting || retryingForwarding.current) return;
+    retryingForwarding.current = true;
+    focusPreviewOnClose.current = false;
+    returnFocusRef.current = trigger;
+    setForwardError("");
+    try {
+      const outcome = await onRetryForwarding();
+      if (outcome.status === "recorded" && outcome.forwarded) {
+        forwardedFromRetry.current = true;
+        setModalError("");
+        setModal("forwarded");
+      }
+    } catch {
+      setForwardError(
+        "The payment is recorded, but forwarding could not be confirmed. Please try forwarding again.",
+      );
+    } finally {
+      retryingForwarding.current = false;
+    }
+  }
+
+  async function handlePrintInvoice() {
+    if (printing || !invoiceRef.current) return;
+    setPrinting(true);
+    setPrintError("");
+    try {
+      await printInvoice(
+        invoiceRef.current,
+        `Invoice ${bill.invoice_id || bill.bill_id}`,
+      );
+      setModal(null);
+    } catch (cause) {
+      setPrintError(
+        cause instanceof Error
+          ? cause.message
+          : "Unable to print the invoice. Please try again.",
+      );
+      setModalError(
+        cause instanceof Error
+          ? cause.message
+          : "Unable to print the invoice. Please try again.",
+      );
+    } finally {
+      setPrinting(false);
+    }
+  }
+
+  async function handleDownloadInvoice() {
+    if (downloading || !invoiceRef.current) return;
+    setDownloading(true);
+    setModalError("");
+    try {
+      const { downloadInvoicePdf } = await import("./invoicePdf");
+      await downloadInvoicePdf(
+        invoiceRef.current,
+        bill.invoice_id || bill.bill_id,
+      );
+      setModal(null);
+    } catch (cause) {
+      setModalError(
+        cause instanceof Error
+          ? cause.message
+          : "Unable to download the invoice. Please try again.",
+      );
+    } finally {
+      setDownloading(false);
+    }
+  }
+
+  function openModal(kind: BillingModalKind, trigger: HTMLElement) {
+    focusPreviewOnClose.current = false;
+    returnFocusRef.current = trigger;
+    setModalError("");
+    setPrintError("");
+    setModal(kind);
+  }
+
+  function closeModal() {
+    setModalError("");
+    if (modal === "received" && paymentOutcome?.forwarded)
+      setModal("forwarded");
+    else if (
+      (modal === "received" ||
+        (modal === "forwarded" && !forwardedFromRetry.current)) &&
+      paymentOutcome?.invoiceReady
+    )
+      setModal("generated");
+    else setModal(null);
+  }
+
+  function viewInvoice() {
+    focusPreviewOnClose.current = true;
+    setShowInvoice(true);
+    setModal(null);
+    requestAnimationFrame(() => previewHeadingRef.current?.focus());
+  }
+
+  function goBack() {
+    if (showInvoice) setShowInvoice(false);
+    else onBack();
+  }
+
+  async function confirmModal() {
+    if (modal === "payment") await confirmPayment();
+    else if (modal === "print") await handlePrintInvoice();
+    else if (modal === "download") await handleDownloadInvoice();
+    else closeModal();
   }
 
   return (
@@ -150,15 +265,23 @@ function ProcessPayment({
       <button
         type="button"
         disabled={submitting}
-        onClick={onBack}
+        onClick={goBack}
         className="mb-5 flex cursor-pointer items-center gap-2 rounded-2xl border border-sky-300 bg-sky-50 px-3 py-1 text-xs text-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
       >
         <MoveLeft size={14} />
-        Back to Billing
+        {showInvoice ? "Back to Payment Details" : "Back to Billing"}
       </button>
 
-      <h1 className="text-2xl font-bold">
-        {isPending ? "Process Payment" : "Payment Details"}
+      <h1
+        ref={pageHeadingRef}
+        tabIndex={-1}
+        className="text-2xl font-bold outline-none"
+      >
+        {showInvoice
+          ? "Invoice"
+          : isPending
+            ? "Process Payment"
+            : "Payment Details"}
       </h1>
       <p className="text-sm font-light text-gray-600">
         {isPending
@@ -175,15 +298,25 @@ function ProcessPayment({
         </p>
       )}
       {error && (
-        <p
-          role="alert"
-          className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
-        >
+        <ErrorMessage className="mt-4">
           {error}
-        </p>
+        </ErrorMessage>
       )}
 
-      <div className="mt-5 grid grid-cols-1 items-start gap-5 xl:grid-cols-7">
+      {showInvoice && !isPending && (
+        <InvoicePreview
+          bill={bill}
+          items={items}
+          headingRef={previewHeadingRef}
+        />
+      )}
+      <div
+        className={
+          showInvoice
+            ? "hidden"
+            : "mt-5 grid grid-cols-1 items-start gap-5 xl:grid-cols-7"
+        }
+      >
         <div className="space-y-5 xl:col-span-5">
           <section className={cardClass}>
             <h2 className="mb-3 font-semibold">Patient Information</h2>
@@ -240,9 +373,7 @@ function ProcessPayment({
           <section className={cardClass}>
             <h2 className="mb-3 font-semibold">Services</h2>
             {items.length === 0 ? (
-              <p className="text-sm text-gray-500">
-                No itemized services were saved for this bill.
-              </p>
+              <EmptyState message="No itemized services were saved for this bill." />
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full min-w-120 text-left text-xs">
@@ -372,9 +503,7 @@ function ProcessPayment({
                         className={fieldClass}
                       />
                       {insufficient && cash !== "" && (
-                        <span className="mt-1 block text-xs text-red-600">
-                          Cash received is less than the total.
-                        </span>
+                        <FieldError>Cash received is less than the total.</FieldError>
                       )}
                     </label>
                     <div className="text-sm text-gray-600">
@@ -479,40 +608,71 @@ function ProcessPayment({
         </aside>
       </div>
 
+      {forwardError && (
+        <ErrorMessage className="mt-4">
+          {forwardError}
+        </ErrorMessage>
+      )}
+      {printError && (
+        <ErrorMessage className="mt-4">
+          {printError}
+        </ErrorMessage>
+      )}
       <div className="mt-5 flex flex-wrap justify-end gap-3 text-xs">
         <button
           type="button"
           disabled={submitting}
-          onClick={onBack}
+          onClick={goBack}
           className="cursor-pointer rounded-sm border border-gray-300 px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isPending ? "Cancel" : "Back"}
         </button>
         {!isPending && amountRecorded && (
-          <button
-            type="button"
-            onClick={() =>
-              invoiceRef.current &&
-              printInvoice(invoiceRef.current, `Invoice ${bill.bill_id}`)
-            }
-            className="flex cursor-pointer items-center gap-2 rounded-sm border border-gray-300 px-4 py-2"
-          >
-            <Printer size={14} />
-            Print Invoice
-          </button>
+          <>
+            {!showInvoice && (
+              <button
+                type="button"
+                onClick={viewInvoice}
+                className="flex cursor-pointer items-center gap-2 rounded-sm border border-gray-300 px-4 py-2"
+              >
+                <Eye size={14} />
+                View Invoice
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={(event) => openModal("print", event.currentTarget)}
+              disabled={printing || downloading}
+              aria-busy={printing}
+              className="flex cursor-pointer items-center gap-2 rounded-sm border border-gray-300 px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {printing ? (
+                <LoadingSpinner size={14} />
+              ) : (
+                <Printer size={14} />
+              )}
+              {printing ? "Preparing Invoice..." : "Print Invoice"}
+            </button>
+            <button
+              type="button"
+              onClick={(event) => openModal("download", event.currentTarget)}
+              disabled={printing || downloading}
+              className="flex cursor-pointer items-center gap-2 rounded-sm border border-gray-300 px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Download size={14} />
+              Download PDF
+            </button>
+          </>
         )}
         {needsForwarding && (
           <button
             type="button"
             disabled={submitting}
-            onClick={() => void onRetryForwarding()}
+            onClick={(event) => void retryForwarding(event.currentTarget)}
             className="flex cursor-pointer items-center gap-2 rounded-sm border border-sky-600 bg-sky-600 px-4 py-2 text-white disabled:cursor-not-allowed disabled:opacity-60"
           >
             {submitting && (
-              <LoaderCircle
-                size={14}
-                className="animate-spin motion-reduce:animate-none"
-              />
+              <LoadingSpinner size={14} />
             )}
             {submitting ? "Forwarding..." : "Retry Laboratory Forwarding"}
           </button>
@@ -521,14 +681,11 @@ function ProcessPayment({
           <button
             type="button"
             disabled={!canPay}
-            onClick={() => setConfirming(true)}
+            onClick={(event) => openModal("payment", event.currentTarget)}
             className="flex cursor-pointer items-center gap-2 rounded-sm border border-sky-600 bg-sky-600 px-4 py-2 text-white disabled:cursor-not-allowed disabled:border-gray-300 disabled:bg-gray-300"
           >
             {submitting && (
-              <LoaderCircle
-                size={14}
-                className="animate-spin motion-reduce:animate-none"
-              />
+              <LoadingSpinner size={14} />
             )}
             {submitting ? "Saving..." : "Confirm & Record Payment"}
           </button>
@@ -537,67 +694,29 @@ function ProcessPayment({
 
       {!isPending && amountRecorded && (
         <section ref={invoiceRef} hidden>
-          <h2>Reyna G Medical Clinic</h2>
-          <p>Diagnostic &amp; Medical Services</p>
-          <h3>Invoice {bill.invoice_id ?? bill.bill_id}</h3>
-          <p>Bill ID: {bill.bill_id}</p>
-          <p>
-            Patient: {bill.patient_name} ({bill.patient_id})
-          </p>
-          <p>Paid: {paid ? `${paid.date}, ${paid.time}` : "Not recorded"}</p>
-          <p>Frontdesk Staff: {bill.received_by}</p>
-          <table>
-            <thead>
-              <tr>
-                <th>Service</th>
-                <th>Category</th>
-                <th>Price</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item, index) => (
-                <tr key={item.item_id ?? index}>
-                  <td>{item.service_name}</td>
-                  <td>{item.service_category ?? "-"}</td>
-                  <td>{itemPrice(item)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <dl>
-            <dt>Subtotal</dt>
-            <dd>{peso(bill.subtotal)}</dd>
-            <dt>
-              Discount {bill.discount_type ? `(${bill.discount_type})` : ""}
-            </dt>
-            <dd>{peso(bill.discount_amount)}</dd>
-            <dt>
-              <strong>Total Paid</strong>
-            </dt>
-            <dd>
-              <strong>{peso(bill.total_amount)}</strong>
-            </dd>
-            <dt>Payment Method</dt>
-            <dd>{bill.payment_method}</dd>
-            {bill.reference_num && (
-              <>
-                <dt>Reference</dt>
-                <dd>{bill.reference_num}</dd>
-              </>
-            )}
-          </dl>
+          <InvoiceDocument bill={bill} items={items} />
         </section>
       )}
 
-      {confirming && (
-        <ConfirmDialog
-          title="Mark as Payment Received?"
-          description={`This will record ${peso(total)} for ${bill.patient_name} and mark the bill as Paid. Any laboratory tests are forwarded after payment.`}
-          confirmLabel="Payment Received"
-          onCancel={() => setConfirming(false)}
-          onConfirm={confirmPayment}
-        />
-      )}
+      <BillingModal
+        kind={modal}
+        busy={submitting || printing || downloading}
+        error={
+          modalError || (modal === "payment" || modal === "failed" ? error : "")
+        }
+        alreadyPaid={paymentOutcome?.alreadyPaid}
+        returnFocusRef={returnFocusRef}
+        finalFocus={() =>
+          focusPreviewOnClose.current
+            ? previewHeadingRef.current
+            : returnFocusRef.current?.isConnected
+              ? returnFocusRef.current
+              : pageHeadingRef.current
+        }
+        onClose={closeModal}
+        onConfirm={confirmModal}
+        onViewInvoice={viewInvoice}
+      />
     </div>
   );
 }

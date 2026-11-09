@@ -1,3 +1,4 @@
+import { LoadingSpinner } from "./LoadingScreen";
 import { RotateCw } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 
@@ -45,11 +46,11 @@ function Header({
         type="button"
         onClick={() => void loadData()}
         disabled={loading}
-        aria-label="Reload data"
+        aria-label={loading ? "Refreshing data" : "Reload data"}
         title="Reload data"
         className="flex items-center justify-center w-10 h-10 rounded-lg border border-gray-300 text-gray-600 cursor-pointer transition-colors hover:bg-gray-50 hover:text-sky-600 active:bg-gray-100 disabled:opacity-60 disabled:cursor-not-allowed"
       >
-        <RotateCw size={18} strokeWidth={1.75} className={loading ? "animate-spin" : ""} />
+        {loading ? <LoadingSpinner size={18} /> : <RotateCw size={18} strokeWidth={1.75} />}
       </button>
     </header>
   );

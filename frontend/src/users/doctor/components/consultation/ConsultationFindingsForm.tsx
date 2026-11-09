@@ -1,5 +1,9 @@
+import EmptyState from "../../../../components/EmptyState";
+import FieldError from "../../../../components/FieldError";
+import ErrorMessage from "../../../../components/ErrorMessage";
+import { LoadingSpinner } from "../../../../components/LoadingScreen";
 import { useMemo, useRef, useState } from "react";
-import { AlertCircle, CheckCircle2, Loader2, Plus, Trash2 } from "lucide-react";
+import { CheckCircle2, Plus, Trash2 } from "lucide-react";
 import type {
   DiagnosisRow,
   DiagnosisType,
@@ -94,10 +98,7 @@ export default function ConsultationFindingsForm({
         </div>
       )}
       {submitError && (
-        <div role="alert" className="flex items-start gap-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">
-          <AlertCircle size={14} className="mt-0.5 shrink-0" />
-          <span>{submitError}</span>
-        </div>
+        <ErrorMessage>{submitError}</ErrorMessage>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] gap-4 items-start">
@@ -117,7 +118,7 @@ export default function ConsultationFindingsForm({
               className={`${inputBase} resize-none ${show("presenting_complaint") ? errBorder : okBorder}`}
             />
             <div className="flex justify-between mt-1">
-              <p className="text-[11px] text-red-600 min-h-4">{show("presenting_complaint")}</p>
+              <FieldError>{show("presenting_complaint")}</FieldError>
               <p className="text-[10px] text-gray-400">
                 {value.hpi.trim().length}/{LIMITS.hpiMax}
               </p>
@@ -147,9 +148,7 @@ export default function ConsultationFindingsForm({
               </div>
 
               {value.diagnosis.length === 0 ? (
-                <p className="px-3 py-5 text-center text-xs text-gray-400">
-                  No diagnosis added yet. Click <span className="font-semibold">Add</span> to begin.
-                </p>
+                <EmptyState compact message="No diagnoses added." description="Use Add to include a diagnosis." />
               ) : (
                 value.diagnosis.map((row, i) => {
                   const nameKey = `diagnosis.${i}.diagnosis`;
@@ -171,7 +170,7 @@ export default function ConsultationFindingsForm({
                           aria-invalid={!!show(nameKey)}
                           className={`${inputBase} ${show(nameKey) ? errBorder : okBorder}`}
                         />
-                        {show(nameKey) && <p className="text-[10px] text-red-600 mt-0.5">{show(nameKey)}</p>}
+                        {show(nameKey) && <FieldError className="mt-0.5">{show(nameKey)}</FieldError>}
                       </div>
                       <div>
                         <input
@@ -186,7 +185,7 @@ export default function ConsultationFindingsForm({
                           aria-invalid={!!show(codeKey)}
                           className={`${inputBase} font-mono ${show(codeKey) ? errBorder : okBorder}`}
                         />
-                        {show(codeKey) && <p className="text-[10px] text-red-600 mt-0.5 leading-tight">{show(codeKey)}</p>}
+                        {show(codeKey) && <FieldError className="mt-0.5">{show(codeKey)}</FieldError>}
                       </div>
                       <select
                         value={row.type}
@@ -215,7 +214,7 @@ export default function ConsultationFindingsForm({
               )}
             </div>
             {(diagnosisError || (submitted && errors.diagnosis)) && !locked && (
-              <p className="text-[11px] text-red-600 mt-2">{errors.diagnosis}</p>
+              <FieldError className="mt-2">{errors.diagnosis}</FieldError>
             )}
           </section>
         </div>
@@ -241,13 +240,13 @@ export default function ConsultationFindingsForm({
                     aria-invalid={!!show(errKey)}
                     className={`${inputBase} resize-none ${show(errKey) ? errBorder : okBorder}`}
                   />
-                  {show(errKey) && <p className="text-[10px] text-red-600 mt-0.5">{show(errKey)}</p>}
+                  {show(errKey) && <FieldError className="mt-0.5">{show(errKey)}</FieldError>}
                 </div>
               );
             })}
           </div>
           {submitted && !locked && errors.physical_examination && (
-            <p className="text-[11px] text-red-600 mt-3">{errors.physical_examination}</p>
+            <FieldError className="mt-3">{errors.physical_examination}</FieldError>
           )}
         </section>
       </div>
@@ -267,7 +266,7 @@ export default function ConsultationFindingsForm({
           disabled={saving}
           className="flex items-center gap-2 px-6 py-2 bg-sky-500 hover:bg-sky-600 disabled:bg-sky-300 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer disabled:cursor-wait"
         >
-          {saving && <Loader2 size={13} className="animate-spin" />}
+          {saving && <LoadingSpinner size={13} />}
           {saving ? "Saving..." : "Next: Prescription →"}
         </button>
       </div>

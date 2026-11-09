@@ -1,6 +1,10 @@
+import EmptyState from "../../../../components/EmptyState";
+import LoadingScreen, {
+  LoadingSpinner,
+} from "../../../../components/LoadingScreen";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ArrowLeft, Eye, LoaderCircle, Maximize, Printer } from "lucide-react";
+import { ArrowLeft, Eye, Maximize, Printer } from "lucide-react";
 import type {
   AnalysisRequest,
   LaboratoryReportData,
@@ -185,14 +189,7 @@ function ReportPreview({ report }: ReportPreviewProps) {
           disabled={!ready || printing}
           className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-sky-500 px-4 py-2 text-sm font-medium text-white hover:bg-sky-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {printing ? (
-            <LoaderCircle
-              size={14}
-              className="animate-spin motion-reduce:animate-none"
-            />
-          ) : (
-            <Printer size={14} />
-          )}
+          {printing ? <LoadingSpinner size={14} /> : <Printer size={14} />}
           {report.resultId ? "Print" : "Print Draft"}
         </button>
         <button
@@ -237,16 +234,11 @@ function ReportPreview({ report }: ReportPreviewProps) {
           </span>
         </div>
         {!ready && !previewError && (
-          <p
-            role="status"
-            className="flex items-center justify-center gap-2 bg-gray-50 py-3 text-sm text-gray-500"
-          >
-            <LoaderCircle
-              size={14}
-              className="animate-spin motion-reduce:animate-none"
-            />
-            Preparing report...
-          </p>
+          <LoadingScreen
+            message="Preparing report..."
+            variant="inline"
+            className="py-3"
+          />
         )}
         <div
           ref={containerRef}
@@ -280,9 +272,9 @@ function ReportPreview({ report }: ReportPreviewProps) {
         </div>
       </div>
       <p className="mt-3 text-xs leading-relaxed text-gray-500">
-        Use 8.5 × 13 inch long bond paper in portrait at 100% scale, with browser
-        headers and footers off. The report uses only the top half; the bottom
-        half stays blank.
+        Use 8.5 × 13 inch long bond paper in portrait at 100% scale, with
+        browser headers and footers off. The report uses only the top half; the
+        bottom half stays blank.
       </p>
       {body && createPortal(<LaboratoryReport report={report} />, body)}
     </>
@@ -290,6 +282,7 @@ function ReportPreview({ report }: ReportPreviewProps) {
 }
 
 type PrintResultViewProps = {
+  refreshKey?: number;
   request: AnalysisRequest;
   reports?: readonly LaboratoryReportData[];
   onBack: () => void;
@@ -299,6 +292,7 @@ type PrintResultViewProps = {
 };
 
 export default function PrintResultView({
+  refreshKey = 0,
   request,
   reports,
   onBack,
@@ -308,16 +302,15 @@ export default function PrintResultView({
 }: PrintResultViewProps) {
   const [loadState, setLoadState] = useState<ReportLoadState | null>(null);
 
-  const [reload, setReload] = useState(0);
+  const reload = refreshKey;
   const [selected, setSelected] = useState(0);
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const result =
-    loadState?.request === request && loadState.revision === reload
-      ? loadState
-      : null;
+  const result = loadState?.request === request ? loadState : null;
   const loaded = reports ?? result?.reports ?? [];
-  const loading = reports === undefined && result === null;
-  const error = reports === undefined ? result?.error : "";
+  const loading =
+    reports === undefined && (!result || result.revision !== reload);
+  const error =
+    reports === undefined && result?.revision === reload ? result.error : "";
 
   useEffect(() => {
     headingRef.current?.focus();
@@ -343,12 +336,12 @@ export default function PrintResultView({
       })
       .catch((cause) => {
         if (!controller.signal.aborted) {
-          setLoadState({
+          setLoadState((previous) => ({
             request,
             revision: reload,
-            reports: [],
+            reports: previous?.request === request ? previous.reports : [],
             error: apiMessage(cause, "Unable to load this laboratory result."),
-          });
+          }));
         }
       });
 
@@ -382,27 +375,9 @@ export default function PrintResultView({
           </p>
         </div>
       </header>
-      {loading ? (
-        <p
-          role="status"
-          className="flex min-h-64 items-center justify-center gap-2 text-gray-500"
-        >
-          <LoaderCircle
-            size={18}
-            className="animate-spin motion-reduce:animate-none"
-          />
-          Loading laboratory result...
-        </p>
-      ) : error ? (
-        <div className="pt-5">
-          <AnalysisNotice error>{error}</AnalysisNotice>
-          <AnalysisButton
-            variant="secondary"
-            onClick={() => setReload((value) => value + 1)}
-          >
-            Try again
-          </AnalysisButton>
-        </div>
+      {error && <AnalysisNotice error>{error}</AnalysisNotice>}
+      {loading && loaded.length === 0 ? (
+        <LoadingScreen message="Loading laboratory result..." />
       ) : report ? (
         <>
           {loaded.length > 1 && (
@@ -439,9 +414,10 @@ export default function PrintResultView({
         </>
       ) : (
         <div className="pt-5">
-          <AnalysisNotice>
-            No laboratory report is available to preview.
-          </AnalysisNotice>
+          <EmptyState
+            message="No laboratory report available."
+            description="Saved results will appear here when they are ready to preview."
+          />
         </div>
       )}
     </section>

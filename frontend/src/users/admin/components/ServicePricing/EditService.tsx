@@ -1,3 +1,7 @@
+import ErrorMessage from "../../../../components/ErrorMessage";
+import EmptyState from "../../../../components/EmptyState";
+import { LoadingSpinner } from "../../../../components/LoadingScreen";
+import UniversalModal from "../../../../components/UniversalModal";
 import { useState } from "react";
 import { X, Search, Trash } from "lucide-react";
 import api from "../../../../lib/axios";
@@ -20,6 +24,7 @@ const ROOM_OPTIONS = [
 function EditService({ service, services, onClose, loadData }: Props) {
   const isPackage = service.service_type === "package";
 
+  const [formError, setFormError] = useState("");
   const [serviceName, setServiceName] = useState(service.service_name);
   const [price, setPrice] = useState(String(service.price));
   const [serviceType, setServiceType] = useState(service.service_type);
@@ -29,6 +34,7 @@ function EditService({ service, services, onClose, loadData }: Props) {
   const [room, setRoom] = useState(service.room);
   const [isActive, setIsActive] = useState(service.active);
   const [submitting, setSubmitting] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   const [searchFilter, setSearchFilter] = useState("");
   const [checkedServices, setCheckedServices] = useState<string[]>([]);
@@ -70,23 +76,26 @@ function EditService({ service, services, onClose, loadData }: Props) {
   }
 
   async function saveService() {
+    setFormError("");
     if (isPackage) {
       if (
         !serviceName.trim() ||
         price === "" ||
         selectedServices.length === 0
       ) {
-        alert(
+        setFormError(
           "Package name, package price, and at least one service are required.",
         );
         return;
       }
       if (isNaN(Number(price)) || Number(price) < 0) {
-        alert("Package price must be a valid non-negative number.");
+        setFormError("Package price must be a valid non-negative number.");
         return;
       }
       if (Number(price) > originalPrice) {
-        alert("Package price cannot be greater than the original price.");
+        setFormError(
+          "Package price cannot be greater than the original price.",
+        );
         return;
       }
     } else {
@@ -97,11 +106,11 @@ function EditService({ service, services, onClose, loadData }: Props) {
         !serviceCategory.trim() ||
         !room
       ) {
-        alert("Please fill out all fields.");
+        setFormError("Please fill out all fields.");
         return;
       }
       if (isNaN(Number(price)) || Number(price) < 0) {
-        alert("Price must be a valid non-negative number.");
+        setFormError("Price must be a valid non-negative number.");
         return;
       }
     }
@@ -124,19 +133,18 @@ function EditService({ service, services, onClose, loadData }: Props) {
             active: isActive,
           };
 
-      const response = await api.patch(
+      await api.patch(
         `/api/admin/services/${encodeURIComponent(service.service_id)}/edit`,
         body,
       );
 
-      alert(response.data.message);
-      onClose();
-
+      setSaved(true);
       loadData();
     } catch (error: unknown) {
-      alert(
+      setFormError(
         (error as { response?: { data?: { message?: string } } }).response?.data
-          ?.message || "Something went wrong",
+          ?.message ||
+          `The ${isPackage ? "package" : "service"} could not be updated.`,
       );
       console.error(error);
     } finally {
@@ -146,6 +154,19 @@ function EditService({ service, services, onClose, loadData }: Props) {
 
   const inputClass =
     "w-full rounded-lg border border-gray-300 py-2 px-3 text-xs focus:border-gray-900 focus:outline-none";
+
+  if (saved) {
+    return (
+      <UniversalModal
+        isOpen
+        type="success"
+        title={isPackage ? "Package Updated" : "Service Updated"}
+        description={`The ${isPackage ? "package" : "service"} has been successfully updated.`}
+        onClose={onClose}
+        actions={[{ label: "OK", onClick: onClose }]}
+      />
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -169,6 +190,7 @@ function EditService({ service, services, onClose, loadData }: Props) {
           </button>
         </div>
 
+        {formError && <ErrorMessage className="mb-4">{formError}</ErrorMessage>}
         {!isPackage && (
           <div className="w-full">
             <div className="w-full grid grid-cols-2 gap-5 mb-2">
@@ -311,9 +333,7 @@ function EditService({ service, services, onClose, loadData }: Props) {
                         </button>
                       ))
                     ) : (
-                      <p className="px-3 py-3 text-xs text-gray-400">
-                        No matching services found.
-                      </p>
+                      <EmptyState message="No matching services found." />
                     )}
                   </div>
                 )}
@@ -395,11 +415,8 @@ function EditService({ service, services, onClose, loadData }: Props) {
 
                     {selectedServices.length === 0 && (
                       <tr>
-                        <td
-                          colSpan={5}
-                          className="px-4 py-6 text-center text-gray-400"
-                        >
-                          No services added.
+                        <td colSpan={5} className="p-4">
+                          <EmptyState compact message="No services added." />
                         </td>
                       </tr>
                     )}
@@ -444,6 +461,12 @@ function EditService({ service, services, onClose, loadData }: Props) {
               onClick={saveService}
               disabled={submitting}
             >
+              {submitting && (
+                <LoadingSpinner
+                  size={16}
+                  className="mr-2 inline-block align-middle"
+                />
+              )}
               {submitting ? "Saving..." : "Save Changes"}
             </button>
           </div>

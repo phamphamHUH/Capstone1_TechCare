@@ -1,3 +1,4 @@
+import EmptyState from "../../../../components/EmptyState";
 import React from "react";
 import { X, Clock, FileText, Pill } from "lucide-react";
 import type { PatientInfo, Prescription } from "./types";
@@ -52,9 +53,7 @@ export default function PatientHistoryModal({
           {prescriptions.length === 0 ? (
             <div className="py-12 flex flex-col items-center justify-center text-center text-gray-400">
               <Clock size={28} className="mb-2 text-gray-300" />
-              <p className="text-xs font-semibold text-gray-600">
-                No past prescriptions on file
-              </p>
+              <EmptyState message="No past prescriptions on file." />
               <p className="text-[11px] text-gray-400 mt-0.5">
                 Saved prescriptions for this patient will be recorded here.
               </p>

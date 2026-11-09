@@ -1,3 +1,6 @@
+import LoadingScreen from "../../../components/LoadingScreen";
+import LoadingRegion from "../../../components/LoadingRegion";
+import ErrorMessage from "../../../components/ErrorMessage";
 import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 import type {
@@ -22,6 +25,8 @@ type QueuesProps = {
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   loadData: () => Promise<void>;
   loading: boolean;
+  error?: string;
+  loadFailed?: boolean;
 };
 
 const isToday = (iso: string) =>
@@ -31,7 +36,8 @@ const isToday = (iso: string) =>
 // Status rules shared by the stat card counts and the stat card filters,
 // so a card's number always matches the rows it shows when clicked.
 const statusOf = (q: QueueEntry) => q.status.toLowerCase();
-const isActive = (q: QueueEntry) => !["completed", "cancelled"].includes(statusOf(q));
+const isActive = (q: QueueEntry) =>
+  !["completed", "cancelled"].includes(statusOf(q));
 const isWaiting = (q: QueueEntry) => statusOf(q) === "waiting";
 const isInService = (q: QueueEntry) =>
   ["in service", "in progress", "serving"].includes(statusOf(q));
@@ -47,7 +53,14 @@ const STAT_FILTERS: Record<QueueStatFilter, (q: QueueEntry) => boolean> = {
   "completed-today": isCompletedToday,
 };
 
-function Queues({ queues, queueRequests, loadData }: QueuesProps) {
+function Queues({
+  queues,
+  queueRequests,
+  loadData,
+  loading,
+  error,
+  loadFailed,
+}: QueuesProps) {
   const [activeTab, setActiveTab] = useState<QueueTab>("all");
   const [, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState("");
@@ -93,7 +106,10 @@ function Queues({ queues, queueRequests, loadData }: QueuesProps) {
 
     return queues.filter((entry) => {
       if (!STAT_FILTERS[statFilter](entry)) return false;
-      if (activeTab !== "all" && entry.service_type?.toLowerCase() !== activeTab)
+      if (
+        activeTab !== "all" &&
+        entry.service_type?.toLowerCase() !== activeTab
+      )
         return false;
       if (serviceFilter !== "all" && entry.service_category !== serviceFilter)
         return false;
@@ -108,6 +124,10 @@ function Queues({ queues, queueRequests, loadData }: QueuesProps) {
       return true;
     });
   }, [queues, statFilter, activeTab, serviceFilter, priority, search]);
+
+  if (loading && !queues.length && !queueRequests.length) {
+    return <LoadingScreen variant="page" message="Loading queues..." />;
+  }
 
   return (
     <main className="flex-1 min-w-0 ">
@@ -125,13 +145,22 @@ function Queues({ queues, queueRequests, loadData }: QueuesProps) {
       </div>
 
       <div className="px-6">
+        {error && <ErrorMessage className="mt-5">{error}</ErrorMessage>}
         <QueueStats
           stats={stats}
           activeFilter={statFilter}
           onFilterChange={setStatFilter}
         />
-        <QueueTabs activeTab={activeTab} setActiveTab={(tab) => { setActiveTab(tab); setServiceFilter("all"); }} />
-        {queueRequests.some((request) => request.record_type === "laboratory") && (
+        <QueueTabs
+          activeTab={activeTab}
+          setActiveTab={(tab) => {
+            setActiveTab(tab);
+            setServiceFilter("all");
+          }}
+        />
+        {queueRequests.some(
+          (request) => request.record_type === "laboratory",
+        ) && (
           <p className="my-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
             Some paid requests still need laboratory forwarding.{" "}
             <button
@@ -152,14 +181,23 @@ function Queues({ queues, queueRequests, loadData }: QueuesProps) {
           priority={priority}
           setPriority={setPriority}
         />
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-7">
-          <div className="xl:col-span-5 flex flex-col gap-2">
-            <QueueTable queues={visibleQueues} onRefresh={loadData} />
+        <LoadingRegion
+          loading={loading && queues.length > 0}
+          message="Refreshing queues..."
+        >
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-7">
+            <div className="xl:col-span-5 flex flex-col gap-2">
+              <QueueTable
+                queues={visibleQueues}
+                onRefresh={loadData}
+                loadFailed={loadFailed}
+              />
+            </div>
+            <div className="xl:col-span-2">
+              <RoomInfo queues={queues} loadFailed={loadFailed} />
+            </div>
           </div>
-          <div className="xl:col-span-2">
-            <RoomInfo queues={queues} />
-          </div>
-        </div>
+        </LoadingRegion>
       </div>
     </main>
   );

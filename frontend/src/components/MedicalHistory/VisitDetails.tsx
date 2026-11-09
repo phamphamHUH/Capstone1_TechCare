@@ -1,8 +1,11 @@
+import ErrorMessage from "../ErrorMessage";
+import EmptyState from "../EmptyState";
+import LoadingScreen from "../LoadingScreen";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { FlaskConical, Stethoscope, MousePointerClick } from "lucide-react";
 import api from "#lib/axios";
-import type { HistoryRecord } from "../../../../interface/HistoryRecord";
+import type { HistoryRecord } from "../../interface/HistoryRecord";
 
 type Json = string | number | boolean | null | Json[] | { [k: string]: Json };
 
@@ -250,7 +253,7 @@ function VisitDetails({
         <h1 className="font-bold">Visit Details</h1>
         <div className="flex flex-col items-center gap-2 py-16 text-center text-gray-400">
           <MousePointerClick size={28} strokeWidth={1.5} />
-          <p className="text-sm">Select a record to view its details.</p>
+          <EmptyState message="Select a record to view its details." />
         </div>
       </div>
     );
@@ -333,22 +336,15 @@ function VisitDetails({
         </Row>
       </div>
 
-      {loading && (
-        <div className="animate-pulse space-y-3 border-t border-gray-100 py-4">
-          <div className="h-4 w-1/3 rounded bg-gray-100" />
-          <div className="h-20 rounded bg-gray-100" />
-        </div>
-      )}
+      {loading && <LoadingScreen message="Loading record details..." />}
 
-      {error && (
-        <p className="py-6 text-center text-sm text-red-500">{error}</p>
-      )}
+      {error && <ErrorMessage>{error}</ErrorMessage>}
 
       {/* Laboratory results */}
       {details?.record_type === "laboratory" && (
         <Section title="Results Summary">
           {details.results.length === 0 ? (
-            <p className="text-sm text-gray-400">No results yet.</p>
+            <EmptyState message="No results yet." />
           ) : (
             details.results.map((res) => {
               const rows = toRows(res.results);
@@ -440,7 +436,7 @@ function VisitDetails({
 
           <Section title="Prescriptions">
             {details.prescription.length === 0 ? (
-              <p className="text-sm text-gray-400">No prescriptions issued.</p>
+              <EmptyState message="No prescriptions issued." />
             ) : (
               <div className="space-y-3">
                 {details.prescription.map((p) => (

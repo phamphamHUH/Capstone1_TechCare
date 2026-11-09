@@ -1,3 +1,4 @@
+import EmptyState from "../../../../components/EmptyState";
 import {
   X,
   FlaskConical,
@@ -251,10 +252,8 @@ function ServiceModal({
                 <tr>
                   <td
                     colSpan={5}
-                    className="px-4 py-10 text-center text-sm text-gray-400"
-                  >
-                    No services found.
-                  </td>
+                    className="p-4"
+                  ><EmptyState compact message="No services found." /></td>
                 </tr>
               )}
             </tbody>

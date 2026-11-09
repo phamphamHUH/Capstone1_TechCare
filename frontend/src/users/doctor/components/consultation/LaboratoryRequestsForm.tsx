@@ -1,5 +1,9 @@
+import FieldError from "../../../../components/FieldError";
+import EmptyState from "../../../../components/EmptyState";
+import ErrorMessage from "../../../../components/ErrorMessage";
+import LoadingScreen, { LoadingSpinner } from "../../../../components/LoadingScreen";
 import { useEffect, useMemo, useState } from "react";
-import { AlertCircle, CalendarDays, CheckCircle2, Check, Loader2, RefreshCw, Search, X } from "lucide-react";
+import { CalendarDays, CheckCircle2, Check, Search, X } from "lucide-react";
 import calculateAge from "../../../../utils/calculateAge.ts";
 import {
   fetchLaboratoryServices,
@@ -54,12 +58,6 @@ export default function LaboratoryRequestForm({ patient, consultationRecordId, o
   const [serverErrors, setServerErrors] = useState<FieldErrors>({});
   const [success, setSuccess] = useState<{ requestId: string; count: number } | null>(null);
 
-  const [reloadToken, setReloadToken] = useState(0);
-  const retryLoad = () => {
-    setLoading(true);
-    setLoadError(null);
-    setReloadToken((n) => n + 1);
-  };
 
   useEffect(() => {
     let cancelled = false;
@@ -76,7 +74,7 @@ export default function LaboratoryRequestForm({ patient, consultationRecordId, o
     return () => {
       cancelled = true;
     };
-  }, [reloadToken]);
+  }, []);
 
   const categories = useMemo(
     () => ["All", ...Array.from(new Set(services.map((s) => s.service_type))).sort()],
@@ -167,10 +165,7 @@ export default function LaboratoryRequestForm({ patient, consultationRecordId, o
         </div>
       )}
       {submitError && (
-        <div role="alert" className="flex items-start gap-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">
-          <AlertCircle size={14} className="mt-0.5 shrink-0" />
-          <span>{submitError}</span>
-        </div>
+        <ErrorMessage>{submitError}</ErrorMessage>
       )}
 
       {/* ---------------- Test selection + selected list ---------------- */}
@@ -206,25 +201,13 @@ export default function LaboratoryRequestForm({ patient, consultationRecordId, o
 
           <h4 className="text-xs font-bold text-gray-900 mb-2">{query.trim() ? "Search Results" : "Common Tests"}</h4>
 
-          {loading ? (
-            <div className="py-10 flex items-center justify-center text-xs text-gray-500" role="status">
-              <Loader2 size={16} className="animate-spin text-sky-500 mr-2" /> Loading tests...
-            </div>
-          ) : loadError ? (
-            <div className="py-8 text-center" role="alert">
-              <p className="text-xs text-red-600 mb-3">{loadError}</p>
-              <button
-                type="button"
-                onClick={retryLoad}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-semibold rounded-lg cursor-pointer"
-              >
-                <RefreshCw size={12} /> Try again
-              </button>
-            </div>
-          ) : visible.length === 0 ? (
-            <p className="py-8 text-center text-xs text-gray-400">
-              {services.length === 0 ? "No laboratory tests are available yet." : "No tests match your search."}
-            </p>
+          {loadError && (
+            <ErrorMessage>{loadError}</ErrorMessage>
+          )}
+          {loading && services.length === 0 ? (
+            <LoadingScreen message="Loading tests..." />
+          ) : ((visible.length === 0 ? (
+            <EmptyState message={services.length === 0 ? "No laboratory tests are available yet." : "No tests match your search."} />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               {visible.map((s) => {
@@ -258,7 +241,7 @@ export default function LaboratoryRequestForm({ patient, consultationRecordId, o
                 );
               })}
             </div>
-          )}
+          )))}
         </div>
 
         <div className="p-5 flex flex-col min-h-64 border-t lg:border-t-0 border-gray-200">
@@ -272,11 +255,9 @@ export default function LaboratoryRequestForm({ patient, consultationRecordId, o
           </div>
 
           {selected.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-center py-8">
-              <div className="w-20 h-20 rounded-full bg-gray-200 mb-3" />
-              <p className="text-xs font-bold text-gray-800">No Test Selected</p>
-              <p className="text-[10px] text-gray-400 mt-1 max-w-48">Select One or more Laboratory Test to add to the Request</p>
-              {submitted && errors.services && <p className="text-[11px] text-red-600 mt-3">{errors.services}</p>}
+            <div>
+              <EmptyState message="No tests selected." description="Select laboratory tests to add them to this request." />
+              {submitted && errors.services && <FieldError>{errors.services}</FieldError>}
             </div>
           ) : (
             <>
@@ -302,7 +283,7 @@ export default function LaboratoryRequestForm({ patient, consultationRecordId, o
                 <span className="text-gray-500">Estimated total</span>
                 <span className="font-bold text-gray-900">{peso(total)}</span>
               </div>
-              {submitted && errors.services && <p className="text-[11px] text-red-600 mt-2">{errors.services}</p>}
+              {submitted && errors.services && <FieldError className="mt-2">{errors.services}</FieldError>}
             </>
           )}
         </div>
@@ -333,7 +314,7 @@ export default function LaboratoryRequestForm({ patient, consultationRecordId, o
                 />
                 <CalendarDays size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               </div>
-              {errors.request_date && <p className="text-[10px] text-red-600 mt-0.5">{errors.request_date}</p>}
+              {errors.request_date && <FieldError className="mt-0.5">{errors.request_date}</FieldError>}
             </div>
             <div>
               <label htmlFor="lab-release-date" className="block text-[11px] text-gray-500 mb-1">Estimate Release Date</label>
@@ -349,7 +330,7 @@ export default function LaboratoryRequestForm({ patient, consultationRecordId, o
                 />
                 <CalendarDays size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               </div>
-              {errors.estimated_release_date && <p className="text-[10px] text-red-600 mt-0.5">{errors.estimated_release_date}</p>}
+              {errors.estimated_release_date && <FieldError className="mt-0.5">{errors.estimated_release_date}</FieldError>}
             </div>
           </div>
         </div>
@@ -385,7 +366,7 @@ export default function LaboratoryRequestForm({ patient, consultationRecordId, o
           disabled={submitting}
           className="flex items-center gap-2 px-6 py-2 bg-sky-500 hover:bg-sky-600 disabled:bg-sky-300 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer disabled:cursor-wait"
         >
-          {submitting && <Loader2 size={13} className="animate-spin" />}
+          {submitting && <LoadingSpinner size={13} />}
           {submitting ? "Submitting..." : "Submit Request"}
         </button>
       </div>

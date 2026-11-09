@@ -21,8 +21,28 @@ export const formatAge = (birthdate: string | null, age: number | null) => {
   return `${years} ${years === 1 ? "year" : "years"} old`;
 };
 
-export function formatPatientAddress(patient: { street?: string; barangay?: string; city?: string; province?: string; zip_code?: string; address?: string }) {
-  return [patient.street, patient.barangay, patient.city, patient.province, patient.zip_code].map((part) => part?.trim()).filter(Boolean).join(", ") || patient.address || "Not recorded";
+export function formatPatientAddress(patient: {
+  street?: string;
+  barangay?: string;
+  city?: string;
+  province?: string;
+  zip_code?: string;
+  address?: string;
+}) {
+  return (
+    [
+      patient.street,
+      patient.barangay,
+      patient.city,
+      patient.province,
+      patient.zip_code,
+    ]
+      .map((part) => part?.trim())
+      .filter(Boolean)
+      .join(", ") ||
+    patient.address ||
+    "Not recorded"
+  );
 }
 
 export const peso = (v: number | string | null | undefined) =>
@@ -30,7 +50,7 @@ export const peso = (v: number | string | null | undefined) =>
     Number(v ?? 0),
   );
 
-export function formatDateTime(value: string | null) {
+export const formatDateTime = (value: string | null) => {
   if (!value) return null;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return null;
@@ -45,4 +65,4 @@ export function formatDateTime(value: string | null) {
       minute: "2-digit",
     }),
   };
-}
+};
