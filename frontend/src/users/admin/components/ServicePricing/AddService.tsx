@@ -1,5 +1,6 @@
 import ErrorMessage from "../../../../components/ErrorMessage";
 import EmptyState from "../../../../components/EmptyState";
+import UniversalModal from "../../../../components/UniversalModal";
 import { useState } from "react";
 import api from "../../../../lib/axios";
 import { X, PackagePlus, FlaskConical, Search, Trash } from "lucide-react";
@@ -26,6 +27,7 @@ function AddService({ loadData, onClose, services }: Props) {
   const [serviceCategory, setServiceCategory] = useState("");
   const [room, setRoom] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [created, setCreated] = useState<"service" | "package" | null>(null);
   const [serviceTab, setServiceTab] = useState("single-service");
   const [isActive, setIsActive] = useState(true);
   const [searchFilter, setSearchFilter] = useState("");
@@ -52,20 +54,19 @@ function AddService({ loadData, onClose, services }: Props) {
 
     setSubmitting(true);
     try {
-      const response = await api.post("/api/admin/services", {
+      await api.post("/api/admin/services", {
         service_type: serviceType,
         service_name: serviceName,
         service_category: serviceCategory,
         price: Number(price),
         room,
       });
-      alert(response.data.message);
+      setCreated("service");
       loadData();
-      onClose();
     } catch (error: unknown) {
       setFormError(
         (error as { response?: { data?: { message?: string } } }).response?.data
-          ?.message || "Unable to complete this action. Please try again.",
+          ?.message || "The service could not be added.",
       );
       console.error(error);
     } finally {
@@ -95,19 +96,18 @@ function AddService({ loadData, onClose, services }: Props) {
     setSubmitting(true);
 
     try {
-      const response = await api.post("/api/admin/packages", {
+      await api.post("/api/admin/packages", {
         package_name: serviceName.trim(),
         price: Number(price),
         services: selectedServices.map((service) => service.service_id),
       });
 
-      alert(response.data.message);
+      setCreated("package");
       loadData();
-      onClose();
     } catch (error: unknown) {
       setFormError(
         (error as { response?: { data?: { message?: string } } }).response?.data
-          ?.message || "Unable to complete this action. Please try again.",
+          ?.message || "The package could not be added.",
       );
       console.error(error);
     } finally {
@@ -148,6 +148,19 @@ function AddService({ loadData, onClose, services }: Props) {
     (total, service) => total + Number(service.price),
     0,
   );
+
+  if (created) {
+    return (
+      <UniversalModal
+        isOpen
+        type="success"
+        title={created === "package" ? "Package Added" : "Service Added"}
+        description={`The ${created} has been successfully added.`}
+        onClose={onClose}
+        actions={[{ label: "OK", onClick: onClose }]}
+      />
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -412,7 +425,17 @@ function AddService({ loadData, onClose, services }: Props) {
                   </thead>
 
                   <tbody className="divide-y divide-gray-100">
-                    {selectedServices.length === 0 && <tr><td colSpan={5} className="p-4"><EmptyState compact message="No services selected." description="Select services to include in this package." /></td></tr>}
+                    {selectedServices.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="p-4">
+                          <EmptyState
+                            compact
+                            message="No services selected."
+                            description="Select services to include in this package."
+                          />
+                        </td>
+                      </tr>
+                    )}
                     {selectedServices.map((service) => (
                       <tr
                         key={service.service_id}

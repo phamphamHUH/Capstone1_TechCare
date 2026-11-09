@@ -1,6 +1,7 @@
 import ErrorMessage from "../../../../components/ErrorMessage";
 import EmptyState from "../../../../components/EmptyState";
 import { LoadingSpinner } from "../../../../components/LoadingScreen";
+import UniversalModal from "../../../../components/UniversalModal";
 import { useState } from "react";
 import { X, Search, Trash } from "lucide-react";
 import api from "../../../../lib/axios";
@@ -33,6 +34,7 @@ function EditService({ service, services, onClose, loadData }: Props) {
   const [room, setRoom] = useState(service.room);
   const [isActive, setIsActive] = useState(service.active);
   const [submitting, setSubmitting] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   const [searchFilter, setSearchFilter] = useState("");
   const [checkedServices, setCheckedServices] = useState<string[]>([]);
@@ -91,7 +93,9 @@ function EditService({ service, services, onClose, loadData }: Props) {
         return;
       }
       if (Number(price) > originalPrice) {
-        setFormError("Package price cannot be greater than the original price.");
+        setFormError(
+          "Package price cannot be greater than the original price.",
+        );
         return;
       }
     } else {
@@ -129,19 +133,18 @@ function EditService({ service, services, onClose, loadData }: Props) {
             active: isActive,
           };
 
-      const response = await api.patch(
+      await api.patch(
         `/api/admin/services/${encodeURIComponent(service.service_id)}/edit`,
         body,
       );
 
-      alert(response.data.message);
-      onClose();
-
+      setSaved(true);
       loadData();
     } catch (error: unknown) {
       setFormError(
         (error as { response?: { data?: { message?: string } } }).response?.data
-          ?.message || "Unable to complete this action. Please try again.",
+          ?.message ||
+          `The ${isPackage ? "package" : "service"} could not be updated.`,
       );
       console.error(error);
     } finally {
@@ -151,6 +154,19 @@ function EditService({ service, services, onClose, loadData }: Props) {
 
   const inputClass =
     "w-full rounded-lg border border-gray-300 py-2 px-3 text-xs focus:border-gray-900 focus:outline-none";
+
+  if (saved) {
+    return (
+      <UniversalModal
+        isOpen
+        type="success"
+        title={isPackage ? "Package Updated" : "Service Updated"}
+        description={`The ${isPackage ? "package" : "service"} has been successfully updated.`}
+        onClose={onClose}
+        actions={[{ label: "OK", onClick: onClose }]}
+      />
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -399,10 +415,9 @@ function EditService({ service, services, onClose, loadData }: Props) {
 
                     {selectedServices.length === 0 && (
                       <tr>
-                        <td
-                          colSpan={5}
-                          className="p-4"
-                        ><EmptyState compact message="No services added." /></td>
+                        <td colSpan={5} className="p-4">
+                          <EmptyState compact message="No services added." />
+                        </td>
                       </tr>
                     )}
                   </tbody>
@@ -446,7 +461,12 @@ function EditService({ service, services, onClose, loadData }: Props) {
               onClick={saveService}
               disabled={submitting}
             >
-              {submitting && <LoadingSpinner size={16} className="mr-2 inline-block align-middle" />}
+              {submitting && (
+                <LoadingSpinner
+                  size={16}
+                  className="mr-2 inline-block align-middle"
+                />
+              )}
               {submitting ? "Saving..." : "Save Changes"}
             </button>
           </div>
