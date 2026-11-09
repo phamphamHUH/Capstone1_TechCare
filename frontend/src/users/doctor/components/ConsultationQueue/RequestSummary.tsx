@@ -1,33 +1,33 @@
 import { useState } from "react";
 import ServiceModal from "./ServicesModal";
-import RoomSummaryPanel, {
-  type ServiceStatusFilter,
-} from "../../../../components/RoomSummaryPanel";
+import RoomSummaryPanel from "../../../../components/RoomSummaryPanel";
+import type { Queue } from "../../../../interface/Queue";
 import type { Service } from "../../../../interface/Service";
 
 type RequestSummaryProps = {
   services: Service[];
+  queues: Queue[];
   room: string;
 };
 
-function RequestSummary({ services, room }: RequestSummaryProps) {
-  // null = closed; otherwise the status filter the modal opens with.
-  const [serviceFilter, setServiceFilter] = useState<ServiceStatusFilter | null>(null);
+function RequestSummary({ services, queues, room }: RequestSummaryProps) {
+  const [openServiceModal, setOpenServiceModal] = useState(false);
 
   return (
     <>
       <RoomSummaryPanel
+        services={services}
+        queues={queues}
         roomLabel={room}
-        onViewServices={setServiceFilter}
+        onViewServices={() => setOpenServiceModal(true)}
       />
 
       {/* SERVICE MODAL FOR SERVICES OFFERED IN SPECIFIC ROOM */}
-      {serviceFilter && (
+      {openServiceModal && (
         <ServiceModal
           services={services}
           room={room}
-          initialFilter={serviceFilter}
-          onClose={() => setServiceFilter(null)}
+          onClose={() => setOpenServiceModal(false)}
         />
       )}
     </>

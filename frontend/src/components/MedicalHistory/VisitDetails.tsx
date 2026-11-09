@@ -1,11 +1,11 @@
-import ErrorMessage from "../../../../components/ErrorMessage";
-import EmptyState from "../../../../components/EmptyState";
-import LoadingScreen from "../../../../components/LoadingScreen";
+import ErrorMessage from "../ErrorMessage";
+import EmptyState from "../EmptyState";
+import LoadingScreen from "../LoadingScreen";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { FlaskConical, Stethoscope, MousePointerClick } from "lucide-react";
 import api from "#lib/axios";
-import type { HistoryRecord } from "../../../../interface/HistoryRecord";
+import type { HistoryRecord } from "../../interface/HistoryRecord";
 
 type Json = string | number | boolean | null | Json[] | { [k: string]: Json };
 
@@ -336,13 +336,9 @@ function VisitDetails({
         </Row>
       </div>
 
-      {loading && (
-        <LoadingScreen message="Loading record details..." />
-      )}
+      {loading && <LoadingScreen message="Loading record details..." />}
 
-      {error && (
-        <ErrorMessage>{error}</ErrorMessage>
-      )}
+      {error && <ErrorMessage>{error}</ErrorMessage>}
 
       {/* Laboratory results */}
       {details?.record_type === "laboratory" && (

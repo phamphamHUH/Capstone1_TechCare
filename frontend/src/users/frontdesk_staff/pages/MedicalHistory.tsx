@@ -56,7 +56,10 @@ function MedicalHistory({
           <HistoryTabs activeTab={activeTab} onChange={setActiveTab} />
 
           {activeTab === "medical-history" && (
-            <MedicalHistoryTab patientId={selectedPatient} />
+            <MedicalHistoryTab
+              key={selectedPatient}
+              patientId={selectedPatient}
+            />
           )}
         </>
       ) : loading ? (

@@ -1,6 +1,6 @@
 import SideBar from "#components/SideBar";
 import Header from "#components/Header";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   LayoutGrid,
   ListOrdered,
@@ -18,6 +18,7 @@ import Consultation from "./pages/Consultation";
 import type { Service } from "../../interface/Service";
 import type { QueueEntry } from "../../interface/Queue";
 import api from "#lib/axios";
+import ActiveConsultation from "./pages/ActiveConsultation";
 
 function Doctor() {
   const [open, setOpen] = useState(true);
@@ -27,7 +28,10 @@ function Doctor() {
   const [services, setServices] = useState<Service[]>([]);
   const [queues, setQueues] = useState<QueueEntry[]>([]);
   const latestLoad = useRef(0);
+  const [selectedQueue, setSelectedQueue] = useState<QueueEntry | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const room = "Consultation Room";
 
   const page = searchParams.get("page") ?? "dashboard";
 
@@ -61,6 +65,11 @@ function Doctor() {
       icon: <ListOrdered size={20} />,
     },
     {
+      page: "active-consultation",
+      label: "Active Consultation",
+      icon: <Stethoscope size={20} />,
+    },
+    {
       page: "medical-history",
       label: "Medical History",
       icon: <FileClock size={20} />,
@@ -71,10 +80,11 @@ function Doctor() {
       icon: <FileText size={20} />,
     },
   ];
-  const room = "Consultation Room";
+
   const currentPage =
     navItems.find((item) => item.page === page)?.label ?? "Dashboard";
 
+  // FETCH SERVICES AND CONSULTATION QUEUES
   const loadData = useCallback(async () => {
     const request = ++latestLoad.current;
     setLoading(true);
@@ -99,13 +109,29 @@ function Doctor() {
       Array.isArray(queuesRes.value.data?.queueEntries);
     setQueueLoadFailed(!queuesLoaded);
     if (queuesLoaded) {
-      setQueues(queuesRes.value.data.queueEntries);
+      const fetchedQueues: QueueEntry[] = queuesRes.value.data.queueEntries;
+      setQueues(fetchedQueues);
+      // Restore the active consultation only after a successful queue refresh.
+      setSelectedQueue(
+        fetchedQueues.find(
+          (queue) => queue.status?.toLowerCase() === "serving",
+        ) ?? null,
+      );
     } else {
       errors.push("Consultation queue entries could not be loaded.");
     }
     setError(errors.join(" ") || null);
     setLoading(false);
-  }, []);
+  }, [room]);
+
+  // FETCH DATA WHEN DOCTOR PAGE MOUNTS
+  useEffect(() => {
+    const initialize = async () => {
+      await loadData();
+    };
+
+    void initialize();
+  }, [loadData]);
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -152,6 +178,20 @@ function Doctor() {
               open={open}
               setOpen={setOpen}
               loadData={loadData}
+              setSelectedQueue={setSelectedQueue}
+            />
+          )}
+
+          {page === "active-consultation" && (
+            <ActiveConsultation
+              selectedQueue={selectedQueue}
+              room={room}
+              loading={loading}
+              error={
+                queueLoadFailed
+                  ? "The active consultation could not be refreshed."
+                  : null
+              }
             />
           )}
 

@@ -1,14 +1,20 @@
 import ErrorMessage from "../../../../components/ErrorMessage";
-import React, { useRef, useState, type Dispatch, type SetStateAction } from "react";
-import type { Queue } from "../../../../interface/Queue";
+import React, {
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
+import type { QueueEntry } from "../../../../interface/Queue";
 import api from "#lib/axios";
 
 type QueueTableProps = {
-  filterQueues: Queue[];
+  filterQueues: QueueEntry[];
   setOpenInformationCard: Dispatch<SetStateAction<boolean>>;
   setQueueIdCard: Dispatch<SetStateAction<string | null>>;
   loadData: () => Promise<void>;
   room: string;
+  setSelectedQueue: React.Dispatch<React.SetStateAction<QueueEntry | null>>;
 };
 
 const PAGE_SIZE = 10;
@@ -22,7 +28,9 @@ function QueueTable({
   loadData,
 }: QueueTableProps) {
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
-  const [pendingAction, setPendingAction] = useState<"accept" | "complete" | "skip"| "cancel" | null>(null);
+  const [pendingAction, setPendingAction] = useState<
+    "accept" | "complete" | "skip" | "cancel" | null
+  >(null);
   const requestPending = useRef(false);
   const [acceptError, setAcceptError] = useState<string | null>(null);
 
@@ -82,17 +90,21 @@ function QueueTable({
     setOpenInformationCard(true);
   };
 
-  const handleAccept = (queue_id: string) =>
+  const handleAccept = (queue: QueueEntry) => {
     runQueueRequest(
-      queue_id,
+      queue.queue_id,
       "accept",
       () =>
-        api.patch(`/api/doctor/consultation-queues/${id(queue_id)}/accept`, {
-          room,
-          action: "accept",
-        }),
+        api.patch(
+          `/api/doctor/consultation-queues/${id(queue.queue_id)}/accept`,
+          {
+            room,
+            action: "accept",
+          },
+        ),
       "Unable to accept queue.",
     );
+  };
 
   const handleComplete = (queue_id: string) =>
     runQueueRequest(
@@ -120,41 +132,37 @@ function QueueTable({
 
   // Same base as the other doctor routes; change the path if your cancel route differs
   const handleCancel = (queue_id: string) => {
-  const reason = window.prompt(
-    "Reason for cancelling this consultation:",
-    "Skipped 3 times without responding",
-  );
-  if (reason === null) return; // staff closed the prompt
+    const reason = window.prompt(
+      "Reason for cancelling this consultation:",
+      "Skipped 3 times without responding",
+    );
+    if (reason === null) return; // staff closed the prompt
 
-  const trimmed = reason.trim();
-  if (!trimmed) {
-    setAcceptError("A cancellation reason is required.");
-    return;
-  }
-  if (trimmed.length > 255) {
-    setAcceptError("Reason must not exceed 255 characters.");
-    return;
-  }
+    const trimmed = reason.trim();
+    if (!trimmed) {
+      setAcceptError("A cancellation reason is required.");
+      return;
+    }
+    if (trimmed.length > 255) {
+      setAcceptError("Reason must not exceed 255 characters.");
+      return;
+    }
 
-  return runQueueRequest(
-    queue_id,
-    "cancel",
-    () =>
-      api.patch(`/api/doctor/consultation-queues/${id(queue_id)}/cancel`, {
-        room,
-        reason: trimmed,
-      }),
-    "Unable to cancel queue.",
-  );
-};
+    return runQueueRequest(
+      queue_id,
+      "cancel",
+      () =>
+        api.patch(`/api/doctor/consultation-queues/${id(queue_id)}/cancel`, {
+          room,
+          reason: trimmed,
+        }),
+      "Unable to cancel queue.",
+    );
+  };
 
   return (
     <>
-      {acceptError && (
-        <ErrorMessage>
-          {acceptError}
-        </ErrorMessage>
-      )}
+      {acceptError && <ErrorMessage>{acceptError}</ErrorMessage>}
 
       <table className="w-full table-fixed">
         <colgroup>
@@ -250,10 +258,12 @@ function QueueTable({
                         <button
                           type="button"
                           disabled={acceptingId !== null}
-                          onClick={() => handleAccept(queue.queue_id)}
+                          onClick={() => handleAccept(queue)}
                           className="cursor-pointer rounded-sm border-2 border-green-500 px-4 py-2 text-xs text-green-500 transition-all duration-300 hover:scale-105 hover:bg-green-100 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          {busy && pendingAction === "accept" ? "Accepting..." : "Accept"}
+                          {busy && pendingAction === "accept"
+                            ? "Accepting..."
+                            : "Accept"}
                         </button>
                       )}
 
@@ -264,11 +274,15 @@ function QueueTable({
                           onClick={() => handleComplete(queue.queue_id)}
                           className="cursor-pointer rounded-sm border-2 border-green-500 px-4 py-2 text-xs text-green-500 transition-all duration-300 hover:scale-105 hover:bg-green-100 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          {busy && pendingAction === "complete" ? "Completing..." : "Complete"}
+                          {busy && pendingAction === "complete"
+                            ? "Completing..."
+                            : "Complete"}
                         </button>
                       )}
 
-                      {(status === "waiting" || status === "serving" || status === "skipped") &&
+                      {(status === "waiting" ||
+                        status === "serving" ||
+                        status === "skipped") &&
                         !skipsExhausted && (
                           <button
                             type="button"
@@ -276,7 +290,9 @@ function QueueTable({
                             onClick={() => handleSkip(queue.queue_id)}
                             className="cursor-pointer rounded-sm border-2 border-yellow-500 px-4 py-2 text-xs text-yellow-500 transition-all duration-300 hover:scale-105 hover:bg-yellow-100 disabled:cursor-not-allowed disabled:opacity-50"
                           >
-                            {busy && pendingAction === "skip" ? "Skipping..." : "Skip"}
+                            {busy && pendingAction === "skip"
+                              ? "Skipping..."
+                              : "Skip"}
                           </button>
                         )}
 
@@ -287,7 +303,9 @@ function QueueTable({
                           onClick={() => handleCancel(queue.queue_id)}
                           className="cursor-pointer rounded-sm border-2 border-red-500 px-4 py-2 text-xs text-red-500 transition-all duration-300 hover:scale-105 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          {busy && pendingAction === "cancel" ? "Cancelling..." : "Cancel"}
+                          {busy && pendingAction === "cancel"
+                            ? "Cancelling..."
+                            : "Cancel"}
                         </button>
                       )}
                     </div>

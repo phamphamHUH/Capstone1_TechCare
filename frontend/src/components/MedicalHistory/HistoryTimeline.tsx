@@ -1,20 +1,18 @@
-import EmptyState from "../../../../components/EmptyState";
-import LoadingScreen from "../../../../components/LoadingScreen";
+import EmptyState from "../EmptyState";
+import LoadingScreen from "../LoadingScreen";
 import {
   FlaskConical,
   Stethoscope,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import type {
-  HistoryRecord,
-  Pagination,
-} from "../../../../interface/HistoryRecord";
+import type { HistoryRecord, Pagination } from "../../interface/HistoryRecord";
 
 type HistoryTimelineProps = {
   records: HistoryRecord[];
   pagination: Pagination | null;
   loading: boolean;
+  loadFailed?: boolean;
   onPageChange: (page: number) => void;
   setSelectedRecord: (selectedRecord: HistoryRecord) => void;
 };
@@ -64,6 +62,7 @@ function HistoryTimeline({
   records,
   pagination,
   loading,
+  loadFailed,
   onPageChange,
   setSelectedRecord,
 }: HistoryTimelineProps) {
@@ -74,7 +73,11 @@ function HistoryTimeline({
 
   if (records.length === 0) {
     return (
-      <EmptyState message="No records found." />
+      <EmptyState
+        message={
+          loadFailed ? "Medical history is unavailable." : "No records found."
+        }
+      />
     );
   }
 
