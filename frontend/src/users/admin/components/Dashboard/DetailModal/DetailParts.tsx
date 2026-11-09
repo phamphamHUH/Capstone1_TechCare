@@ -1,3 +1,4 @@
+import EmptyState from "../../../../../components/EmptyState";
 import type { ReactNode } from "react";
 
 // Small building blocks shared by the tile detail modals.
@@ -84,7 +85,7 @@ export function DataTable<T>({
   empty: string;
 }) {
   if (rows.length === 0) {
-    return <p className="px-6 py-10 text-center text-sm text-gray-400">{empty}</p>;
+    return <EmptyState message={empty} />;
   }
 
   return (

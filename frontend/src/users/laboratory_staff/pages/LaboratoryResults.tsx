@@ -39,6 +39,7 @@ function LaboratoryResults({ open, setOpen, room }: LaboratoryResultsProps) {
     useState<AnalysisStatus>("Ready for Analysis");
   const [starting, setStarting] = useState(false);
   const [actionError, setActionError] = useState("");
+  const [printRefresh, setPrintRefresh] = useState(0);
 
   const loadRequests = useCallback(async () => {
     pendingRequest.current?.abort();
@@ -69,7 +70,6 @@ function LaboratoryResults({ open, setOpen, room }: LaboratoryResultsProps) {
       }
     } catch (cause) {
       if (!controller.signal.aborted) {
-        setRequests([]);
         setError(apiMessage(cause, "Unable to load laboratory requests."));
       }
     } finally {
@@ -123,6 +123,7 @@ function LaboratoryResults({ open, setOpen, room }: LaboratoryResultsProps) {
   }
 
   function reloadRequests() {
+    setPrintRefresh((value) => value + 1);
     void loadRequests();
   }
 
@@ -144,7 +145,7 @@ function LaboratoryResults({ open, setOpen, room }: LaboratoryResultsProps) {
         setOpen={setOpen}
         loadData={reloadRequests}
       />
-      <div className="px-3 pb-9 sm:px-6 xl:px-7">
+      <div className="px-4 pb-9 sm:px-6">
         <div hidden={Boolean(selectedRequest || printRequest)}>
           {resultError && (
             <div className="pt-4">
@@ -157,7 +158,7 @@ function LaboratoryResults({ open, setOpen, room }: LaboratoryResultsProps) {
           )}
           {actionError && <AnalysisNotice error>{actionError}</AnalysisNotice>}
           {starting && (
-            <p role="status" className="py-2 text-xs text-sky-600">
+            <p role="status" className="py-2 text-sm text-sky-700">
               Starting analysis...
             </p>
           )}
@@ -170,8 +171,7 @@ function LaboratoryResults({ open, setOpen, room }: LaboratoryResultsProps) {
               void enterResult(request);
             }}
             onPrintPreview={setPrintRequest}
-            onRetry={reloadRequests}
-            entryDisabled={Boolean(resultError) || starting}
+            entryDisabled={Boolean(resultError || error) || starting || loading}
             selectedTab={activeTab}
             onTabChange={setActiveTab}
           />
@@ -189,7 +189,7 @@ function LaboratoryResults({ open, setOpen, room }: LaboratoryResultsProps) {
         )}
 
         {printRequest && (
-          <PrintResultView request={printRequest} onBack={returnToList} />
+          <PrintResultView request={printRequest} refreshKey={printRefresh} onBack={returnToList} />
         )}
       </div>
     </main>

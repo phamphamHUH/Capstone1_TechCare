@@ -23,8 +23,10 @@ import type {
   addToQueue,
   addLaboratoryRequest,
   addConsultationRecord,
+  resendPatientVerification,
 } from "./dto/post.dto.js";
 import { publishQueueChange } from "../../services/queue-sse/index.js";
+import { sendPatientVerificationEmail } from "../../services/email/sendEmail.js";
 import { recomputeBillTotals } from "../../utils/recomputeBills.js";
 import { getOrCreateOpenBill } from "../../utils/getOrCreateBill.js";
 export async function addPatient(
@@ -185,9 +187,21 @@ export async function addPatient(
 
     const age = calculateAge(birthdate);
 
+    // =========================
+    // EMAIL VERIFICATION
+    // =========================
+    // The patient can use their account right away, but the clinic sends
+    // them no emails until they click this link.
+    const emailSent = await sendPatientVerificationEmail(patientId);
+
+    // Don't send the password hash or link token to the client.
+    const { password_hash, verify_token, ...safePatient } = response[0];
+
     return res.status(201).json({
-      message: "Patient added successfully.",
-      patient: { ...response[0], age } as unknown as addPatient.patient,
+      message: emailSent
+        ? `Patient added successfully. A verification email was sent to ${email}.`
+        : "Patient added successfully, but the verification email couldn't be sent. Resend it from Patient Records.",
+      patient: { ...safePatient, age } as unknown as addPatient.patient,
     } as addPatient.response);
   } catch (error: any) {
     console.dir(error, { depth: null });
@@ -644,5 +658,43 @@ export async function addConsultationRecord(
     } as addConsultationRecord.error);
   } finally {
     client.release();
+  }
+}
+
+// =========================
+// RESEND PATIENT VERIFICATION EMAIL
+// =========================
+// POST /api/fdstaff/patients/:patient_id/verification-email
+// Goes to their new email if they changed it, otherwise to their current one.
+export async function resendPatientVerification(
+  req: Request,
+  res: Response<resendPatientVerification.response | resendPatientVerification.error>,
+) {
+  try {
+    const { patient_id } = req.params;
+
+    const [patient] = await sql`
+      SELECT is_verified, pending_email FROM patients WHERE patient_id = ${patient_id}
+    `;
+
+    if (!patient) {
+      return res.status(404).json({ message: "Patient not found." });
+    }
+
+    if (patient.is_verified && !patient.pending_email) {
+      return res.status(409).json({ message: "This patient's email is already verified." });
+    }
+
+    const emailSent = await sendPatientVerificationEmail(String(patient_id));
+
+    if (!emailSent) {
+      return res.status(502).json({ message: "The email couldn't be sent. Please try again." });
+    }
+
+    return res.status(200).json({ message: "A new verification email was sent." });
+  } catch (error) {
+    console.error("RESEND PATIENT VERIFICATION ERROR:", error);
+
+    return res.status(500).json({ message: "Failed to send the verification email." });
   }
 }

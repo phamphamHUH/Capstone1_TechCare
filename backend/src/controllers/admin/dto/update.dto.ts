@@ -163,3 +163,22 @@ export namespace updateService {
     message: string;
   }
 }
+
+// =========================
+// RESET EMPLOYEE PASSWORD
+// PATCH /api/admin/users/:user_id/password
+// The admin types the new password.
+// =========================
+export namespace resetUserPassword {
+  export interface body {
+    password: string;
+  }
+
+  export interface response {
+    message: string;
+  }
+
+  export interface error {
+    message: string;
+  }
+}

@@ -1,3 +1,4 @@
+import EmptyState from "../../../../components/EmptyState";
 import ServiceFilters from "./ServiceFilters";
 import type { SortOrder, Service } from "../../../../interface/Service";
 import { Syringe } from "lucide-react";
@@ -23,6 +24,7 @@ type ServiceSelectionPanelProps = {
   selectedServices: string[];
   pagination: Pagination;
   onPageChange: (page: number) => void;
+  loadFailed?: boolean;
 };
 
 function ServiceSelectionPanel({
@@ -39,6 +41,7 @@ function ServiceSelectionPanel({
   selectedServices,
   pagination,
   onPageChange,
+  loadFailed,
 }: ServiceSelectionPanelProps) {
   const { page, limit, total, total_pages } = pagination;
 
@@ -70,9 +73,11 @@ function ServiceSelectionPanel({
         <h1 className="font-bold text-lg mb-3">Services</h1>
 
         {services.length === 0 ? (
-          <p className="py-10 text-center text-sm text-gray-500">
-            No services found.
-          </p>
+          <EmptyState
+            message={
+              loadFailed ? "Services are unavailable." : "No services found."
+            }
+          />
         ) : (
           <div className="grid grid-cols-2 gap-x-5 gap-y-2">
             {services.map((service) => (

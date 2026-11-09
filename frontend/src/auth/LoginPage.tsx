@@ -1,5 +1,7 @@
+import ErrorMessage from "../components/ErrorMessage";
+import { LoadingSpinner } from "../components/LoadingScreen";
 import { useEffect, useState, type FormEvent } from "react";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import axios from "axios";
 import api from "../lib/axios";
@@ -18,7 +20,6 @@ function LoginPage() {
     () => localStorage.getItem("remembered_user") !== null
   );
   const [showPassword, setShowPassword] = useState(false);
-  const [showResetHelp, setShowResetHelp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -123,12 +124,9 @@ function LoginPage() {
             </div>
 
             {errorMessage && (
-              <p
-                role="alert"
-                className="mb-5 rounded-md bg-red-50 px-3 py-2.5 text-sm text-red-800"
-              >
+              <ErrorMessage className="mb-5">
                 {errorMessage}
-              </p>
+              </ErrorMessage>
             )}
 
             <form onSubmit={handleLogin} className="space-y-5">
@@ -201,22 +199,13 @@ function LoginPage() {
                     <span className="text-sm text-gray-800">Remember me</span>
                   </label>
 
-                  <button
-                    type="button"
-                    onClick={() => setShowResetHelp((shown) => !shown)}
-                    aria-expanded={showResetHelp}
+                  <Link
+                    to="/forgot-password"
                     className="text-sm text-sky-800 hover:underline cursor-pointer"
                   >
                     Forgot password?
-                  </button>
+                  </Link>
                 </div>
-
-                {showResetHelp && (
-                  <p className="mt-2 text-sm text-gray-800">
-                    Please contact the administrator or front desk to reset your
-                    password.
-                  </p>
-                )}
               </div>
 
               <button
@@ -224,14 +213,12 @@ function LoginPage() {
                 disabled={loading}
                 className="w-full h-11 bg-sky-700 hover:bg-sky-800 disabled:opacity-70 disabled:cursor-not-allowed text-white text-base font-medium rounded-md flex items-center justify-center gap-2 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700"
               >
-                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                {loading && <LoadingSpinner className="w-4 h-4" />}
                 {loading ? "Signing in…" : "Log in"}
               </button>
             </form>
 
-            <p className="mt-5 text-center text-sm text-gray-800">
-              No account? Visit the front desk for registration.
-            </p>
+            <p className="mt-5 text-center text-sm text-gray-800">No account? Visit the front desk for registration.</p>
 
           </div>
         </div>

@@ -157,8 +157,8 @@ separate tables with similar columns (`password_hash`, not `password`).
 
 | Table | Key columns and notes |
 |---|---|
-| `users` | `user_id` (unique), `username`, `password_hash`, `first_name/middle_name/last_name/suffix`, `sex`, `email` (unique), `contact_number`, `emergency_contact(_name)`, `address`, `birthdate`, `role`, `department`, `employment_status`, `date_hired`, `shift_start/shift_end`, `last_login`, `account_status` (false = deactivated, login returns 403), `active` (online flag set on login/logout), `profile_photo`. |
-| `patients` | `patient_id` (unique), `username` (= patient_id when created by front desk), `password_hash` (default password is the last name), name, `sex`, `email` (unique), `contact_number`, `birthdate`, address as `street/barangay/city/province/zip_code`, `guardian_name/guardian_relationship/guardian_contact`, `is_pwd`, `height_cm`, `weight_kg`, medical history text columns, `smoking_status`, `alcohol_consumption`, `civil_status`, `blood_type`, `image_url`, `role` default `'patient'`, `account_status`, `active`. **No `address`, `emergency_contact_name` or `emergency_contact`.** |
+| `users` | `user_id` (unique), `username`, `password_hash`, `first_name/middle_name/last_name/suffix`, `sex`, `email` (unique), `contact_number`, `emergency_contact(_name)`, `address`, `birthdate`, `role`, `department`, `employment_status`, `date_hired`, `shift_start/shift_end`, `last_login`, `account_status` (false = deactivated, login returns 403), `active` (online flag set on login/logout), `profile_photo`, `is_verified` (default TRUE so existing accounts keep working; `addUser` inserts FALSE, and login is blocked until the email is confirmed), `verify_token`/`verify_expires_at`, `reset_token`/`reset_expires_at` (SHA-256 hashes; the new columns are added by `ALTER … ADD COLUMN IF NOT EXISTS` in `connectNeon()`). |
+| `patients` | `patient_id` (unique), `username` (= patient_id when created by front desk), `password_hash` (default password is the last name), name, `sex`, `email` (unique), `contact_number`, `birthdate`, address as `street/barangay/city/province/zip_code`, `guardian_name/guardian_relationship/guardian_contact`, `is_pwd`, `height_cm`, `weight_kg`, medical history text columns, `smoking_status`, `alcohol_consumption`, `civil_status`, `blood_type`, `image_url`, `role` default `'patient'`, `account_status`, `active`, `is_verified` (default FALSE; the account works but the clinic sends no emails until verified), `pending_email` (new email waiting to be confirmed), `verify_token`/`verify_expires_at`. **No `address`, `emergency_contact_name` or `emergency_contact`.** |
 | `services` | `service_id`, `service_type` (`consultation` / `laboratory`), `service_name` (unique), `price`, `active`, `room` (e.g. `Consultation Room`, `Laboratory Room 1/2`), `service_category`. |
 | `packages` | `package_id` (unique string), `package_name`, `package_price`, `status` (`Active`). No controller uses it yet. |
 | `queue_entries` | `queue_id` (`CONS-####` / `LAB-####`), `patient_id`, `queue_number`, `is_priority`, `skip_count`, `status`. **No `service_id` or `service_type`**: the service is reached through `consultation_records.queue_id` or `laboratory_request_items.queue_id`. |
@@ -244,7 +244,22 @@ Frontend: `LoginPage` stores `token`, `role`, `user` in **`sessionStorage`** (no
 Only routes that exist in the code are listed. ✅ = works against the current schema, ⚠️ = broken or unsafe (see Gotchas).
 
 ### `/api/auth`
-`POST /login` ✅, `PATCH /logout` ✅ (auth), `GET /ping` ✅. There is no `/sign-up` even though `SignupPage.tsx` posts to `/api/auth/sign-up`.
+`POST /login` ✅, `PATCH /logout` ✅ (auth), `GET /ping` ✅. There is no `/sign-up` even though `SignupPage.tsx` posts to `/api/auth/sign-up`. `login` returns 403 for an employee with `is_verified = FALSE`.
+
+**Email verification and password reset** (public, opened from email links):
+- `POST /verify-email {token}`: one endpoint for both. It tries `users`, then `patients` (same order as `login`), with `UPDATE … WHERE verify_token = hash AND verify_expires_at > NOW()`.
+  - **Employee:** sets `is_verified = TRUE`, so they can now log in.
+  - **Patient:** `email = COALESCE(pending_email, email)`, clears `pending_email`, and sets `is_verified = TRUE`. A 23505 unique violation returns 409.
+- `POST /forgot-password {email}`: **employees only** (`account_status` and `is_verified` TRUE). Sets `reset_token`/`reset_expires_at` (30 min) and always gives the same answer.
+- `POST /reset-password {token, password}`: employees only, password ≥ 8 characters. Clearing `reset_token` makes the link single-use.
+
+**Email service:**
+- `services/email/sendEmail.ts`:
+  - `sendEmail()` calls Brevo over HTTPS. With no `BREVO_API_KEY`, it prints the email to the console instead. It never throws; it returns `false` on failure.
+  - `sendUserVerificationEmail(userId)` and `sendPatientVerificationEmail(patientId)` save a new link and send it. The patient version sends to `pending_email` if set.
+  - `sendEmailToPatient()` is **the rule for every other patient email:** it only sends when `is_verified = TRUE`.
+- `services/email/emailTemplates.ts`: the 3 emails.
+- `utils/emailToken.ts`: `createToken()`/`hashToken()`. Only the SHA-256 hash is stored.
 
 ### `/api/admin` (always JWT + `admin`)
 | Method | Path | Handler | Notes |
@@ -260,7 +275,9 @@ Only routes that exist in the code are listed. ✅ = works against the current s
 | GET | `/analytics/sales?range=` | `getSalesAnalytics` | admin dashboard. `range` = `today`/`7d`/`30d` (default)/`12mo`, else 400. Paid-bill totals vs previous period, outstanding now, timeline buckets (hour/day/month, empty ones included), by payment method, per service from the `bills.items` snapshot (before discounts) |
 | GET | `/analytics/services?range=` | `getServiceAnalytics` | service catalog ("inventory"): every service with price, active, orders in range (consultation records + lab items, not cancelled), last ordered |
 | GET | `/analytics/bills?range=` | `getAnalyticsBills` | bills behind the sales tiles: paid in range (newest first) and all unpaid now (oldest first), with patient names |
-| POST | `/add-user` | `addUser` | multipart, optional `image` → Cloudinary `techcare/user_photos`; requires username, password, names, sex, email, contact, address, birthdate, role, date_hired; 409 on duplicate username/email/contact; returns user without hash |
+| POST | `/add-user` | `addUser` | multipart, optional `image` → Cloudinary `techcare/user_photos`; requires username, password, names, sex, email, contact, address, birthdate, role, date_hired; 409 on duplicate username/email/contact. Inserts with `is_verified = FALSE` and emails a confirmation link: **the employee can't log in until they click it**. Returns the user without the hash or token. |
+| POST | `/users/:user_id/verification-email` | `resendUserVerification` | new confirmation link (409 if already verified) |
+| PATCH | `/users/:user_id/password` | `resetUserPassword` | the admin types the new password (≥ 8 characters); also clears any forgot-password link |
 | POST | `/services` | `addService` | requires `service_name, price, service_type, service_category, room` |
 | POST | `/activities` | `addActivity` | writes legacy `system_activity` for `req.user` |
 | POST | `/actions` | `addAction` | adds an `actions` row |
@@ -287,7 +304,9 @@ Only routes that exist in the code are listed. ✅ = works against the current s
 | POST | `/consultation-requests` | ✅ transaction: queue entry + consultation record; hardcoded requester id |
 | POST | `/laboratory-requests` | ✅ transaction; hardcoded requester id |
 | POST | `/billing` | ⚠️ inserts into nonexistent `services_ids` and omits required `bill_id`; will throw |
-| PUT | `/patients/:patient_id` | ✅ partial update via COALESCE. The route has `upload.single("image")` but the handler **never updates `image_url`** |
+| PUT | `/patients/:patient_id` | ✅ partial update via COALESCE, and updates `image_url` from the uploaded image. **No `password`** (use the reset endpoint). **Email change:** a verified patient keeps their email and the new one goes to `pending_email`; an unverified patient's email is replaced. Either way a verification link goes to the new address. 409 if another patient uses it. |
+| POST | `/patients/:patient_id/verification-email` | ✅ resend the verification link (409 if already verified with no pending email) |
+| PATCH | `/patients/:patient_id/password` | ✅ the front desk types the new password (≥ 8 characters). **The only way a patient's password is reset.** |
 | PATCH | `/laboratory-requests/:request_id` | ✅ confirm payment and forward to lab queues |
 | PUT | `/queues/:queue_id` | ⚠️ `serveQueueEntry` selects nonexistent `queue_entries.service_type`; 500 |
 | PATCH | `/queues/:queue_id` | ⚠️ `skipQueueEntry`, same problem |
@@ -425,6 +444,10 @@ CLOUDINARY_CLOUD_NAME=... CLOUDINARY_API_KEY=... CLOUDINARY_API_SECRET=...
 CORS_ORIGIN=http://localhost:5173,https://techcare-1.onrender.com   # comma separated
 IS_PRODUCTION=false              # true => role middleware on all routers AND syncSchema() on boot
 DEV_DOCTOR_LOGIN=false           # only referenced by commented-out code
+BREVO_API_KEY=                   # empty => emails printed to the console instead of sent
+EMAIL_FROM=sender@verified.in.brevo
+EMAIL_FROM_NAME=Reyna G Diagnostic Clinic
+APP_URL=http://localhost:5173    # frontend address used in email links
 ```
 Frontend `.env.local`: `VITE_IS_DEVELOPMENT=true`, `VITE_API_BASE_URL=http://localhost:5000` (see `docs/SETUP.md` for the four deployment scenarios).
 

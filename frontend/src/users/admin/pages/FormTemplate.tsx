@@ -1,3 +1,6 @@
+import ErrorMessage from "../../../components/ErrorMessage";
+import LoadingScreen from "../../../components/LoadingScreen";
+import LoadingRegion from "../../../components/LoadingRegion";
 import { useEffect, useState, useCallback } from "react";
 import api from "#lib/axios";
 import TemplateLibrary from "../components/FormTemplate/TemplateLibrary";
@@ -6,7 +9,6 @@ import {
   dbComponentToBuilderComponent,
   type FormTemplate as FormTemplateData,
 } from "../../../interface/FormTemplate";
-import { Loader2 } from "lucide-react";
 
 export interface ServiceOption {
   service_id: string;
@@ -14,7 +16,6 @@ export interface ServiceOption {
   service_type?: string;
   service_category: string;
 }
-
 
 function isValidFormTemplate(rec: unknown): rec is FormTemplateData {
   if (typeof rec !== "object" || rec === null) {
@@ -44,7 +45,11 @@ function isValidService(rec: unknown): rec is ServiceOption {
   );
 }
 
-export default function FormTemplate() {
+export default function FormTemplate({
+  refreshKey = 0,
+}: {
+  refreshKey?: number;
+}) {
   const [viewMode, setViewMode] = useState<"library" | "builder">("library");
 
   const [formTemplates, setFormTemplates] = useState<FormTemplateData[]>([]);
@@ -53,9 +58,8 @@ export default function FormTemplate() {
   const [fetching, setFetching] = useState<boolean>(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
-  const [editingTemplate, setEditingTemplate] = useState<FormTemplateData | null>(
-    null,
-  );
+  const [editingTemplate, setEditingTemplate] =
+    useState<FormTemplateData | null>(null);
 
   // Added function to fetch form templates from GET /api/admin/form-templates
   const fetchFormTemplates = useCallback(async () => {
@@ -86,7 +90,8 @@ export default function FormTemplate() {
           service_id: s.service_id,
           service_name: s.service_name,
           service_type: s.service_type,
-          service_category: s.service_category || s.service_type || "Laboratory",
+          service_category:
+            s.service_category || s.service_type || "Laboratory",
         }));
       setServices(validServices);
     } catch (error) {
@@ -100,10 +105,10 @@ export default function FormTemplate() {
   // Automatically fetch templates when component mounts
   useEffect(() => {
     async function action() {
-      await fetchFormTemplates()
+      await fetchFormTemplates();
     }
     action();
-  }, [fetchFormTemplates]);
+  }, [fetchFormTemplates, refreshKey]);
 
   const handleCreateNew = () => {
     setEditingTemplate(null);
@@ -155,35 +160,24 @@ export default function FormTemplate() {
 
   return (
     <main className="flex-1 min-w-0 overflow-y-auto">
-
-
       <div className="mt-4 px-6">
         {/* CHANGED: Conditional UI rendering for Loading, Error, or Template Views */}
-        {fetching ? (
-          <div className="flex h-64 items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
-            <span className="ml-2 text-sm text-gray-500">
-              Loading form templates...
-            </span>
-          </div>
-        ) : fetchError ? (
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center text-red-600">
-            <p className="font-semibold">{fetchError}</p>
-            <button
-              onClick={fetchFormTemplates}
-              className="mt-3 rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700"
-            >
-              Retry
-            </button>
-          </div>
+        {fetchError && <ErrorMessage>{fetchError}</ErrorMessage>}
+        {fetching && formTemplates.length === 0 && viewMode === "library" ? (
+          <LoadingScreen variant="page" message="Loading form templates..." />
         ) : viewMode === "library" ? (
-          <TemplateLibrary
-            templates={formTemplates}
-            services={services}
-            onCreateNew={handleCreateNew}
-            onEditTemplate={handleEditTemplate}
-            onDeleteTemplate={handleDeleteTemplate}
-          />
+          <LoadingRegion
+            loading={fetching && formTemplates.length > 0}
+            message="Refreshing form templates..."
+          >
+            <TemplateLibrary
+              templates={formTemplates}
+              services={services}
+              onCreateNew={handleCreateNew}
+              onEditTemplate={handleEditTemplate}
+              onDeleteTemplate={handleDeleteTemplate}
+            />
+          </LoadingRegion>
         ) : (
           <TemplateBuilder
             key={editingTemplate?.form_id ?? "new"}

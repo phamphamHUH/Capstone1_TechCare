@@ -3,7 +3,8 @@ import type { BuilderComponent } from "../../../../interface/FormTemplate";
 import type { LaboratoryReportData } from "../../../../interface/LaboratoryAnalysis";
 import { formatLabDate } from "./AnalysisList";
 import { resultFlag } from "./laboratoryValidation";
-import { reportText, safeReportImage } from "./laboratoryPrint";
+import { REPORT_LOGO, reportText, safeReportImage } from "./laboratoryPrint";
+import { CLINIC_INFO } from "../../../../lib/clinicInfo";
 
 function referenceRange(component: BuilderComponent) {
   if (component.settings.referenceRange) {
@@ -42,44 +43,135 @@ type ParameterTableProps = {
   report: LaboratoryReportData;
 };
 
-function ParameterTable({ fields, report }: ParameterTableProps) {
+function microscopyLayout(report: LaboratoryReportData) {
+  const name = `${report.template.form_name} ${(report.template.testNames ?? []).join(" ")}`;
+  if (/\burinalysis\b|\burine (analysis|examination|routine)\b/i.test(name))
+    return "paired";
+  if (
+    /\bstool (examination|exam)\b|\b(fecalysis|faecalysis)\b|\b(fecal|faecal) examination\b/i.test(
+      name,
+    )
+  )
+    return "single";
+  return null;
+}
+
+function ParameterValue({
+  component,
+  report,
+  showReference = false,
+}: {
+  component: BuilderComponent;
+  report: LaboratoryReportData;
+  showReference?: boolean;
+}) {
+  const value = Object.hasOwn(report.values, component.fieldKey)
+    ? report.values[component.fieldKey]
+    : undefined;
+  const flag = resultFlag(component, value);
+  const abnormal =
+    flag && flag !== (component.validation.flagLabels?.normal || "Normal");
+  const reference = referenceRange(component);
+
   return (
-    <table aria-label="Laboratory parameters">
+    <>
+      {reportText(value)}
+      {showReference && component.settings.unit && (
+        <span>{` ${component.settings.unit}`}</span>
+      )}
+      {abnormal && <span className="flag abnormal">{flag}</span>}
+      {showReference && reference !== "—" && (
+        <div className="small muted">Reference: {reference}</div>
+      )}
+    </>
+  );
+}
+
+function ParameterTable({ fields, report }: ParameterTableProps) {
+  const layout = microscopyLayout(report);
+  if (layout) {
+    const midpoint =
+      layout === "paired" ? Math.ceil(fields.length / 2) : fields.length;
+    return (
+      <table
+        className={`microscopy ${layout === "single" ? "microscopy-single" : ""}`}
+        aria-label="Laboratory parameters"
+      >
+        <tbody>
+          {fields.slice(0, midpoint).map((component, index) => {
+            const second =
+              layout === "paired" ? fields[index + midpoint] : undefined;
+            return (
+              <tr key={component.id}>
+                <th scope="row">{component.label}</th>
+                <td className="result-value">
+                  <ParameterValue
+                    component={component}
+                    report={report}
+                    showReference
+                  />
+                </td>
+                {layout === "paired" && (
+                  <>
+                    <th scope="row">{second?.label}</th>
+                    <td className="result-value">
+                      {second && (
+                        <ParameterValue
+                          component={second}
+                          report={report}
+                          showReference
+                        />
+                      )}
+                    </td>
+                  </>
+                )}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    );
+  }
+
+  return (
+    <table className="parameters" aria-label="Laboratory parameters">
+      <colgroup>
+        <col className="test-column" />
+        <col className="value-column" />
+        <col className="reference-column" />
+      </colgroup>
       <thead>
         <tr>
-          <th scope="col">Parameter</th>
+          <th scope="col">Test</th>
           <th scope="col">Result</th>
-          <th scope="col">Reference Range</th>
-          <th scope="col">Unit</th>
-          <th scope="col">Flag</th>
+          <th scope="col">Reference Range (S.I.)</th>
         </tr>
       </thead>
       <tbody>
         {fields.map((component) => {
-          const value = Object.hasOwn(report.values, component.fieldKey)
-            ? report.values[component.fieldKey]
-            : undefined;
-          const flag = resultFlag(component, value);
-          const abnormal =
-            flag &&
-            flag !== (component.validation.flagLabels?.normal || "Normal");
+          const reference = referenceRange(component);
+          const unit = component.settings.unit;
+          const referenceWithUnit = reference
+            .split("\n")
+            .map((line) =>
+              unit && !line.toLowerCase().includes(unit.toLowerCase())
+                ? `${line} ${unit}`
+                : line,
+            )
+            .join("\n");
 
           return (
             <tr key={component.id}>
-              <td>{component.label}</td>
+              <th scope="row">{component.label}</th>
               <td
                 className="result-value"
                 style={{
-                  textAlign: component.settings.alignment ?? "left",
+                  textAlign: component.settings.alignment ?? "center",
                 }}
               >
-                {reportText(value)}
+                <ParameterValue component={component} report={report} />
               </td>
-              <td>{referenceRange(component)}</td>
-              <td>{component.settings.unit || "—"}</td>
-              <td className={`flag ${abnormal ? "abnormal" : ""}`}>
-                {flag || "—"}
-              </td>
+              <td>{referenceWithUnit}</td>
             </tr>
           );
         })}
@@ -282,39 +374,49 @@ type LaboratoryReportProps = {
 
 export default function LaboratoryReport({ report }: LaboratoryReportProps) {
   const { request, template } = report;
+  const microscopy = microscopyLayout(report);
 
   return (
-    <article aria-label={`${template.form_name} laboratory report`}>
+    <article
+      className="report-sheet"
+      aria-label={`${template.form_name} laboratory report`}
+    >
+      <img className="watermark" src={REPORT_LOGO} alt="" aria-hidden="true" />
       <header className="report-header">
-        <img className="logo" src="/assets/images/reyna-g-logo.png" alt="Reyna G" />
-        <div>
-          <h1 className="clinic">Reyna G Diagnostic Medical Clinic</h1>
-          <p className="report-type">
-            CLINICAL LABORATORY & DIAGNOSTIC SERVICES
+        <div className="logo-frame">
+          <img className="logo" src={REPORT_LOGO} alt="Reyna G" />
+        </div>
+        <div className="clinic-details">
+          <h1 className="clinic">{CLINIC_INFO.laboratoryName.toUpperCase()}</h1>
+          <p className="clinic-address">
+            {CLINIC_INFO.address.toUpperCase()}
+          </p>
+          <p className="clinic-contact">TEL #: {CLINIC_INFO.phone}</p>
+          <p className="clinic-contact">
+            DOH ACCREDITATION NO.: {CLINIC_INFO.dohAccreditationNo}
           </p>
         </div>
       </header>
-      <p className={`report-state ${report.resultId ? "" : "draft"}`}>
-        {report.resultId
-          ? `Saved result · ${report.resultId}`
-          : "DRAFT — NOT SAVED OR RELEASED"}
-        {report.resultId &&
-          !report.verifiedAt &&
-          " · Verification not recorded"}
-      </p>
+      {!report.resultId && (
+        <p className="report-state draft">DRAFT — NOT SAVED OR RELEASED</p>
+      )}
       <dl className="patient">
         <div>
-          <dt>Patient Name</dt>
+          <dt>Name:</dt>
           <dd className="patient-name">
             {request.patientName || "Not provided"}
           </dd>
         </div>
         <div>
-          <dt>Patient ID</dt>
-          <dd>{request.patientId || "Not provided"}</dd>
+          <dt>Date:</dt>
+          <dd>
+            {formatLabDate(
+              report.savedAt || request.collectedAt || request.requestedAt,
+            )}
+          </dd>
         </div>
         <div>
-          <dt>Age / Sex</dt>
+          <dt>Age / Gender:</dt>
           <dd>
             {request.age ?? "—"}
             {" / "}
@@ -322,53 +424,57 @@ export default function LaboratoryReport({ report }: LaboratoryReportProps) {
           </dd>
         </div>
         <div>
-          <dt>Request No.</dt>
-          <dd>{request.requestId}</dd>
-        </div>
-        <div>
-          <dt>Requested</dt>
-          <dd>{formatLabDate(request.requestedAt)}</dd>
-        </div>
-        <div>
-          <dt>Sample Collected</dt>
-          <dd>{formatLabDate(request.collectedAt)}</dd>
+          <dt>Requesting Physician:</dt>
+          <dd>{report.requestingPhysician || "\u00a0"}</dd>
         </div>
       </dl>
-      <h2 className="report-title">{template.form_name}</h2>
-      <p className="report-category">{template.category}</p>
-      <TemplateContent report={report} />
+      <div className="report-body">
+        <h2 className="report-title">
+          {microscopy ? "Clinical Microscopy" : template.form_name}
+        </h2>
+        {microscopy && <p className="report-category">{template.form_name}</p>}
+        <TemplateContent report={report} />
+      </div>
       <section className="notes">
-        <h3>Notes / Observations</h3>
-        <p>{report.remarks || "No additional notes."}</p>
+        <h3>REMARKS:</h3>
+        <p>{report.remarks || "\u00a0"}</p>
       </section>
       <footer className="report-footer">
-        <p>
-          {"Request: "}
-          {request.requestId}
-          {" · Patient: "}
-          {request.patientId || "Not provided"}
-        </p>
-        <p>
-          {"Template: "}
-          {template.form_name}
+        <div className="signatures" aria-label="Report signatures">
+          <div>
+            <p className="signature-heading">{"\u00a0"}</p>
+            <p className="signature-name">{"\u00a0"}</p>
+            <p className="signature-role">Pathologist</p>
+            <p className="license">Licensed #: ____________</p>
+          </div>
+          <div>
+            <p className="signature-heading">Processed by:</p>
+            <p className="signature-name">{"\u00a0"}</p>
+            <p className="signature-role">Registered Medical Technologist</p>
+            <p className="license">Licensed #: ____________</p>
+          </div>
+          <div>
+            <p className="signature-heading">Evaluated by:</p>
+            <p className="signature-name">
+              {report.verifiedAt && report.verifiedBy
+                ? report.verifiedBy
+                : "\u00a0"}
+            </p>
+            <p className="signature-role">Registered Medical Technologist</p>
+            <p className="license">Licensed #: ____________</p>
+          </div>
+        </div>
+        <p className="report-meta">
+          {`Request: ${request.requestId} · Patient: ${request.patientId || "Not provided"}`}
+          {report.resultId
+            ? ` · Saved result: ${report.resultId}`
+            : " · DRAFT — NOT SAVED OR RELEASED"}
           {template.version != null ? ` · Version ${template.version}` : ""}
-        </p>
-        {report.savedAt && (
-          <p>
-            {"Saved: "}
-            {formatLabDate(report.savedAt)}
-          </p>
-        )}
-        <p>
+          {" · "}
           {report.verifiedAt && report.verifiedBy
             ? `Verified by: ${report.verifiedBy} · ${formatLabDate(report.verifiedAt)}`
             : "Verification not recorded."}
         </p>
-        {!report.resultId && (
-          <p>
-            <strong>DRAFT — NOT SAVED OR RELEASED</strong>
-          </p>
-        )}
       </footer>
     </article>
   );

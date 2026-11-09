@@ -1,3 +1,4 @@
+import ErrorMessage from "../../../../components/ErrorMessage";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { FlaskConical } from "lucide-react";
 
@@ -14,16 +15,16 @@ export function AnalysisButton({
 }: AnalysisButtonProps) {
   const color =
     variant === "secondary"
-      ? "border-[#e1eaf6] bg-white text-[#188bff] hover:border-[#abd5ff] hover:bg-[#f1f8ff]"
+      ? "border-gray-300 bg-white text-sky-700 hover:border-sky-400 hover:bg-sky-50"
       : variant === "link"
-        ? "border-transparent bg-transparent text-[#168cff] hover:text-[#006cd9] hover:underline"
-        : "border-[#188bff] bg-[#188bff] text-white hover:border-[#0879eb] hover:bg-[#0879eb]";
+        ? "border-transparent bg-transparent text-sky-700 hover:text-sky-800 hover:underline"
+        : "border-sky-500 bg-sky-500 text-white hover:border-sky-600 hover:bg-sky-600";
 
   return (
     <button
       type="button"
       {...props}
-      className={`inline-flex cursor-pointer items-center justify-center gap-1.5 rounded border font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none ${compact ? "px-2.5 py-1.5 text-[10px]" : "px-4 py-2 text-[11px]"} ${color} ${className}`}
+      className={`inline-flex cursor-pointer items-center justify-center gap-2 rounded-md border font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none ${compact ? "min-h-8 px-3 py-1.5 text-xs" : "min-h-9 px-4 py-2 text-sm"} ${color} ${className}`}
     />
   );
 }
@@ -37,10 +38,11 @@ export function AnalysisNotice({
   children,
   error = false,
 }: AnalysisNoticeProps) {
+  if (error) return <ErrorMessage className="mb-3">{children}</ErrorMessage>;
   return (
     <div
-      role={error ? "alert" : "status"}
-      className={`mb-3 rounded border px-3 py-2.5 text-[11px] leading-relaxed ${error ? "border-rose-200 bg-rose-50 text-rose-700" : "border-[#d7eafa] bg-[#f1f8ff] text-[#45749b]"}`}
+      role="status"
+      className={`mb-3 rounded-lg border px-3 py-2.5 text-sm leading-relaxed border-sky-200 bg-sky-50 text-sky-800`}
     >
       {children}
     </div>
@@ -52,7 +54,7 @@ type FlaskBadgeProps = { small?: boolean };
 export function FlaskBadge({ small = false }: FlaskBadgeProps) {
   return (
     <span
-      className={`inline-flex shrink-0 items-center justify-center rounded-full bg-[#e1f5ff] text-[#1aa8ff] ${small ? "size-11" : "size-[51px]"}`}
+      className={`inline-flex shrink-0 items-center justify-center rounded-full bg-sky-50 text-sky-600 ${small ? "size-11" : "size-[51px]"}`}
     >
       <FlaskConical size={25} strokeWidth={1.25} />
     </span>

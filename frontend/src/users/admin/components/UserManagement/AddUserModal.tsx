@@ -1,3 +1,4 @@
+import ErrorMessage from "../../../../components/ErrorMessage";
 import { useState } from "react";
 import api from "../../../../lib/axios";
 import {
@@ -15,7 +16,8 @@ function AddUserModal({ onClose, loadData }: Props) {
     // =========================
     // Account Information
     // =========================
-    const [username, setUsername] = useState("");
+    const [formError, setFormError] = useState("");
+  const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [hiddenPassword, setHiddenPassword] = useState(true);
@@ -78,12 +80,12 @@ function AddUserModal({ onClose, loadData }: Props) {
         }
 
         if (!file.type.startsWith("image/")) {
-            alert("Please select an image file.");
+            setFormError("Please select an image file.");
             return;
         }
 
         if (file.size > 5 * 1024 * 1024) {
-            alert("Profile photo must be smaller than 5MB.");
+            setFormError("Profile photo must be smaller than 5MB.");
             return;
         }
 
@@ -102,6 +104,7 @@ function AddUserModal({ onClose, loadData }: Props) {
     // Register User
     // =========================
     const registerUser = async () => {
+    setFormError("");
         // Required fields based on the users table
         if (
             !username ||
@@ -117,24 +120,24 @@ function AddUserModal({ onClose, loadData }: Props) {
             !role ||
             !dateHired
         ) {
-            alert("Please fill out all required fields.");
+            setFormError("Please fill out all required fields.");
             return;
         }
 
         if (role === LAB_STAFF_ROLE && !department) {
-            alert("Please select a room for the laboratory staff.");
+            setFormError("Please select a room for the laboratory staff.");
             return;
         }
 
         // Password confirmation
         if (password !== confirmPassword) {
-            alert("Your passwords do not match.");
+            setFormError("Your passwords do not match.");
             return;
         }
 
         // Only validate shift if both were manually entered
         if (shiftStart && shiftEnd && shiftStart >= shiftEnd) {
-            alert("Shift start time must be earlier than shift end time.");
+            setFormError("Shift start time must be earlier than shift end time.");
             return;
         }
 
@@ -244,7 +247,7 @@ function AddUserModal({ onClose, loadData }: Props) {
             onClose();
             loadData();
         } catch (error: unknown) {
-            alert(
+            setFormError(
                 (
                     error as {
                         response?: {
@@ -254,7 +257,7 @@ function AddUserModal({ onClose, loadData }: Props) {
                         };
                     }
                 ).response?.data?.message ||
-                "Something went wrong"
+                "Unable to complete this action. Please try again."
             );
 
             console.error(error);
@@ -283,6 +286,7 @@ function AddUserModal({ onClose, loadData }: Props) {
                 </div>
 
                 <div className="max-h-[75vh] space-y-6 overflow-y-auto pr-2">
+                    {formError && <ErrorMessage>{formError}</ErrorMessage>}
 
                     {/* =========================
                         ACCOUNT INFORMATION

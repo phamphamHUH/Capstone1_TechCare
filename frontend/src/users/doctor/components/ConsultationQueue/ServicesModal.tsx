@@ -1,3 +1,4 @@
+import EmptyState from "../../../../components/EmptyState";
 import {
   X,
   FlaskConical,
@@ -5,7 +6,6 @@ import {
   CircleCheckBig,
   CircleMinus,
   Search,
-  ChevronDown,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { Service } from "../../../../interface/Service";
@@ -14,13 +14,20 @@ type ServiceModalProps = {
   services: Service[];
   room: string;
   onClose: () => void;
+  // Status filter to open with (set by clicking a number on the room summary).
+  initialFilter?: "all" | "active" | "inactive";
 };
 
 const PAGE_SIZE = 10;
 
-function ServiceModal({ services, room, onClose }: ServiceModalProps) {
+function ServiceModal({
+  services,
+  room,
+  onClose,
+  initialFilter = "all",
+}: ServiceModalProps) {
   const [search, setSearch] = useState("");
-  const [serviceFilter, setServiceFilter] = useState("all");
+  const [serviceFilter, setServiceFilter] = useState<string>(initialFilter);
   const [page, setPage] = useState(1);
 
   const filteredServices = useMemo(() => {
@@ -64,18 +71,21 @@ function ServiceModal({ services, room, onClose }: ServiceModalProps) {
 
   const serviceStats = [
     {
+      filter: "all",
       label: "Total Services",
       count: services.length,
       icon: Layers,
       color: "text-sky-500",
     },
     {
+      filter: "active",
       label: "Active Services",
       count: services.filter((service) => service.active).length,
       icon: CircleCheckBig,
       color: "text-green-500",
     },
     {
+      filter: "inactive",
       label: "Inactive Services",
       count: services.filter((service) => !service.active).length,
       icon: CircleMinus,
@@ -125,27 +135,43 @@ function ServiceModal({ services, room, onClose }: ServiceModalProps) {
             <h2 className="text-lg font-bold ">{room}</h2>
           </div>
 
-          <div className="flex flex-wrap items-center">
+          {/* The counts are the status filter: click one to show only those services. */}
+          <div className="flex flex-wrap items-center gap-1" role="group" aria-label="Filter by status">
             {serviceStats.map((stat) => {
               const Icon = stat.icon;
+              const selected = serviceFilter === stat.filter;
 
               return (
-                <div key={stat.label} className="flex items-center gap-2 px-3">
+                <button
+                  key={stat.label}
+                  type="button"
+                  onClick={() => changeServiceFilter(stat.filter)}
+                  aria-pressed={selected}
+                  className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-left cursor-pointer transition-colors ${
+                    selected
+                      ? "bg-white shadow-sm ring-1 ring-sky-300"
+                      : "hover:bg-white/70"
+                  }`}
+                >
                   <Icon size={20} strokeWidth={1.8} className={stat.color} />
 
                   <div>
                     <p className="font-semibold text-gray-800">{stat.count}</p>
-                    <p className="whitespace-nowrap text-[11px] text-gray-500">
+                    <p
+                      className={`whitespace-nowrap text-[11px] ${
+                        selected ? "font-medium text-sky-700" : "text-gray-500"
+                      }`}
+                    >
                       {stat.label}
                     </p>
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
         </div>
 
-        {/* Search and filter */}
+        {/* Search */}
         <div className="mx-6 mt-5 flex flex-wrap items-center gap-3">
           <div className="relative min-w-0 flex-1">
             <Search
@@ -159,23 +185,6 @@ function ServiceModal({ services, room, onClose }: ServiceModalProps) {
               onChange={(e) => changeSearch(e.target.value)}
               placeholder="Search service name or service ID..."
               className="h-10 w-full rounded-lg border border-gray-200 bg-white pl-9 pr-3 text-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
-            />
-          </div>
-
-          <div className="relative w-48">
-            <select
-              value={serviceFilter}
-              onChange={(e) => changeServiceFilter(e.target.value)}
-              className="cursor-pointer h-10 w-full appearance-none rounded-lg border border-gray-200 bg-white px-3 pr-9 text-sm text-gray-600 outline-none focus:border-sky-400"
-            >
-              <option value="all">All Services</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-
-            <ChevronDown
-              size={15}
-              className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
             />
           </div>
         </div>
@@ -243,10 +252,8 @@ function ServiceModal({ services, room, onClose }: ServiceModalProps) {
                 <tr>
                   <td
                     colSpan={5}
-                    className="px-4 py-10 text-center text-sm text-gray-400"
-                  >
-                    No services found.
-                  </td>
+                    className="p-4"
+                  ><EmptyState compact message="No services found." /></td>
                 </tr>
               )}
             </tbody>

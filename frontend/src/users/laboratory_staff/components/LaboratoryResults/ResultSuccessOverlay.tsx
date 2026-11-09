@@ -25,12 +25,12 @@ export function ResultSuccessContent({
       </Dialog.Close>
       <div className="flex flex-1 flex-col items-center px-6 pt-[90px] pb-8 text-center">
         <span
-          className="flex size-[52px] shrink-0 items-center justify-center rounded-full bg-[#2dc953] text-white"
+          className="flex size-[52px] shrink-0 items-center justify-center rounded-full bg-green-500 text-white"
           aria-hidden="true"
         >
           <Check size={29} strokeWidth={1.2} />
         </span>
-        <Dialog.Title className="mt-3 text-sm font-semibold leading-5 text-[#172033]">
+        <Dialog.Title className="mt-3 text-lg font-semibold text-gray-900">
           {title}
         </Dialog.Title>
         <Dialog.Description className="sr-only">
@@ -38,14 +38,14 @@ export function ResultSuccessContent({
         </Dialog.Description>
       </div>
       <footer className="flex items-center justify-end gap-2 px-3 pb-2.5">
-        <Dialog.Close className="inline-flex min-h-7 min-w-16 cursor-pointer items-center justify-center rounded border border-sky-200 bg-white px-3 py-1 text-[10px] font-medium text-[#39afe5] outline-sky-400 hover:bg-sky-50">
+        <Dialog.Close className="inline-flex min-h-9 min-w-16 cursor-pointer items-center justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-sky-700 outline-sky-400 hover:bg-sky-50">
           Close
         </Dialog.Close>
         <button
           ref={primaryActionRef}
           type="button"
           onClick={onBackToList}
-          className="inline-flex min-h-7 cursor-pointer items-center justify-center rounded border border-[#39afe5] bg-[#39afe5] px-3 py-1 text-[10px] font-medium text-white outline-sky-500 hover:border-sky-500 hover:bg-sky-500"
+          className="inline-flex min-h-9 cursor-pointer items-center justify-center rounded-md border border-sky-500 bg-sky-500 px-3 py-2 text-sm font-medium text-white outline-sky-500 hover:border-sky-600 hover:bg-sky-600"
         >
           Back to list
         </button>
@@ -88,7 +88,7 @@ export default function ResultSuccessOverlay({
           <Dialog.Popup
             initialFocus={primaryActionRef}
             finalFocus={returnFocusRef}
-            className="relative max-h-[calc(100dvh-2rem)] w-full max-w-[348px] overflow-y-auto rounded-xl border-2 border-[#70b7d4] bg-white shadow-xl outline-none"
+            className="relative max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto rounded-2xl border border-gray-300 bg-white shadow-xl outline-none"
           >
             <ResultSuccessContent
               title={title}

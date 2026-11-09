@@ -1,3 +1,4 @@
+import EmptyState from "../../../../components/EmptyState";
 import type { SalesByService } from "../../../../interface/Analytics";
 import {
   formatNumber,
@@ -22,7 +23,7 @@ function TopServicesTable({ services }: TopServicesTableProps) {
   const max = Math.max(0, ...services.map((service) => service.revenue));
 
   if (services.length === 0) {
-    return <p className="px-6 py-10 text-center text-sm text-gray-400">No services sold in this period</p>;
+    return <EmptyState message="No services sold in this period." />;
   }
 
   return (

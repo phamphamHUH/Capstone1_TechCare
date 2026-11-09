@@ -2,32 +2,45 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import LeftSideBackground from "./components/LeftSideBackground";
 import api from "../lib/axios";
+import ErrorMessage from "../components/ErrorMessage";
 
 function SignupPage() {
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
-
   const signup = async () => {
+    if (submitting) return;
+    setError("");
     if (!username || !password || !role) {
-      alert("Please fill in all fields.");
+      setError("Please fill out all required fields.");
       return;
     }
 
-    const response = await api.post("/api/auth/sign-up", {
-      username,
-      password,
-      role,
-    });
-    if (!response.data.user) {
-      alert(response.data.message);
-      return
+    setSubmitting(true);
+    try {
+      const response = await api.post("/api/auth/sign-up", {
+        username,
+        password,
+        role,
+      });
+      if (!response.data.user) {
+        setError(
+          response.data.message ||
+            "Unable to create your account. Please try again.",
+        );
+        return;
+      }
+      navigate(`/${response.data.user.role}`);
+    } catch {
+      setError("Unable to create your account. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
-    navigate(`/${response.data.user.role}`);
-
   };
 
   return (
@@ -38,15 +51,12 @@ function SignupPage() {
       <div className="w-full md:w-1/2 flex items-center justify-center bg-gray-100">
         <div className="w-105 bg-white/80 backdrop-blur-xl shadow-2xl rounded-3xl p-8 border border-white/40">
           <div className="text-center mb-6">
-            <h2 className="text-3xl font-bold text-gray-800">
-              Create Account
-            </h2>
+            <h2 className="text-3xl font-bold text-gray-800">Create Account</h2>
 
-            <p className="text-sm text-gray-500 mt-1">
-              Sign up to get started
-            </p>
+            <p className="text-sm text-gray-500 mt-1">Sign up to get started</p>
           </div>
 
+          {error && <ErrorMessage className="mb-4">{error}</ErrorMessage>}
           <div className="space-y-4">
             <input
               value={username}
@@ -90,6 +100,7 @@ function SignupPage() {
             </select>
 
             <button
+              disabled={submitting}
               onClick={signup}
               className="w-full py-3 rounded-md font-semibold text-white
                          bg-sky-500 hover:bg-sky-600
@@ -102,7 +113,10 @@ function SignupPage() {
 
           <p className="text-xs text-center text-gray-400 mt-5">
             Already have an account?{" "}
-            <span className="text-indigo-500 cursor-pointer" onClick={() => navigate("/login")}>
+            <span
+              className="text-indigo-500 cursor-pointer"
+              onClick={() => navigate("/login")}
+            >
               Login
             </span>
           </p>

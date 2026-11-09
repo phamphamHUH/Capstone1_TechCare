@@ -49,6 +49,7 @@ export interface LaboratoryReportData {
   template: ReportTemplate;
   values: ResultValues;
   remarks: string;
+  requestingPhysician?: string;
   resultId?: string;
   savedAt?: string;
   verifiedBy?: string;

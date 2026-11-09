@@ -1,7 +1,6 @@
 ﻿export namespace updatePatient {
   export interface body {
     username: string;
-    password?: string;
     first_name: string;
     middle_name?: string;
     last_name: string;
@@ -118,6 +117,25 @@ export namespace confirmPayment {
     already_paid: boolean;
     queued: boolean; // false: payment is safe, forwarding can be retried
     has_laboratory_items: boolean;
+  }
+
+  export interface error {
+    message: string;
+  }
+}
+
+// =========================
+// RESET PATIENT PASSWORD
+// PATCH /api/fdstaff/patients/:patient_id/password
+// The front desk types the new password.
+// =========================
+export namespace resetPatientPassword {
+  export interface body {
+    password: string;
+  }
+
+  export interface response {
+    message: string;
   }
 
   export interface error {

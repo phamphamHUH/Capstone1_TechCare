@@ -1,6 +1,10 @@
+import EmptyState from "../../../../components/EmptyState";
+import LoadingScreen, {
+  LoadingSpinner,
+} from "../../../../components/LoadingScreen";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ArrowLeft, Eye, LoaderCircle, Maximize, Printer } from "lucide-react";
+import { ArrowLeft, Eye, Maximize, Printer } from "lucide-react";
 import type {
   AnalysisRequest,
   LaboratoryReportData,
@@ -13,6 +17,7 @@ import ResultReleaseControl from "./ResultReleaseControl";
 import {
   REPORT_FRAME_HTML,
   REPORT_MIN_HEIGHT,
+  REPORT_PAPER_LABEL,
   REPORT_WIDTH,
   waitForReportAssets,
 } from "./laboratoryPrint";
@@ -182,28 +187,21 @@ function ReportPreview({ report }: ReportPreviewProps) {
             void print();
           }}
           disabled={!ready || printing}
-          className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-[#36b3e9] px-4 py-2 text-[11px] font-medium text-white hover:bg-[#239ed2] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-sky-500 px-4 py-2 text-sm font-medium text-white hover:bg-sky-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {printing ? (
-            <LoaderCircle
-              size={14}
-              className="animate-spin motion-reduce:animate-none"
-            />
-          ) : (
-            <Printer size={14} />
-          )}
+          {printing ? <LoadingSpinner size={14} /> : <Printer size={14} />}
           {report.resultId ? "Print" : "Print Draft"}
         </button>
         <button
           type="button"
           onClick={() => setFit(false)}
           aria-pressed={!fit}
-          className="ml-auto cursor-pointer rounded px-2 py-1 text-[11px] text-[#839abe] hover:text-sky-600 focus-visible:outline-sky-500"
+          className="ml-auto cursor-pointer rounded px-2 py-1 text-sm text-gray-500 hover:text-sky-600 focus-visible:outline-sky-500"
         >
           Actual size
         </button>
         <span
-          className="w-10 text-right text-[10px] text-[#839abe]"
+          className="w-10 text-right text-xs text-gray-500"
           aria-label={`Preview zoom ${Math.round(scale * 100)} percent`}
         >
           {Math.round(scale * 100)}%
@@ -224,32 +222,27 @@ function ReportPreview({ report }: ReportPreviewProps) {
           </AnalysisButton>
         </>
       )}
-      <div className="mt-1 overflow-hidden rounded-md border border-[#e0eafa]">
-        <div className="flex flex-wrap items-center gap-2 border-b border-[#e0eafa] bg-white px-4 py-3 text-[11px]">
-          <Eye size={15} className="text-[#36b3e9]" />
+      <div className="mt-1 overflow-hidden rounded-2xl border border-gray-300">
+        <div className="flex flex-wrap items-center gap-2 border-b border-gray-300 bg-white px-4 py-3 text-sm">
+          <Eye size={15} className="text-sky-600" />
           <h2 className="font-semibold">Print Preview</h2>
-          <span className="text-[#839abe]">A4 · Portrait</span>
+          <span className="text-gray-500">{REPORT_PAPER_LABEL}</span>
           <span
-            className={`ml-auto rounded-full px-2.5 py-1 text-[10px] ${report.resultId ? "bg-sky-50 text-sky-700" : "bg-amber-50 text-amber-700"}`}
+            className={`ml-auto rounded-full px-2.5 py-1 text-xs ${report.resultId ? "bg-sky-50 text-sky-700" : "bg-amber-50 text-amber-700"}`}
           >
             {report.resultId ? "Saved result" : "Draft · Not saved"}
           </span>
         </div>
         {!ready && !previewError && (
-          <p
-            role="status"
-            className="flex items-center justify-center gap-2 bg-[#f5f8fc] py-3 text-[11px] text-[#839abe]"
-          >
-            <LoaderCircle
-              size={14}
-              className="animate-spin motion-reduce:animate-none"
-            />
-            Preparing report...
-          </p>
+          <LoadingScreen
+            message="Preparing report..."
+            variant="inline"
+            className="py-3"
+          />
         )}
         <div
           ref={containerRef}
-          className="max-h-[75vh] min-h-80 overflow-auto bg-[#f1f5f9] p-4"
+          className="max-h-[75vh] min-h-80 overflow-auto bg-gray-100 p-4"
           aria-busy={!ready && !previewError}
         >
           <div
@@ -278,9 +271,10 @@ function ReportPreview({ report }: ReportPreviewProps) {
           </div>
         </div>
       </div>
-      <p className="mt-3 text-[10px] leading-relaxed text-[#839abe]">
-        The print dialog shows final page breaks. Use A4 paper and turn off
-        browser headers and footers.
+      <p className="mt-3 text-xs leading-relaxed text-gray-500">
+        Use 8.5 × 13 inch long bond paper in portrait at 100% scale, with
+        browser headers and footers off. The report uses only the top half; the
+        bottom half stays blank.
       </p>
       {body && createPortal(<LaboratoryReport report={report} />, body)}
     </>
@@ -288,6 +282,7 @@ function ReportPreview({ report }: ReportPreviewProps) {
 }
 
 type PrintResultViewProps = {
+  refreshKey?: number;
   request: AnalysisRequest;
   reports?: readonly LaboratoryReportData[];
   onBack: () => void;
@@ -297,6 +292,7 @@ type PrintResultViewProps = {
 };
 
 export default function PrintResultView({
+  refreshKey = 0,
   request,
   reports,
   onBack,
@@ -306,16 +302,15 @@ export default function PrintResultView({
 }: PrintResultViewProps) {
   const [loadState, setLoadState] = useState<ReportLoadState | null>(null);
 
-  const [reload, setReload] = useState(0);
+  const reload = refreshKey;
   const [selected, setSelected] = useState(0);
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const result =
-    loadState?.request === request && loadState.revision === reload
-      ? loadState
-      : null;
+  const result = loadState?.request === request ? loadState : null;
   const loaded = reports ?? result?.reports ?? [];
-  const loading = reports === undefined && result === null;
-  const error = reports === undefined ? result?.error : "";
+  const loading =
+    reports === undefined && (!result || result.revision !== reload);
+  const error =
+    reports === undefined && result?.revision === reload ? result.error : "";
 
   useEffect(() => {
     headingRef.current?.focus();
@@ -341,12 +336,12 @@ export default function PrintResultView({
       })
       .catch((cause) => {
         if (!controller.signal.aborted) {
-          setLoadState({
+          setLoadState((previous) => ({
             request,
             revision: reload,
-            reports: [],
+            reports: previous?.request === request ? previous.reports : [],
             error: apiMessage(cause, "Unable to load this laboratory result."),
-          });
+          }));
         }
       });
 
@@ -358,10 +353,10 @@ export default function PrintResultView({
 
   return (
     <section
-      className="min-w-0 bg-white pt-4 pb-6 font-sans text-xs text-[#253c60]"
+      className="min-w-0 bg-white pb-6 font-sans text-sm text-gray-900"
       aria-labelledby="print-result-heading"
     >
-      <header className="flex flex-wrap items-start gap-4 border-b border-[#d8dce1] pb-4">
+      <header className="flex flex-wrap items-start gap-4 border-b border-gray-300 pb-4">
         <AnalysisButton variant="secondary" onClick={onBack}>
           <ArrowLeft size={13} />
           {backLabel}
@@ -371,43 +366,25 @@ export default function PrintResultView({
             ref={headingRef}
             tabIndex={-1}
             id="print-result-heading"
-            className="text-lg font-bold tracking-tight outline-none"
+            className="text-2xl font-semibold outline-none"
           >
             Print Result
           </h1>
-          <p className="mt-1 text-[11px] text-[#839abe]">
+          <p className="mt-1 text-sm text-gray-500">
             Generate a printable laboratory result in official format.
           </p>
         </div>
       </header>
-      {loading ? (
-        <p
-          role="status"
-          className="flex min-h-64 items-center justify-center gap-2 text-[#839abe]"
-        >
-          <LoaderCircle
-            size={18}
-            className="animate-spin motion-reduce:animate-none"
-          />
-          Loading laboratory result...
-        </p>
-      ) : error ? (
-        <div className="pt-5">
-          <AnalysisNotice error>{error}</AnalysisNotice>
-          <AnalysisButton
-            variant="secondary"
-            onClick={() => setReload((value) => value + 1)}
-          >
-            Try again
-          </AnalysisButton>
-        </div>
+      {error && <AnalysisNotice error>{error}</AnalysisNotice>}
+      {loading && loaded.length === 0 ? (
+        <LoadingScreen message="Loading laboratory result..." />
       ) : report ? (
         <>
           {loaded.length > 1 && (
-            <label className="mt-4 flex flex-wrap items-center gap-3 text-[11px]">
+            <label className="mt-4 flex flex-wrap items-center gap-3 text-sm">
               Report
               <select
-                className="max-w-full rounded border border-[#dce7f8] bg-white p-2 outline-sky-400"
+                className="max-w-full rounded border border-gray-300 bg-white p-2 outline-sky-400"
                 value={selectedIndex}
                 onChange={(event) => setSelected(Number(event.target.value))}
               >
@@ -437,9 +414,10 @@ export default function PrintResultView({
         </>
       ) : (
         <div className="pt-5">
-          <AnalysisNotice>
-            No laboratory report is available to preview.
-          </AnalysisNotice>
+          <EmptyState
+            message="No laboratory report available."
+            description="Saved results will appear here when they are ready to preview."
+          />
         </div>
       )}
     </section>

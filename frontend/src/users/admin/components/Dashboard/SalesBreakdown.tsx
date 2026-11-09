@@ -1,3 +1,4 @@
+import EmptyState from "../../../../components/EmptyState";
 import type {
   SalesByPaymentMethod,
   SalesByServiceType,
@@ -30,7 +31,7 @@ function SalesBreakdown({ serviceTypes, paymentMethods }: SalesBreakdownProps) {
         <p className="text-xs text-gray-400">Line totals before discounts</p>
 
         {typeTotal === 0 ? (
-          <p className="mt-4 text-sm text-gray-400">No sales in this period</p>
+          <EmptyState message="No sales in this period." />
         ) : (
           <>
             <div className="mt-4 flex h-3 gap-0.5 overflow-hidden rounded">
@@ -78,7 +79,7 @@ function SalesBreakdown({ serviceTypes, paymentMethods }: SalesBreakdownProps) {
         <p className="text-xs text-gray-400">Amounts collected after discounts</p>
 
         {methodTotal === 0 ? (
-          <p className="mt-4 text-sm text-gray-400">No payments in this period</p>
+          <EmptyState message="No payments in this period." />
         ) : (
           <ul className="mt-4 space-y-4">
             {paymentMethods.map((method) => (

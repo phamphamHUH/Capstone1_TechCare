@@ -1,3 +1,4 @@
+import EmptyState from "../../../../components/EmptyState";
 import { useState } from "react";
 import type { SalesTimelinePoint } from "../../../../interface/Analytics";
 import {
@@ -37,6 +38,8 @@ function RevenueChart({ timeline, bucket }: RevenueChartProps) {
   const every = labelEvery(timeline.length, bucket);
   const isEmpty = timeline.every((point) => point.revenue === 0);
   const active = hovered === null ? null : timeline[hovered];
+
+  if (isEmpty) return <EmptyState message="No paid bills found for this period." />;
 
   return (
     <div>
@@ -90,11 +93,7 @@ function RevenueChart({ timeline, bucket }: RevenueChartProps) {
               </div>
             ))}
 
-            {isEmpty && (
-              <p className="absolute inset-0 flex items-center justify-center text-sm text-gray-400">
-                No paid bills in this period
-              </p>
-            )}
+
 
             {/* Tooltip */}
             {active && hovered !== null && (

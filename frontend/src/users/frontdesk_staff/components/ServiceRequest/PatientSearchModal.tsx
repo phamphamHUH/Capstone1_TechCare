@@ -1,7 +1,12 @@
+import EmptyState from "../../../../components/EmptyState";
+import ErrorMessage from "../../../../components/ErrorMessage";
+import LoadingScreen from "../../../../components/LoadingScreen";
 import { useEffect, useMemo, useState } from "react";
 import { Phone, Search, UserPlus, X, Check } from "lucide-react";
 import api from "#lib/axios";
 import type { Patient } from "../../../../interface/Patient";
+import calculateAge from "../../../../utils/calculateAge";
+import { formatAge } from "../../../../utils/formats";
 
 type PatientSearchModalProps = {
   onClose: () => void;
@@ -18,19 +23,6 @@ const fullName = (p: Patient) =>
 
 const initials = (p: Patient) =>
   `${p.first_name?.charAt(0) ?? ""}${p.last_name?.charAt(0) ?? ""}`.toUpperCase();
-
-const getAge = (birthdate?: string | null) => {
-  if (!birthdate) return null;
-  const birth = new Date(birthdate);
-  if (Number.isNaN(birth.getTime())) return null;
-  const now = new Date();
-  let age = now.getFullYear() - birth.getFullYear();
-  const beforeBirthday =
-    now.getMonth() < birth.getMonth() ||
-    (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate());
-  if (beforeBirthday) age -= 1;
-  return age;
-};
 
 const FILTERS: { label: string; value: PatientFilter }[] = [
   { label: "All Patients", value: "all" },
@@ -87,7 +79,7 @@ function PatientSearchModal({
 
     return patients
       .filter((p) => {
-        const age = getAge(p.birthdate);
+        const age = calculateAge(p.birthdate);
 
         const matchesFilter =
           filter === "all" ||
@@ -186,21 +178,18 @@ function PatientSearchModal({
 
         {/* List */}
         <div className="mt-3 min-h-0 flex-1 overflow-y-auto bg-gray-50 px-6 py-3">
+          {error && (
+            <ErrorMessage>{error}</ErrorMessage>
+          )}
           {loading ? (
-            <p className="py-10 text-center text-sm text-gray-400">
-              Loading...
-            </p>
-          ) : error ? (
-            <p className="py-10 text-center text-sm text-red-500">{error}</p>
-          ) : filtered.length === 0 ? (
-            <p className="py-10 text-center text-sm text-gray-400">
-              No patients found.
-            </p>
+            <LoadingScreen message="Loading patients..." />
+          ) : ((filtered.length === 0 ? (
+            <EmptyState message="No patients found." />
           ) : (
             <ul className="flex flex-col gap-3">
               {filtered.map((p) => {
                 const selected = selectedId === p.patient_id;
-                const age = getAge(p.birthdate);
+                const age = calculateAge(p.birthdate);
 
                 return (
                   <li key={p.patient_id}>
@@ -245,8 +234,7 @@ function PatientSearchModal({
                         </p>
                         <p className="flex items-center gap-1 text-xs text-gray-500">
                           <span>
-                            {p.sex}
-                            {age !== null ? `, ${age} yrs old` : ""}
+                            {p.sex} {formatAge(p.birthdate, age)}
                           </span>
                           {p.contact_number && (
                             <>
@@ -272,7 +260,7 @@ function PatientSearchModal({
                 );
               })}
             </ul>
-          )}
+          )))}
         </div>
 
         {/* Footer */}
