@@ -1,3 +1,4 @@
+import ErrorMessage from "../components/ErrorMessage";
 import { LoadingSpinner } from "../components/LoadingScreen";
 import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router";
@@ -124,12 +125,9 @@ function LoginPage() {
             </div>
 
             {errorMessage && (
-              <p
-                role="alert"
-                className="mb-5 rounded-md bg-red-50 px-3 py-2.5 text-sm text-red-800"
-              >
+              <ErrorMessage className="mb-5">
                 {errorMessage}
-              </p>
+              </ErrorMessage>
             )}
 
             <form onSubmit={handleLogin} className="space-y-5">
@@ -230,9 +228,7 @@ function LoginPage() {
               </button>
             </form>
 
-            <p className="mt-5 text-center text-sm text-gray-800">
-              No account? Visit the front desk for registration.
-            </p>
+            <p className="mt-5 text-center text-sm text-gray-800">No account? Visit the front desk for registration.</p>
 
           </div>
         </div>

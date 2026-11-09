@@ -1,3 +1,5 @@
+import FieldError from "../../../../components/FieldError";
+import EmptyState from "../../../../components/EmptyState";
 import LoadingScreen, { LoadingSpinner } from "../../../../components/LoadingScreen";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Check, ChevronDown, ChevronRight, Eye, Search, TestTubeDiagonal } from "lucide-react";
@@ -597,11 +599,9 @@ export default function ResultEntry({
                         </label>
                       ))}
                       {!visibleTemplates.length && !failure && (
-                        <p className="flex min-h-40 items-center justify-center p-5 text-center text-gray-500">
-                          {search
+                        <EmptyState message={search
                             ? "No templates match your search."
-                            : "No published templates match the requested tests."}
-                        </p>
+                            : "No published templates match the requested tests."} />
                       )}
                     </div>
                   )}
@@ -669,9 +669,9 @@ export default function ResultEntry({
                   {failure && <AnalysisNotice error>{failure}</AnalysisNotice>}
                   {notice && <AnalysisNotice>{notice}</AnalysisNotice>}
                   {errors._form && (
-                    <p role="alert" className="mb-2 text-sm text-rose-700">
+                    <FieldError className="mb-2">
                       {errors._form}
-                    </p>
+                    </FieldError>
                   )}
                   <TemplateFields
                     components={template.components}
@@ -709,12 +709,9 @@ export default function ResultEntry({
                       }
                     />
                     {errors._notes && (
-                      <p
-                        id="laboratory-notes-error"
-                        className="mt-1 text-xs text-rose-700"
-                      >
+                      <FieldError id="laboratory-notes-error" className="mt-1">
                         {errors._notes}
-                      </p>
+                      </FieldError>
                     )}
                   </div>
                   {!resultEntryApi.saveResult && (

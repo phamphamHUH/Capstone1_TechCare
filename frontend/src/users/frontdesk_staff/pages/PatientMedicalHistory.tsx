@@ -1,3 +1,5 @@
+import EmptyState from "../../../components/EmptyState";
+import ErrorMessage from "../../../components/ErrorMessage";
 import LoadingScreen from "../../../components/LoadingScreen";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
@@ -48,7 +50,6 @@ type PatientMedicalHistoryProps = {
 function PatientMedicalHistory({
   open,
   setOpen,
-  loadData,
   loading,
 }: PatientMedicalHistoryProps) {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -58,7 +59,9 @@ function PatientMedicalHistory({
   const [queueHistory, setQueueHistory] = useState<QueueEntry[]>([]);
   const [labRequests, setLabRequests] = useState<LaboratoryRequest[]>([]);
   const [billingRecords, setBillingRecords] = useState<BillingRecord[]>([]);
-  const [pageLoading, setPageLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(!!patientId);
+  const [historyError, setHistoryError] = useState("");
+  const [failedSections, setFailedSections] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<
     "overview" | "visits" | "labs" | "billing"
   >("overview");
@@ -66,6 +69,9 @@ function PatientMedicalHistory({
 
 
   async function fetchPatientHistory() {
+    const failed: string[] = [];
+    setHistoryError("");
+    setFailedSections([]);
     try {
       setPageLoading(true);
 
@@ -76,9 +82,8 @@ function PatientMedicalHistory({
         (p: Patient) => p.patient_id === patientId,
       );
 
-      if (selectedPatient) {
-        setPatient(selectedPatient);
-      }
+      setPatient(selectedPatient ?? null);
+      if (!selectedPatient) return;
 
       // Fetch laboratory requests for the patient
       try {
@@ -88,6 +93,7 @@ function PatientMedicalHistory({
         setLabRequests(labResponse.data.laboratoryRequests || []);
       } catch (error) {
         console.log("Lab requests not available:", error);
+        failed.push("laboratory requests");
       }
 
       // Fetch all queue entries and filter for this patient
@@ -99,6 +105,7 @@ function PatientMedicalHistory({
         setQueueHistory(patientQueues);
       } catch (error) {
         console.log("Queue history not available:", error);
+        failed.push("visit history");
       }
 
       // Fetch all billing records and filter for this patient
@@ -118,10 +125,13 @@ function PatientMedicalHistory({
         setBillingRecords(patientBilling);
       } catch (error) {
         console.log("Billing records not available:", error);
+        failed.push("billing records");
       }
     } catch (error) {
       console.error("Error fetching patient history:", error);
+      setHistoryError("Unable to load patient history. Please try again.");
     } finally {
+      setFailedSections(failed);
       setPageLoading(false);
     }
   }
@@ -144,11 +154,11 @@ function PatientMedicalHistory({
           loading={pageLoading}
           open={open}
           setOpen={setOpen}
-          loadData={loadData}
+          loadData={fetchPatientHistory}
           page="Patient Medical History"
         />
         <div className="flex items-center justify-center h-96">
-          <LoadingScreen message="Loading patient data..." />
+          {pageLoading ? <LoadingScreen message="Loading patient data..." /> : historyError ? <ErrorMessage>{historyError}</ErrorMessage> : <EmptyState message="Patient not found." description="Select a patient from Patient Records to view their history." />}
         </div>
       </main>
     );
@@ -183,9 +193,11 @@ function PatientMedicalHistory({
         loading={pageLoading}
         open={open}
         setOpen={setOpen}
-        loadData={loadData}
+        loadData={fetchPatientHistory}
         page="Patient Medical History"
       />
+      {!pageLoading && historyError && <ErrorMessage className="mx-6 mb-4">{historyError}</ErrorMessage>}
+      {!pageLoading && failedSections.length > 0 && <ErrorMessage className="mx-6 mb-4">Unable to load {failedSections.join(", ")}. Please try again.</ErrorMessage>}
 
       {/* Go Back Button */}
       <div className="px-6 py-4 border-b border-gray-200">
@@ -425,7 +437,7 @@ function PatientMedicalHistory({
               </div>
             ) : (
               <div className="text-center py-12">
-                <p className="text-gray-500">No visit history found</p>
+                {failedSections.includes("visit history") ? <ErrorMessage>Unable to load visit history. Please try again.</ErrorMessage> : <EmptyState message="No visit history found." />}
               </div>
             )}
           </div>
@@ -496,7 +508,7 @@ function PatientMedicalHistory({
               </div>
             ) : (
               <div className="text-center py-12">
-                <p className="text-gray-500">No lab requests found</p>
+                {failedSections.includes("laboratory requests") ? <ErrorMessage>Unable to load laboratory requests. Please try again.</ErrorMessage> : <EmptyState message="No laboratory requests found." />}
               </div>
             )}
           </div>
@@ -560,7 +572,7 @@ function PatientMedicalHistory({
               </div>
             ) : (
               <div className="text-center py-12">
-                <p className="text-gray-500">No billing records found</p>
+                {failedSections.includes("billing records") ? <ErrorMessage>Unable to load billing records. Please try again.</ErrorMessage> : <EmptyState message="No billing records found." />}
               </div>
             )}
           </div>

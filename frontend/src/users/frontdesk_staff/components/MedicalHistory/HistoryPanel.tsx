@@ -1,3 +1,4 @@
+import ErrorMessage from "../../../../components/ErrorMessage";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import HistoryFilters from "./HistoryFilters";
@@ -76,18 +77,18 @@ function HistoryPanel({ patientId, setSelectedRecord }: HistoryPanelProps) {
         if (axios.isCancel(err)) return;
         setResult((prev) => ({
           key,
-          records: prev?.records ?? [],
-          pagination: prev?.pagination ?? null,
+          records: prev?.key.startsWith(`${patientId}?`) ? prev.records : [],
+          pagination: prev?.key.startsWith(`${patientId}?`) ? prev.pagination : null,
           error: err.response?.data?.message ?? err.message,
         }));
       });
 
     return () => controller.abort();
-  }, [key]);
+  }, [key, patientId]);
 
   const loading = result?.key !== key;
-  const records = result?.records ?? [];
-  const pagination = result?.pagination ?? null;
+  const records = result?.key.startsWith(`${patientId}?`) ? result.records : [];
+  const pagination = result?.key.startsWith(`${patientId}?`) ? result.pagination : null;
   const error = result && !loading ? result.error : null;
 
   return (
@@ -112,17 +113,16 @@ function HistoryPanel({ patientId, setSelectedRecord }: HistoryPanelProps) {
         />
       </div>
 
-      {error ? (
-        <p className="py-10 text-center text-sm text-red-500">{error}</p>
-      ) : (
-        <HistoryTimeline
+      {error && (
+        <ErrorMessage>{error}</ErrorMessage>
+      )}
+      <HistoryTimeline
           records={records}
           pagination={pagination}
           loading={loading}
           onPageChange={setPage}
           setSelectedRecord={setSelectedRecord}
         />
-      )}
     </div>
   );
 }

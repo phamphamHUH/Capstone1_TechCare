@@ -1,3 +1,5 @@
+import ErrorMessage from "../../../../components/ErrorMessage";
+import EmptyState from "../../../../components/EmptyState";
 import LoadingScreen from "../../../../components/LoadingScreen";
 import { useEffect, useState } from "react";
 import axios from "axios";
@@ -251,7 +253,7 @@ function VisitDetails({
         <h1 className="font-bold">Visit Details</h1>
         <div className="flex flex-col items-center gap-2 py-16 text-center text-gray-400">
           <MousePointerClick size={28} strokeWidth={1.5} />
-          <p className="text-sm">Select a record to view its details.</p>
+          <EmptyState message="Select a record to view its details." />
         </div>
       </div>
     );
@@ -339,14 +341,14 @@ function VisitDetails({
       )}
 
       {error && (
-        <p className="py-6 text-center text-sm text-red-500">{error}</p>
+        <ErrorMessage>{error}</ErrorMessage>
       )}
 
       {/* Laboratory results */}
       {details?.record_type === "laboratory" && (
         <Section title="Results Summary">
           {details.results.length === 0 ? (
-            <p className="text-sm text-gray-400">No results yet.</p>
+            <EmptyState message="No results yet." />
           ) : (
             details.results.map((res) => {
               const rows = toRows(res.results);
@@ -438,7 +440,7 @@ function VisitDetails({
 
           <Section title="Prescriptions">
             {details.prescription.length === 0 ? (
-              <p className="text-sm text-gray-400">No prescriptions issued.</p>
+              <EmptyState message="No prescriptions issued." />
             ) : (
               <div className="space-y-3">
                 {details.prescription.map((p) => (

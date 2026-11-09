@@ -1,3 +1,4 @@
+import ErrorMessage from "../../../../components/ErrorMessage";
 import {
   useEffect,
   useLayoutEffect,
@@ -103,12 +104,9 @@ export default function InvoicePreview({
         </p>
       </div>
       {error && (
-        <p
-          role="alert"
-          className="border-t border-red-200 bg-red-50 p-3 text-sm text-red-800"
-        >
+        <ErrorMessage>
           {error}
-        </p>
+        </ErrorMessage>
       )}
       <div
         ref={containerRef}

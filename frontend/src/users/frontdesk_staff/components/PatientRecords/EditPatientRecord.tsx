@@ -1,3 +1,4 @@
+import ErrorMessage from "../../../../components/ErrorMessage";
 import { LoadingSpinner } from "../../../../components/LoadingScreen";
 import { useRef, useState } from "react";
 import type { Patient } from "../../../../interface/Patient";
@@ -148,11 +149,11 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      alert("Please select an image file.");
+      setError("Please select an image file.");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      alert("Profile photo must be less than 5MB.");
+      setError("Profile photo must be smaller than 5MB.");
       return;
     }
 
@@ -183,7 +184,7 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
     } catch (err) {
       setError(
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-          (err instanceof Error ? err.message : "Something went wrong"),
+          (err instanceof Error ? err.message : "Unable to complete this action. Please try again."),
       );
     } finally {
       setSaving(false);
@@ -225,9 +226,9 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
         {/* Content */}
         <div className="max-h-[82vh] overflow-y-auto p-6">
           {error && (
-            <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+            <ErrorMessage className="mb-4">
               {error}
-            </p>
+            </ErrorMessage>
           )}
 
           {/* Profile Hero */}

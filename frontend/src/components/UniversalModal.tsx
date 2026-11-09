@@ -1,3 +1,4 @@
+import ErrorMessage from "./ErrorMessage";
 import { LoadingSpinner } from "./LoadingScreen";
 import {
   useEffect,
@@ -188,12 +189,9 @@ export default function UniversalModal({
             </div>
             {children && <div className="mt-4">{children}</div>}
             {showError && (error || actionError) && (
-              <p
-                role="alert"
-                className="mt-3 rounded-md border border-red-200 bg-red-50 p-2.5 text-xs text-red-800"
-              >
+              <ErrorMessage className="mt-3">
                 {error || actionError}
-              </p>
+              </ErrorMessage>
             )}
             {actions.length > 0 && (
               <footer

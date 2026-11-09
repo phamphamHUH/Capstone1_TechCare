@@ -1,3 +1,5 @@
+import EmptyState from "../../../../components/EmptyState";
+import ErrorMessage from "../../../../components/ErrorMessage";
 import LoadingScreen from "../../../../components/LoadingScreen";
 import { useEffect, useState } from "react";
 import { X, FileText, Info } from "lucide-react";
@@ -49,7 +51,8 @@ function InformationCard({ onClose, queueIdCard }: InformationCardProps) {
         if (cancelled) return;
         const message =
           (err as { response?: { data?: { message?: string } } })?.response
-            ?.data?.message || "Unable to fetch data.";
+            ?.data?.message ||
+          "Consultation queue details could not be loaded.";
         setDetailError(message);
       } finally {
         if (!cancelled) setDetailLoading(false);
@@ -145,15 +148,9 @@ function InformationCard({ onClose, queueIdCard }: InformationCardProps) {
 
         {/* Body */}
         <div className="flex-1 flex items-center justify-center overflow-y-auto bg-gray-50 px-8 py-5">
+          {detailError && <ErrorMessage>{detailError}</ErrorMessage>}
           {detailLoading ? (
             <LoadingScreen message="Loading consultation..." />
-          ) : detailError ? (
-            <div
-              role="alert"
-              className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700"
-            >
-              {detailError}
-            </div>
           ) : detail ? (
             <div className="grid grid-cols-2 gap-6">
               {/* PATIENT CARD */}
@@ -320,9 +317,7 @@ function InformationCard({ onClose, queueIdCard }: InformationCardProps) {
               </div>
             </div>
           ) : (
-            <div className="rounded-xl border border-gray-200 bg-white p-4 text-sm text-slate-700">
-              Select a queue entry to view its details.
-            </div>
+            <EmptyState message="Select a queue entry to view its details." />
           )}
         </div>
 

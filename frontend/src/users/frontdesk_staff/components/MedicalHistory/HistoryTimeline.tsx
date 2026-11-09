@@ -1,3 +1,4 @@
+import EmptyState from "../../../../components/EmptyState";
 import LoadingScreen from "../../../../components/LoadingScreen";
 import {
   FlaskConical,
@@ -73,9 +74,7 @@ function HistoryTimeline({
 
   if (records.length === 0) {
     return (
-      <p className="py-10 text-center text-sm text-gray-400">
-        No records found.
-      </p>
+      <EmptyState message="No records found." />
     );
   }
 

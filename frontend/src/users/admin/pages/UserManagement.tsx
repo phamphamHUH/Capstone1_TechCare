@@ -1,8 +1,9 @@
+import EmptyState from "../../../components/EmptyState";
+import ErrorMessage from "../../../components/ErrorMessage";
 import LoadingScreen from "../../../components/LoadingScreen";
 import { useEffect, useState } from "react";
 import { Search, UserPlus } from "lucide-react";
 
-import Header from "../../../components/Header";
 import type { User } from "../../../interface/User";
 import AddUserModal from "../components/UserManagement/AddUserModal";
 import UpdateUserModal from "../components/UserManagement/UpdateUserModal";
@@ -15,12 +16,14 @@ type UserManagementProps = {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   loading: boolean;
+  error?: string;
 };
 
 function UserManagement({
   users,
   loadData,
   loading,
+  error,
 }: UserManagementProps) {
   const [showAddUser, setShowAddUser] = useState(false);
   const [showUpdateUser, setShowUpdateUser] = useState(false);
@@ -45,8 +48,6 @@ function UserManagement({
 
   return (
     <main className="flex-1 min-w-0 ">
-
-
       {/* =========================
     SEARCH / ACTION BAR
 ========================== */}
@@ -86,6 +87,8 @@ function UserManagement({
           Add User
         </button>
       </div>
+
+      {error && <ErrorMessage className="mx-6 mb-5">{error}</ErrorMessage>}
 
       {/* =========================
                 MODALS
@@ -134,18 +137,17 @@ function UserManagement({
           ))}
         </div>
       ) : (
-        <div className="border border-gray-300 rounded-xl py-16 text-center mx-6">
-          <Search
-            size={32}
-            strokeWidth={1.5}
-            className="mx-auto text-gray-400 mb-3"
+        <div className="mx-6">
+          <EmptyState
+            message={error ? "Users are unavailable." : "No users found."}
+            description={
+              error
+                ? "The list will reappear when data is available."
+                : search.trim()
+                  ? "Try changing or clearing your search."
+                  : "Users will appear here once they are added."
+            }
           />
-
-          <h3 className="text-lg font-semibold px-6">No users found</h3>
-
-          <p className="text-sm text-gray-500 mt-1 px-6">
-            No users match "{search}"
-          </p>
         </div>
       )}
 

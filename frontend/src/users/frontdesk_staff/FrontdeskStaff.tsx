@@ -101,14 +101,32 @@ function FrontdeskStaff() {
     setLoading(false);
   }, []);
 
-  // The billing page shows its own error, so the shell banner covers everything else there.
+  // Each page receives only the failures for the data it actually uses.
   const billingError = failedSources.includes("bills")
-    ? "Bills could not be loaded. Check the connection and try again."
+    ? "Bills could not be loaded."
     : "";
-  const bannerSources =
-    page === "billing"
-      ? failedSources.filter((source) => source !== "bills")
-      : failedSources;
+  const patientError = failedSources.includes("patients")
+    ? "Patient records could not be loaded."
+    : "";
+  const serviceError = failedSources.includes("services")
+    ? "Available services could not be loaded."
+    : "";
+  const queueError = [
+    failedSources.includes("queues") && "Queue entries could not be loaded.",
+    failedSources.includes("queue requests") &&
+      "Pending service requests could not be loaded.",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const dashboardError = [
+    failedSources.includes("patients") &&
+      "Patient registration totals could not be loaded.",
+    failedSources.includes("bills") &&
+      "Pending bill totals could not be loaded.",
+    failedSources.includes("queues") && "Queue statistics could not be loaded.",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   const navItems = [
     {
@@ -164,17 +182,9 @@ function FrontdeskStaff() {
         />
 
         <div className="pb-6">
-          {bannerSources.length > 0 && (
-            <p
-              role="alert"
-              className="mx-6 mb-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-base text-amber-900"
-            >
-              Could not refresh {bannerSources.join(", ")}. Use Load Data to try
-              again.
-            </p>
-          )}
           {page === "dashboard" && (
             <FrontdeskDashboard
+              error={dashboardError}
               patients={patients}
               bills={bills}
               queues={queues}
@@ -197,7 +207,9 @@ function FrontdeskStaff() {
 
           {page === "patient-records" && (
             <PatientRecords
+              error={patientError}
               patients={patients}
+              loadFailed={failedSources.includes("patients")}
               selectedPatient={selectedPatient}
               setSelectedPatient={setSelectedPatient}
               open={open}
@@ -209,6 +221,8 @@ function FrontdeskStaff() {
 
           {page === "queues" && (
             <Queues
+              error={queueError}
+              loadFailed={failedSources.includes("queues")}
               queues={queues}
               queueRequests={queueRequests}
               open={open}
@@ -220,6 +234,7 @@ function FrontdeskStaff() {
 
           {page === "service-request" && (
             <ServiceRequest
+              error={serviceError}
               services={services}
               open={open}
               setOpen={setOpen}
@@ -240,9 +255,11 @@ function FrontdeskStaff() {
 
           {page === "patient-medical-history" && (
             <MedicalHistory
+              error={patientError ? "Patient details could not be loaded." : ""}
               open={open}
               patients={patients}
               selectedPatient={patientIdParam}
+              loadFailed={failedSources.includes("patients")}
               setOpen={setOpen}
               loadData={loadData}
               loading={loading}

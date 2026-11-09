@@ -1,4 +1,5 @@
 import LoadingScreen from "../../../components/LoadingScreen";
+import ErrorMessage from "../../../components/ErrorMessage";
 import { Users, Clock, List, Receipt, ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
 import type { Patient } from "../../../interface/Patient";
@@ -14,6 +15,7 @@ type FrontdeskDashboardProps = {
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   loadData: () => Promise<void>;
   setPage: (page: string) => void;
+  error?: string;
 };
 
 type StatCardProps = {
@@ -42,9 +44,13 @@ function StatCard({ label, value, caption, icon, onClick }: StatCardProps) {
         />
       </div>
 
-      <p className={`text-3xl font-semibold ${icon ? "mt-4" : "mt-2"}`}>{value}</p>
+      <p className={`text-3xl font-semibold ${icon ? "mt-4" : "mt-2"}`}>
+        {value}
+      </p>
 
-      <p className={`text-sm text-gray-400 ${icon ? "mt-2" : "mt-3"}`}>{caption}</p>
+      <p className={`text-sm text-gray-400 ${icon ? "mt-2" : "mt-3"}`}>
+        {caption}
+      </p>
     </button>
   );
 }
@@ -55,23 +61,36 @@ function FrontdeskDashboard({
   queues,
   setPage,
   loading,
+  error,
 }: FrontdeskDashboardProps) {
-  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
+  const today = new Date().toLocaleDateString("en-CA", {
+    timeZone: "Asia/Manila",
+  });
 
   const statusOf = (queue: QueueEntry) => queue.status.toLowerCase();
 
-  const waitingCount = queues.filter((queue) => statusOf(queue) === "waiting").length;
+  const waitingCount = queues.filter(
+    (queue) => statusOf(queue) === "waiting",
+  ).length;
 
   const inProgressCount = queues.filter((queue) =>
     ["in progress", "in service", "serving"].includes(statusOf(queue)),
   ).length;
 
-  const completedCount = queues.filter((queue) => statusOf(queue) === "completed").length;
+  const completedCount = queues.filter(
+    (queue) => statusOf(queue) === "completed",
+  ).length;
 
-  const cancelledCount = queues.filter((queue) => statusOf(queue) === "cancelled").length;
+  const cancelledCount = queues.filter(
+    (queue) => statusOf(queue) === "cancelled",
+  ).length;
 
   const registeredToday = patients.filter(
-    (patient) => patient.created_at && new Date(patient.created_at).toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }) === today,
+    (patient) =>
+      patient.created_at &&
+      new Date(patient.created_at).toLocaleDateString("en-CA", {
+        timeZone: "Asia/Manila",
+      }) === today,
   ).length;
 
   const totalQueue = queues.length;
@@ -86,8 +105,8 @@ function FrontdeskDashboard({
 
   return (
     <main className="flex-1 min-w-0">
-
       <div className="space-y-6 px-6">
+        {error && <ErrorMessage>{error}</ErrorMessage>}
         {/* =========================
                     FRONTDESK SUMMARY
                 ========================== */}

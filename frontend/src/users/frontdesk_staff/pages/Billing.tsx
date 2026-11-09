@@ -1,3 +1,4 @@
+import ErrorMessage from "../../../components/ErrorMessage";
 import LoadingScreen, { LoadingSpinner } from "../../../components/LoadingScreen";
 import { useMemo, useState } from "react";
 import axios from "axios";
@@ -209,28 +210,12 @@ function Billing({ bills, loading, error, loadData }: BillingProps) {
       </p>
 
       {error && (
-        <div
-          role="alert"
-          className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
-        >
-          <span>{error}</span>
-          <button
-            type="button"
-            disabled={loading}
-            onClick={() => void loadData()}
-            className="cursor-pointer rounded border border-red-300 bg-white px-3 py-1 font-medium disabled:opacity-50"
-          >
-            Try Again
-          </button>
-        </div>
+        <ErrorMessage className="mt-4">{error}</ErrorMessage>
       )}
       {actionError && (
-        <p
-          role="alert"
-          className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
-        >
+        <ErrorMessage className="mt-4">
           {actionError}
-        </p>
+        </ErrorMessage>
       )}
       {stats.awaitingLaboratory > 0 && (
         <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
@@ -305,6 +290,7 @@ function Billing({ bills, loading, error, loadData }: BillingProps) {
         bills={visibleBills}
         variant={tab}
         loading={loading && bills.length === 0}
+        error={error}
         emptyMessage={
           error
             ? "The latest bills could not be loaded."

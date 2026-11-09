@@ -1,3 +1,5 @@
+import ErrorMessage from "../../../components/ErrorMessage";
+import EmptyState from "../../../components/EmptyState";
 import LoadingScreen from "../../../components/LoadingScreen";
 import { useEffect, useState } from "react";
 import type { Dispatch, ReactNode, SetStateAction } from "react";
@@ -249,14 +251,14 @@ function useApiGet<T>(
       .catch((err) => {
         if (err?.code === "ERR_CANCELED") return;
         console.error(label, err);
-        setState({ key, data: null, error: describeError(err, label) });
+        setState((previous) => ({ key, data: previous.key?.startsWith(`${url}?`) ? previous.data : null, error: describeError(err, label) }));
       });
     return () => controller.abort();
   }, [url, key, paramsJson, label, validate]);
 
   const current = state.key === key;
   return {
-    data: key && (current || keep) ? state.data : null,
+    data: key && (current || (keep && state.key?.startsWith(`${url}?`))) ? state.data : null,
     error: key && current ? state.error : null,
     loading: !!key && !current,
   };
@@ -265,14 +267,10 @@ function useApiGet<T>(
 /* ---------- small pieces ---------- */
 
 const NoData = ({ children = "No data" }: { children?: ReactNode }) => (
-  <span className="text-slate-400">{children}</span>
+  <EmptyState compact message={children} />
 );
 
-const ErrorBox = ({ message }: { message: string }) => (
-  <p className="break-words rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700">
-    {message}
-  </p>
-);
+const ErrorBox = ({ message }: { message: string }) => <ErrorMessage>{message}</ErrorMessage>;
 
 const StatusPill = ({ status }: { status?: string | null }) =>
   status ? (
@@ -502,7 +500,7 @@ function VisitDetails({
       </div>
 
       {!sel ? (
-        <p className="py-10 text-center text-xs text-slate-500">Select a record to see its details.</p>
+        <EmptyState message="Select a record to see its details." />
       ) : loading ? (
         <LoadingScreen message="Loading details..." />
       ) : (
@@ -703,9 +701,7 @@ function FullRecordModal({
                     Prescriptions
                   </h5>
                   {prescriptions.length === 0 && (
-                    <p className="rounded-lg border border-dashed border-slate-200 p-3 text-xs text-slate-500">
-                      No prescriptions for this consultation.
-                    </p>
+                    <EmptyState message="No prescriptions for this consultation." />
                   )}
                   {prescriptions.map((p, i) => {
                     const items = asList(p.prescription_items);
@@ -854,8 +850,6 @@ function MedicalHistoryContent({
   const hasRecords = !!pagination && pagination.total > 0;
   const arrow =
     "flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 disabled:opacity-40";
-  const empty =
-    "rounded-xl border border-dashed border-slate-300 p-10 text-center text-sm text-slate-500";
 
   const selects: [keyof Filters, string, string[]][] = [
     ["category", "All Services", CATEGORIES],
@@ -948,18 +942,15 @@ function MedicalHistoryContent({
           </div>
 
           <div className="mt-4 flex-1">
-            {!patientId ? (
-              <p className={empty}>
-                Enter a patient ID to view their medical history.
-              </p>
-            ) : list.loading ? (
-              <LoadingScreen message="Loading medical history..." />
-            ) : list.error ? (
+            {list.error && (
               <ErrorBox message={list.error} />
-            ) : records.length === 0 ? (
-              <p className={empty}>
-                No records found for this patient with the current filters.
-              </p>
+            )}
+            {!patientId ? (
+              <EmptyState message="Enter a patient ID to view their medical history." />
+            ) : list.loading && records.length === 0 ? (
+              <LoadingScreen message="Loading medical history..." />
+            ) : ((records.length === 0 ? (
+              <EmptyState message="No records found for this patient with the current filters." />
             ) : (
               <ol className="relative">
                 {records.map((r, i) => (
@@ -1004,7 +995,7 @@ function MedicalHistoryContent({
                   </li>
                 ))}
               </ol>
-            )}
+            )))}
           </div>
 
           <div className="mt-4 flex items-center justify-between text-xs text-slate-500">

@@ -1,3 +1,6 @@
+import FieldError from "../../../../components/FieldError";
+import EmptyState from "../../../../components/EmptyState";
+import ErrorMessage from "../../../../components/ErrorMessage";
 import { LoadingSpinner } from "../../../../components/LoadingScreen";
 import { useRef, useState } from "react";
 import { Download, Eye, FlagTriangleRight, Info, MoveLeft, Percent, Printer, QrCode, WalletMinimal } from "lucide-react";
@@ -295,12 +298,9 @@ function ProcessPayment({
         </p>
       )}
       {error && (
-        <p
-          role="alert"
-          className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
-        >
+        <ErrorMessage className="mt-4">
           {error}
-        </p>
+        </ErrorMessage>
       )}
 
       {showInvoice && !isPending && (
@@ -373,9 +373,7 @@ function ProcessPayment({
           <section className={cardClass}>
             <h2 className="mb-3 font-semibold">Services</h2>
             {items.length === 0 ? (
-              <p className="text-sm text-gray-500">
-                No itemized services were saved for this bill.
-              </p>
+              <EmptyState message="No itemized services were saved for this bill." />
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full min-w-120 text-left text-xs">
@@ -505,9 +503,7 @@ function ProcessPayment({
                         className={fieldClass}
                       />
                       {insufficient && cash !== "" && (
-                        <span className="mt-1 block text-xs text-red-600">
-                          Cash received is less than the total.
-                        </span>
+                        <FieldError>Cash received is less than the total.</FieldError>
                       )}
                     </label>
                     <div className="text-sm text-gray-600">
@@ -613,20 +609,14 @@ function ProcessPayment({
       </div>
 
       {forwardError && (
-        <p
-          role="alert"
-          className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
-        >
+        <ErrorMessage className="mt-4">
           {forwardError}
-        </p>
+        </ErrorMessage>
       )}
       {printError && (
-        <p
-          role="alert"
-          className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
-        >
+        <ErrorMessage className="mt-4">
           {printError}
-        </p>
+        </ErrorMessage>
       )}
       <div className="mt-5 flex flex-wrap justify-end gap-3 text-xs">
         <button

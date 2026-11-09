@@ -1,3 +1,4 @@
+import ErrorMessage from "../../../../components/ErrorMessage";
 import React, { useRef, useState, type Dispatch, type SetStateAction } from "react";
 import type { Queue } from "../../../../interface/Queue";
 import api from "#lib/axios";
@@ -150,9 +151,9 @@ function QueueTable({
   return (
     <>
       {acceptError && (
-        <p role="alert" className="border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+        <ErrorMessage>
           {acceptError}
-        </p>
+        </ErrorMessage>
       )}
 
       <table className="w-full table-fixed">

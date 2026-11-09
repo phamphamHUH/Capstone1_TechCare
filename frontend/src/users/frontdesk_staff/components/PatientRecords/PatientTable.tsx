@@ -1,3 +1,4 @@
+import EmptyState from "../../../../components/EmptyState";
 import { useSearchParams } from "react-router";
 import type { Patient } from "../../../../interface/Patient";
 import calculateAge from "../../../../utils/calculateAge";
@@ -5,10 +6,11 @@ import { formatAge, formatPatientAddress } from "../../../../utils/formats";
 
 type PatientTableProps = {
   patients: Patient[];
+  loadFailed?: boolean;
   onEdit?: (patient: Patient) => void;
 };
 
-function PatientTable({ patients, onEdit }: PatientTableProps) {
+function PatientTable({ patients, onEdit, loadFailed }: PatientTableProps) {
   const [, setSearchParams] = useSearchParams();
 
   const handleViewHistory = (patientId: string) => {
@@ -131,9 +133,7 @@ function PatientTable({ patients, onEdit }: PatientTableProps) {
             })
           ) : (
             <tr>
-              <td colSpan={7} className="px-4 py-16 text-center text-gray-400">
-                No patients found.
-              </td>
+              <td colSpan={7} className="p-4"><EmptyState compact message={loadFailed ? "Patient records are unavailable." : "No patients found."} /></td>
             </tr>
           )}
         </tbody>

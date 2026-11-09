@@ -1,7 +1,9 @@
+import ErrorMessage from "../../../../components/ErrorMessage";
+import EmptyState from "../../../../components/EmptyState";
 import LoadingScreen from "../../../../components/LoadingScreen";
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
-import { AlertCircle, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import calculateAge from "../../../../utils/calculateAge.ts";
 import PrescriptionManager from "../prescription/PrescriptionManager.tsx";
 import type { PatientInfo } from "../prescription/types.ts";
@@ -185,7 +187,7 @@ export default function ConsultationWorkspace({ initialTab = "consultation" }: P
     return (
       <div className="bg-white border border-gray-200 rounded-2xl shadow-xs p-8 max-w-xl mx-auto text-center">
         <h2 className="text-base font-bold text-gray-900">Select a patient</h2>
-        <p className="text-xs text-gray-500 mt-1 mb-5">Enter a patient ID to start recording findings or a laboratory request.</p>
+        <EmptyState message="Enter a patient ID to start recording findings or a laboratory request." />
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -210,9 +212,7 @@ export default function ConsultationWorkspace({ initialTab = "consultation" }: P
           </button>
         </form>
         {patientError && (
-          <p role="alert" className="flex items-center justify-center gap-1.5 text-xs text-red-600 mt-3">
-            <AlertCircle size={13} /> {patientError}
-          </p>
+          <ErrorMessage className="mt-3">{patientError}</ErrorMessage>
         )}
       </div>
     );

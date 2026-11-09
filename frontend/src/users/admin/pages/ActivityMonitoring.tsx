@@ -1,4 +1,5 @@
 import LoadingScreen from "../../../components/LoadingScreen";
+import ErrorMessage from "../../../components/ErrorMessage";
 import { useEffect, useState } from "react";
 import ActivityDetails from "../components/ActivityMonitoring/ActivityDetails";
 import ActivityTable from "../components/ActivityMonitoring/ActivityTable";
@@ -20,12 +21,14 @@ type ActivityMonitoringModalProps = {
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   loadData: () => Promise<void>;
   loading: boolean;
+  error?: string;
 };
 
 function ActivityMonitoring({
   activities,
   loadData,
   loading,
+  error,
 }: ActivityMonitoringModalProps) {
   useEffect(() => {
     loadData();
@@ -120,6 +123,7 @@ function ActivityMonitoring({
             <h3 className="font-light">Track Activities</h3>
           </div>
         </div>
+        {error && <ErrorMessage className="mb-5">{error}</ErrorMessage>}
         <div>
           <ActivityStats stats={stats} />
         </div>
@@ -139,6 +143,7 @@ function ActivityMonitoring({
           <div className="min-w-0 flex-1">
             <ActivityTable
               activities={filteredActivities}
+              error={error}
               selectedActivityId={selectedFormId}
               setSelectedForm={setSelectedFormId}
               setShowActivityDetails={setShowActivityDetails}

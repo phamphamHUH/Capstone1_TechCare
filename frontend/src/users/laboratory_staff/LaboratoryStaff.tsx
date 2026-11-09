@@ -12,11 +12,11 @@ import type { Service } from "../../interface/Service";
 function LaboratoryStaff() {
   const [open, setOpen] = useState(true);
   const [searchParams, setSearchParams] = useSearchParams();
-  const [requestItems, setRequestItems] = useState<Request[]>([]);
   const [queues, setQueues] = useState<QueueEntry[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [queueLoadFailed, setQueueLoadFailed] = useState(false);
   const refreshing = useRef(false);
 
   const page = searchParams.get("page") ?? "dashboard";
@@ -34,24 +34,32 @@ function LaboratoryStaff() {
       if (refreshing.current) return;
       refreshing.current = true;
       if (!background) setLoading(true);
-      setError(null);
-
       try {
-        const queueResponse = await api.get(
-          `/api/labstaff/laboratory-queues/room/${room}`,
-        );
-        const serviceResponse = await api.get(`/api/labstaff/services/${room}`);
-        setQueues(queueResponse.data ?? []);
-        setServices(serviceResponse.data ?? []);
-      } catch (err) {
-        const message =
-          (err as { response?: { data?: { message?: string } } })?.response
-            ?.data?.message || "Unable to fetch data.";
-        setError(message);
-        if (!background) {
-          setQueues([]);
-          setServices([]);
+        const [queueResponse, serviceResponse] = await Promise.allSettled([
+          api.get(
+            `/api/labstaff/laboratory-queues/room/${encodeURIComponent(room)}`,
+          ),
+          api.get(`/api/labstaff/services/${encodeURIComponent(room)}`),
+        ]);
+        const errors: string[] = [];
+        const queuesLoaded =
+          queueResponse.status === "fulfilled" &&
+          Array.isArray(queueResponse.value.data);
+        setQueueLoadFailed(!queuesLoaded);
+        if (queuesLoaded) {
+          setQueues(queueResponse.value.data);
+        } else {
+          errors.push("Laboratory queue entries could not be loaded.");
         }
+        if (
+          serviceResponse.status === "fulfilled" &&
+          Array.isArray(serviceResponse.value.data)
+        ) {
+          setServices(serviceResponse.value.data);
+        } else {
+          errors.push("Laboratory services could not be loaded.");
+        }
+        setError(errors.join(" ") || null);
       } finally {
         refreshing.current = false;
         if (!background) setLoading(false);
@@ -89,6 +97,7 @@ function LaboratoryStaff() {
       <SideBar open={open} page={page} setPage={setPage} navItems={navItems} />
       {page === "dashboard" && (
         <LabstaffDashboard
+          error={error}
           open={open}
           setOpen={setOpen}
           loading={loading}
@@ -106,6 +115,7 @@ function LaboratoryStaff() {
           error={error}
           loadData={loadData}
           room={room}
+          queueLoadFailed={queueLoadFailed}
         />
       )}
 

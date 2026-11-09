@@ -1,3 +1,5 @@
+import ErrorMessage from "../../../components/ErrorMessage";
+import EmptyState from "../../../components/EmptyState";
 import LoadingScreen from "../../../components/LoadingScreen";
 import { useCallback, useState, type ReactNode } from "react";
 import {
@@ -27,7 +29,9 @@ import RevenueChart from "../components/Dashboard/RevenueChart";
 import SalesBreakdown from "../components/Dashboard/SalesBreakdown";
 import TopServicesTable from "../components/Dashboard/TopServicesTable";
 import ServiceCatalogTable from "../components/Dashboard/ServiceCatalogTable";
-import DetailModal, { type OpenDetail } from "../components/Dashboard/DetailModal";
+import DetailModal, {
+  type OpenDetail,
+} from "../components/Dashboard/DetailModal";
 import type { SalesDetailKind } from "../components/Dashboard/DetailModal/SalesDetails";
 import type { InventoryDetailKind } from "../components/Dashboard/DetailModal/InventoryDetails";
 import {
@@ -58,30 +62,41 @@ function AdminDashboard({
   loading,
   error,
 }: AdminDashboardProps) {
-  const rangeOption = RANGE_OPTIONS.find((option) => option.value === range) ?? RANGE_OPTIONS[2];
+  const rangeOption =
+    RANGE_OPTIONS.find((option) => option.value === range) ?? RANGE_OPTIONS[2];
   const summary = sales?.summary;
   const catalog = services?.summary;
 
   const [openDetail, setOpenDetail] = useState<OpenDetail | null>(null);
   const closeDetail = useCallback(() => setOpenDetail(null), []);
-  const openSales = (kind: SalesDetailKind) => () => setOpenDetail({ group: "sales", kind });
-  const openInventory = (kind: InventoryDetailKind) => () => setOpenDetail({ group: "inventory", kind });
+  const openSales = (kind: SalesDetailKind) => () =>
+    setOpenDetail({ group: "sales", kind });
+  const openInventory = (kind: InventoryDetailKind) => () =>
+    setOpenDetail({ group: "inventory", kind });
 
   const periodLabel = range === "today" ? "Today" : `Last ${rangeOption.label}`;
 
   return (
     <main className="min-w-0">
-      <div className={`space-y-6 px-6 transition-opacity ${loading ? "opacity-60" : ""}`}>
+      <div
+        className={`space-y-6 px-6 transition-opacity ${loading ? "opacity-60" : ""}`}
+      >
         {/* Range selector */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold">Sales &amp; Service Analytics</h2>
+            <h2 className="text-lg font-semibold">
+              Sales &amp; Service Analytics
+            </h2>
             <p className="text-sm text-gray-500">
               Paid bills and service orders · Manila time
             </p>
           </div>
 
-          <div role="group" aria-label="Date range" className="inline-flex rounded-lg border border-gray-300 bg-white p-0.5">
+          <div
+            role="group"
+            aria-label="Date range"
+            className="inline-flex rounded-lg border border-gray-300 bg-white p-0.5"
+          >
             {RANGE_OPTIONS.map((option) => (
               <button
                 key={option.value}
@@ -100,17 +115,14 @@ function AdminDashboard({
           </div>
         </div>
 
-        {error && (
-          <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-            {error}
-          </p>
-        )}
+        {error && <ErrorMessage>{error}</ErrorMessage>}
 
         {!sales && !services && loading && (
           <LoadingScreen message="Loading analytics…" />
         )}
 
         {/* ================= SALES ================= */}
+        {error && !sales && <UnavailableAnalytics />}
         {summary && sales && (
           <>
             <section className="bg-white border border-gray-300 rounded-2xl overflow-hidden">
@@ -121,7 +133,10 @@ function AdminDashboard({
                   onClick={openSales("revenue")}
                   value={formatPesoWhole(summary.revenue)}
                   caption={`vs ${rangeOption.previous}`}
-                  change={percentChange(summary.revenue, summary.previous_revenue)}
+                  change={percentChange(
+                    summary.revenue,
+                    summary.previous_revenue,
+                  )}
                   changeLabel={`${rangeOption.previous}: ${formatPeso(summary.previous_revenue)}`}
                 />
                 <StatTile
@@ -130,7 +145,10 @@ function AdminDashboard({
                   onClick={openSales("paid-bills")}
                   value={formatNumber(summary.paid_bills)}
                   caption={`vs ${rangeOption.previous}`}
-                  change={percentChange(summary.paid_bills, summary.previous_paid_bills)}
+                  change={percentChange(
+                    summary.paid_bills,
+                    summary.previous_paid_bills,
+                  )}
                   changeLabel={`${rangeOption.previous}: ${summary.previous_paid_bills}`}
                 />
                 <StatTile
@@ -165,7 +183,10 @@ function AdminDashboard({
                 subtitle={`Paid bills after discounts, by ${sales.bucket}`}
               >
                 <div className="px-6 pt-10 pb-6">
-                  <RevenueChart timeline={sales.timeline} bucket={sales.bucket} />
+                  <RevenueChart
+                    timeline={sales.timeline}
+                    bucket={sales.bucket}
+                  />
                 </div>
               </Panel>
 
@@ -194,6 +215,7 @@ function AdminDashboard({
         )}
 
         {/* ================= SERVICE CATALOG (INVENTORY) ================= */}
+        {error && !services && <UnavailableAnalytics inventory />}
         {catalog && services && (
           <>
             <section className="bg-white border border-gray-300 rounded-2xl overflow-hidden">
@@ -285,9 +307,102 @@ type PanelProps = {
   bodyClassName?: string;
 };
 
-function Panel({ icon, title, subtitle, children, className = "", bodyClassName = "" }: PanelProps) {
+function UnavailableAnalytics({ inventory = false }: { inventory?: boolean }) {
+  const metrics = inventory
+    ? [
+        { icon: PackageCheck, label: "Active Services" },
+        { icon: PackageX, label: "Inactive Services" },
+        { icon: Tag, label: "Average Price" },
+        { icon: ShoppingCart, label: "Orders" },
+        { icon: CircleSlash, label: "Not Ordered" },
+      ]
+    : [
+        { icon: Banknote, label: "Revenue" },
+        { icon: Receipt, label: "Paid Bills" },
+        { icon: Calculator, label: "Average Bill" },
+        { icon: BadgePercent, label: "Discounts Given" },
+        { icon: Hourglass, label: "Outstanding" },
+      ];
   return (
-    <section className={`bg-white border border-gray-300 rounded-2xl overflow-hidden min-w-0 ${className}`}>
+    <>
+      <section className="overflow-hidden rounded-2xl border border-gray-300 bg-white">
+        {inventory && (
+          <h2 className="border-b border-gray-300 px-6 py-5 text-lg font-semibold">
+            Service Inventory
+          </h2>
+        )}
+        <div className="grid grid-cols-1 divide-y divide-gray-300 sm:grid-cols-2 sm:divide-y-0 sm:divide-x xl:grid-cols-5">
+          {metrics.map(({ icon: Icon, label }) => (
+            <StatTile
+              key={label}
+              icon={<Icon {...iconProps} />}
+              label={label}
+              value="—"
+              caption="Data unavailable"
+            />
+          ))}
+        </div>
+      </section>
+      {inventory ? (
+        <Panel
+          icon={<Package {...iconProps} />}
+          title="Service Catalog"
+          subtitle="Services offered and their orders"
+        >
+          <div className="p-4">
+            <EmptyState message="Service data is unavailable." />
+          </div>
+        </Panel>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+            <Panel
+              className="xl:col-span-2"
+              icon={<TrendingUp {...iconProps} />}
+              title="Revenue Over Time"
+              subtitle="Paid bills after discounts"
+            >
+              <div className="p-4">
+                <EmptyState message="Revenue data is unavailable." />
+              </div>
+            </Panel>
+            <Panel
+              icon={<PieChart {...iconProps} />}
+              title="Sales Breakdown"
+              subtitle="Selected period"
+            >
+              <div className="p-4">
+                <EmptyState message="Sales data is unavailable." />
+              </div>
+            </Panel>
+          </div>
+          <Panel
+            icon={<Trophy {...iconProps} />}
+            title="Top-Selling Services"
+            subtitle="Ranked by revenue, before discounts"
+          >
+            <div className="p-4">
+              <EmptyState message="Service sales data is unavailable." />
+            </div>
+          </Panel>
+        </>
+      )}
+    </>
+  );
+}
+
+function Panel({
+  icon,
+  title,
+  subtitle,
+  children,
+  className = "",
+  bodyClassName = "",
+}: PanelProps) {
+  return (
+    <section
+      className={`bg-white border border-gray-300 rounded-2xl overflow-hidden min-w-0 ${className}`}
+    >
       <div className="px-6 py-5 border-b border-gray-300">
         <div className="flex items-center gap-3">
           {icon}

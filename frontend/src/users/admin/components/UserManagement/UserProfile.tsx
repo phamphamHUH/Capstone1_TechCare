@@ -1,3 +1,4 @@
+import ErrorMessage from "../../../../components/ErrorMessage";
 import api from "#lib/axios";
 import { useState } from "react";
 import type { User } from "../../../../interface/User";
@@ -19,6 +20,7 @@ function UserProfile({
   setShowUpdateUser,
   setSelectedUser,
 }: Props) {
+  const [formError, setFormError] = useState("");
   const [updating, setUpdating] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -44,6 +46,7 @@ function UserProfile({
   };
 
   async function updateAccountStatus() {
+    setFormError("");
     setIsModalOpen(false); // Close modal first
     setUpdating(true);
 
@@ -62,7 +65,7 @@ function UserProfile({
       alert(response.data.message);
       await loadData();
     } catch (error: unknown) {
-      alert(
+      setFormError(
         (
           error as {
             response?: {
@@ -71,7 +74,7 @@ function UserProfile({
               };
             };
           }
-        ).response?.data?.message || "Something went wrong",
+        ).response?.data?.message || "Unable to complete this action. Please try again.",
       );
     } finally {
       setUpdating(false);
@@ -110,6 +113,7 @@ function UserProfile({
 
         {/* Content */}
         <div className="max-h-[82vh] overflow-y-auto p-6">
+          {formError && <ErrorMessage className="mb-4">{formError}</ErrorMessage>}
           {/* Profile Hero */}
           <div className="overflow-hidden rounded-3xl bg-white shadow-sm">
             <div className="h-36 bg-linear-to-r from-gray-100 via-gray-50 to-gray-100" />

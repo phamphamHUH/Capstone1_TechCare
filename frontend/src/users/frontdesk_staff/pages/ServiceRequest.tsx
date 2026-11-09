@@ -1,4 +1,5 @@
 import LoadingScreen from "../../../components/LoadingScreen";
+import ErrorMessage from "../../../components/ErrorMessage";
 import React, { useState } from "react";
 import ServiceTypeTabs from "../components/ServiceRequest/ServiceTypeTabs";
 import ServiceSelectionPanel from "../components/ServiceRequest/ServiceSelectionPanel";
@@ -14,11 +15,18 @@ type ServiceRequestProps = {
   loadData: () => Promise<void>;
   loading: boolean;
   setPage: (page: string) => void;
+  error?: string;
 };
 
 const PAGE_SIZE = 10;
 
-function ServiceRequest({ services, loadData, setPage, loading }: ServiceRequestProps) {
+function ServiceRequest({
+  services,
+  loadData,
+  setPage,
+  loading,
+  error,
+}: ServiceRequestProps) {
   const [activeTab, setActiveTab] = useState("laboratory");
   const [patient, setPatient] = useState<Patient | null>(null);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
@@ -98,12 +106,15 @@ function ServiceRequest({ services, loadData, setPage, loading }: ServiceRequest
   const clearServices = () => setSelectedServices([]);
 
   if (loading && services.length === 0) {
-    return <LoadingScreen variant="page" message="Loading available services..." />;
+    return (
+      <LoadingScreen variant="page" message="Loading available services..." />
+    );
   }
 
   return (
     <main className="flex-1 min-w-0 pb-5">
       <h1 className="text-2xl font-bold px-6">Select Service Type</h1>
+      {error && <ErrorMessage className="mx-6 mt-5">{error}</ErrorMessage>}
       <PatientSelectionHeader
         patient={patient}
         onSelectPatient={setPatient}
@@ -118,6 +129,7 @@ function ServiceRequest({ services, loadData, setPage, loading }: ServiceRequest
         <div className="col-span-3 border-r border-gray-200 px-8 py-5 flex flex-col justify-between">
           <ServiceSelectionPanel
             services={pageItems}
+            loadFailed={Boolean(error)}
             activeTab={activeTab}
             search={search}
             setSearch={handleSearch}

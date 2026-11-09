@@ -1,14 +1,7 @@
+import ErrorMessage from "../../../../components/ErrorMessage";
+import EmptyState from "../../../../components/EmptyState";
 import React, { useState } from "react";
-import {
-  Search,
-  Plus,
-  Pill,
-  Pencil,
-  Trash2,
-  AlertCircle,
-  FileCheck2,
-  X,
-} from "lucide-react";
+import { Search, Plus, Pill, Pencil, Trash2, FileCheck2, X } from "lucide-react";
 import type { Medication, PatientInfo } from "./types";
 import { COMMON_MEDICATIONS } from "./mockData";
 import PatientPrescriptionCard from "./PatientPrescriptionCard";
@@ -228,10 +221,7 @@ export default function CreatePrescriptionView({
 
           {/* Validation error */}
           {formError && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2 text-xs text-red-700">
-              <AlertCircle size={15} className="shrink-0 text-red-500" />
-              <span>{formError}</span>
-            </div>
+            <ErrorMessage className="mb-4">{formError}</ErrorMessage>
           )}
 
           {/* Medication Input Fields Form */}
@@ -377,9 +367,7 @@ export default function CreatePrescriptionView({
                 <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center mb-3">
                   <Pill size={26} />
                 </div>
-                <p className="text-xs font-bold text-gray-700">
-                  No medications added yet
-                </p>
+                <EmptyState message="No medications added yet." />
                 <p className="text-[11px] text-gray-400 mt-1 max-w-xs leading-relaxed">
                   Fill in the medication details on the left form and click "Add to Prescription".
                 </p>

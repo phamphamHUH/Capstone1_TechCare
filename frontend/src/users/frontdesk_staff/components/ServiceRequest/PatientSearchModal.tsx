@@ -1,3 +1,5 @@
+import EmptyState from "../../../../components/EmptyState";
+import ErrorMessage from "../../../../components/ErrorMessage";
 import LoadingScreen from "../../../../components/LoadingScreen";
 import { useEffect, useMemo, useState } from "react";
 import { Phone, Search, UserPlus, X, Check } from "lucide-react";
@@ -187,14 +189,13 @@ function PatientSearchModal({
 
         {/* List */}
         <div className="mt-3 min-h-0 flex-1 overflow-y-auto bg-gray-50 px-6 py-3">
+          {error && (
+            <ErrorMessage>{error}</ErrorMessage>
+          )}
           {loading ? (
             <LoadingScreen message="Loading patients..." />
-          ) : error ? (
-            <p className="py-10 text-center text-sm text-red-500">{error}</p>
-          ) : filtered.length === 0 ? (
-            <p className="py-10 text-center text-sm text-gray-400">
-              No patients found.
-            </p>
+          ) : ((filtered.length === 0 ? (
+            <EmptyState message="No patients found." />
           ) : (
             <ul className="flex flex-col gap-3">
               {filtered.map((p) => {
@@ -271,7 +272,7 @@ function PatientSearchModal({
                 );
               })}
             </ul>
-          )}
+          )))}
         </div>
 
         {/* Footer */}

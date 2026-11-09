@@ -1,3 +1,5 @@
+import EmptyState from "../../../../components/EmptyState";
+import ErrorMessage from "../../../../components/ErrorMessage";
 import LoadingScreen from "../../../../components/LoadingScreen";
 
 import { ChevronDown, ChevronUp } from "lucide-react";
@@ -101,9 +103,9 @@ function QueueTable({
   return (
     <>
       {acceptError && (
-        <p className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+        <ErrorMessage>
           {acceptError}
-        </p>
+        </ErrorMessage>
       )}
 
       <table className="w-full table-fixed">
@@ -247,13 +249,11 @@ function QueueTable({
                     {accordionLoading ? (
                       <LoadingScreen message="Loading laboratory items..." />
                     ) : accordionError ? (
-                      <p className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+                      <ErrorMessage>
                         {accordionError}
-                      </p>
+                      </ErrorMessage>
                     ) : laboratoryItems.length === 0 ? (
-                      <p className="text-sm text-gray-500">
-                        No laboratory items found.
-                      </p>
+                      <EmptyState message="No laboratory items found." />
                     ) : (
                       <table className="w-full table-fixed bg-gray-100">
                         <colgroup>

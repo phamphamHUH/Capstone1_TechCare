@@ -1,6 +1,7 @@
+import EmptyState from "../../../../components/EmptyState";
 import LoadingScreen from "../../../../components/LoadingScreen";
 import { useState } from "react";
-import { ReceiptText } from "lucide-react";
+
 import type { Bill } from "../../../../interface/Billing";
 import { formatDateTime, peso } from "../../../../utils/formats";
 
@@ -9,6 +10,7 @@ type BillingTableProps = {
   variant: "queue" | "history";
   loading: boolean;
   emptyMessage: string;
+  error?: string;
   onOpen: (bill: Bill) => void;
 };
 
@@ -36,6 +38,7 @@ function BillingTable({
   variant,
   loading,
   emptyMessage,
+  error,
   onOpen,
 }: BillingTableProps) {
   const [page, setPage] = useState(1);
@@ -155,15 +158,8 @@ function BillingTable({
       </div>
 
       {rows.length === 0 && (
-        <div className="flex flex-col items-center gap-2 px-4 py-16 text-center text-gray-400">
-          {loading ? (
-            <LoadingScreen message="Loading bills..." className="min-h-0 py-0" />
-          ) : (
-            <>
-              <ReceiptText size={28} />
-              <p>{emptyMessage}</p>
-            </>
-          )}
+        <div className="p-4">
+          {loading ? <LoadingScreen message="Loading bills..." /> : <EmptyState message={error ? "Bills are unavailable." : emptyMessage} />}
         </div>
       )}
 

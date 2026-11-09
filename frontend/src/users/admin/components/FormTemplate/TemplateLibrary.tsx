@@ -1,3 +1,4 @@
+import EmptyState from "../../../../components/EmptyState";
 import { LoadingSpinner } from "../../../../components/LoadingScreen";
 import { useMemo, useState } from "react";
 import api from "#lib/axios";
@@ -233,6 +234,7 @@ export default function TemplateLibrary({
                 : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4"
             }`}
           >
+            {sortedTemplates.length === 0 && <EmptyState className="col-span-full" message="No templates found." description={searchQuery.trim() ? "Try changing or clearing your search." : "Create a template to get started."} />}
             {sortedTemplates.map((tpl) => {
               const isSelected = selectedTemplate?.form_id === tpl.form_id;
               return (

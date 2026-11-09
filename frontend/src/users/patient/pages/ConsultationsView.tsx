@@ -1,3 +1,5 @@
+import EmptyState from "../../../components/EmptyState";
+import ErrorMessage from "../../../components/ErrorMessage";
 import LoadingScreen from "../../../components/LoadingScreen";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -86,8 +88,6 @@ function ConsultationsView({ patient, patientId }: Props) {
         });
       } catch (requestError) {
         console.error("Unable to load patient consultation history:", requestError);
-        setRecords([]);
-        setSelectedId(null);
         setError("Unable to load consultation history.");
       } finally {
         setLoading(false);
@@ -144,16 +144,15 @@ function ConsultationsView({ patient, patientId }: Props) {
           </div>
 
           <div className="min-h-[380px] p-3">
-            {loading ? (
-              <LoadingScreen message="Loading consultation history..." />
-            ) : error ? (
-              <div className="flex h-72 items-center justify-center text-sm text-rose-500">
+            {error && (
+              <ErrorMessage>
                 {error}
-              </div>
-            ) : records.length === 0 ? (
-              <div className="flex h-72 items-center justify-center text-sm text-slate-400">
-                No consultation records found.
-              </div>
+              </ErrorMessage>
+            )}
+            {loading && records.length === 0 ? (
+              <LoadingScreen message="Loading consultation history..." />
+            ) : ((records.length === 0 ? (
+              <EmptyState message={error ? "Consultation records are unavailable." : "No consultation records found."} />
             ) : (
               <div className="divide-y divide-slate-100">
                 {records.map((record) => {
@@ -195,7 +194,7 @@ function ConsultationsView({ patient, patientId }: Props) {
                   );
                 })}
               </div>
-            )}
+            )))}
           </div>
 
           <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3 text-[10px] text-slate-400">
@@ -229,9 +228,7 @@ function ConsultationsView({ patient, patientId }: Props) {
           <h2 className="text-sm font-bold text-slate-900">Visit Details</h2>
 
           {!selected ? (
-            <div className="flex h-64 items-center justify-center text-center text-xs text-slate-400">
-              Select a consultation to view its details.
-            </div>
+            <EmptyState message="Select a consultation to view its details." />
           ) : (
             <div className="mt-4 space-y-4">
               <div className="flex items-start gap-3">

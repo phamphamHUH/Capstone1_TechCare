@@ -15,6 +15,7 @@ type ConsultationQueueProps = {
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   loading: boolean;
   error: string | null;
+  queueLoadFailed?: boolean;
 };
 
 function ConsultationQueue({
@@ -24,6 +25,7 @@ function ConsultationQueue({
   loadData,
   loading,
   error,
+  queueLoadFailed,
 }: ConsultationQueueProps) {
   const [openQueueAccordion, setOpenQueueAccordion] = useState<string | null>(
     null,
@@ -51,6 +53,7 @@ function ConsultationQueue({
         services={services}
         loading={loading}
         error={error}
+        loadFailed={queueLoadFailed}
         room={room}
         loadData={loadData}
         openQueueAccordion={openQueueAccordion}

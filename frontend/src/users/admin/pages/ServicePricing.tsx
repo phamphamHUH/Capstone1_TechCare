@@ -1,3 +1,5 @@
+import EmptyState from "../../../components/EmptyState";
+import ErrorMessage from "../../../components/ErrorMessage";
 import LoadingScreen from "../../../components/LoadingScreen";
 import AddService from "../components/ServicePricing/AddService";
 import { isAxiosError } from "axios";
@@ -21,6 +23,7 @@ type ServicePricingProps = {
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   loadData(): Promise<void>;
   loading: boolean;
+  error?: string;
 };
 
 type ServiceFilter =
@@ -53,7 +56,12 @@ function formatPrice(price: number): string {
   }).format(price);
 }
 
-function ServicePricing({ services, loadData, loading }: ServicePricingProps) {
+function ServicePricing({
+  services,
+  loadData,
+  loading,
+  error,
+}: ServicePricingProps) {
   const [search, setSearch] = useState("");
   const [showAddService, setShowAddService] = useState(false);
   const [servicesFilter, setServicesFilter] = useState<ServiceFilter>("all");
@@ -139,7 +147,7 @@ function ServicePricing({ services, loadData, loading }: ServicePricingProps) {
             "Failed to delete service. Please try again.",
         );
       } else {
-        setErrorMessage("An unexpected error occurred.");
+        setErrorMessage("The service could not be deleted.");
       }
 
       setShowDeleteModal(false);
@@ -171,6 +179,8 @@ function ServicePricing({ services, loadData, loading }: ServicePricingProps) {
           <PlusIcon size={20} />
         </button>
       </div>
+
+      {error && <ErrorMessage className="mx-6 mb-5">{error}</ErrorMessage>}
 
       {showAddService && (
         <AddService
@@ -349,7 +359,17 @@ function ServicePricing({ services, loadData, loading }: ServicePricingProps) {
                     colSpan={8}
                     className="px-4 py-6 text-center text-gray-500"
                   >
-                    {loading ? <LoadingScreen message="Loading services..." /> : "No services found."}
+                    {loading ? (
+                      <LoadingScreen message="Loading services..." />
+                    ) : (
+                      <EmptyState
+                        message={
+                          error
+                            ? "Services are unavailable."
+                            : "No services found."
+                        }
+                      />
+                    )}
                   </td>
                 </tr>
               )}

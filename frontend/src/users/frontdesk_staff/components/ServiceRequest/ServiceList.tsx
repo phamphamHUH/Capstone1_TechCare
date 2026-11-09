@@ -1,3 +1,5 @@
+import ErrorMessage from "../../../../components/ErrorMessage";
+import EmptyState from "../../../../components/EmptyState";
 import { LoadingSpinner } from "../../../../components/LoadingScreen";
 import { useRef, useState } from "react";
 import {
@@ -131,15 +133,7 @@ function ServiceList({
 
         <div className="flex flex-col gap-2 h-96 overflow-y-auto">
           {servicesList.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-96 gap-1">
-              <div className="p-3 rounded-2xl bg-blue-50 text-blue-600 mb-2">
-                <Syringe size={20} />
-              </div>
-              <p className="text-sm font-bold">No services selected yet.</p>
-              <p className="text-xs text-gray-500">
-                Select your preferred services on the left to add.
-              </p>
-            </div>
+            <EmptyState message="No services selected." description="Select services from the list to add them to this request." />
           ) : (
             servicesList.map((service) => (
               <div
@@ -173,12 +167,11 @@ function ServiceList({
         </div>
       </div>
 
+      {error && <ErrorMessage className="mt-3">{error}</ErrorMessage>}
       <div
         className={`border-t mt-5 border-gray-200 py-3 flex items-center ${servicesList.length > 0 ? "justify-between" : "justify-end"}`}
       >
-        {error ? (
-          <p className="text-xs text-red-500">{error}</p>
-        ) : initialTotalPrice > 0 ? (
+        {initialTotalPrice > 0 ? (
           <h1 className="font-semibold">
             Initial Total Price: ₱
             {initialTotalPrice.toLocaleString("en-PH", {

@@ -14,6 +14,7 @@ type LaboratoryRequestsProps = {
   services: Service[];
   loading: boolean;
   error: string | null;
+  queueLoadFailed?: boolean;
   loadData: (background?: boolean) => Promise<void>;
   room: string;
 };
@@ -25,6 +26,7 @@ function LaboratoryRequests({
   services,
   loading,
   error,
+  queueLoadFailed,
   loadData,
   room,
 }: LaboratoryRequestsProps) {
@@ -58,6 +60,7 @@ function LaboratoryRequests({
           services={services}
           loading={loading}
           error={error}
+          loadFailed={queueLoadFailed}
           setOpenQueueAccordion={setOpenQueueAccordion}
           openQueueAccordion={openQueueAccordion}
           setOpenInformationCard={setOpenInformationCard}

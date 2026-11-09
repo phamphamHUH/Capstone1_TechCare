@@ -1,3 +1,5 @@
+import EmptyState from "../../../components/EmptyState";
+import ErrorMessage from "../../../components/ErrorMessage";
 import LoadingScreen from "../../../components/LoadingScreen";
 import { useEffect, useMemo, useState } from "react";
 import { FileText, Pill, Search } from "lucide-react";
@@ -60,8 +62,6 @@ function PrescriptionsView({ patient, patientId }: Props) {
         });
       } catch (requestError) {
         console.error("Unable to load prescriptions:", requestError);
-        setPrescriptions([]);
-        setSelectedId(null);
         setError("Unable to load prescriptions.");
       } finally {
         setLoading(false);
@@ -127,14 +127,13 @@ function PrescriptionsView({ patient, patientId }: Props) {
           </div>
 
           <div className="max-h-[430px] overflow-y-auto p-2">
-            {loading ? (
+            {error && (
+              <ErrorMessage>{error}</ErrorMessage>
+            )}
+            {loading && prescriptions.length === 0 ? (
               <LoadingScreen message="Loading prescriptions..." />
-            ) : error ? (
-              <div className="flex h-64 items-center justify-center text-xs text-rose-500">{error}</div>
-            ) : filtered.length === 0 ? (
-              <div className="flex h-64 items-center justify-center text-xs text-slate-400">
-                No prescriptions found.
-              </div>
+            ) : ((filtered.length === 0 ? (
+              <EmptyState message={error ? "Prescriptions are unavailable." : "No prescriptions found."} />
             ) : (
               filtered.map((prescription) => {
                 const active = selected?.prescription_id === prescription.prescription_id;
@@ -178,15 +177,13 @@ function PrescriptionsView({ patient, patientId }: Props) {
                   </button>
                 );
               })
-            )}
+            )))}
           </div>
         </section>
 
         <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           {!selected ? (
-            <div className="flex h-full min-h-[420px] items-center justify-center text-sm text-slate-400">
-              Select a prescription to preview it.
-            </div>
+            <EmptyState message="Select a prescription to preview it." />
           ) : (
             <div className="mx-auto max-w-4xl rounded-xl border border-slate-200 bg-white p-6">
               <header className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-300 pb-4">
@@ -244,9 +241,7 @@ function PrescriptionsView({ patient, patientId }: Props) {
                 </div>
 
                 {items.length === 0 ? (
-                  <div className="px-4 py-8 text-center text-xs text-slate-400">
-                    No medication items were returned for this prescription.
-                  </div>
+                  <EmptyState message="No medication items were returned for this prescription." />
                 ) : (
                   items.map((item, index) => (
                     <div

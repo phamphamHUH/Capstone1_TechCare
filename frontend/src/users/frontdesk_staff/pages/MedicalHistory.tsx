@@ -1,3 +1,5 @@
+import EmptyState from "../../../components/EmptyState";
+import ErrorMessage from "../../../components/ErrorMessage";
 import LoadingScreen from "../../../components/LoadingScreen";
 import { ChevronRight } from "lucide-react";
 import PatientHeader from "../components/MedicalHistory/PatientHeader";
@@ -21,19 +23,21 @@ type MedicalHistoryProps = {
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   loadData: () => Promise<void>;
   loading: boolean;
+  loadFailed?: boolean;
+  error?: string;
 };
 function MedicalHistory({
   patients,
   selectedPatient,
   loading,
+  loadFailed,
+  error,
 }: MedicalHistoryProps) {
   const [, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<HistoryTab>("overview");
   const patient = patients.find((p) => p.patient_id === selectedPatient);
   return (
     <main className="flex-1 min-w-0">
-
-
       <div className="flex gap-1 items-center px-6 text-sm text-gray-400">
         <h1
           className="hover:text-black hover:scale-101 cursor-pointer"
@@ -44,6 +48,7 @@ function MedicalHistory({
         <ChevronRight size={17} />
         <h1 className="text-black">View Medical History</h1>
       </div>
+      {error && <ErrorMessage className="mx-6 mt-5">{error}</ErrorMessage>}
 
       {patient ? (
         <>
@@ -57,7 +62,14 @@ function MedicalHistory({
       ) : loading ? (
         <LoadingScreen message="Loading patients..." />
       ) : (
-        <p className="px-6 py-10 text-gray-400">Patient not found.</p>
+        <EmptyState
+          message={
+            loadFailed
+              ? "Patient details are unavailable."
+              : "Patient not found."
+          }
+          description="Select a patient from Patient Records to view their history."
+        />
       )}
     </main>
   );

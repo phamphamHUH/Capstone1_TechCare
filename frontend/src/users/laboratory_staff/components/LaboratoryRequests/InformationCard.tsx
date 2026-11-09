@@ -1,3 +1,5 @@
+import EmptyState from "../../../../components/EmptyState";
+import ErrorMessage from "../../../../components/ErrorMessage";
 import LoadingScreen from "../../../../components/LoadingScreen";
 import { useEffect, useState } from "react";
 import { X, UserRound, FileText } from "lucide-react";
@@ -39,7 +41,8 @@ function InformationCard({ onClose, queueIdCard, room }: InformationCardProps) {
         if (cancelled) return;
         const message =
           (err as { response?: { data?: { message?: string } } })?.response
-            ?.data?.message || "Unable to fetch data.";
+            ?.data?.message ||
+          "Laboratory request details could not be loaded.";
         setDetailError(message);
         setRequestDetail(null);
       } finally {
@@ -106,15 +109,9 @@ function InformationCard({ onClose, queueIdCard, room }: InformationCardProps) {
           </div>
 
           <div className="w-full h-full px-5 py-3 overflow-y-auto">
+            {detailError && <ErrorMessage>{detailError}</ErrorMessage>}
             {detailLoading ? (
               <LoadingScreen message="Loading laboratory request..." />
-            ) : detailError ? (
-              <div
-                role="alert"
-                className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700"
-              >
-                {detailError}
-              </div>
             ) : requestDetail ? (
               <div className="flex w-full h-full gap-6">
                 {/* PATIENT INFORMATION */}
@@ -347,9 +344,7 @@ function InformationCard({ onClose, queueIdCard, room }: InformationCardProps) {
                 </div>
               </div>
             ) : (
-              <div className="rounded-xl border border-gray-200 bg-gray-100 p-4 text-sm text-slate-700">
-                Select a request to view its patient and laboratory details.
-              </div>
+              <EmptyState message="Select a request to view its patient and laboratory details." />
             )}
           </div>
         </div>
