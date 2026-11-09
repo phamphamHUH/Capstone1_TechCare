@@ -1,3 +1,7 @@
+import EmptyState from "../../../../components/EmptyState";
+import ErrorMessage from "../../../../components/ErrorMessage";
+import LoadingScreen from "../../../../components/LoadingScreen";
+import LoadingRegion from "../../../../components/LoadingRegion";
 import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import api from "../../../../lib/axios";
 import QueueTabs, { type MainFilter } from "./QueueTabs";
@@ -12,6 +16,7 @@ type RequestTableProps = {
   services?: Service[];
   loading: boolean;
   error: string | null;
+  loadFailed?: boolean;
   setOpenQueueAccordion: Dispatch<SetStateAction<string | null>>;
   openQueueAccordion: string | null;
   setOpenInformationCard: Dispatch<SetStateAction<boolean>>;
@@ -33,6 +38,7 @@ function LaboratoryQueuePanel({
   queues,
   loading,
   error,
+  loadFailed = Boolean(error),
   setOpenQueueAccordion,
   openQueueAccordion,
   setOpenInformationCard,
@@ -75,7 +81,7 @@ function LaboratoryQueuePanel({
         if (cancelled) return;
         const message =
           (err as { response?: { data?: { message?: string } } })?.response
-            ?.data?.message || "Unable to fetch data.";
+            ?.data?.message || "Laboratory request items could not be loaded.";
         setAccordionError(message);
         setLaboratoryItems([]);
       } finally {
@@ -205,37 +211,40 @@ function LaboratoryQueuePanel({
         setPriority={setPriorityFilter}
       />
 
-      {loading ? (
-        <div className="w-full mb-8 rounded-xl border border-gray-200 bg-gray-100 p-4 text-center text-sm">
-          Loading {loadingLabel}laboratory queues...
-        </div>
-      ) : error ? (
-        <div
-          role="alert"
-          className="w-full mb-8 rounded-xl border border-rose-200 bg-rose-50 p-4 text-center text-sm text-rose-700"
-        >
-          {error}
-        </div>
-      ) : filterQueues.length === 0 ? (
-        <div className="w-full mb-8  border border-gray-200 bg-gray-100 p-4 text-center text-sm">
-          No laboratory requests found.
-        </div>
-      ) : (
-        <div className="w-full mb-8">
-          <QueueTable
-            filterQueues={filterQueues}
-            laboratoryItems={laboratoryItems}
-            accordionError={accordionError}
-            accordionLoading={accordionLoading}
-            setOpenQueueAccordion={setOpenQueueAccordion}
-            openQueueAccordion={openQueueAccordion}
-            setOpenInformationCard={setOpenInformationCard}
-            setQueueIdCard={setQueueIdCard}
-            room={room}
-            loadData={loadData}
+      {error && <ErrorMessage className="mx-4">{error}</ErrorMessage>}
+      <LoadingRegion
+        loading={loading && queues.length > 0}
+        message="Refreshing laboratory queues..."
+      >
+        {loading && queues.length === 0 ? (
+          <LoadingScreen
+            message={`Loading ${loadingLabel}laboratory queues...`}
           />
-        </div>
-      )}
+        ) : filterQueues.length === 0 ? (
+          <EmptyState
+            message={
+              loadFailed
+                ? "Laboratory requests are unavailable."
+                : "No laboratory requests found."
+            }
+          />
+        ) : (
+          <div className="w-full mb-8">
+            <QueueTable
+              filterQueues={filterQueues}
+              laboratoryItems={laboratoryItems}
+              accordionError={accordionError}
+              accordionLoading={accordionLoading}
+              setOpenQueueAccordion={setOpenQueueAccordion}
+              openQueueAccordion={openQueueAccordion}
+              setOpenInformationCard={setOpenInformationCard}
+              setQueueIdCard={setQueueIdCard}
+              room={room}
+              loadData={loadData}
+            />
+          </div>
+        )}
+      </LoadingRegion>
     </div>
   );
 }

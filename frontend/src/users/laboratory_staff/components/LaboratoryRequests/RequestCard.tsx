@@ -1,3 +1,6 @@
+import EmptyState from "../../../../components/EmptyState";
+import ErrorMessage from "../../../../components/ErrorMessage";
+import LoadingScreen from "../../../../components/LoadingScreen";
 import { useEffect, useState } from "react";
 import { X, UserRound } from "lucide-react";
 import api from "../../../../lib/axios";
@@ -29,7 +32,8 @@ function RequestCard({ onClose, queueIdCard }: InformationCardProps) {
       } catch (err) {
         const message =
           (err as { response?: { data?: { message?: string } } })?.response
-            ?.data?.message || "Unable to fetch data.";
+            ?.data?.message ||
+          "Laboratory request details could not be loaded.";
         setDetailError(message);
         setRequestDetail(null);
       } finally {
@@ -71,15 +75,10 @@ function RequestCard({ onClose, queueIdCard }: InformationCardProps) {
             <X size={20} onClick={onClose} className="cursor-pointer" />
           </div>
           <div className="w-full h-full px-5 py-3">
-            {detailError ? (
-              <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
-                {detailError}
-              </div>
-            ) : null}
+            {detailError && <ErrorMessage>{detailError}</ErrorMessage>}
+            {null}
             {detailLoading ? (
-              <div className="rounded-xl border border-gray-200 bg-gray-100 p-4 text-sm">
-                Loading laboratory requests...
-              </div>
+              <LoadingScreen message="Loading laboratory requests..." />
             ) : requestDetail ? (
               <div className="flex w-full-h-full gap-6">
                 <div className="w-full h-full max-w-1/3 rounded-lg shadow-sm bg-white ">
@@ -161,9 +160,7 @@ function RequestCard({ onClose, queueIdCard }: InformationCardProps) {
                 </div> */}
               </div>
             ) : (
-              <div className="rounded-xl border border-gray-200 bg-gray-100 p-4 text-sm text-slate-700">
-                Select a request to view its patient and laboratory details.
-              </div>
+              <EmptyState message="Select a request to view its patient and laboratory details." />
             )}
           </div>
         </div>

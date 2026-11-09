@@ -1,3 +1,7 @@
+import ErrorMessage from "../../../../components/ErrorMessage";
+import EmptyState from "../../../../components/EmptyState";
+import LoadingScreen from "../../../../components/LoadingScreen";
+import LoadingRegion from "../../../../components/LoadingRegion";
 import { useMemo, useState } from "react";
 import {
   CalendarDays,
@@ -5,7 +9,6 @@ import {
   ChevronRight,
   Eye,
   Flag,
-  FlaskConical,
   Search,
   TestTubeDiagonal,
 } from "lucide-react";
@@ -14,7 +17,7 @@ import type {
   AnalysisStatus,
 } from "../../../../interface/LaboratoryAnalysis";
 import { collectionDay } from "./laboratoryAnalysis";
-import { AnalysisButton, AnalysisNotice, FlaskBadge } from "./AnalysisUi";
+import { AnalysisButton, FlaskBadge } from "./AnalysisUi";
 
 export function formatLabDate(value: string) {
   if (!value || !Number.isFinite(new Date(value).getTime())) {
@@ -91,7 +94,6 @@ type AnalysisListProps = {
   room: string;
   onEnter: (request: AnalysisRequest) => void;
   onPrintPreview: (request: AnalysisRequest) => void;
-  onRetry: () => void;
   entryDisabled?: boolean;
   selectedTab?: AnalysisStatus;
   onTabChange?: (tab: AnalysisStatus) => void;
@@ -104,7 +106,6 @@ export default function AnalysisList({
   room,
   onEnter,
   onPrintPreview,
-  onRetry,
   entryDisabled = false,
   selectedTab,
   onTabChange,
@@ -314,9 +315,9 @@ export default function AnalysisList({
                 event.preventDefault();
                 setTab(TABS[next]);
                 setPage(1);
-                event.currentTarget.parentElement
-                  ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
-                  [next]?.focus();
+                const tabs = event.currentTarget.parentElement
+                  ?.querySelectorAll<HTMLButtonElement>('[role="tab"]');
+                tabs?.[next]?.focus();
               }}
             >
               {status}
@@ -334,14 +335,11 @@ export default function AnalysisList({
           aria-labelledby={`analysis-tab-${TABS.indexOf(tab)}`}
           aria-busy={loading}
         >
-          {error ? (
-            <div className="p-4">
-              <AnalysisNotice error>{error}</AnalysisNotice>
-              <AnalysisButton variant="secondary" onClick={onRetry}>
-                Try again
-              </AnalysisButton>
-            </div>
-          ) : (
+          {error && <ErrorMessage className="m-4">{error}</ErrorMessage>}
+          <LoadingRegion
+            loading={loading && requests.length > 0}
+            message="Refreshing laboratory requests..."
+          >
             <div className="w-full overflow-x-auto">
               <table className="w-full min-w-[1020px] border-collapse text-left text-sm">
                 <thead>
@@ -368,39 +366,42 @@ export default function AnalysisList({
                   </tr>
                 </thead>
                 <tbody>
-                  {loading ? (
+                  {loading && requests.length === 0 ? (
                     <tr>
                       <td
                         colSpan={9}
                         className="h-48 text-center text-gray-500"
                       >
-                        Loading laboratory requests...
+                        <LoadingScreen message="Loading laboratory requests..." />
                       </td>
                     </tr>
                   ) : !visible.length ? (
                     <tr>
                       <td colSpan={9}>
-                        <div className="flex min-h-48 flex-col items-center justify-center gap-2.5 px-5 py-9 text-center text-gray-500">
-                          <FlaskConical size={32} strokeWidth={1.2} />
-                          <strong className="text-sm font-semibold text-gray-900">
-                            {hasFilters
-                              ? "No matching requests"
-                              : `No ${tab.toLowerCase()} requests`}
-                          </strong>
-                          <p className="max-w-sm leading-relaxed">
-                            {hasFilters
+                        <EmptyState
+                          message={
+                            error
+                              ? "Laboratory requests are unavailable."
+                              : hasFilters
+                                ? "No matching requests found."
+                                : `No ${tab.toLowerCase()} requests found.`
+                          }
+                          description={
+                            hasFilters
                               ? "Try changing or clearing your filters."
-                              : "Only accepted requests with collected samples appear here."}
-                          </p>
-                          {hasFilters && (
-                            <AnalysisButton
-                              variant="link"
-                              onClick={clearFilters}
-                            >
-                              Clear filters
-                            </AnalysisButton>
-                          )}
-                        </div>
+                              : "Accepted requests with collected samples will appear here."
+                          }
+                          action={
+                            hasFilters ? (
+                              <AnalysisButton
+                                variant="link"
+                                onClick={clearFilters}
+                              >
+                                Clear filters
+                              </AnalysisButton>
+                            ) : undefined
+                          }
+                        />
                       </td>
                     </tr>
                   ) : (
@@ -479,7 +480,7 @@ export default function AnalysisList({
                 </tbody>
               </table>
             </div>
-          )}
+          </LoadingRegion>
         </div>
         <footer className="flex flex-wrap items-center justify-between gap-4 px-4 py-4 text-sm text-gray-500 sm:px-5">
           <span aria-live="polite">

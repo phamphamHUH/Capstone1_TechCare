@@ -1,3 +1,7 @@
+import EmptyState from "../../../../components/EmptyState";
+import ErrorMessage from "../../../../components/ErrorMessage";
+import LoadingScreen from "../../../../components/LoadingScreen";
+import LoadingRegion from "../../../../components/LoadingRegion";
 import { useState, type Dispatch, type SetStateAction } from "react";
 import QueueTable from "./QueueTable";
 import type { PriorityFilter, QueueEntry } from "../../../../interface/Queue";
@@ -11,6 +15,7 @@ type RequestTableProps = {
   services?: Service[];
   loading: boolean;
   error: string | null;
+  loadFailed?: boolean;
   setOpenQueueAccordion: Dispatch<SetStateAction<string | null>>;
   openQueueAccordion: string | null;
   setOpenInformationCard: Dispatch<SetStateAction<boolean>>;
@@ -32,6 +37,7 @@ function ConsultationQueuePanel({
   queues,
   loading,
   error,
+  loadFailed = Boolean(error),
   setOpenQueueAccordion,
   openQueueAccordion,
   setOpenInformationCard,
@@ -222,33 +228,36 @@ function ConsultationQueuePanel({
         </label>
       </div>
 
-      {loading ? (
-        <div className="w-full mb-8 border border-gray-200 bg-gray-100 p-4 text-center text-sm">
-          Loading {loadingLabel}consultation queues...
-        </div>
-      ) : error ? (
-        <div
-          role="alert"
-          className="w-full mb-8  border border-rose-200 bg-rose-50 p-4 text-center text-sm text-rose-700"
-        >
-          {error}
-        </div>
-      ) : filterQueues.length === 0 ? (
-        <div className="w-full mb-8 border border-gray-200 bg-gray-100 p-4 text-center text-sm">
-          No consultation requests found.
-        </div>
-      ) : (
-        <div className="w-full ">
-          <QueueTable
-            filterQueues={filterQueues}
-            setOpenInformationCard={setOpenInformationCard}
-            setQueueIdCard={setQueueIdCard}
-            room={room}
-            loadData={loadData}
-            setSelectedQueue={setSelectedQueue}
+      {error && <ErrorMessage className="mx-4">{error}</ErrorMessage>}
+      <LoadingRegion
+        loading={loading && queues.length > 0}
+        message="Refreshing consultation queues..."
+      >
+        {loading && queues.length === 0 ? (
+          <LoadingScreen
+            message={`Loading ${loadingLabel}consultation queues...`}
           />
-        </div>
-      )}
+        ) : filterQueues.length === 0 ? (
+          <EmptyState
+            message={
+              loadFailed
+                ? "Consultation requests are unavailable."
+                : "No consultation requests found."
+            }
+          />
+        ) : (
+          <div className="w-full ">
+            <QueueTable
+              filterQueues={filterQueues}
+              setOpenInformationCard={setOpenInformationCard}
+              setQueueIdCard={setQueueIdCard}
+              room={room}
+              loadData={loadData}
+              setSelectedQueue={setSelectedQueue}
+            />
+          </div>
+        )}
+      </LoadingRegion>
     </div>
   );
 }

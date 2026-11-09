@@ -39,6 +39,7 @@ function LaboratoryResults({ open, setOpen, room }: LaboratoryResultsProps) {
     useState<AnalysisStatus>("Ready for Analysis");
   const [starting, setStarting] = useState(false);
   const [actionError, setActionError] = useState("");
+  const [printRefresh, setPrintRefresh] = useState(0);
 
   const loadRequests = useCallback(async () => {
     pendingRequest.current?.abort();
@@ -69,7 +70,6 @@ function LaboratoryResults({ open, setOpen, room }: LaboratoryResultsProps) {
       }
     } catch (cause) {
       if (!controller.signal.aborted) {
-        setRequests([]);
         setError(apiMessage(cause, "Unable to load laboratory requests."));
       }
     } finally {
@@ -123,6 +123,7 @@ function LaboratoryResults({ open, setOpen, room }: LaboratoryResultsProps) {
   }
 
   function reloadRequests() {
+    setPrintRefresh((value) => value + 1);
     void loadRequests();
   }
 
@@ -170,8 +171,7 @@ function LaboratoryResults({ open, setOpen, room }: LaboratoryResultsProps) {
               void enterResult(request);
             }}
             onPrintPreview={setPrintRequest}
-            onRetry={reloadRequests}
-            entryDisabled={Boolean(resultError) || starting}
+            entryDisabled={Boolean(resultError || error) || starting || loading}
             selectedTab={activeTab}
             onTabChange={setActiveTab}
           />
@@ -189,7 +189,7 @@ function LaboratoryResults({ open, setOpen, room }: LaboratoryResultsProps) {
         )}
 
         {printRequest && (
-          <PrintResultView request={printRequest} onBack={returnToList} />
+          <PrintResultView request={printRequest} refreshKey={printRefresh} onBack={returnToList} />
         )}
       </div>
     </main>

@@ -1,3 +1,5 @@
+import ErrorMessage from "../../../../components/ErrorMessage";
+import EmptyState from "../../../../components/EmptyState";
 import { useState } from "react";
 import api from "../../../../lib/axios";
 import { X, PackagePlus, FlaskConical, Search, Trash } from "lucide-react";
@@ -17,6 +19,7 @@ const ROOM_OPTIONS = [
 ];
 
 function AddService({ loadData, onClose, services }: Props) {
+  const [formError, setFormError] = useState("");
   const [serviceName, setServiceName] = useState("");
   const [price, setPrice] = useState("");
   const [serviceType, setServiceType] = useState("");
@@ -30,6 +33,7 @@ function AddService({ loadData, onClose, services }: Props) {
   const [checkedServices, setCheckedServices] = useState<string[]>([]);
 
   async function addService() {
+    setFormError("");
     if (
       !serviceName ||
       price === "" ||
@@ -37,12 +41,12 @@ function AddService({ loadData, onClose, services }: Props) {
       !serviceCategory ||
       !room
     ) {
-      alert("Please fill out all fields.");
+      setFormError("Please fill out all fields.");
       return;
     }
 
     if (isNaN(Number(price))) {
-      alert("Price must be a number.");
+      setFormError("Price must be a number.");
       return;
     }
 
@@ -59,9 +63,9 @@ function AddService({ loadData, onClose, services }: Props) {
       loadData();
       onClose();
     } catch (error: unknown) {
-      alert(
+      setFormError(
         (error as { response?: { data?: { message?: string } } }).response?.data
-          ?.message || "Something went wrong",
+          ?.message || "Unable to complete this action. Please try again.",
       );
       console.error(error);
     } finally {
@@ -70,20 +74,21 @@ function AddService({ loadData, onClose, services }: Props) {
   }
 
   async function addPackage() {
+    setFormError("");
     if (!serviceName.trim() || price === "" || selectedServices.length === 0) {
-      alert(
+      setFormError(
         "Package name, package price, and at least one service are required.",
       );
       return;
     }
 
     if (isNaN(Number(price)) || Number(price) < 0) {
-      alert("Package price must be a valid non-negative number.");
+      setFormError("Package price must be a valid non-negative number.");
       return;
     }
 
     if (Number(price) > originalPrice) {
-      alert("Package price cannot be greater than the original price.");
+      setFormError("Package price cannot be greater than the original price.");
       return;
     }
 
@@ -100,9 +105,9 @@ function AddService({ loadData, onClose, services }: Props) {
       loadData();
       onClose();
     } catch (error: unknown) {
-      alert(
+      setFormError(
         (error as { response?: { data?: { message?: string } } }).response?.data
-          ?.message || "Something went wrong",
+          ?.message || "Unable to complete this action. Please try again.",
       );
       console.error(error);
     } finally {
@@ -161,6 +166,7 @@ function AddService({ loadData, onClose, services }: Props) {
             <X size={20} />
           </button>
         </div>
+        {formError && <ErrorMessage className="mb-4">{formError}</ErrorMessage>}
         <div>
           <div className="grid grid-cols-2 gap-5 mb-5">
             <label
@@ -374,9 +380,7 @@ function AddService({ loadData, onClose, services }: Props) {
                         </button>
                       ))
                     ) : (
-                      <p className="px-3 py-3 text-xs text-gray-400">
-                        No matching services found.
-                      </p>
+                      <EmptyState message="No matching services found." />
                     )}
                   </div>
                 )}
@@ -408,6 +412,7 @@ function AddService({ loadData, onClose, services }: Props) {
                   </thead>
 
                   <tbody className="divide-y divide-gray-100">
+                    {selectedServices.length === 0 && <tr><td colSpan={5} className="p-4"><EmptyState compact message="No services selected." description="Select services to include in this package." /></td></tr>}
                     {selectedServices.map((service) => (
                       <tr
                         key={service.service_id}

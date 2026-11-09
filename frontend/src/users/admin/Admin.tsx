@@ -37,14 +37,26 @@ function Admin() {
 
   // Dashboard analytics, reloaded whenever the date range changes.
   const [analyticsRange, setAnalyticsRange] = useState<AnalyticsRange>("30d");
-  const [salesAnalytics, setSalesAnalytics] = useState<SalesAnalytics | null>(null);
-  const [serviceAnalytics, setServiceAnalytics] = useState<ServiceAnalytics | null>(null);
-  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [salesAnalytics, setSalesAnalytics] = useState<SalesAnalytics | null>(
+    null,
+  );
+  const [serviceAnalytics, setServiceAnalytics] =
+    useState<ServiceAnalytics | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
   const [analyticsError, setAnalyticsError] = useState<string | null>(null);
   const latestAnalyticsRequest = useRef(0);
 
-  const [loading, setLoading] = useState(false);
-  const [open, setOpen] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [dataErrors, setDataErrors] = useState({
+    users: "",
+    services: "",
+    activities: "",
+  });
+  const [templateRefresh, setTemplateRefresh] = useState(0);
+  const latestDataRequest = useRef(0);
+  const [open, setOpen] = useState(
+    () => typeof window === "undefined" || window.innerWidth >= 1024,
+  );
 
   const [searchParams, setSearchParams] = useSearchParams();
   const page = searchParams.get("page") ?? "dashboard";
@@ -94,27 +106,48 @@ function Admin() {
     navItems.find((item) => item.page === page)?.label ?? "Dashboard";
 
   const loadData = useCallback(async () => {
+    const request = ++latestDataRequest.current;
     setLoading(true);
-
-    try {
-      const [serviceResponse, userResponse, activityResponse] =
-        await Promise.all([
-          api.get("/api/admin/services"),
-          api.get("/api/admin/users"),
-          api.get("/api/admin/activities"),
-        ]);
-
-      setServices([
-        ...(serviceResponse.data.services ?? []),
-        ...(serviceResponse.data.packages ?? []),
+    const [serviceResponse, userResponse, activityResponse] =
+      await Promise.allSettled([
+        api.get("/api/admin/services"),
+        api.get("/api/admin/users"),
+        api.get("/api/admin/activities"),
       ]);
-      setUsers(userResponse.data.users ?? []);
-      setActivities(activityResponse.data.activities ?? []);
-    } catch (error) {
-      console.error("Error loading admin data:", error);
-    } finally {
-      setLoading(false);
+    if (request !== latestDataRequest.current) return;
+    const errors = { users: "", services: "", activities: "" };
+
+    if (
+      serviceResponse.status === "fulfilled" &&
+      Array.isArray(serviceResponse.value.data?.services) &&
+      (serviceResponse.value.data.packages === undefined ||
+        Array.isArray(serviceResponse.value.data.packages))
+    ) {
+      setServices([
+        ...serviceResponse.value.data.services,
+        ...(serviceResponse.value.data.packages ?? []),
+      ]);
+    } else {
+      errors.services = "Services and packages could not be loaded.";
     }
+    if (
+      userResponse.status === "fulfilled" &&
+      Array.isArray(userResponse.value.data?.users)
+    ) {
+      setUsers(userResponse.value.data.users);
+    } else {
+      errors.users = "User accounts could not be loaded.";
+    }
+    if (
+      activityResponse.status === "fulfilled" &&
+      Array.isArray(activityResponse.value.data?.activities)
+    ) {
+      setActivities(activityResponse.value.data.activities);
+    } else {
+      errors.activities = "Activity logs could not be loaded.";
+    }
+    setDataErrors(errors);
+    setLoading(false);
   }, []);
 
   // Fetch the admin data when this component mounts.
@@ -146,9 +179,12 @@ function Admin() {
     } catch (error) {
       if (thisRequest !== latestAnalyticsRequest.current) return;
       console.error("Error loading analytics:", error);
-      setAnalyticsError("Could not load analytics. Use the reload button to try again.");
+      setAnalyticsError(
+        "Could not load analytics. Use the reload button to try again.",
+      );
     } finally {
-      if (thisRequest === latestAnalyticsRequest.current) setAnalyticsLoading(false);
+      if (thisRequest === latestAnalyticsRequest.current)
+        setAnalyticsLoading(false);
     }
   }, [analyticsRange]);
 
@@ -162,8 +198,9 @@ function Admin() {
 
   // The header's reload button refreshes everything.
   const reloadAll = useCallback(async () => {
+    if (page === "form-template") setTemplateRefresh((value) => value + 1);
     await Promise.all([loadData(), loadAnalytics()]);
-  }, [loadData, loadAnalytics]);
+  }, [loadData, loadAnalytics, page]);
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -194,6 +231,7 @@ function Admin() {
             <UserManagement
               loading={loading}
               users={users}
+              error={dataErrors.users}
               open={open}
               setOpen={setOpen}
               loadData={loadData}
@@ -204,6 +242,7 @@ function Admin() {
             <ServicePricingManagement
               loading={loading}
               services={services}
+              error={dataErrors.services}
               open={open}
               setOpen={setOpen}
               loadData={loadData}
@@ -214,6 +253,7 @@ function Admin() {
             <ActivityMonitoring
               loading={loading}
               activities={activities}
+              error={dataErrors.activities}
               open={open}
               setOpen={setOpen}
               loadData={loadData}
@@ -228,7 +268,9 @@ function Admin() {
             />
           )}
 
-          {page === "form-template" && <FormTemplate />}
+          {page === "form-template" && (
+            <FormTemplate refreshKey={templateRefresh} />
+          )}
 
           {!navItems.some((item) => item.page === page) && (
             <div className="mx-6 rounded-xl border border-gray-200 bg-white p-8 text-center">

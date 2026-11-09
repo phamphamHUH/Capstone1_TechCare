@@ -1,7 +1,14 @@
+import EmptyState from "../../../../components/EmptyState";
 import { FlaskConical, Stethoscope } from "lucide-react";
 import type { QueueEntry } from "../../../../interface/Queue";
 
-export default function RoomInfo({ queues }: { queues: QueueEntry[] }) {
+export default function RoomInfo({
+  queues,
+  loadFailed,
+}: {
+  queues: QueueEntry[];
+  loadFailed?: boolean;
+}) {
   const rooms = [
     ...new Set(queues.map((queue) => queue.room).filter(Boolean)),
   ].sort();
@@ -47,9 +54,13 @@ export default function RoomInfo({ queues }: { queues: QueueEntry[] }) {
                 );
               })
             ) : (
-              <p className="text-xs text-gray-500">
-                No room queues recorded today.
-              </p>
+              <EmptyState
+                message={
+                  loadFailed
+                    ? "Room queues are unavailable."
+                    : "No room queues recorded today."
+                }
+              />
             )}
           </section>
         );

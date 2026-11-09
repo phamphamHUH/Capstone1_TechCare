@@ -1,6 +1,7 @@
+import { LoadingSpinner } from "../../../../components/LoadingScreen";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { Dialog } from "@base-ui/react/dialog";
-import { Globe, LoaderCircle, Send, X } from "lucide-react";
+import { Globe, Send, X } from "lucide-react";
 import type {
   LaboratoryReportData,
   ResultReleaseResponse,
@@ -96,10 +97,7 @@ export function ReleaseConfirmationContent({
           onClick={onConfirm}
         >
           {pending ? (
-            <LoaderCircle
-              size={14}
-              className="animate-spin motion-reduce:animate-none"
-            />
+            <LoadingSpinner size={14} />
           ) : (
             <Send size={14} />
           )}

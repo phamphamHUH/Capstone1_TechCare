@@ -1,5 +1,6 @@
+import ErrorMessage from "../../../../components/ErrorMessage";
 import { useState } from "react";
-import { Eye, CheckCircle2, AlertCircle } from "lucide-react";
+import { Eye, CheckCircle2 } from "lucide-react";
 import { isAxiosError } from "axios";
 import api from "#lib/axios";
 import type {
@@ -61,6 +62,7 @@ export default function TemplateBuilder({
   );
   const [showPreview, setShowPreview] = useState(false);
   const [noticeMessage, setNoticeMessage] = useState<string | null>(null);
+  const [noticeIsError, setNoticeIsError] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
   const isEditMode = Boolean(initialTemplate);
@@ -194,6 +196,7 @@ export default function TemplateBuilder({
   };
 
   const handleSave = async (status: "Draft" | "Published") => {
+    setNoticeIsError(true);
     if (!templateName.trim()) {
       setNoticeMessage("Please give the template a name before saving.");
       return;
@@ -244,6 +247,7 @@ export default function TemplateBuilder({
         );
       }
 
+      setNoticeIsError(false);
       onBackToLibrary();
     } catch (error: unknown) {
       console.error("Error saving template:", error);
@@ -261,24 +265,11 @@ export default function TemplateBuilder({
   return (
     <div className="flex flex-col gap-5 w-full">
       {/* Notice Banner */}
-      {noticeMessage && (
-        <div
-          role="alert"
-          className="sticky top-3 z-20 bg-sky-50 border border-sky-200 text-sky-800 text-xs px-4 py-3 rounded-2xl flex items-center justify-between shadow-sm animate-fade-in"
-        >
-          <div className="flex items-center gap-2 font-medium">
-            <AlertCircle size={16} className="text-sky-600 flex-shrink-0" />
-            <span>{noticeMessage}</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setNoticeMessage(null)}
-            className="text-sky-600 hover:text-sky-800 font-bold ml-4"
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
+      {noticeMessage && (noticeIsError ? (
+        <ErrorMessage>{noticeMessage}</ErrorMessage>
+      ) : (
+        <p role="status" className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-700">{noticeMessage}</p>
+      ))}
 
       {/* Breadcrumbs & Preview Bar */}
       <div className="flex items-center justify-between">

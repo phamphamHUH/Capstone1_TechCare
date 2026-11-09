@@ -1,6 +1,6 @@
 import SideBar from "#components/SideBar";
 import Header from "#components/Header";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   LayoutGrid,
   ListOrdered,
@@ -24,8 +24,10 @@ function Doctor() {
   const [open, setOpen] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [queueLoadFailed, setQueueLoadFailed] = useState(false);
   const [services, setServices] = useState<Service[]>([]);
   const [queues, setQueues] = useState<QueueEntry[]>([]);
+  const latestLoad = useRef(0);
   const [selectedQueue, setSelectedQueue] = useState<QueueEntry | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -84,36 +86,42 @@ function Doctor() {
 
   // FETCH SERVICES AND CONSULTATION QUEUES
   const loadData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const servicesRes = await api.get(
-        `/api/doctor/services/${encodeURIComponent(room)}`,
-      );
-
-      setServices(servicesRes.data?.services ?? []);
-
-      const queuesRes = await api.get(
+    const request = ++latestLoad.current;
+    setLoading(true);
+    const [servicesRes, queuesRes] = await Promise.allSettled([
+      api.get(`/api/doctor/services/${encodeURIComponent(room)}`),
+      api.get(
         `/api/doctor/consultation-queues/room/${encodeURIComponent(room)}`,
-      );
-
-      const fetchedQueues: QueueEntry[] = queuesRes.data?.queueEntries ?? [];
-
-      setQueues(fetchedQueues);
-
-      // RESTORE THE CURRENTLY SERVING CONSULTATION
-      const servingQueue = fetchedQueues.find(
-        (queue) => queue.status?.toLowerCase() === "serving",
-      );
-
-      setSelectedQueue(servingQueue ?? null);
-    } catch (err) {
-      console.error("Error loading doctor data:", err);
-      setError("Could not load consultation data.");
-    } finally {
-      setLoading(false);
+      ),
+    ]);
+    if (request !== latestLoad.current) return;
+    const errors: string[] = [];
+    if (
+      servicesRes.status === "fulfilled" &&
+      Array.isArray(servicesRes.value.data?.services)
+    ) {
+      setServices(servicesRes.value.data.services);
+    } else {
+      errors.push("Consultation services could not be loaded.");
     }
+    const queuesLoaded =
+      queuesRes.status === "fulfilled" &&
+      Array.isArray(queuesRes.value.data?.queueEntries);
+    setQueueLoadFailed(!queuesLoaded);
+    if (queuesLoaded) {
+      const fetchedQueues: QueueEntry[] = queuesRes.value.data.queueEntries;
+      setQueues(fetchedQueues);
+      // Restore the active consultation only after a successful queue refresh.
+      setSelectedQueue(
+        fetchedQueues.find(
+          (queue) => queue.status?.toLowerCase() === "serving",
+        ) ?? null,
+      );
+    } else {
+      errors.push("Consultation queue entries could not be loaded.");
+    }
+    setError(errors.join(" ") || null);
+    setLoading(false);
   }, [room]);
 
   // FETCH DATA WHEN DOCTOR PAGE MOUNTS
@@ -166,6 +174,7 @@ function Doctor() {
               room={room}
               loading={loading}
               error={error}
+              queueLoadFailed={queueLoadFailed}
               open={open}
               setOpen={setOpen}
               loadData={loadData}
@@ -174,7 +183,16 @@ function Doctor() {
           )}
 
           {page === "active-consultation" && (
-            <ActiveConsultation selectedQueue={selectedQueue} room={room} />
+            <ActiveConsultation
+              selectedQueue={selectedQueue}
+              room={room}
+              loading={loading}
+              error={
+                queueLoadFailed
+                  ? "The active consultation could not be refreshed."
+                  : null
+              }
+            />
           )}
 
           {page === "medical-history" && (

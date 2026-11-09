@@ -1,3 +1,5 @@
+import FieldError from "../../../../components/FieldError";
+import EmptyState from "../../../../components/EmptyState";
 import { useState } from "react";
 import { Trash2, Plus, X } from "lucide-react";
 import type {
@@ -29,7 +31,7 @@ export default function ComponentSettings({
   if (!component) {
     return (
       <aside className="w-80 flex-shrink-0 bg-white border border-gray-200 rounded-2xl p-5 flex flex-col items-center justify-center text-center shadow-sm text-gray-400">
-        <p className="text-xs">Select a component on the canvas to configure its properties and validation.</p>
+        <EmptyState message="Select a component on the canvas to configure its properties and validation." />
       </aside>
     );
   }
@@ -196,9 +198,9 @@ export default function ComponentSettings({
               }`}
             />
             {isDuplicateKey && (
-              <span className="text-[10px] text-red-500 mt-0.5 block">
+              <FieldError>
                 Field key must be unique across the template.
-              </span>
+              </FieldError>
             )}
           </div>
 
@@ -566,9 +568,9 @@ export default function ComponentSettings({
             </div>
 
             {isMinMaxInvalid && (
-              <span className="text-[10px] text-red-500 mt-1 block">
+              <FieldError>
                 Minimum value cannot be greater than maximum value.
-              </span>
+              </FieldError>
             )}
 
             {isNumeric && (

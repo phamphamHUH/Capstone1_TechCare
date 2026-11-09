@@ -1,3 +1,6 @@
+import EmptyState from "../../../../../components/EmptyState";
+import ErrorMessage from "../../../../../components/ErrorMessage";
+import LoadingScreen from "../../../../../components/LoadingScreen";
 import { useEffect, useState } from "react";
 import api from "../../../../../lib/axios";
 import type {
@@ -97,16 +100,16 @@ function useAnalyticsBills(range: AnalyticsRange) {
 }
 
 // Content of the modal opened from a sales tile.
-function SalesDetails({ kind, range, previousLabel, sales }: SalesDetailsProps) {
-  const { data, error } = useAnalyticsBills(range);
-  const summary = sales.summary;
+function SalesDetails(props: SalesDetailsProps) {
+  const { data, error } = useAnalyticsBills(props.range);
+  return <>
+    {error && <ErrorMessage className="m-6">{error}</ErrorMessage>}
+    {data ? <SalesDetailsContent {...props} data={data} /> : error ? <EmptyState message="Bill details are unavailable." /> : <LoadingScreen message="Loading bills..." />}
+  </>;
+}
 
-  if (error) {
-    return <p role="alert" className="m-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</p>;
-  }
-  if (!data) {
-    return <p className="px-6 py-16 text-center text-sm text-gray-400">Loading bills…</p>;
-  }
+function SalesDetailsContent({ kind, previousLabel, sales, data }: SalesDetailsProps & { data: AnalyticsBills }) {
+  const summary = sales.summary;
 
   const paid = data.paid;
 
@@ -221,7 +224,7 @@ function SalesDetails({ kind, range, previousLabel, sales }: SalesDetailsProps) 
 
         <SectionTitle>By discount type</SectionTitle>
         {byType.size === 0 ? (
-          <p className="px-6 pb-2 text-sm text-gray-400">No discounts in this period</p>
+          <EmptyState message="No discounts in this period." />
         ) : (
           <BarList
             rows={[...byType.entries()].map(([type, value]) => ({

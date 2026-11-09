@@ -1,3 +1,4 @@
+import EmptyState from "../../../../components/EmptyState";
 import { FlaskConical, RefreshCw, User } from "lucide-react";
 import type { QueueEntry } from "../../../../interface/Queue";
 
@@ -90,9 +91,7 @@ function QueueColumn({ title, entries }: QueueColumnProps) {
         </p>
 
         {serving.length === 0 ? (
-          <div className={`${theme.banner} px-6 py-6 text-center text-lg font-semibold text-white/80`}>
-            No one is being served
-          </div>
+          <EmptyState message="No one is being served." />
         ) : (
           serving.map((entry) => (
             <div
@@ -129,9 +128,7 @@ function QueueColumn({ title, entries }: QueueColumnProps) {
           <tbody>
             {waiting.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-4 py-10 text-center text-slate-400">
-                  Queue is empty
-                </td>
+                <td colSpan={4} className="p-4"><EmptyState compact message="Queue is empty." /></td>
               </tr>
             ) : (
               waiting.slice(0, NEXT_IN_LINE_LIMIT).map((entry, index) => (

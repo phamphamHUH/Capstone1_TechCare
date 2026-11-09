@@ -1,6 +1,8 @@
+import ErrorMessage from "../components/ErrorMessage";
+import { LoadingSpinner } from "../components/LoadingScreen";
 import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import axios from "axios";
 import api from "../lib/axios";
 import ClinicSlideshow from "./components/ClinicSlideshow";
@@ -123,12 +125,9 @@ function LoginPage() {
             </div>
 
             {errorMessage && (
-              <p
-                role="alert"
-                className="mb-5 rounded-md bg-red-50 px-3 py-2.5 text-sm text-red-800"
-              >
+              <ErrorMessage className="mb-5">
                 {errorMessage}
-              </p>
+              </ErrorMessage>
             )}
 
             <form onSubmit={handleLogin} className="space-y-5">
@@ -224,14 +223,12 @@ function LoginPage() {
                 disabled={loading}
                 className="w-full h-11 bg-sky-700 hover:bg-sky-800 disabled:opacity-70 disabled:cursor-not-allowed text-white text-base font-medium rounded-md flex items-center justify-center gap-2 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700"
               >
-                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                {loading && <LoadingSpinner className="w-4 h-4" />}
                 {loading ? "Signing in…" : "Log in"}
               </button>
             </form>
 
-            <p className="mt-5 text-center text-sm text-gray-800">
-              No account? Visit the front desk for registration.
-            </p>
+            <p className="mt-5 text-center text-sm text-gray-800">No account? Visit the front desk for registration.</p>
 
           </div>
         </div>
