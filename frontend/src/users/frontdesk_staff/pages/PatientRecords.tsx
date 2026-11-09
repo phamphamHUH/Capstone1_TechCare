@@ -1,4 +1,5 @@
 import LoadingScreen from "../../../components/LoadingScreen";
+import LoadingRegion from "../../../components/LoadingRegion";
 import ErrorMessage from "../../../components/ErrorMessage";
 import { useState } from "react";
 import type { Patient } from "../../../interface/Patient";
@@ -68,14 +69,19 @@ function PatientRecords({
             className="h-9 rounded-lg border border-gray-300 bg-white pl-9 pr-3 text-sm text-gray-700 outline-none transition focus:border-sky-400 focus:ring-1 focus:ring-sky-100"
           />
         </div>
-        <PatientTable
-          patients={filteredPatients}
-          loadFailed={loadFailed}
-          onEdit={(p) => {
-            setSelectedPatient(p);
-            setShowEditPatient(true);
-          }}
-        />
+        <LoadingRegion
+          loading={loading && patients.length > 0}
+          message="Refreshing patient records..."
+        >
+          <PatientTable
+            patients={filteredPatients}
+            loadFailed={loadFailed}
+            onEdit={(p) => {
+              setSelectedPatient(p);
+              setShowEditPatient(true);
+            }}
+          />
+        </LoadingRegion>
       </div>
 
       {showEditPatient && (

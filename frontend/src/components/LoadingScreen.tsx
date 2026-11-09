@@ -85,8 +85,8 @@ export function LoadingLogo({ size = 96, className }: LoadingSpinnerProps) {
 export type LoadingScreenProps = {
   message?: string;
   description?: string;
-  /** Page fills the content area; section fits a card; inline fits beside controls. */
-  variant?: "page" | "section" | "inline";
+  /** Overlay fits inside a LoadingRegion; other variants work on their own. */
+  variant?: "page" | "section" | "inline" | "overlay";
   className?: string;
 };
 
@@ -110,10 +110,21 @@ export default function LoadingScreen({
           : "flex w-full flex-col items-center justify-center gap-4 px-4 text-center",
         variant === "section" && "min-h-40 py-8",
         variant === "page" && "min-h-[60vh] py-12",
+        variant === "overlay" && "gap-2 py-2",
         className,
       )}
     >
-      <LoadingLogo size={inline ? 28 : variant === "page" ? 144 : 96} />
+      <LoadingLogo
+        size={
+          inline
+            ? 28
+            : variant === "page"
+              ? 144
+              : variant === "overlay"
+                ? 72
+                : 96
+        }
+      />
       <div className="min-w-0">
         <p className={cn(!inline && "text-sm font-semibold text-[#0b4278]")}>
           {message}

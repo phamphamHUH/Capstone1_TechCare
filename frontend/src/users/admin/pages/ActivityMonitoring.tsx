@@ -1,4 +1,5 @@
 import LoadingScreen from "../../../components/LoadingScreen";
+import LoadingRegion from "../../../components/LoadingRegion";
 import ErrorMessage from "../../../components/ErrorMessage";
 import { useEffect, useState } from "react";
 import ActivityDetails from "../components/ActivityMonitoring/ActivityDetails";
@@ -139,18 +140,23 @@ function ActivityMonitoring({
           severity={severity}
           setSeverity={setSeverity}
         />
-        <div className="flex flex-col gap-4 lg:flex-row">
-          <div className="min-w-0 flex-1">
-            <ActivityTable
-              activities={filteredActivities}
-              error={error}
-              selectedActivityId={selectedFormId}
-              setSelectedForm={setSelectedFormId}
-              setShowActivityDetails={setShowActivityDetails}
-            />
+        <LoadingRegion
+          loading={loading && activities.length > 0}
+          message="Refreshing activity logs..."
+        >
+          <div className="flex flex-col gap-4 lg:flex-row">
+            <div className="min-w-0 flex-1">
+              <ActivityTable
+                activities={filteredActivities}
+                error={error}
+                selectedActivityId={selectedFormId}
+                setSelectedForm={setSelectedFormId}
+                setShowActivityDetails={setShowActivityDetails}
+              />
+            </div>
+            <ActivityDetails activity={selectedActivity} />
           </div>
-          <ActivityDetails activity={selectedActivity} />
-        </div>
+        </LoadingRegion>
       </div>
     </main>
   );

@@ -1,4 +1,5 @@
 import LoadingScreen from "../../../components/LoadingScreen";
+import LoadingRegion from "../../../components/LoadingRegion";
 import ErrorMessage from "../../../components/ErrorMessage";
 import React, { useState } from "react";
 import ServiceTypeTabs from "../components/ServiceRequest/ServiceTypeTabs";
@@ -125,40 +126,45 @@ function ServiceRequest({
         setActiveTab={handleTab}
         onClearAll={clearServices}
       />
-      <div className="border border-gray-200 rounded-xl mt-5 mx-8 grid grid-cols-5 min-h-7/12 shadow-lg">
-        <div className="col-span-3 border-r border-gray-200 px-8 py-5 flex flex-col justify-between">
-          <ServiceSelectionPanel
-            services={pageItems}
-            loadFailed={Boolean(error)}
-            activeTab={activeTab}
-            search={search}
-            setSearch={handleSearch}
-            sort={sort}
-            setSort={handleSort}
-            categoryFilter={categoryFilter}
-            setCategoryFilter={handleCategory}
-            categoryOptions={categoryOptions}
-            onToggleService={toggleService}
-            selectedServices={selectedServices}
-            pagination={pagination}
-            onPageChange={setPageNumber}
-          />
+      <LoadingRegion
+        loading={loading && services.length > 0}
+        message="Refreshing available services..."
+      >
+        <div className="border border-gray-200 rounded-xl mt-5 mx-8 grid grid-cols-5 min-h-7/12 shadow-lg">
+          <div className="col-span-3 border-r border-gray-200 px-8 py-5 flex flex-col justify-between">
+            <ServiceSelectionPanel
+              services={pageItems}
+              loadFailed={Boolean(error)}
+              activeTab={activeTab}
+              search={search}
+              setSearch={handleSearch}
+              sort={sort}
+              setSort={handleSort}
+              categoryFilter={categoryFilter}
+              setCategoryFilter={handleCategory}
+              categoryOptions={categoryOptions}
+              onToggleService={toggleService}
+              selectedServices={selectedServices}
+              pagination={pagination}
+              onPageChange={setPageNumber}
+            />
+          </div>
+          <div className="col-span-2 px-8 py-5 flex flex-col justify-between">
+            <ServiceList
+              activeTab={activeTab}
+              services={services}
+              selectedServices={selectedServices}
+              patientId={patient?.patient_id ?? null}
+              onToggleService={toggleService}
+              onClearAll={clearServices}
+              onSubmitted={async () => {
+                setPatient(null);
+                await loadData();
+              }}
+            />
+          </div>
         </div>
-        <div className="col-span-2 px-8 py-5 flex flex-col justify-between">
-          <ServiceList
-            activeTab={activeTab}
-            services={services}
-            selectedServices={selectedServices}
-            patientId={patient?.patient_id ?? null}
-            onToggleService={toggleService}
-            onClearAll={clearServices}
-            onSubmitted={async () => {
-              setPatient(null);
-              await loadData();
-            }}
-          />
-        </div>
-      </div>
+      </LoadingRegion>
     </main>
   );
 }

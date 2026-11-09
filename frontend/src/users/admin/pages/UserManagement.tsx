@@ -1,6 +1,7 @@
 import EmptyState from "../../../components/EmptyState";
 import ErrorMessage from "../../../components/ErrorMessage";
 import LoadingScreen from "../../../components/LoadingScreen";
+import LoadingRegion from "../../../components/LoadingRegion";
 import { useEffect, useState } from "react";
 import { Search, UserPlus } from "lucide-react";
 
@@ -123,33 +124,38 @@ function UserManagement({
                 USER GRID
             ========================== */}
 
-      {loading && users.length === 0 ? (
-        <LoadingScreen message="Loading users..." />
-      ) : filteredUsers.length > 0 ? (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6 px-6">
-          {filteredUsers.map((user) => (
-            <UserCardSquare
-              key={user.user_id}
-              user={user}
-              setSelectedUser={setSelectedUser}
-              setShowUserProfile={setShowUserProfile}
+      <LoadingRegion
+        loading={loading && users.length > 0}
+        message="Refreshing users..."
+      >
+        {loading && users.length === 0 ? (
+          <LoadingScreen message="Loading users..." />
+        ) : filteredUsers.length > 0 ? (
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6 px-6">
+            {filteredUsers.map((user) => (
+              <UserCardSquare
+                key={user.user_id}
+                user={user}
+                setSelectedUser={setSelectedUser}
+                setShowUserProfile={setShowUserProfile}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="mx-6">
+            <EmptyState
+              message={error ? "Users are unavailable." : "No users found."}
+              description={
+                error
+                  ? "The list will reappear when data is available."
+                  : search.trim()
+                    ? "Try changing or clearing your search."
+                    : "Users will appear here once they are added."
+              }
             />
-          ))}
-        </div>
-      ) : (
-        <div className="mx-6">
-          <EmptyState
-            message={error ? "Users are unavailable." : "No users found."}
-            description={
-              error
-                ? "The list will reappear when data is available."
-                : search.trim()
-                  ? "Try changing or clearing your search."
-                  : "Users will appear here once they are added."
-            }
-          />
-        </div>
-      )}
+          </div>
+        )}
+      </LoadingRegion>
 
       {/* 
             =========================

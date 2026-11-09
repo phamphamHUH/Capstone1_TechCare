@@ -1,6 +1,7 @@
 import EmptyState from "../../../components/EmptyState";
 import ErrorMessage from "../../../components/ErrorMessage";
 import LoadingScreen from "../../../components/LoadingScreen";
+import LoadingRegion from "../../../components/LoadingRegion";
 import AddService from "../components/ServicePricing/AddService";
 import { isAxiosError } from "axios";
 import UniversalModal from "../../../components/UniversalModal";
@@ -203,224 +204,229 @@ function ServicePricing({
         />
       )}
 
-      <div className="mx-6 border py-4 rounded-2xl border-gray-300">
-        {/* TABS */}
-        <div className="flex gap-2 px-2 mb-4 text-sm">
-          <button
-            type="button"
-            onClick={() => changeStatusFilter("all")}
-            className={tabClass(statusFilter === "all")}
-          >
-            All: {services.length}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => changeStatusFilter("active")}
-            className={tabClass(statusFilter === "active")}
-          >
-            <span className="h-2.5 w-2.5 rounded-full bg-green-300" />
-            Active: {activeServicesCount}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => changeStatusFilter("inactive")}
-            className={tabClass(statusFilter === "inactive")}
-          >
-            <span className="h-2.5 w-2.5 rounded-full bg-gray-500" />
-            Inactive: {inactiveServicesCount}
-          </button>
-        </div>
-
-        {/* Filters */}
-        <div className="mb-4 flex flex-wrap items-center gap-3 px-2">
-          <div className="relative min-w-60 flex-1 basis-70">
-            <Search
-              size={17}
-              strokeWidth={1.5}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-            />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => changeSearch(e.target.value)}
-              placeholder="Search by service name or ID..."
-              className="h-9 w-full rounded-lg border border-gray-300 bg-white pl-9 pr-3 text-sm text-gray-700 outline-none transition focus:border-sky-400 focus:ring-1 focus:ring-sky-100"
-            />
-          </div>
-
-          <label className={labelClass}>
-            <select
-              value={servicesFilter}
-              onChange={(e) =>
-                changeServicesFilter(e.target.value as ServiceFilter)
-              }
-              className={selectClass}
+      <LoadingRegion
+        loading={loading && services.length > 0}
+        message="Refreshing services and packages..."
+      >
+        <div className="mx-6 border py-4 rounded-2xl border-gray-300">
+          {/* TABS */}
+          <div className="flex gap-2 px-2 mb-4 text-sm">
+            <button
+              type="button"
+              onClick={() => changeStatusFilter("all")}
+              className={tabClass(statusFilter === "all")}
             >
-              <option value="all">All Service Type</option>
-              <option value="consultation">Consultation</option>
-              <option value="laboratory">Laboratory</option>
-              <option value="imaging">Imaging</option>
-              <option value="package">Package</option>
-            </select>
-            <ChevronDown size={15} className={chevronClass} />
-          </label>
-        </div>
+              All: {services.length}
+            </button>
 
-        {/* Table */}
-        <div className="overflow-x-auto border border-gray-200">
-          <table className="min-w-full text-sm">
-            <thead className="border-b border-gray-200 bg-gray-200">
-              <tr>
-                <th className="px-4 py-3 text-left font-medium text-gray-500">
-                  ID
-                </th>
-                <th className="px-4 py-3 text-left font-medium text-gray-500">
-                  Service Name
-                </th>
-                <th className="px-4 py-3 text-left font-medium text-gray-500">
-                  Service Category
-                </th>
-                <th className="px-4 py-3 text-left font-medium text-gray-500">
-                  Service Type
-                </th>
-                <th className="px-4 py-3 text-left font-medium text-gray-500">
-                  Room
-                </th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">
-                  Price
-                </th>
-                <th className="px-4 py-3 text-left font-medium text-gray-500">
-                  Status
-                </th>
-                <th className="px-4 py-3 text-left font-medium text-gray-500">
-                  Action
-                </th>
-              </tr>
-            </thead>
+            <button
+              type="button"
+              onClick={() => changeStatusFilter("active")}
+              className={tabClass(statusFilter === "active")}
+            >
+              <span className="h-2.5 w-2.5 rounded-full bg-green-300" />
+              Active: {activeServicesCount}
+            </button>
 
-            <tbody>
-              {pageServices.map((service) => (
-                <tr
-                  key={service.service_id}
-                  className="border-t border-gray-100 hover:bg-gray-50"
-                >
-                  <td className="px-4 py-3 text-gray-500">
-                    {service.service_id}
-                  </td>
-                  <td className="px-4 py-3 font-medium text-gray-900">
-                    {service.service_name}
-                  </td>
-                  <td className="px-4 py-3 font-medium text-gray-900">
-                    {service.service_category}
-                  </td>
-                  <td className="px-4 py-3 capitalize text-gray-600">
-                    {service.service_type}
-                  </td>
-                  <td className="px-4 py-3 text-gray-600">{service.room}</td>
-                  <td className="px-4 py-3 text-right text-gray-900">
-                    {formatPrice(service.price)}
-                  </td>
-                  <td className="px-4 py-3 text-gray-600">
-                    {service.active ? "Active" : "Inactive"}
-                  </td>
-                  <td className="px-4 py-3 text-gray-600">
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowEditModal(true);
-                          setSelectedService(service);
-                        }}
-                        className="border border-sky-600 px-2 py-1 rounded-md transition text-sky-600 cursor-pointer hover:bg-sky-600 hover:text-white"
-                      >
-                        View/Edit
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedService(service);
-                          setShowDeleteModal(true);
-                        }}
-                        className="border border-red-500 px-2 py-1 rounded-md transition text-red-500 hover:bg-red-500 hover:text-white cursor-pointer"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-
-              {pageServices.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={8}
-                    className="px-4 py-6 text-center text-gray-500"
-                  >
-                    {loading ? (
-                      <LoadingScreen message="Loading services..." />
-                    ) : (
-                      <EmptyState
-                        message={
-                          error
-                            ? "Services are unavailable."
-                            : "No services found."
-                        }
-                      />
-                    )}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        {total > 0 && (
-          <div className="flex items-center justify-between px-4 pt-4 text-xs text-gray-500">
-            <span>
-              Showing {from} - {to} of {total} services
-            </span>
-
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                disabled={currentPage <= 1}
-                onClick={() => setPage(currentPage - 1)}
-                className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                &lt;
-              </button>
-
-              {pages.map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => setPage(p)}
-                  className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg ${
-                    p === currentPage
-                      ? "bg-sky-500 font-bold text-white shadow-xs"
-                      : "border border-gray-200 hover:bg-gray-100"
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
-
-              <button
-                type="button"
-                disabled={currentPage >= totalPages}
-                onClick={() => setPage(currentPage + 1)}
-                className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                &gt;
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => changeStatusFilter("inactive")}
+              className={tabClass(statusFilter === "inactive")}
+            >
+              <span className="h-2.5 w-2.5 rounded-full bg-gray-500" />
+              Inactive: {inactiveServicesCount}
+            </button>
           </div>
-        )}
-      </div>
+
+          {/* Filters */}
+          <div className="mb-4 flex flex-wrap items-center gap-3 px-2">
+            <div className="relative min-w-60 flex-1 basis-70">
+              <Search
+                size={17}
+                strokeWidth={1.5}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => changeSearch(e.target.value)}
+                placeholder="Search by service name or ID..."
+                className="h-9 w-full rounded-lg border border-gray-300 bg-white pl-9 pr-3 text-sm text-gray-700 outline-none transition focus:border-sky-400 focus:ring-1 focus:ring-sky-100"
+              />
+            </div>
+
+            <label className={labelClass}>
+              <select
+                value={servicesFilter}
+                onChange={(e) =>
+                  changeServicesFilter(e.target.value as ServiceFilter)
+                }
+                className={selectClass}
+              >
+                <option value="all">All Service Type</option>
+                <option value="consultation">Consultation</option>
+                <option value="laboratory">Laboratory</option>
+                <option value="imaging">Imaging</option>
+                <option value="package">Package</option>
+              </select>
+              <ChevronDown size={15} className={chevronClass} />
+            </label>
+          </div>
+
+          {/* Table */}
+          <div className="overflow-x-auto border border-gray-200">
+            <table className="min-w-full text-sm">
+              <thead className="border-b border-gray-200 bg-gray-200">
+                <tr>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500">
+                    ID
+                  </th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500">
+                    Service Name
+                  </th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500">
+                    Service Category
+                  </th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500">
+                    Service Type
+                  </th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500">
+                    Room
+                  </th>
+                  <th className="px-4 py-3 text-right font-medium text-gray-500">
+                    Price
+                  </th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500">
+                    Status
+                  </th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500">
+                    Action
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {pageServices.map((service) => (
+                  <tr
+                    key={service.service_id}
+                    className="border-t border-gray-100 hover:bg-gray-50"
+                  >
+                    <td className="px-4 py-3 text-gray-500">
+                      {service.service_id}
+                    </td>
+                    <td className="px-4 py-3 font-medium text-gray-900">
+                      {service.service_name}
+                    </td>
+                    <td className="px-4 py-3 font-medium text-gray-900">
+                      {service.service_category}
+                    </td>
+                    <td className="px-4 py-3 capitalize text-gray-600">
+                      {service.service_type}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">{service.room}</td>
+                    <td className="px-4 py-3 text-right text-gray-900">
+                      {formatPrice(service.price)}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">
+                      {service.active ? "Active" : "Inactive"}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowEditModal(true);
+                            setSelectedService(service);
+                          }}
+                          className="border border-sky-600 px-2 py-1 rounded-md transition text-sky-600 cursor-pointer hover:bg-sky-600 hover:text-white"
+                        >
+                          View/Edit
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedService(service);
+                            setShowDeleteModal(true);
+                          }}
+                          className="border border-red-500 px-2 py-1 rounded-md transition text-red-500 hover:bg-red-500 hover:text-white cursor-pointer"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+
+                {pageServices.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={8}
+                      className="px-4 py-6 text-center text-gray-500"
+                    >
+                      {loading ? (
+                        <LoadingScreen message="Loading services..." />
+                      ) : (
+                        <EmptyState
+                          message={
+                            error
+                              ? "Services are unavailable."
+                              : "No services found."
+                          }
+                        />
+                      )}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {total > 0 && (
+            <div className="flex items-center justify-between px-4 pt-4 text-xs text-gray-500">
+              <span>
+                Showing {from} - {to} of {total} services
+              </span>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  disabled={currentPage <= 1}
+                  onClick={() => setPage(currentPage - 1)}
+                  className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  &lt;
+                </button>
+
+                {pages.map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setPage(p)}
+                    className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg ${
+                      p === currentPage
+                        ? "bg-sky-500 font-bold text-white shadow-xs"
+                        : "border border-gray-200 hover:bg-gray-100"
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+
+                <button
+                  type="button"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setPage(currentPage + 1)}
+                  className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  &gt;
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </LoadingRegion>
       {showDeleteModal && selectedService && (
         <UniversalModal
           isOpen={showDeleteModal}

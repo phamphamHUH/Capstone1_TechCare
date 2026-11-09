@@ -1,6 +1,7 @@
 import EmptyState from "../../../../components/EmptyState";
 import ErrorMessage from "../../../../components/ErrorMessage";
 import LoadingScreen from "../../../../components/LoadingScreen";
+import LoadingRegion from "../../../../components/LoadingRegion";
 import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import api from "../../../../lib/axios";
 import QueueTabs, { type MainFilter } from "./QueueTabs";
@@ -211,34 +212,39 @@ function LaboratoryQueuePanel({
       />
 
       {error && <ErrorMessage className="mx-4">{error}</ErrorMessage>}
-      {loading && queues.length === 0 ? (
-        <LoadingScreen
-          message={`Loading ${loadingLabel}laboratory queues...`}
-        />
-      ) : filterQueues.length === 0 ? (
-        <EmptyState
-          message={
-            loadFailed
-              ? "Laboratory requests are unavailable."
-              : "No laboratory requests found."
-          }
-        />
-      ) : (
-        <div className="w-full mb-8">
-          <QueueTable
-            filterQueues={filterQueues}
-            laboratoryItems={laboratoryItems}
-            accordionError={accordionError}
-            accordionLoading={accordionLoading}
-            setOpenQueueAccordion={setOpenQueueAccordion}
-            openQueueAccordion={openQueueAccordion}
-            setOpenInformationCard={setOpenInformationCard}
-            setQueueIdCard={setQueueIdCard}
-            room={room}
-            loadData={loadData}
+      <LoadingRegion
+        loading={loading && queues.length > 0}
+        message="Refreshing laboratory queues..."
+      >
+        {loading && queues.length === 0 ? (
+          <LoadingScreen
+            message={`Loading ${loadingLabel}laboratory queues...`}
           />
-        </div>
-      )}
+        ) : filterQueues.length === 0 ? (
+          <EmptyState
+            message={
+              loadFailed
+                ? "Laboratory requests are unavailable."
+                : "No laboratory requests found."
+            }
+          />
+        ) : (
+          <div className="w-full mb-8">
+            <QueueTable
+              filterQueues={filterQueues}
+              laboratoryItems={laboratoryItems}
+              accordionError={accordionError}
+              accordionLoading={accordionLoading}
+              setOpenQueueAccordion={setOpenQueueAccordion}
+              openQueueAccordion={openQueueAccordion}
+              setOpenInformationCard={setOpenInformationCard}
+              setQueueIdCard={setQueueIdCard}
+              room={room}
+              loadData={loadData}
+            />
+          </div>
+        )}
+      </LoadingRegion>
     </div>
   );
 }

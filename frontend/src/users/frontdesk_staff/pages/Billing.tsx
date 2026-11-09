@@ -1,5 +1,7 @@
 import ErrorMessage from "../../../components/ErrorMessage";
-import LoadingScreen, { LoadingSpinner } from "../../../components/LoadingScreen";
+import LoadingScreen, {
+  LoadingSpinner,
+} from "../../../components/LoadingScreen";
 import { useMemo, useState } from "react";
 import axios from "axios";
 import { RefreshCw, Search } from "lucide-react";
@@ -209,13 +211,9 @@ function Billing({ bills, loading, error, loadData }: BillingProps) {
         tests.
       </p>
 
-      {error && (
-        <ErrorMessage className="mt-4">{error}</ErrorMessage>
-      )}
+      {error && <ErrorMessage className="mt-4">{error}</ErrorMessage>}
       {actionError && (
-        <ErrorMessage className="mt-4">
-          {actionError}
-        </ErrorMessage>
+        <ErrorMessage className="mt-4">{actionError}</ErrorMessage>
       )}
       {stats.awaitingLaboratory > 0 && (
         <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
@@ -272,24 +270,24 @@ function Billing({ bills, loading, error, loadData }: BillingProps) {
           onClick={() => void loadData()}
           className="flex h-9 cursor-pointer items-center gap-2 rounded-sm border border-gray-300 px-3 text-sm text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {loading ? (
-            <LoadingSpinner size={16} />
-          ) : (
-            <RefreshCw size={16} />
-          )}
+          {loading ? <LoadingSpinner size={16} /> : <RefreshCw size={16} />}
           Refresh
         </button>
       </div>
 
       {opening && (
-        <LoadingScreen message="Loading the selected bill..." variant="inline" className="py-3" />
+        <LoadingScreen
+          message="Loading the selected bill..."
+          variant="inline"
+          className="py-3"
+        />
       )}
 
       <BillingTable
         key={`${tab}-${search}`}
         bills={visibleBills}
         variant={tab}
-        loading={loading && bills.length === 0}
+        loading={loading}
         error={error}
         emptyMessage={
           error

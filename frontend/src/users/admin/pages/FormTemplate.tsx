@@ -1,5 +1,6 @@
 import ErrorMessage from "../../../components/ErrorMessage";
 import LoadingScreen from "../../../components/LoadingScreen";
+import LoadingRegion from "../../../components/LoadingRegion";
 import { useEffect, useState, useCallback } from "react";
 import api from "#lib/axios";
 import TemplateLibrary from "../components/FormTemplate/TemplateLibrary";
@@ -165,13 +166,18 @@ export default function FormTemplate({
         {fetching && formTemplates.length === 0 && viewMode === "library" ? (
           <LoadingScreen variant="page" message="Loading form templates..." />
         ) : viewMode === "library" ? (
-          <TemplateLibrary
-            templates={formTemplates}
-            services={services}
-            onCreateNew={handleCreateNew}
-            onEditTemplate={handleEditTemplate}
-            onDeleteTemplate={handleDeleteTemplate}
-          />
+          <LoadingRegion
+            loading={fetching && formTemplates.length > 0}
+            message="Refreshing form templates..."
+          >
+            <TemplateLibrary
+              templates={formTemplates}
+              services={services}
+              onCreateNew={handleCreateNew}
+              onEditTemplate={handleEditTemplate}
+              onDeleteTemplate={handleDeleteTemplate}
+            />
+          </LoadingRegion>
         ) : (
           <TemplateBuilder
             key={editingTemplate?.form_id ?? "new"}

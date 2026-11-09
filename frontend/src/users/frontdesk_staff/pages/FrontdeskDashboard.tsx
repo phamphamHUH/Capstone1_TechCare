@@ -1,4 +1,5 @@
 import LoadingScreen from "../../../components/LoadingScreen";
+import LoadingRegion from "../../../components/LoadingRegion";
 import ErrorMessage from "../../../components/ErrorMessage";
 import { Users, Clock, List, Receipt, ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
@@ -105,90 +106,99 @@ function FrontdeskDashboard({
 
   return (
     <main className="flex-1 min-w-0">
-      <div className="space-y-6 px-6">
-        {error && <ErrorMessage>{error}</ErrorMessage>}
-        {/* =========================
+      <LoadingRegion
+        loading={
+          loading && Boolean(patients.length || bills.length || queues.length)
+        }
+        message="Refreshing dashboard..."
+      >
+        <div className="space-y-6 px-6">
+          {error && <ErrorMessage>{error}</ErrorMessage>}
+          {/* =========================
                     FRONTDESK SUMMARY
                 ========================== */}
-        <section className="bg-white border border-gray-300 rounded-2xl overflow-hidden">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-gray-300">
-            <StatCard
-              icon={<Clock size={20} strokeWidth={1.5} />}
-              label="Patients in Queue"
-              value={waitingCount}
-              caption="Currently waiting"
-              onClick={goToQueues}
-            />
-            <StatCard
-              icon={<Users size={20} strokeWidth={1.5} />}
-              label="Registered Today"
-              value={registeredToday}
-              caption="New patients today"
-              onClick={() => setPage("patient-records")}
-            />
-            <StatCard
-              icon={<List size={20} strokeWidth={1.5} />}
-              label="Total Queue"
-              value={totalQueue}
-              caption="Today's queue records"
-              onClick={goToQueues}
-            />
-            <StatCard
-              icon={<Receipt size={20} strokeWidth={1.5} />}
-              label="Pending Bills"
-              value={pendingBills}
-              caption="Unpaid bills"
-              onClick={() => setPage("billing")}
-            />
-          </div>
-        </section>
+          <section className="bg-white border border-gray-300 rounded-2xl overflow-hidden">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-gray-300">
+              <StatCard
+                icon={<Clock size={20} strokeWidth={1.5} />}
+                label="Patients in Queue"
+                value={waitingCount}
+                caption="Currently waiting"
+                onClick={goToQueues}
+              />
+              <StatCard
+                icon={<Users size={20} strokeWidth={1.5} />}
+                label="Registered Today"
+                value={registeredToday}
+                caption="New patients today"
+                onClick={() => setPage("patient-records")}
+              />
+              <StatCard
+                icon={<List size={20} strokeWidth={1.5} />}
+                label="Total Queue"
+                value={totalQueue}
+                caption="Today's queue records"
+                onClick={goToQueues}
+              />
+              <StatCard
+                icon={<Receipt size={20} strokeWidth={1.5} />}
+                label="Pending Bills"
+                value={pendingBills}
+                caption="Unpaid bills"
+                onClick={() => setPage("billing")}
+              />
+            </div>
+          </section>
 
-        {/* =========================
+          {/* =========================
                     QUEUE STATUS OVERVIEW
                 ========================== */}
-        <section className="bg-white border border-gray-300 rounded-2xl overflow-hidden">
-          <div className="px-6 py-5 border-b border-gray-300">
-            <div className="flex items-center gap-3">
-              <List size={20} strokeWidth={1.5} />
+          <section className="bg-white border border-gray-300 rounded-2xl overflow-hidden">
+            <div className="px-6 py-5 border-b border-gray-300">
+              <div className="flex items-center gap-3">
+                <List size={20} strokeWidth={1.5} />
 
-              <div>
-                <h2 className="text-lg font-semibold">Queue Status Overview</h2>
+                <div>
+                  <h2 className="text-lg font-semibold">
+                    Queue Status Overview
+                  </h2>
 
-                <p className="text-sm text-gray-500 mt-1">
-                  Current status of today's patient queue
-                </p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Current status of today's patient queue
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-gray-300">
-            <StatCard
-              label="Waiting"
-              value={waitingCount}
-              caption="Patients waiting for service"
-              onClick={goToQueues}
-            />
-            <StatCard
-              label="In Progress"
-              value={inProgressCount}
-              caption="Currently being served"
-              onClick={goToQueues}
-            />
-            <StatCard
-              label="Completed"
-              value={completedCount}
-              caption="Completed queue records"
-              onClick={goToQueues}
-            />
-            <StatCard
-              label="Cancelled"
-              value={cancelledCount}
-              caption="Cancelled queue records"
-              onClick={goToQueues}
-            />
-          </div>
-        </section>
-      </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-gray-300">
+              <StatCard
+                label="Waiting"
+                value={waitingCount}
+                caption="Patients waiting for service"
+                onClick={goToQueues}
+              />
+              <StatCard
+                label="In Progress"
+                value={inProgressCount}
+                caption="Currently being served"
+                onClick={goToQueues}
+              />
+              <StatCard
+                label="Completed"
+                value={completedCount}
+                caption="Completed queue records"
+                onClick={goToQueues}
+              />
+              <StatCard
+                label="Cancelled"
+                value={cancelledCount}
+                caption="Cancelled queue records"
+                onClick={goToQueues}
+              />
+            </div>
+          </section>
+        </div>
+      </LoadingRegion>
     </main>
   );
 }

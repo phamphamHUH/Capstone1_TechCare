@@ -1,6 +1,7 @@
 import EmptyState from "../../../../components/EmptyState";
 import ErrorMessage from "../../../../components/ErrorMessage";
 import LoadingScreen from "../../../../components/LoadingScreen";
+import LoadingRegion from "../../../../components/LoadingRegion";
 import { useState, type Dispatch, type SetStateAction } from "react";
 import QueueTable from "./QueueTable";
 import type { PriorityFilter, QueueEntry } from "../../../../interface/Queue";
@@ -228,30 +229,35 @@ function ConsultationQueuePanel({
       </div>
 
       {error && <ErrorMessage className="mx-4">{error}</ErrorMessage>}
-      {loading && queues.length === 0 ? (
-        <LoadingScreen
-          message={`Loading ${loadingLabel}consultation queues...`}
-        />
-      ) : filterQueues.length === 0 ? (
-        <EmptyState
-          message={
-            loadFailed
-              ? "Consultation requests are unavailable."
-              : "No consultation requests found."
-          }
-        />
-      ) : (
-        <div className="w-full ">
-          <QueueTable
-            filterQueues={filterQueues}
-            setOpenInformationCard={setOpenInformationCard}
-            setQueueIdCard={setQueueIdCard}
-            room={room}
-            loadData={loadData}
-            setSelectedQueue={setSelectedQueue}
+      <LoadingRegion
+        loading={loading && queues.length > 0}
+        message="Refreshing consultation queues..."
+      >
+        {loading && queues.length === 0 ? (
+          <LoadingScreen
+            message={`Loading ${loadingLabel}consultation queues...`}
           />
-        </div>
-      )}
+        ) : filterQueues.length === 0 ? (
+          <EmptyState
+            message={
+              loadFailed
+                ? "Consultation requests are unavailable."
+                : "No consultation requests found."
+            }
+          />
+        ) : (
+          <div className="w-full ">
+            <QueueTable
+              filterQueues={filterQueues}
+              setOpenInformationCard={setOpenInformationCard}
+              setQueueIdCard={setQueueIdCard}
+              room={room}
+              loadData={loadData}
+              setSelectedQueue={setSelectedQueue}
+            />
+          </div>
+        )}
+      </LoadingRegion>
     </div>
   );
 }

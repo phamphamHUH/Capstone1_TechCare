@@ -1,4 +1,5 @@
 import LoadingScreen from "../../../components/LoadingScreen";
+import LoadingRegion from "../../../components/LoadingRegion";
 import ErrorMessage from "../../../components/ErrorMessage";
 import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
@@ -180,18 +181,23 @@ function Queues({
           priority={priority}
           setPriority={setPriority}
         />
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-7">
-          <div className="xl:col-span-5 flex flex-col gap-2">
-            <QueueTable
-              queues={visibleQueues}
-              onRefresh={loadData}
-              loadFailed={loadFailed}
-            />
+        <LoadingRegion
+          loading={loading && queues.length > 0}
+          message="Refreshing queues..."
+        >
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-7">
+            <div className="xl:col-span-5 flex flex-col gap-2">
+              <QueueTable
+                queues={visibleQueues}
+                onRefresh={loadData}
+                loadFailed={loadFailed}
+              />
+            </div>
+            <div className="xl:col-span-2">
+              <RoomInfo queues={queues} loadFailed={loadFailed} />
+            </div>
           </div>
-          <div className="xl:col-span-2">
-            <RoomInfo queues={queues} loadFailed={loadFailed} />
-          </div>
-        </div>
+        </LoadingRegion>
       </div>
     </main>
   );

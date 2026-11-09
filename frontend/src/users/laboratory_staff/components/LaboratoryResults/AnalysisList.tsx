@@ -1,8 +1,17 @@
 import ErrorMessage from "../../../../components/ErrorMessage";
 import EmptyState from "../../../../components/EmptyState";
 import LoadingScreen from "../../../../components/LoadingScreen";
+import LoadingRegion from "../../../../components/LoadingRegion";
 import { useMemo, useState } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight, Eye, Flag, Search, TestTubeDiagonal } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  Flag,
+  Search,
+  TestTubeDiagonal,
+} from "lucide-react";
 import type {
   AnalysisRequest,
   AnalysisStatus,
@@ -306,9 +315,9 @@ export default function AnalysisList({
                 event.preventDefault();
                 setTab(TABS[next]);
                 setPage(1);
-                event.currentTarget.parentElement
-                  ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
-                  [next]?.focus();
+                const tabs = event.currentTarget.parentElement
+                  ?.querySelectorAll<HTMLButtonElement>('[role="tab"]');
+                tabs?.[next]?.focus();
               }}
             >
               {status}
@@ -326,10 +335,12 @@ export default function AnalysisList({
           aria-labelledby={`analysis-tab-${TABS.indexOf(tab)}`}
           aria-busy={loading}
         >
-          {error && (
-            <ErrorMessage className="m-4">{error}</ErrorMessage>
-          )}
-          <div className="w-full overflow-x-auto">
+          {error && <ErrorMessage className="m-4">{error}</ErrorMessage>}
+          <LoadingRegion
+            loading={loading && requests.length > 0}
+            message="Refreshing laboratory requests..."
+          >
+            <div className="w-full overflow-x-auto">
               <table className="w-full min-w-[1020px] border-collapse text-left text-sm">
                 <thead>
                   <tr>
@@ -368,9 +379,28 @@ export default function AnalysisList({
                     <tr>
                       <td colSpan={9}>
                         <EmptyState
-                          message={error ? "Laboratory requests are unavailable." : hasFilters ? "No matching requests found." : `No ${tab.toLowerCase()} requests found.`}
-                          description={hasFilters ? "Try changing or clearing your filters." : "Accepted requests with collected samples will appear here."}
-                          action={hasFilters ? <AnalysisButton variant="link" onClick={clearFilters}>Clear filters</AnalysisButton> : undefined}
+                          message={
+                            error
+                              ? "Laboratory requests are unavailable."
+                              : hasFilters
+                                ? "No matching requests found."
+                                : `No ${tab.toLowerCase()} requests found.`
+                          }
+                          description={
+                            hasFilters
+                              ? "Try changing or clearing your filters."
+                              : "Accepted requests with collected samples will appear here."
+                          }
+                          action={
+                            hasFilters ? (
+                              <AnalysisButton
+                                variant="link"
+                                onClick={clearFilters}
+                              >
+                                Clear filters
+                              </AnalysisButton>
+                            ) : undefined
+                          }
                         />
                       </td>
                     </tr>
@@ -450,6 +480,7 @@ export default function AnalysisList({
                 </tbody>
               </table>
             </div>
+          </LoadingRegion>
         </div>
         <footer className="flex flex-wrap items-center justify-between gap-4 px-4 py-4 text-sm text-gray-500 sm:px-5">
           <span aria-live="polite">
