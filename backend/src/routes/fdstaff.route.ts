@@ -21,6 +21,7 @@ import {
   addConsultationRecord,
   addLaboratoryRequest,
   addPatient,
+  resendPatientVerification,
   // addToQueue,
 } from "../controllers/fdstaff/postRequests.controller.js";
 import {
@@ -28,6 +29,7 @@ import {
   serveQueueEntry,
   skipQueueEntry,
   updatePatient,
+  resetPatientPassword,
 } from "../controllers/fdstaff/updateRequests.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import authMiddleware from "../middlewares/auth.middleware.js";
@@ -58,6 +60,7 @@ router.get(
 
 // POST requests
 router.post("/patients", upload.single("image"), addPatient);
+router.post("/patients/:patient_id/verification-email", resendPatientVerification);
 //uploading multiple files
 // router.post(
 //   "/patients",
@@ -72,6 +75,7 @@ router.post("/consultation-requests", addConsultationRecord);
 router.put("/queues/:queue_id", serveQueueEntry);
 router.patch("/queues/:queue_id", skipQueueEntry);
 router.put("/patients/:patient_id", upload.single("image"), updatePatient);
+router.patch("/patients/:patient_id/password", resetPatientPassword);
 router.patch("/billings/:bill_id/pay", confirmPayment);
 // DELETE requests
 router.delete("/queues/:queue_id", deleteQueue);

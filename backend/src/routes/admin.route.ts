@@ -18,12 +18,14 @@ import {
   addAction,
   addFormTemplates,
   addPackages,
+  resendUserVerification,
 } from "../controllers/admin/postRequests.controller.js";
 import {
   updateFormTemplate,
   updateService,
   updateUser,
   updateUserStatus,
+  resetUserPassword,
 } from "../controllers/admin/updateRequests.controller.js";
 import {
   deleteTemplate,
@@ -62,6 +64,7 @@ router.get("/analytics/services", getServiceAnalytics);
 router.get("/analytics/bills", getAnalyticsBills);
 
 router.post("/add-user", upload.single("image"), addUser);
+router.post("/users/:user_id/verification-email", resendUserVerification);
 router.post("/services", addService);
 router.post("/activities", addActivity);
 router.post("/actions", addAction);
@@ -72,6 +75,7 @@ router.put("/form-templates/:form_id", updateFormTemplate);
 
 router.patch("/users/:user_id", upload.single("image"), updateUser);
 router.patch("/users/status/:user_id", updateUserStatus);
+router.patch("/users/:user_id/password", resetUserPassword);
 router.patch("/services/:service_id/edit", updateService);
 
 router.delete("/form-templates/:form_id", deleteTemplate);

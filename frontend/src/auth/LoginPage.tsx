@@ -1,8 +1,8 @@
 import ErrorMessage from "../components/ErrorMessage";
 import { LoadingSpinner } from "../components/LoadingScreen";
 import { useEffect, useState, type FormEvent } from "react";
-import { useNavigate } from "react-router";
-import { Eye, EyeOff } from "lucide-react";
+import { Link, useNavigate } from "react-router";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import axios from "axios";
 import api from "../lib/axios";
 import ClinicSlideshow from "./components/ClinicSlideshow";
@@ -20,7 +20,6 @@ function LoginPage() {
     () => localStorage.getItem("remembered_user") !== null
   );
   const [showPassword, setShowPassword] = useState(false);
-  const [showResetHelp, setShowResetHelp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -200,22 +199,13 @@ function LoginPage() {
                     <span className="text-sm text-gray-800">Remember me</span>
                   </label>
 
-                  <button
-                    type="button"
-                    onClick={() => setShowResetHelp((shown) => !shown)}
-                    aria-expanded={showResetHelp}
+                  <Link
+                    to="/forgot-password"
                     className="text-sm text-sky-800 hover:underline cursor-pointer"
                   >
                     Forgot password?
-                  </button>
+                  </Link>
                 </div>
-
-                {showResetHelp && (
-                  <p className="mt-2 text-sm text-gray-800">
-                    Please contact the administrator or front desk to reset your
-                    password.
-                  </p>
-                )}
               </div>
 
               <button

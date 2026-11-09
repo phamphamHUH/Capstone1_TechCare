@@ -96,6 +96,13 @@ CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 
 CORS_ORIGIN=http://localhost:5173
 IS_PRODUCTION=false
+
+# Email (Brevo). Leave BREVO_API_KEY empty locally: emails are printed to
+# the backend console (with their link) instead of being sent.
+BREVO_API_KEY=
+EMAIL_FROM=clinic.sender@example.com
+EMAIL_FROM_NAME=Reyna G Diagnostic Clinic
+APP_URL=http://localhost:5173
 ```
 
 ### Variable Reference
@@ -113,6 +120,17 @@ IS_PRODUCTION=false
 | `CLOUDINARY_API_SECRET` | Cloudinary API secret. |
 | `CORS_ORIGIN` | Frontend origin or origins permitted by the backend CORS configuration. |
 | `IS_PRODUCTION` | Controls production-related behavior defined by the application. |
+| `BREVO_API_KEY` | Brevo API key for sending emails. Empty = emails are printed to the backend console. |
+| `EMAIL_FROM` | Sender address, verified in Brevo (Senders). |
+| `EMAIL_FROM_NAME` | Sender name shown in inboxes. |
+| `APP_URL` | Frontend address used in email links. On Render, set it to the real frontend URL. |
+
+### Email (Brevo)
+
+Emails are sent with Brevo's HTTPS API (`backend/src/services/email/sendEmail.ts`), not SMTP, because Render's free tier blocks SMTP. To turn it on: create a free Brevo account, verify a sender email, create an API key, and set `BREVO_API_KEY` and `EMAIL_FROM`.
+
+- **Employees:** the admin creates the account, the employee gets a confirmation email, and they can't log in until they click it. They can also use "Forgot password?".
+- **Patients:** they get a verification email when registered. Their account works without it, but the clinic sends them no other emails until they verify. Patients reset their password at the front desk.
 
 Use the values expected by the current backend implementation. The values above are examples, not real credentials.
 

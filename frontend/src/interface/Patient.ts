@@ -32,6 +32,8 @@ export type Patient = {
   guardian_relationship?: string;
   guardian_contact?: string;
   image_url?: string;
+  is_verified?: boolean; // false = no emails from the clinic yet
+  pending_email?: string | null; // new email waiting to be confirmed
   created_at: string;
   updated_at: string;
 };

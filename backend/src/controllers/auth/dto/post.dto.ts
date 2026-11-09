@@ -53,3 +53,59 @@ export namespace login {
     error?: string;
   }
 }
+
+// =========================
+// VERIFY EMAIL
+// POST /api/auth/verify-email  (public, link from the email)
+// =========================
+export namespace verifyEmail {
+  export interface body {
+    token: string;
+  }
+
+  export interface response {
+    message: string;
+    accountType: "user" | "patient";
+  }
+
+  export interface error {
+    message: string;
+  }
+}
+
+// =========================
+// FORGOT PASSWORD (employees only)
+// POST /api/auth/forgot-password  (public)
+// =========================
+export namespace forgotPassword {
+  export interface body {
+    email: string;
+  }
+
+  export interface response {
+    message: string;
+  }
+
+  export interface error {
+    message: string;
+  }
+}
+
+// =========================
+// RESET PASSWORD (employees only)
+// POST /api/auth/reset-password  (public, link from the email)
+// =========================
+export namespace resetPassword {
+  export interface body {
+    token: string;
+    password: string;
+  }
+
+  export interface response {
+    message: string;
+  }
+
+  export interface error {
+    message: string;
+  }
+}
