@@ -524,7 +524,7 @@ export async function confirmPayment(
           const { patient_id, room } = group[0];
           const groupPriority = group.some((item) => item.is_priority === true);
 
-          // Reuse the patient's open queue for this room, if there is one.
+          // Reuse only today's open queue, since the lab page lists today's entries.
           const {
             rows: [existing],
           } = await client.query(
@@ -533,6 +533,8 @@ export async function confirmPayment(
              WHERE q.patient_id = $1
                AND q.queue_id LIKE 'LAB-%'
                AND LOWER(TRIM(q.status)) IN ('waiting', 'serving')
+               AND q.created_at >= CURRENT_DATE
+               AND q.created_at < CURRENT_DATE + INTERVAL '1 day'
                AND EXISTS (
                  SELECT 1
                  FROM laboratory_request_items lri
