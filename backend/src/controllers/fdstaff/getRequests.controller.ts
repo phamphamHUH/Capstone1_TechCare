@@ -251,26 +251,55 @@ export async function getAllQueueEntries(
   }
 }
 
-export async function getAllServices(
+export async function getAllservices(
   req: Request,
   res: Response<getAllServices.response | getAllServices.error>,
 ) {
   try {
     const services = await sql`
-      SELECT service_id, service_name, price, service_type, room
+      SELECT *
       FROM services
-      WHERE active = TRUE
-      ORDER BY service_type, service_name
+      ORDER BY service_id ASC
     `;
 
+    const packages = await sql`w
+      SELECT
+        p.id,
+        p.package_id                              AS service_id,
+        p.package_name                            AS service_name,
+        'package'::text                           AS service_type,
+        'Package'::text                           AS service_category,
+        p.package_price                           AS price,
+        '-'::text                                 AS room,
+        (LOWER(TRIM(p.status)) = 'active')        AS active,
+        COALESCE(
+          ARRAY_AGG(ps.service_id ORDER BY ps.service_id)
+            FILTER (WHERE ps.service_id IS NOT NULL),
+          '{}'::text[]
+        )                                         AS service_ids,
+        COALESCE(
+          ARRAY_AGG(s.service_name ORDER BY s.service_name)
+            FILTER (WHERE s.service_name IS NOT NULL),
+          '{}'::text[]
+        )                                         AS service_names,
+        p.created_at,
+        p.updated_at
+      FROM packages p
+      LEFT JOIN package_services ps ON ps.package_id = p.package_id
+      LEFT JOIN services s          ON s.service_id = ps.service_id
+      GROUP BY p.id
+      ORDER BY p.package_id ASC
+    `;
     return res.status(200).json({
-      services: services as unknown as getAllServices.service[],
+      services,
+      packages,
     } as getAllServices.response);
   } catch (error) {
-    console.error("Error fetching services:", error);
-    return res
-      .status(500)
-      .json({ message: "Failed to fetch services" } as getAllServices.error);
+    console.error("GET ALL SERVICES ERROR:", error);
+
+    return res.status(500).json({
+      message: "Internal Server Error",
+    } as getAllServices.error);
   }
 }
 

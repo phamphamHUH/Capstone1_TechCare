@@ -3,6 +3,10 @@ import type { QueueEntry } from "../../../interface/Queue";
 import { formatAge, formatDateTime } from "../../../utils/formats";
 import calculateAge from "../../../utils/calculateAge";
 import MedicalHistoryTab from "../components/ActiveConsultation/MedicalHistoryTab";
+import Overview from "../components/ActiveConsultation/Overview";
+
+type ActiveConsultationProps = {
+  selectedQueue: QueueEntry | null;
 import LoadingScreen from "../../../components/LoadingScreen";
 import LoadingRegion from "../../../components/LoadingRegion";
 import ErrorMessage from "../../../components/ErrorMessage";
@@ -14,11 +18,12 @@ type ActiveConsultationProps = {
   error?: string | null;
 };
 
-type ConsultationTabs =
+export type ConsultationTabs =
   | "overview"
   | "medical-history"
   | "laboratory-results"
-  | "file-attachments";
+  | "digital-documents"
+  | "prescription";
 
 function ActiveConsultation({
   selectedQueue,
@@ -43,8 +48,7 @@ function ActiveConsultation({
   }[] = [
     { id: "overview", label: "Overview" },
     { id: "medical-history", label: "Medical History" },
-    { id: "laboratory-results", label: "Laboratory Results" },
-    { id: "file-attachments", label: "File Attachments" },
+    { id: "digital-documents", label: "Digital Documents" },
   ];
 
   if (loading && !selectedQueue) {
@@ -139,6 +143,18 @@ function ActiveConsultation({
                 <span>•</span>
                 <p>In Consultation</p>
               </div>
+            </div>
+
+            {/* QUEUE INFORMATION */}
+            <div className="flex items-center gap-3 text-sm text-gray-600 mt-3 font-semibold">
+              <p>{selectedQueue.queue_id}</p>
+              <span>•</span>
+              <p>{selectedQueue.consultation_record_id}</p>
+              <span>•</span>
+              <p>{selectedQueue.room}</p>
+              <span>•</span>
+              <p>In Consultation</p>
+            </div>
 
               {/* CONSULTATION TABS */}
               <div className="mt-6">
@@ -178,6 +194,28 @@ function ActiveConsultation({
             <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100">
               <span className="text-2xl text-yellow-600">!</span>
             </div>
+          </section>
+          {/* TAB CONTENT */}
+          <section>
+            {activeTab === "overview" && (
+              <Overview
+                key={selectedQueue?.consultation_record_id}
+                selectedQueue={selectedQueue}
+                onProceed={() => setActiveTab("prescription")}
+              />
+            )}
+            {activeTab === "medical-history" && (
+              <MedicalHistoryTab patientId={selectedQueue.patient_id} />
+            )}
+            {activeTab === "digital-documents" && <div>file</div>}
+            {activeTab === "prescription" && <div>prescription</div>}
+          </section>
+        </>
+      ) : (
+        <div className="flex flex-col items-center justify-center rounded-md border border-dashed border-gray-300 bg-gray-50 px-6 py-16 text-center">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100">
+            <span className="text-2xl text-yellow-600">!</span>
+          </div>
 
             <h3 className="text-base font-semibold text-gray-700">
               No Active Consultation
