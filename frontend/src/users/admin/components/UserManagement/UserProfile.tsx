@@ -5,6 +5,8 @@ import type { User } from "../../../../interface/User";
 import { ConfirmationModal } from "./ConfirmationModal";
 import { X, Mail, Phone, MapPin, Calendar, Clock, Pencil, KeyRound } from "lucide-react";
 import ResetPasswordModal from "../../../../components/ResetPasswordModal";
+import { DOCTOR_FIELDS } from "./doctorField";
+import UniversalModal from "../../../../components/UniversalModal";
 
 type Props = {
   loadData: () => Promise<void>;
@@ -26,6 +28,16 @@ function UserProfile({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
 
+  const [notice, setNotice] = useState<{
+    type: "success" | "danger";
+    title: string;
+    message: string;
+  } | null>(null);
+
+  const errorMessage = (error: unknown) =>
+    (error as { response?: { data?: { message?: string } } }).response?.data
+      ?.message || "Something went wrong";
+
   // =========================
   // RESET PASSWORD (admin types the new password)
   // =========================
@@ -34,13 +46,18 @@ function UserProfile({
       const response = await api.patch(`api/admin/users/${user.user_id}/password`, {
         password,
       });
-      alert(response.data.message);
       setShowResetPassword(false);
+      setNotice({
+        type: "success",
+        title: "Password reset",
+        message: response.data.message,
+      });
     } catch (error: unknown) {
-      alert(
-        (error as { response?: { data?: { message?: string } } }).response?.data
-          ?.message || "Something went wrong",
-      );
+      setNotice({
+        type: "danger",
+        title: "Couldn't reset password",
+        message: errorMessage(error),
+      });
     }
   }
 
@@ -50,12 +67,17 @@ function UserProfile({
   async function resendVerification() {
     try {
       const response = await api.post(`api/admin/users/${user.user_id}/verification-email`);
-      alert(response.data.message);
+      setNotice({
+        type: "success",
+        title: "Email sent",
+        message: response.data.message,
+      });
     } catch (error: unknown) {
-      alert(
-        (error as { response?: { data?: { message?: string } } }).response?.data
-          ?.message || "Something went wrong",
-      );
+      setNotice({
+        type: "danger",
+        title: "Couldn't send email",
+        message: errorMessage(error),
+      });
     }
   }
 
@@ -97,7 +119,11 @@ function UserProfile({
         account_status: newStatus,
       }));
 
-      alert(response.data.message);
+      setNotice({
+        type: "success",
+        title: newStatus ? "Account activated" : "Account deactivated",
+        message: response.data.message,
+      });
       await loadData();
     } catch (error: unknown) {
       setFormError(
@@ -457,6 +483,27 @@ function UserProfile({
               </div>
             </div>
 
+            {/* Doctor */}
+            {user.role === "doctor" && (
+              <div className="rounded-3xl bg-white p-6 shadow-sm lg:col-span-2">
+                <h2 className="mb-6 text-base font-semibold text-gray-900">
+                  Doctor Information
+                </h2>
+
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                  {DOCTOR_FIELDS.map(({ key, label }) => (
+                    <div key={key}>
+                      <p className="text-xs text-gray-400">{label}</p>
+
+                      <p className="mt-1 text-sm font-medium text-gray-900">
+                        {user[key] || "Not provided"}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Emergency */}
             <div className="rounded-3xl bg-white p-6 shadow-sm lg:col-span-2">
               <h2 className="mb-6 text-base font-semibold text-gray-900">
@@ -484,6 +531,14 @@ function UserProfile({
           </div>
         </div>
       </div>
+      <UniversalModal
+        isOpen={notice !== null}
+        type={notice?.type ?? "info"}
+        title={notice?.title ?? ""}
+        description={notice?.message}
+        onClose={() => setNotice(null)}
+        actions={[{ label: "OK", onClick: () => setNotice(null) }]}
+      />
     </>
   );
 }
