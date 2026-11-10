@@ -14,6 +14,7 @@ type PatientTableProps = {
 
 function PatientTable({
   patients,
+  loadFailed,
   onEdit,
   onResetPassword,
   onResendVerification,

@@ -1,6 +1,7 @@
 import LoadingScreen from "../../../components/LoadingScreen";
 import LoadingRegion from "../../../components/LoadingRegion";
 import ErrorMessage from "../../../components/ErrorMessage";
+import UniversalModal from "../../../components/UniversalModal";
 import { useState } from "react";
 import type { Patient } from "../../../interface/Patient";
 import { Search } from "lucide-react";
@@ -24,6 +25,16 @@ type PatientRecordProps = {
   error?: string;
 };
 
+type Notice = {
+  type: "success" | "danger";
+  title: string;
+  message: string;
+};
+
+const errorMessage = (error: unknown) =>
+  (error as { response?: { data?: { message?: string } } }).response?.data
+    ?.message || "Something went wrong. Please try again.";
+
 function PatientRecords({
   patients,
   selectedPatient,
@@ -37,44 +48,72 @@ function PatientRecords({
   const [resetPasswordPatient, setResetPasswordPatient] = useState<Patient | null>(null);
   const [search, setSearch] = useState("");
 
+  const [notice, setNotice] = useState<Notice | null>(null);
+  // Holds the typed password until the person confirms
+  const [pendingReset, setPendingReset] = useState<{
+    patient: Patient;
+    password: string;
+  } | null>(null);
+  const [verifyTarget, setVerifyTarget] = useState<Patient | null>(null);
+
   // =========================
-  // RESET PASSWORD (front desk types the new password)
+  // RESET PASSWORD (front desk types the new password, then confirms)
   // =========================
   // The only way a patient's password is reset.
-  async function resetPassword(password: string) {
-    if (!resetPasswordPatient) return;
+  async function confirmResetPassword() {
+    if (!pendingReset) return;
+    const { patient, password } = pendingReset;
 
     try {
       const response = await api.patch(
-        `/api/fdstaff/patients/${resetPasswordPatient.patient_id}/password`,
+        `/api/fdstaff/patients/${patient.patient_id}/password`,
         { password },
       );
-      alert(response.data.message);
+      setPendingReset(null);
       setResetPasswordPatient(null);
+      setNotice({
+        type: "success",
+        title: "Password reset",
+        message: response.data.message,
+      });
     } catch (error: unknown) {
-      alert(
-        (error as { response?: { data?: { message?: string } } }).response?.data
-          ?.message || "Something went wrong",
-      );
+      // Keep the password form open so they can try again
+      setPendingReset(null);
+      setNotice({
+        type: "danger",
+        title: "Couldn't reset password",
+        message: errorMessage(error),
+      });
     }
   }
 
   // =========================
-  // RESEND VERIFICATION EMAIL
+  // RESEND VERIFICATION EMAIL (after confirming)
   // =========================
-  async function resendVerification(patient: Patient) {
+  async function confirmResendVerification() {
+    if (!verifyTarget) return;
+    const patient = verifyTarget;
+
     try {
       const response = await api.post(
         `/api/fdstaff/patients/${patient.patient_id}/verification-email`,
       );
-      alert(response.data.message);
+      setVerifyTarget(null);
+      setNotice({
+        type: "success",
+        title: "Email sent",
+        message: response.data.message,
+      });
     } catch (error: unknown) {
-      alert(
-        (error as { response?: { data?: { message?: string } } }).response?.data
-          ?.message || "Something went wrong",
-      );
+      setVerifyTarget(null);
+      setNotice({
+        type: "danger",
+        title: "Couldn't send email",
+        message: errorMessage(error),
+      });
     }
   }
+
   const filteredPatients = patients.filter((patient) => {
     const fullName = `${patient.first_name} ${patient.last_name}`.toLowerCase();
     const q = search.toLowerCase();
@@ -121,6 +160,8 @@ function PatientRecords({
               setSelectedPatient(p);
               setShowEditPatient(true);
             }}
+            onResetPassword={setResetPasswordPatient}
+            onResendVerification={setVerifyTarget}
           />
         </LoadingRegion>
       </div>
@@ -129,7 +170,10 @@ function PatientRecords({
         <ResetPasswordModal
           name={`${resetPasswordPatient.first_name} ${resetPasswordPatient.last_name}`}
           onClose={() => setResetPasswordPatient(null)}
-          onSave={resetPassword}
+          onSave={async (password: string) => {
+            // Don't call the API yet: ask for confirmation first
+            setPendingReset({ patient: resetPasswordPatient, password });
+          }}
         />
       )}
 
@@ -140,6 +184,58 @@ function PatientRecords({
           loadData={loadData}
         />
       )}
+
+      {/* Confirm: reset password */}
+      <UniversalModal
+        isOpen={pendingReset !== null}
+        type="warning"
+        title="Reset this password?"
+        description={
+          pendingReset
+            ? `This replaces ${pendingReset.patient.first_name} ${pendingReset.patient.last_name}'s current password. They'll need the new one to sign in.`
+            : undefined
+        }
+        onClose={() => setPendingReset(null)}
+        actions={[
+          { label: "Cancel", onClick: () => setPendingReset(null) },
+          {
+            label: "Reset password",
+            pendingLabel: "Resetting...",
+            onClick: confirmResetPassword,
+          },
+        ]}
+      />
+
+      {/* Confirm: resend verification email */}
+      <UniversalModal
+        isOpen={verifyTarget !== null}
+        type="info"
+        title="Send confirmation email?"
+        description={
+          verifyTarget
+            ? `A new confirmation email will be sent to ${verifyTarget.email}.`
+            : undefined
+        }
+        onClose={() => setVerifyTarget(null)}
+        actions={[
+          { label: "Cancel", onClick: () => setVerifyTarget(null) },
+          {
+            label: "Send email",
+            pendingLabel: "Sending...",
+            onClick: confirmResendVerification,
+          },
+        ]}
+      />
+
+      {/* Result of either action */}
+      <UniversalModal
+        isOpen={notice !== null}
+        type={notice?.type ?? "info"}
+        title={notice?.title ?? ""}
+        description={notice?.message}
+        onClose={() => setNotice(null)}
+        actions={[{ label: "OK", onClick: () => setNotice(null) }]}
+      />
     </main>
   );
 }
