@@ -59,6 +59,13 @@ const TABLES: TableDefinition[] = [
       reset_expires_at: "TIMESTAMP",
       created_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
       updated_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      // Doctor-specific fields
+      prc_license_number: "VARCHAR(50)",
+      ptr_number: "VARCHAR(50)",
+      s2_license: "VARCHAR(50)",
+      medical_specialty: "VARCHAR(100)",
+      subspecialty: "VARCHAR(100)",
+      board_certification: "VARCHAR(100)",
     },
   },
 

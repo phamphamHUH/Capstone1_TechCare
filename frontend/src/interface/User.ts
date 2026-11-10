@@ -24,4 +24,10 @@ export type User = {
   is_verified: boolean; // false = hasn't confirmed their email, can't log in yet
   created_at: string;
   updated_at: string;
+  prc_license_number: string | null;
+  ptr_number: string | null;
+  s2_license: string | null;
+  medical_specialty: string | null;
+  subspecialty: string | null;
+  board_certification: string | null;
 };

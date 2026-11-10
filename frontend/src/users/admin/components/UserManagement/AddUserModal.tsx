@@ -1,781 +1,370 @@
+import { useEffect, useState } from "react";
+import UniversalModal from "../../../../components/UniversalModal";
+import { Eye, EyeOff } from "lucide-react";
 import ErrorMessage from "../../../../components/ErrorMessage";
-import { useState } from "react";
 import api from "../../../../lib/axios";
+import { Field, SelectField, Section, fieldClass } from "../../../../components/FormFields";
+import { DOCTOR_FIELDS } from "./doctorField";
 import {
-    departmentAfterRoleChange,
-    LAB_ROOMS,
-    LAB_STAFF_ROLE,
+  departmentAfterRoleChange,
+  LAB_ROOMS,
+  LAB_STAFF_ROLE,
 } from "./labRooms";
 
 type Props = {
-    onClose: () => void;
-    loadData: () => void;
+  onClose: () => void;
+  loadData: () => void;
 };
 
+const ROLE_OPTIONS = [
+  { value: "admin", label: "Admin" },
+  { value: "doctor", label: "Doctor" },
+  { value: LAB_STAFF_ROLE, label: "Laboratory Staff" },
+  { value: "frontdesk-staff", label: "Front Desk Staff" },
+];
+const SEX_OPTIONS = ["Male", "Female"];
+const EMPLOYMENT_STATUS_OPTIONS = [
+  { value: "active", label: "Active" },
+  { value: "inactive", label: "Inactive" },
+  { value: "on-leave", label: "On Leave" },
+];
+
+const DOCTOR_KEYS = new Set<string>(DOCTOR_FIELDS.map((f) => f.key));
+
+// Local date as YYYY-MM-DD. toISOString() uses UTC, which gives
+// yesterday's date before 8 AM in Manila.
+const today = () => new Date().toLocaleDateString("en-CA");
+
+const getInitialForm = () => ({
+  // Account
+  username: "", password: "", confirm_password: "",
+  // Personal
+  first_name: "", middle_name: "", last_name: "", suffix: "",
+  sex: "", birthdate: "", email: "", contact_number: "", address: "",
+  emergency_contact: "", emergency_contact_name: "",
+  // Employment
+  role: "", department: "",
+  employment_status: "active", date_hired: today(),
+  shift_start: "08:00", shift_end: "17:00",
+  // Doctor
+  prc_license_number: "", ptr_number: "", s2_license: "",
+  medical_specialty: "", subspecialty: "", board_certification: "",
+});
+type FormState = ReturnType<typeof getInitialForm>;
+
 function AddUserModal({ onClose, loadData }: Props) {
-    // =========================
-    // Account Information
-    // =========================
-    const [formError, setFormError] = useState("");
-  const [username, setUsername] = useState("");
-    const [password, setPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
-    const [hiddenPassword, setHiddenPassword] = useState(true);
+  const [form, setForm] = useState<FormState>(getInitialForm);
+  const [showPassword, setShowPassword] = useState(false);
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [formError, setFormError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-    // =========================
-    // Personal Information
-    // =========================
-    const [firstName, setFirstName] = useState("");
-    const [middleName, setMiddleName] = useState("");
-    const [lastName, setLastName] = useState("");
-    const [suffix, setSuffix] = useState("");
-    const [sex, setSex] = useState("");
-    const [birthdate, setBirthdate] = useState("");
+  const set = (key: keyof FormState) => (v: string) =>
+    setForm((f) => ({ ...f, [key]: v }));
 
-    // =========================
-    // Contact Information
-    // =========================
-    const [contactNumber, setContactNumber] = useState("");
-    const [email, setEmail] = useState("");
-    const [address, setAddress] = useState("");
+  const isDoctor = form.role === "doctor";
 
-    // =========================
-    // Emergency Contact
-    // =========================
-    const [emergencyContactName, setEmergencyContactName] = useState("");
-    const [emergencyContact, setEmergencyContact] = useState("");
+  const [notice, setNotice] = useState<{
+    title: string;
+    message: string;
+    after?: () => void;
+  } | null>(null);
 
-    // =========================
-    // Employment Information
-    // =========================
-    const [role, setRole] = useState("");
-    const [department, setDepartment] = useState("");
-    const [employmentStatus, setEmploymentStatus] = useState("");
-    const [dateHired, setDateHired] = useState(
-        new Date().toISOString().split("T")[0]
-    );
+  const closeNotice = () => {
+    const after = notice?.after;
+    setNotice(null);
+    after?.();
+  };
 
-    // =========================
-    // Shift Schedule
-    // =========================
-    const [shiftStart, setShiftStart] = useState("08:00");
-    const [shiftEnd, setShiftEnd] = useState("17:00");
+  function handleRoleChange(nextRole: string) {
+    setForm((f) => ({
+      ...f,
+      role: nextRole,
+      department: departmentAfterRoleChange(f.role, nextRole, f.department),
+    }));
+  }
 
-    // =========================
-    // Profile Photo
-    // =========================
-    const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
-    const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  // Photo
+  function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // lets the same file be picked again after Remove
+    if (!file) return;
 
-    // =========================
-    // Profile Photo Handler
-    // =========================
-    const handlePhotoChange = (
-        e: React.ChangeEvent<HTMLInputElement>
-    ) => {
-        const file = e.target.files?.[0];
+    if (!file.type.startsWith("image/")) {
+      setFormError("Please select an image file.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setFormError("Profile photo must be smaller than 5MB.");
+      return;
+    }
 
-        if (!file) {
-            return;
-        }
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    setPhoto(file);
+    setPhotoPreview(URL.createObjectURL(file));
+  }
 
-        if (!file.type.startsWith("image/")) {
-            setFormError("Please select an image file.");
-            return;
-        }
+  function removePhoto() {
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    setPhoto(null);
+    setPhotoPreview(null);
+  }
 
-        if (file.size > 5 * 1024 * 1024) {
-            setFormError("Profile photo must be smaller than 5MB.");
-            return;
-        }
+  useEffect(
+    () => () => {
+      if (photoPreview) URL.revokeObjectURL(photoPreview);
+    },
+    [photoPreview],
+  );
 
-        setProfilePhoto(file);
-
-        const previewUrl = URL.createObjectURL(file);
-        setPhotoPreview(previewUrl);
-    };
-
-    const removePhoto = () => {
-        setProfilePhoto(null);
-        setPhotoPreview(null);
-    };
-
-    // =========================
-    // Register User
-    // =========================
-    const registerUser = async () => {
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
     setFormError("");
-        // Required fields based on the users table
-        if (
-            !username ||
-            !password ||
-            !confirmPassword ||
-            !firstName ||
-            !lastName ||
-            !sex ||
-            !email ||
-            !contactNumber ||
-            !address ||
-            !birthdate ||
-            !role ||
-            !dateHired
-        ) {
-            setFormError("Please fill out all required fields.");
-            return;
-        }
 
-        if (role === LAB_STAFF_ROLE && !department) {
-            setFormError("Please select a room for the laboratory staff.");
-            return;
-        }
-
-        // Password confirmation
-        if (password !== confirmPassword) {
-            setFormError("Your passwords do not match.");
-            return;
-        }
-
-        // Only validate shift if both were manually entered
-        if (shiftStart && shiftEnd && shiftStart >= shiftEnd) {
-            setFormError("Shift start time must be earlier than shift end time.");
-            return;
-        }
-
-        try {
-            const formData = new FormData();
-
-            // =========================
-            // Required Account Fields
-            // =========================
-            formData.append("username", username);
-            formData.append("password", password);
-
-            // =========================
-            // Required Personal Fields
-            // =========================
-            formData.append("first_name", firstName);
-            formData.append("last_name", lastName);
-            formData.append("sex", sex);
-            formData.append("birthdate", birthdate);
-
-            // Optional Personal Fields
-            if (middleName) {
-                formData.append("middle_name", middleName);
-            }
-
-            if (suffix) {
-                formData.append("suffix", suffix);
-            }
-
-            // =========================
-            // Required Contact Fields
-            // =========================
-            formData.append("email", email);
-            formData.append("contact_number", contactNumber);
-            formData.append("address", address);
-
-            // =========================
-            // Optional Emergency Contact
-            // =========================
-            if (emergencyContactName) {
-                formData.append(
-                    "emergency_contact_name",
-                    emergencyContactName
-                );
-            }
-
-            if (emergencyContact) {
-                formData.append(
-                    "emergency_contact",
-                    emergencyContact
-                );
-            }
-
-            // =========================
-            // Required Employment Fields
-            // =========================
-            formData.append("role", role);
-            formData.append("date_hired", dateHired);
-
-            // Optional Employment Fields
-            if (department) {
-                formData.append("department", department);
-            }
-
-            if (employmentStatus) {
-                formData.append(
-                    "employment_status",
-                    employmentStatus
-                );
-            }
-
-            // =========================
-            // Optional Shift Fields
-            // =========================
-            // If empty, the database defaults are used:
-            // shift_start = 08:00:00
-            // shift_end = 17:00:00
-
-            if (shiftStart) {
-                formData.append("shift_start", shiftStart);
-            }
-
-            if (shiftEnd) {
-                formData.append("shift_end", shiftEnd);
-            }
-
-            // =========================
-            // Optional Profile Photo
-            // =========================
-            if (profilePhoto) {
-                formData.append(
-                    "image",
-                    profilePhoto
-                );
-            }
-
-            // =========================
-            // API Request
-            // =========================
-            const response = await api.post(
-                "/api/admin/add-user",
-                formData
-            );
-
-            alert(response.data.message);
-
-            onClose();
-            loadData();
-        } catch (error: unknown) {
-            setFormError(
-                (
-                    error as {
-                        response?: {
-                            data?: {
-                                message?: string;
-                            };
-                        };
-                    }
-                ).response?.data?.message ||
-                "Unable to complete this action. Please try again."
-            );
-
-            console.error(error);
-        }
-    };
-
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="w-full max-w-3xl bg-white p-6 shadow-xl">
-
-                {/* =========================
-                    HEADER
-                ========================= */}
-                <div className="mb-6 flex items-center justify-between">
-                    <h2 className="text-2xl font-bold">
-                        Add User
-                    </h2>
-
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="border px-4 py-2 hover:bg-gray-100"
-                    >
-                        X
-                    </button>
-                </div>
-
-                <div className="max-h-[75vh] space-y-6 overflow-y-auto pr-2">
-                    {formError && <ErrorMessage>{formError}</ErrorMessage>}
-
-                    {/* =========================
-                        ACCOUNT INFORMATION
-                    ========================= */}
-                    <section>
-                        <h3 className="mb-3 border-b pb-2 text-lg font-semibold">
-                            Account Information
-                        </h3>
-
-                        <div className="space-y-3">
-
-                            {/* Username */}
-                            <input
-                                type="text"
-                                placeholder="Username *"
-                                className="w-full border p-2"
-                                value={username}
-                                onChange={(e) =>
-                                    setUsername(e.target.value)
-                                }
-                            />
-
-                            {/* Password */}
-                            <div className="flex border">
-                                <input
-                                    type={
-                                        hiddenPassword
-                                            ? "password"
-                                            : "text"
-                                    }
-                                    placeholder="Password *"
-                                    className="w-full p-2 outline-none"
-                                    value={password}
-                                    onChange={(e) =>
-                                        setPassword(e.target.value)
-                                    }
-                                />
-
-                                <button
-                                    type="button"
-                                    className="px-3 hover:bg-gray-100"
-                                    onClick={() =>
-                                        setHiddenPassword(
-                                            !hiddenPassword
-                                        )
-                                    }
-                                >
-                                    {hiddenPassword
-                                        ? "Show"
-                                        : "Hide"}
-                                </button>
-                            </div>
-
-                            {/* Confirm Password */}
-                            <input
-                                type="password"
-                                placeholder="Confirm Password *"
-                                className="w-full border p-2"
-                                value={confirmPassword}
-                                onChange={(e) =>
-                                    setConfirmPassword(
-                                        e.target.value
-                                    )
-                                }
-                            />
-                        </div>
-                    </section>
-
-                    {/* =========================
-                        PROFILE PHOTO
-                    ========================= */}
-                    <section>
-                        <h3 className="mb-3 border-b pb-2 text-lg font-semibold">
-                            Profile Photo
-                        </h3>
-
-                        <div className="flex items-center gap-5">
-
-                            {/* Preview */}
-                            <div className="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-gray-100">
-                                {photoPreview ? (
-                                    <img
-                                        src={photoPreview}
-                                        alt="Profile preview"
-                                        className="h-full w-full object-cover"
-                                    />
-                                ) : (
-                                    <span className="text-sm text-gray-400">
-                                        No Photo
-                                    </span>
-                                )}
-                            </div>
-
-                            <div className="space-y-2">
-
-                                <input
-                                    type="file"
-                                    accept="image/png,image/jpeg,image/jpg,image/webp"
-                                    onChange={handlePhotoChange}
-                                    className="block"
-                                />
-
-                                <p className="text-xs text-gray-500">
-                                    JPG, PNG, or WEBP. Maximum 5MB.
-                                </p>
-
-                                {profilePhoto && (
-                                    <button
-                                        type="button"
-                                        onClick={removePhoto}
-                                        className="text-sm text-red-600 hover:underline"
-                                    >
-                                        Remove Photo
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* =========================
-                        PERSONAL INFORMATION
-                    ========================= */}
-                    <section>
-                        <h3 className="mb-3 border-b pb-2 text-lg font-semibold">
-                            Personal Information
-                        </h3>
-
-                        <div className="grid grid-cols-2 gap-3">
-
-                            {/* First Name */}
-                            <input
-                                type="text"
-                                placeholder="First Name *"
-                                className="border p-2"
-                                value={firstName}
-                                onChange={(e) =>
-                                    setFirstName(e.target.value)
-                                }
-                            />
-
-                            {/* Middle Name */}
-                            <input
-                                type="text"
-                                placeholder="Middle Name"
-                                className="border p-2"
-                                value={middleName}
-                                onChange={(e) =>
-                                    setMiddleName(e.target.value)
-                                }
-                            />
-
-                            {/* Last Name */}
-                            <input
-                                type="text"
-                                placeholder="Last Name *"
-                                className="border p-2"
-                                value={lastName}
-                                onChange={(e) =>
-                                    setLastName(e.target.value)
-                                }
-                            />
-
-                            {/* Suffix */}
-                            <input
-                                type="text"
-                                placeholder="Suffix"
-                                className="border p-2"
-                                value={suffix}
-                                onChange={(e) =>
-                                    setSuffix(e.target.value)
-                                }
-                            />
-
-                            {/* Sex */}
-                            <select
-                                className="border p-2"
-                                value={sex}
-                                onChange={(e) =>
-                                    setSex(e.target.value)
-                                }
-                            >
-                                <option value="">
-                                    Select Sex *
-                                </option>
-
-                                <option value="Male">
-                                    Male
-                                </option>
-
-                                <option value="Female">
-                                    Female
-                                </option>
-                            </select>
-
-                            {/* Birthdate */}
-                            <input
-                                type="date"
-                                className="border p-2"
-                                value={birthdate}
-                                onChange={(e) =>
-                                    setBirthdate(e.target.value)
-                                }
-                            />
-                        </div>
-                    </section>
-
-                    {/* =========================
-                        CONTACT INFORMATION
-                    ========================= */}
-                    <section>
-                        <h3 className="mb-3 border-b pb-2 text-lg font-semibold">
-                            Contact Information
-                        </h3>
-
-                        <div className="space-y-3">
-
-                            {/* Contact Number */}
-                            <input
-                                type="text"
-                                placeholder="Contact Number *"
-                                className="w-full border p-2"
-                                value={contactNumber}
-                                onChange={(e) =>
-                                    setContactNumber(
-                                        e.target.value
-                                    )
-                                }
-                            />
-
-                            {/* Email */}
-                            <input
-                                type="email"
-                                placeholder="Email *"
-                                className="w-full border p-2"
-                                value={email}
-                                onChange={(e) =>
-                                    setEmail(e.target.value)
-                                }
-                            />
-
-                            {/* Address */}
-                            <textarea
-                                placeholder="Address *"
-                                rows={3}
-                                className="w-full border p-2"
-                                value={address}
-                                onChange={(e) =>
-                                    setAddress(e.target.value)
-                                }
-                            />
-                        </div>
-                    </section>
-
-                    {/* =========================
-                        EMERGENCY CONTACT
-                    ========================= */}
-                    <section>
-                        <h3 className="mb-3 border-b pb-2 text-lg font-semibold">
-                            Emergency Contact
-                        </h3>
-
-                        <div className="grid grid-cols-2 gap-3">
-
-                            {/* Emergency Contact Name */}
-                            <input
-                                type="text"
-                                placeholder="Emergency Contact Name"
-                                className="border p-2"
-                                value={emergencyContactName}
-                                onChange={(e) =>
-                                    setEmergencyContactName(
-                                        e.target.value
-                                    )
-                                }
-                            />
-
-                            {/* Emergency Contact Number */}
-                            <input
-                                type="text"
-                                placeholder="Emergency Contact Number"
-                                className="border p-2"
-                                value={emergencyContact}
-                                onChange={(e) =>
-                                    setEmergencyContact(
-                                        e.target.value
-                                    )
-                                }
-                            />
-                        </div>
-                    </section>
-
-                    {/* =========================
-                        EMPLOYMENT INFORMATION
-                    ========================= */}
-                    <section>
-                        <h3 className="mb-3 border-b pb-2 text-lg font-semibold">
-                            Employment Information
-                        </h3>
-
-                        <div className="grid grid-cols-2 gap-3">
-
-                            {/* Role */}
-                            <select
-                                className="border p-2"
-                                value={role}
-                                onChange={(e) => {
-                                    setDepartment(
-                                        departmentAfterRoleChange(
-                                            role,
-                                            e.target.value,
-                                            department
-                                        )
-                                    );
-                                    setRole(e.target.value);
-                                }}
-                            >
-                                <option value="">
-                                    Select Role *
-                                </option>
-
-                                <option value="admin">
-                                    Admin
-                                </option>
-
-                                <option value="doctor">
-                                    Doctor
-                                </option>
-
-                                <option value="laboratory-staff">
-                                    Laboratory Staff
-                                </option>
-
-                                <option value="frontdesk-staff">
-                                    Front Desk Staff
-                                </option>
-
-                            </select>
-
-                            {/* Room for laboratory staff, department for everyone else */}
-                            {role === LAB_STAFF_ROLE ? (
-                                <select
-                                    className="border p-2"
-                                    value={department}
-                                    onChange={(e) =>
-                                        setDepartment(
-                                            e.target.value
-                                        )
-                                    }
-                                >
-                                    <option value="">
-                                        Select Room *
-                                    </option>
-
-                                    {LAB_ROOMS.map((room) => (
-                                        <option
-                                            key={room.value}
-                                            value={room.value}
-                                        >
-                                            {room.label}
-                                        </option>
-                                    ))}
-                                </select>
-                            ) : (
-                                <input
-                                    type="text"
-                                    placeholder="Department"
-                                    className="border p-2"
-                                    value={department}
-                                    onChange={(e) =>
-                                        setDepartment(
-                                            e.target.value
-                                        )
-                                    }
-                                />
-                            )}
-
-                            {/* Employment Status */}
-                            <select
-                                className="border p-2"
-                                value={employmentStatus}
-                                onChange={(e) =>
-                                    setEmploymentStatus(
-                                        e.target.value
-                                    )
-                                }
-                            >
-                                <option value="">
-                                    Select Employment Status
-                                </option>
-
-                                <option value="active">
-                                    Active
-                                </option>
-
-                                <option value="inactive">
-                                    Inactive
-                                </option>
-
-                                <option value="on-leave">
-                                    On Leave
-                                </option>
-                            </select>
-
-                            {/* Date Hired */}
-                            <div className="flex flex-col gap-1">
-                                <label
-                                    htmlFor="date-hired"
-                                    className="text-sm font-medium text-gray-700"
-                                >
-                                    Date Hired <span className="text-red-500">*</span>
-                                </label>
-
-                                <input
-                                    id="date-hired"
-                                    type="date"
-                                    className="w-full rounded-md border border-gray-300 px-3 py-2 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                    value={dateHired}
-                                    onChange={(e) => setDateHired(e.target.value)}
-                                />
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* =========================
-                            SHIFT SCHEDULE
-                        ========================= */}
-                    <section>
-                        <h3 className="mb-3 border-b pb-2 text-lg font-semibold">
-                            Shift Schedule
-                        </h3>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="mb-1 block text-sm font-medium">
-                                    Shift Start
-                                </label>
-
-                                <input
-                                    type="time"
-                                    className="w-full border p-2"
-                                    value={shiftStart}
-                                    onChange={(e) =>
-                                        setShiftStart(e.target.value)
-                                    }
-                                />
-                            </div>
-
-                            <div>
-                                <label className="mb-1 block text-sm font-medium">
-                                    Shift End
-                                </label>
-
-                                <input
-                                    type="time"
-                                    className="w-full border p-2"
-                                    value={shiftEnd}
-                                    onChange={(e) =>
-                                        setShiftEnd(e.target.value)
-                                    }
-                                />
-                            </div>
-                        </div>
-                    </section>
-                </div>
-
-                {/* =========================
-                    FOOTER
-                ========================= */}
-                <div className="mt-6 flex justify-end gap-3">
-
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="bg-gray-200 px-4 py-2 hover:bg-gray-300"
-                    >
-                        Cancel
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={registerUser}
-                        className="bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
-                    >
-                        Add User
-                    </button>
-                </div>
-            </div>
+    const required: (keyof FormState)[] = [
+      "username", "password", "confirm_password", "first_name", "last_name",
+      "sex", "birthdate", "email", "contact_number", "address", "role", "date_hired",
+    ];
+    if (required.some((key) => !form[key])) {
+      setFormError("Please fill out all required fields.");
+      return;
+    }
+    if (form.role === LAB_STAFF_ROLE && !form.department) {
+      setFormError("Please select a room for the laboratory staff.");
+      return;
+    }
+    if (form.password !== form.confirm_password) {
+      setFormError("Your passwords do not match.");
+      return;
+    }
+    if (form.shift_start && form.shift_end && form.shift_start >= form.shift_end) {
+      setFormError("Shift start time must be earlier than shift end time.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const formData = new FormData();
+      Object.entries(form).forEach(([key, value]) => {
+        if (key === "confirm_password") return;
+        if (!isDoctor && DOCTOR_KEYS.has(key)) return; // doctor fields only for doctors
+        const v = key === "password" ? value : value.trim();
+        if (v) formData.append(key, v);
+      });
+      if (photo) formData.append("image", photo); // must match upload.single("image")
+
+      const response = await api.post("/api/admin/add-user", formData);
+      loadData();
+      setNotice({
+        title: "Employee added",
+        message: response.data.message,
+        after: onClose,
+      });
+    } catch (error: unknown) {
+      setFormError(
+        (error as { response?: { data?: { message?: string } } }).response?.data
+          ?.message || "Unable to complete this action. Please try again.",
+      );
+      console.error(error);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <form
+        onSubmit={handleSubmit}
+        className="flex max-h-[92vh] w-full max-w-5xl flex-col rounded-2xl bg-white p-6 shadow-xl"
+      >
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xl font-bold text-black">Add Employee</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={submitting}
+            className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm hover:bg-gray-100 disabled:opacity-50"
+          >
+            X
+          </button>
         </div>
-    );
+
+        <div className="space-y-8 overflow-y-auto pr-2">
+          {/* ACCOUNT */}
+          <Section title="Account Information">
+            <Field label="Username" required value={form.username} onChange={set("username")} width="w-44" />
+
+            <label className="flex items-center gap-2 text-sm text-gray-500">
+              <span className="whitespace-nowrap">
+                Password<span className="text-red-500"> *</span>
+              </span>
+              <span className="flex w-44 items-center rounded-lg border border-gray-200 focus-within:border-sky-400">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={form.password}
+                  onChange={(e) => set("password")(e.target.value)}
+                  className="h-8 w-full rounded-lg bg-transparent px-2 text-sm text-gray-800 outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((s) => !s)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="px-2 text-gray-400 hover:text-gray-700"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </span>
+            </label>
+
+            <Field
+              label="Confirm Password"
+              required
+              type={showPassword ? "text" : "password"}
+              value={form.confirm_password}
+              onChange={set("confirm_password")}
+              width="w-44"
+            />
+          </Section>
+
+          {/* PERSONAL */}
+          <Section title="Personal Information">
+            {/* Profile photo (replaces the Generate ID button) */}
+            <div className="flex items-center gap-3 text-sm text-gray-500">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-gray-50">
+                {photoPreview ? (
+                  <img src={photoPreview} alt="Profile preview" className="h-full w-full object-cover" />
+                ) : (
+                  <span className="text-xs text-gray-400">Photo</span>
+                )}
+              </div>
+              <div className="flex flex-col items-start gap-1">
+                <label className="block max-w-40 cursor-pointer truncate text-xs text-gray-500 underline hover:text-gray-800">
+                  {photo ? photo.name : "Upload Photo"}
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/webp"
+                    onChange={handlePhotoChange}
+                    className="hidden"
+                  />
+                </label>
+                {photo && (
+                  <button type="button" onClick={removePhoto} className="text-xs text-red-600 hover:underline">
+                    Remove
+                  </button>
+                )}
+                <span className="text-[11px] text-gray-400">JPG, PNG or WEBP, max 5MB</span>
+              </div>
+            </div>
+
+            <div className="basis-full" />
+            <Field label="First Name" required value={form.first_name} onChange={set("first_name")} width="w-36" />
+            <Field label="Middle Name" value={form.middle_name} onChange={set("middle_name")} width="w-36" />
+            <Field label="Last Name" required value={form.last_name} onChange={set("last_name")} width="w-36" />
+            <Field label="Suffix" value={form.suffix} onChange={set("suffix")} width="w-14" />
+
+            <div className="basis-full" />
+            <SelectField label="Sex" required value={form.sex} onChange={set("sex")} options={SEX_OPTIONS} width="w-24" />
+            <Field label="Date of Birth" required type="date" value={form.birthdate} onChange={set("birthdate")} width="w-36" />
+            <Field label="Email Address" required type="email" value={form.email} onChange={set("email")} width="w-52" />
+            <Field label="Mobile Number" required value={form.contact_number} onChange={set("contact_number")} width="w-36" />
+
+            <div className="basis-full" />
+            <Field label="Address" required value={form.address} onChange={set("address")} width="w-[28rem]" />
+
+            <div className="basis-full" />
+            <Field label="Emergency Contact #" value={form.emergency_contact} onChange={set("emergency_contact")} width="w-36" />
+            <Field label="Emergency Contact Name" value={form.emergency_contact_name} onChange={set("emergency_contact_name")} width="w-48" />
+          </Section>
+
+          {/* EMPLOYMENT */}
+          <Section title="Employment Information">
+            <SelectField
+              label="Role"
+              required
+              value={form.role}
+              onChange={handleRoleChange}
+              options={ROLE_OPTIONS}
+              placeholder="Select role"
+              width="w-44"
+            />
+
+            {form.role === LAB_STAFF_ROLE ? (
+              <SelectField
+                label="Room"
+                required
+                value={form.department}
+                onChange={set("department")}
+                options={LAB_ROOMS}
+                placeholder="Select room"
+                width="w-40"
+              />
+            ) : (
+              <Field label="Department" value={form.department} onChange={set("department")} width="w-40" />
+            )}
+
+            <div className="basis-full" />
+            <Field label="Date Hired" required type="date" value={form.date_hired} onChange={set("date_hired")} width="w-36" />
+
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <span className="whitespace-nowrap">Shift Schedule</span>
+              <input
+                type="time"
+                value={form.shift_start}
+                onChange={(e) => set("shift_start")(e.target.value)}
+                className={`w-28 ${fieldClass}`}
+              />
+              <span>-</span>
+              <input
+                type="time"
+                value={form.shift_end}
+                onChange={(e) => set("shift_end")(e.target.value)}
+                className={`w-28 ${fieldClass}`}
+              />
+            </div>
+          </Section>
+
+          {/* DOCTOR */}
+          {isDoctor && (
+            <Section title="Doctor Information">
+              {DOCTOR_FIELDS.map(({ key, label }) => (
+                <Field key={key} label={label} value={form[key]} onChange={set(key)} width="w-40" />
+              ))}
+            </Section>
+          )}
+        </div>
+
+        {/* Outside the scroll area so it's always visible after clicking Add */}
+        {formError && <ErrorMessage className="mt-4">{formError}</ErrorMessage>}
+
+        <div className="mt-4 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={submitting}
+            className="px-4 py-2 text-sm text-gray-500 hover:text-gray-900 disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={submitting}
+            className="rounded-lg bg-sky-400 px-5 py-2 text-sm text-white hover:bg-sky-500 disabled:opacity-50"
+          >
+            {submitting ? "Adding…" : "Add Employee"}
+          </button>
+        </div>
+      </form>
+      <UniversalModal
+        isOpen={notice !== null}
+        type="success"
+        title={notice?.title ?? ""}
+        description={notice?.message}
+        onClose={closeNotice}
+        actions={[{ label: "OK", onClick: closeNotice }]}
+      />
+    </div>
+  );
 }
 
 export default AddUserModal;
