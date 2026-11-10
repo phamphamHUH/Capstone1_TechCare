@@ -2,12 +2,19 @@ import LoadingScreen from "../../../components/LoadingScreen";
 import LoadingRegion from "../../../components/LoadingRegion";
 import ErrorMessage from "../../../components/ErrorMessage";
 import React, { useState } from "react";
-import ServiceTypeTabs from "../components/ServiceRequest/ServiceTypeTabs";
 import ServiceSelectionPanel from "../components/ServiceRequest/ServiceSelectionPanel";
 import ServiceList from "../components/ServiceRequest/ServiceList";
 import PatientSelectionHeader from "../components/ServiceRequest/PatientSelectionHeader";
 import type { SortOrder, Service } from "../../../interface/Service";
 import type { Patient } from "../../../interface/Patient";
+import {
+  Syringe,
+  Clipboard,
+  BoneFracture,
+  Package,
+  TriangleAlert,
+} from "lucide-react";
+import ConfirmDialog from "#components/ConfirmDialog";
 
 type ServiceRequestProps = {
   services: Service[];
@@ -108,6 +115,51 @@ function ServiceRequest({
   };
   const clearServices = () => setSelectedServices([]);
 
+  const switchTab = (tab: string) => {
+    clearServices();
+    handleTab(tab);
+  };
+
+  const handleTabClick = (tab: string) => {
+    if (tab === activeTab) return;
+
+    const needsClear =
+      isolatedTabs.includes(tab) || isolatedTabs.includes(activeTab);
+
+    if (needsClear && selectedServices.length > 0) {
+      setPendingTab(tab); // ask first
+      return;
+    }
+    if (needsClear) clearServices();
+    handleTab(tab);
+  };
+
+  const cards = [
+    {
+      service_type: "laboratory",
+      mainHeading: "Laboratory Services",
+      subHeading: "Request Laboratory tests and diagnosis",
+      icon: Syringe,
+    },
+    {
+      service_type: "imaging",
+      mainHeading: "Imaging Services",
+      subHeading: "Request Imaging tests and diagnosis",
+      icon: BoneFracture,
+    },
+    {
+      service_type: "consultation",
+      mainHeading: "Consultation Services",
+      subHeading: "Request Consultation or Specialist Service",
+      icon: Clipboard,
+    },
+    {
+      service_type: "package",
+      mainHeading: "Packages",
+      subHeading: "Request Packaged Services for lower price",
+      icon: Package,
+    },
+  ];
   if (loading && services.length === 0) {
     return (
       <LoadingScreen variant="page" message="Loading available services..." />
@@ -123,11 +175,27 @@ function ServiceRequest({
         onSelectPatient={setPatient}
         onRegister={() => setPage("patient-registration")}
       />
-      <ServiceTypeTabs
-        activeTab={activeTab}
-        setActiveTab={handleTab}
-        onClearAll={clearServices}
-      />
+      {/* SERVICE TABS */}
+      <section className="flex gap-3 mt-6 px-8">
+        {cards.map((card, index) => {
+          const Icon = card.icon;
+          return (
+            <div
+              className={`flex flex-1 min-w-0 items-center justify-center gap-3 border px-3 py-3 rounded-lg cursor-pointer shadow-md
+                hover:text-sky-600 hover:border-sky-200 hover:scale-101 active:scale-100 active:text-sky-600
+                ${activeTab === card.service_type ? "text-sky-400" : "border-gray-200"}`}
+              key={index}
+              onClick={() => handleTabClick(card.service_type)}
+            >
+              <Icon size={25} className="shrink-0" />
+              <div className="min-w-0">
+                <h1 className="text-md font-bold">{card.mainHeading}</h1>
+                <h3 className="text-xs">{card.subHeading}</h3>
+              </div>
+            </div>
+          );
+        })}
+      </section>
       <LoadingRegion
         loading={loading && services.length > 0}
         message="Refreshing available services..."

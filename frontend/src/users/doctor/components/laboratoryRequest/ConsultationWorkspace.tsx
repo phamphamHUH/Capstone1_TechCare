@@ -23,7 +23,8 @@ import type {
 } from "../consultation/types.ts";
 
 const STORAGE_PATIENT = "techcare.consultation.patient_id";
-const draftKey = (patientId: string) => `techcare.consultation.draft.${patientId}`;
+const draftKey = (patientId: string) =>
+  `techcare.consultation.draft.${patientId}`;
 
 const emptyFindings = (): FindingsFormState => ({
   hpi: "",
@@ -45,7 +46,11 @@ function loadDraft(patientId: string): Draft {
     const raw = sessionStorage.getItem(draftKey(patientId));
     if (raw) {
       const parsed = JSON.parse(raw) as Draft;
-      if (parsed?.form) return { form: { ...emptyFindings(), ...parsed.form }, consultationId: parsed.consultationId ?? null };
+      if (parsed?.form)
+        return {
+          form: { ...emptyFindings(), ...parsed.form },
+          consultationId: parsed.consultationId ?? null,
+        };
     }
   } catch {
     /* ignore corrupt draft */
@@ -58,26 +63,34 @@ function toPatientInfo(p: ConsultationPatient): PatientInfo {
   return {
     id: p.patient_id,
     patientId: p.patient_id,
-    name: [p.first_name, p.middle_name, p.last_name, p.suffix].filter(Boolean).join(" "),
+    name: [p.first_name, p.middle_name, p.last_name, p.suffix]
+      .filter(Boolean)
+      .join(" "),
     age: Number.isNaN(age) ? "—" : `${age} years old`,
     sex: p.sex,
     birthdate: p.birthdate,
     contactNumber: p.contact_number,
     address: p.address ?? undefined,
     isSeniorCitizen: !Number.isNaN(age) && age >= 60,
-    avatarInitials: `${p.first_name.charAt(0)}${p.last_name.charAt(0)}`.toUpperCase(),
+    avatarInitials:
+      `${p.first_name.charAt(0)}${p.last_name.charAt(0)}`.toUpperCase(),
   };
 }
 
 type Props = { initialTab?: WorkspaceTab };
 
-export default function ConsultationWorkspace({ initialTab = "consultation" }: Props) {
+export default function ConsultationWorkspace({
+  initialTab = "consultation",
+}: Props) {
   const [searchParams, setSearchParams] = useSearchParams();
   // Consultation service for the findings record; supplied via ?service_id= for now.
   const serviceId = searchParams.get("service_id") ?? "";
 
   const [patientId, setPatientId] = useState(
-    () => searchParams.get("patient_id") ?? sessionStorage.getItem(STORAGE_PATIENT) ?? "",
+    () =>
+      searchParams.get("patient_id") ??
+      sessionStorage.getItem(STORAGE_PATIENT) ??
+      "",
   );
   const [lookupInput, setLookupInput] = useState(patientId);
   const [patient, setPatient] = useState<ConsultationPatient | null>(null);
@@ -127,7 +140,10 @@ export default function ConsultationWorkspace({ initialTab = "consultation" }: P
   useEffect(() => {
     if (!patient) return;
     try {
-      sessionStorage.setItem(draftKey(patient.patient_id), JSON.stringify({ form, consultationId }));
+      sessionStorage.setItem(
+        draftKey(patient.patient_id),
+        JSON.stringify({ form, consultationId }),
+      );
     } catch {
       /* storage full / unavailable */
     }
@@ -168,12 +184,19 @@ export default function ConsultationWorkspace({ initialTab = "consultation" }: P
     setSubmitError(null);
     setServerErrors({});
     try {
-      const saved = await saveConsultationFindings({ patientId: patient.patient_id, serviceId, form });
+      const saved = await saveConsultationFindings({
+        patientId: patient.patient_id,
+        serviceId,
+        form,
+      });
       setConsultationId(saved.consultation_record_id);
       setView("prescription");
       return true;
     } catch (e) {
-      const failure = toApiFailure(e, "Couldn't save the findings. Please try again.");
+      const failure = toApiFailure(
+        e,
+        "Couldn't save the findings. Please try again.",
+      );
       setSubmitError(failure.message);
       setServerErrors(failure.fieldErrors);
       return false;
@@ -197,7 +220,10 @@ export default function ConsultationWorkspace({ initialTab = "consultation" }: P
           className="flex gap-2"
         >
           <div className="relative flex-1">
-            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search
+              size={13}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            />
             <input
               type="text"
               value={lookupInput}
@@ -207,7 +233,11 @@ export default function ConsultationWorkspace({ initialTab = "consultation" }: P
               className="w-full pl-8 pr-3 py-2 text-xs border border-gray-200 rounded-lg outline-none focus:border-sky-400"
             />
           </div>
-          <button type="submit" disabled={!lookupInput.trim()} className="px-5 py-2 bg-sky-500 hover:bg-sky-600 disabled:bg-gray-200 disabled:text-gray-400 text-white text-xs font-semibold rounded-lg cursor-pointer disabled:cursor-not-allowed">
+          <button
+            type="submit"
+            disabled={!lookupInput.trim()}
+            className="px-5 py-2 bg-sky-500 hover:bg-sky-600 disabled:bg-gray-200 disabled:text-gray-400 text-white text-xs font-semibold rounded-lg cursor-pointer disabled:cursor-not-allowed"
+          >
             Open
           </button>
         </form>
@@ -238,7 +268,11 @@ export default function ConsultationWorkspace({ initialTab = "consultation" }: P
   /* ------------------------------ Workspace ----------------------------- */
   return (
     <div className="flex flex-col gap-4">
-      <ConsultationPatientHeader patient={patient} activeTab={tab} onTabChange={setTab} />
+      <ConsultationPatientHeader
+        patient={patient}
+        activeTab={tab}
+        onTabChange={setTab}
+      />
 
       {tab === "consultation" && (
         <ConsultationFindingsForm
@@ -267,10 +301,17 @@ export default function ConsultationWorkspace({ initialTab = "consultation" }: P
 
       {tab === "medical-history" && (
         <div className="bg-white border border-gray-200 rounded-2xl shadow-xs p-8 text-center">
-          <p className="text-xs text-gray-500 mb-4">View this patient's full history on the Medical History page.</p>
+          <p className="text-xs text-gray-500 mb-4">
+            View this patient's full history on the Medical History page.
+          </p>
           <button
             type="button"
-            onClick={() => setSearchParams({ page: "medical-history", patient_id: patient.patient_id })}
+            onClick={() =>
+              setSearchParams({
+                page: "medical-history",
+                patient_id: patient.patient_id,
+              })
+            }
             className="px-5 py-2 bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold rounded-lg cursor-pointer"
           >
             Open Medical History
