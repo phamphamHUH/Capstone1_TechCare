@@ -1,5 +1,15 @@
+import { useEffect, useRef, useState } from "react";
+import { AtSign, Clock, Flag, Hash, MoreHorizontal } from "lucide-react";
 import type { User } from "../../../../interface/User";
-import { Phone } from "lucide-react";
+
+const ROLE_LABELS: Record<string, string> = {
+  admin: "Admin",
+  doctor: "Doctor",
+  "laboratory-staff": "Laboratory Staff",
+  "frontdesk-staff": "Front Desk Staff",
+  patient: "Patient",
+};
+const roleLabel = (role: string) => ROLE_LABELS[role] ?? role;
 
 type Props = {
   user: User;
@@ -7,100 +17,146 @@ type Props = {
   setShowUserProfile: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
+// "09:00:00" -> "9:00 AM"
+function formatTime(time?: string | null) {
+  if (!time) return "";
+  const [h, m] = time.split(":").map(Number);
+  if (Number.isNaN(h) || Number.isNaN(m)) return "";
+  return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`;
+}
+
 function UserCardSquare({
   user,
   setSelectedUser,
   setShowUserProfile,
 }: Props) {
-  const fullName = [
-    user.first_name,
-    user.middle_name,
-    user.last_name,
-    user.suffix,
-  ]
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const fullName = [user.first_name, user.middle_name, user.last_name, user.suffix]
     .filter(Boolean)
     .join(" ");
+  const initials = `${user.first_name?.charAt(0) || ""}${user.last_name?.charAt(0) || ""}`;
+  const shift =
+    user.shift_start && user.shift_end
+      ? `${formatTime(user.shift_start)} - ${formatTime(user.shift_end)}`
+      : "—";
 
-  const initials = `${user.first_name?.charAt(0) || ""}${
-    user.last_name?.charAt(0) || ""
-  }`;
+  const openProfile = () => {
+    setSelectedUser(user);
+    setShowUserProfile(true);
+  };
+
+  // Close the ... menu when clicking elsewhere
+  useEffect(() => {
+    if (!menuOpen) return;
+    const close = (e: MouseEvent) => {
+      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [menuOpen]);
 
   return (
     <div
-      className="w-full max-w-sm rounded-3xl bg-white p-2 shadow-md cursor-pointer"
-      onClick={() => {
-        setSelectedUser(user);
-        setShowUserProfile(true);
-      }}
+      className="relative w-full cursor-pointer rounded-2xl border border-gray-300 bg-white p-4 shadow-sm transition hover:shadow-md"
+      onClick={openProfile}
     >
-      {/* Profile Image */}
-      <div className="relative h-64 w-full overflow-hidden rounded-[1.4rem] bg-gray-100">
+      {/* Top row: status badge + menu */}
+      <div className="flex items-center justify-between">
+        <span
+          className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+            user.active ? "bg-green-500 text-white" : "bg-gray-200 text-gray-600"
+          }`}
+        >
+          <span
+            className={`h-1.5 w-1.5 rounded-full ${
+              user.active ? "bg-white" : "bg-gray-400"
+            }`}
+          />
+          {user.active ? "Active" : "Inactive"}
+        </span>
+
+        <div ref={menuRef} className="relative">
+          <button
+            type="button"
+            aria-label="More options"
+            onClick={(e) => {
+              e.stopPropagation();
+              setMenuOpen((o) => !o);
+            }}
+            className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+          >
+            <MoreHorizontal size={18} />
+          </button>
+
+          {menuOpen && (
+            <div className="absolute right-0 top-7 z-10 w-36 overflow-hidden rounded-lg border border-gray-200 bg-white text-xs shadow-lg">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMenuOpen(false);
+                  openProfile();
+                }}
+                className="block w-full px-3 py-2 text-left hover:bg-gray-50"
+              >
+                View Profile
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMenuOpen(false);
+                  setSelectedUser(user);
+                  setShowUserProfile(true);
+                }}
+                className="block w-full px-3 py-2 text-left hover:bg-gray-50"
+              >
+                Edit Details
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Avatar */}
+      <div className="mt-2 flex justify-center">
         {user.profile_photo ? (
           <img
             src={user.profile_photo}
             alt={fullName}
-            className="h-full w-full object-cover"
+            className="h-24 w-24 rounded-full object-cover"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gray-200 text-5xl font-semibold text-gray-500">
+          <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gray-200 text-2xl font-semibold text-gray-500">
             {initials}
           </div>
         )}
-
-        {/* Online / Active indicator */}
-        <div className="absolute right-4 top-4 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow">
-          <div
-            className={`h-3 w-3 rounded-full ${
-              user.active ? "bg-green-500" : "bg-gray-400"
-            }`}
-          />
-        </div>
       </div>
 
-      {/* Information */}
-      <div className="px-3 pb-3 pt-4">
-        {/* Name */}
-        <h2 className="text-lg font-semibold text-gray-900">
-          {fullName}
-        </h2>
+      {/* Name + role */}
+      <h2 className="mt-3 truncate text-center text-sm font-bold text-gray-900">
+        {fullName}
+      </h2>
+      <p className="text-center text-xs text-gray-600">{roleLabel(user.role)}</p>
 
-        {/* Role */}
-        <p className="mt-1 text-sm text-gray-500">
-          {user.role}
-          {user.department && ` • ${user.department}`}
+      {/* Details */}
+      <div className="mt-3 space-y-1.5 rounded-lg bg-gray-100 px-3 py-2.5 text-[11px] text-gray-700">
+        <p className="flex items-center gap-2">
+          <Hash size={12} className="shrink-0 text-gray-500" />
+          <span className="truncate">{user.user_id}</span>
         </p>
-
-        {/* User ID */}
-        <p className="mt-2 line-clamp-2 text-sm leading-5 text-gray-500">
-          {user.user_id}
+        <p className="flex items-center gap-2">
+          <Flag size={12} className="shrink-0 text-gray-500" />
+          <span className="truncate">{user.department || "Not assigned"}</span>
+          <Clock size={12} className="ml-1 shrink-0 text-gray-500" />
+          <span className="truncate">{shift}</span>
         </p>
-
-        {/* Email */}
-        <p className="mt-2 line-clamp-2 text-sm leading-5 text-gray-500">
-          {user.email}
+        <p className="flex items-center gap-2">
+          <AtSign size={12} className="shrink-0 text-gray-500" />
+          <span className="truncate">{user.email}</span>
         </p>
-
-        {/* Stats */}
-        <div className="mt-4 flex items-center gap-5 text-sm text-gray-500">
-          {/* Contact */}
-          <div className="flex items-center gap-1">
-            <Phone className="w-4" />
-            <span>{user.contact_number}</span>
-          </div>
-
-          {/* Active Status */}
-          <div className="flex items-center gap-1">
-            <span
-              className={`h-2 w-2 rounded-full ${
-                user.active ? "bg-green-500" : "bg-gray-400"
-              }`}
-            />
-
-            <span>
-              {user.active ? "Active" : "Not Active"}
-            </span>
-          </div>
-        </div>
       </div>
     </div>
   );

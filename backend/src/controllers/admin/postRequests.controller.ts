@@ -52,6 +52,12 @@ export async function addUser(
       date_hired,
       shift_start,
       shift_end,
+      prc_license_number,
+      ptr_number,
+      s2_license,
+      medical_specialty,
+      subspecialty,
+      board_certification,
     } = req.body;
 
     // =========================
@@ -146,7 +152,13 @@ export async function addUser(
         date_hired,
         shift_start,
         shift_end,
-        profile_photo
+        profile_photo,
+        prc_license_number,
+        ptr_number,
+        s2_license,
+        medical_specialty,
+        subspecialty,
+        board_certification
       )
       VALUES (
         ${userId},
@@ -169,7 +181,13 @@ export async function addUser(
         ${date_hired},
         ${finalShiftStart},
         ${finalShiftEnd},
-        ${profile_photo}
+        ${profile_photo},
+        ${prc_license_number || null},
+        ${ptr_number || null},
+        ${s2_license || null},
+        ${medical_specialty || null},
+        ${subspecialty || null},
+        ${board_certification || null}
       )
       RETURNING *
     `;

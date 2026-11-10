@@ -4,12 +4,20 @@ import { useEffect, useState } from "react";
 import { Upload, User, UserPlus } from "lucide-react";
 import api from "../../../lib/axios";
 import calculateAge from "../../../utils/calculateAge";
+import UniversalModal from "../../../components/UniversalModal";
 
 type PatientRegistrationProps = {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   loadData: () => Promise<void>;
   loading: boolean;
+};
+
+type Notice = {
+  type: "success" | "danger";
+  title: string;
+  message: string;
+  after?: () => void;
 };
 
 const initialForm = {
@@ -169,6 +177,15 @@ function PatientRegistration({ loadData }: PatientRegistrationProps) {
   const [conditionChecks, setConditionChecks] = useState<string[]>([]);
   const [otherConditions, setOtherConditions] = useState("");
 
+  const [notice, setNotice] = useState<Notice | null>(null);
+  const [confirmClear, setConfirmClear] = useState(false);
+
+  const closeNotice = () => {
+    const after = notice?.after;
+    setNotice(null);
+    after?.();
+  };
+
   const set = (key: keyof FormState) => (v: string) =>
     setForm((f) => ({ ...f, [key]: v }));
 
@@ -180,7 +197,17 @@ function PatientRegistration({ loadData }: PatientRegistrationProps) {
     ? String(Math.max(0, calculateAge(form.birthdate)))
     : "";
 
-    // For other relationship, we need to set the guardian_relationship field to empty string if the choice is not "Others"
+  // True when there is anything to lose, so Clear only asks when it matters
+  const hasData =
+    image !== null ||
+    relationshipChoice !== "" ||
+    allergyChecks.length > 0 ||
+    conditionChecks.length > 0 ||
+    otherAllergies.trim() !== "" ||
+    otherConditions.trim() !== "" ||
+    (Object.keys(form) as (keyof FormState)[]).some((k) => form[k] !== initialForm[k]);
+
+  // For other relationship, we need to set the guardian_relationship field to empty string if the choice is not "Others"
   function handleRelationshipChange(value: string) {
     setRelationshipChoice(value);
     set("guardian_relationship")(value === "Others" ? "" : value);
@@ -239,8 +266,12 @@ function PatientRegistration({ loadData }: PatientRegistrationProps) {
       if (image) formData.append("image", image);
 
       const response = await api.post("/api/fdstaff/patients", formData);
-      alert(response.data.message);
       resetForm();
+      setNotice({
+        type: "success",
+        title: "Patient registered",
+        message: response.data.message,
+      });
       await loadData();
     } catch (error: unknown) {
       setFormError(
@@ -419,7 +450,7 @@ function PatientRegistration({ loadData }: PatientRegistrationProps) {
           <div className="flex justify-end gap-3">
             <button
               type="button"
-              onClick={resetForm}
+              onClick={() => (hasData ? setConfirmClear(true) : resetForm())}
               disabled={submitting}
               className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 disabled:opacity-50"
             >
@@ -436,6 +467,36 @@ function PatientRegistration({ loadData }: PatientRegistrationProps) {
           </div>
         </form>
       </div>
+
+      {/* Result of registering */}
+      <UniversalModal
+        isOpen={notice !== null}
+        type={notice?.type ?? "info"}
+        title={notice?.title ?? ""}
+        description={notice?.message}
+        onClose={closeNotice}
+        actions={[{ label: "OK", onClick: closeNotice }]}
+      />
+
+      {/* Confirm before wiping the form */}
+      <UniversalModal
+        isOpen={confirmClear}
+        type="warning"
+        title="Clear the form?"
+        description="Everything you've entered, including the photo, will be removed."
+        onClose={() => setConfirmClear(false)}
+        actions={[
+          { label: "Keep editing", onClick: () => setConfirmClear(false) },
+          {
+            label: "Clear form",
+            variant: "danger",
+            onClick: () => {
+              resetForm();
+              setConfirmClear(false);
+            },
+          },
+        ]}
+      />
     </main>
   );
 }

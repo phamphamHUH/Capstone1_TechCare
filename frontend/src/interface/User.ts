@@ -23,4 +23,10 @@ export type User = {
   account_status: boolean;
   created_at: string;
   updated_at: string;
+  prc_license_number: string | null;
+  ptr_number: string | null;
+  s2_license: string | null;
+  medical_specialty: string | null;
+  subspecialty: string | null;
+  board_certification: string | null;
 };
