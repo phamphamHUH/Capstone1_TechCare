@@ -9,6 +9,7 @@ const TABS: { key: QueueTab; label: string }[] = [
   { key: "all", label: "All" },
   { key: "laboratory", label: "Laboratory" },
   { key: "consultation", label: "Consultation" },
+  { key: "imaging", label: "Imaging" },
 ];
 
 function QueueTabs({ activeTab, setActiveTab }: Props) {

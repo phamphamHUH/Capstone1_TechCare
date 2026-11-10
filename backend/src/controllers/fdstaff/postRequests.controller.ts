@@ -389,7 +389,11 @@ export async function addLaboratoryRequest(
   req: Request,
   res: Response<addLaboratoryRequest.response | addLaboratoryRequest.error>,
 ) {
-  const { patient_id, services } = req.body as addLaboratoryRequest.body;
+  const {
+    patient_id,
+    services = [],
+    packages = [],
+  } = req.body as addLaboratoryRequest.body;
   const user_id =
     req.user?.user_id ?? (!ENV.IS_PRODUCTION ? "U-26-1001-0004" : undefined);
 
@@ -397,11 +401,12 @@ export async function addLaboratoryRequest(
     !patient_id ||
     !user_id ||
     !Array.isArray(services) ||
-    services.length === 0
+    !Array.isArray(packages) ||
+    services.length + packages.length === 0
   ) {
     return res.status(400).json({
       message:
-        "Patient ID and User ID are required and at least one service must be provided.",
+        "Patient ID and User ID are required and at least one service or package must be provided.",
     } as addLaboratoryRequest.error);
   }
 
@@ -420,15 +425,60 @@ export async function addLaboratoryRequest(
 
     const { bill_id, is_new } = await getOrCreateOpenBill(client, patient_id);
 
+    // Single services are added as they are; packages are expanded into
+    // their component services and remember which package they came from.
+    const packageIds = [...new Set(packages.map((p) => p.package_id))];
+    const entries: { service_id: string; package_id: string | null }[] =
+      services.map((s) => ({ service_id: s.service_id, package_id: null }));
+
+    if (packageIds.length > 0) {
+      const { rows: activePackages } = await client.query(
+        `SELECT package_id FROM packages
+         WHERE package_id = ANY($1::text[]) AND active = TRUE`,
+        [packageIds],
+      );
+      if (activePackages.length !== packageIds.length) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({
+          message: "Invalid or inactive package ID.",
+        } as addLaboratoryRequest.error);
+      }
+
+      const { rows: components } = await client.query(
+        `SELECT ps.package_id, ps.service_id, LOWER(TRIM(s.service_type)) AS service_type
+         FROM package_services ps
+         JOIN services s ON s.service_id = ps.service_id
+         WHERE ps.package_id = ANY($1::text[])`,
+        [packageIds],
+      );
+
+      for (const package_id of packageIds) {
+        const own = components.filter((c) => c.package_id === package_id);
+        if (
+          own.length === 0 ||
+          own.some((c) => !["laboratory", "imaging"].includes(c.service_type))
+        ) {
+          await client.query("ROLLBACK");
+          return res.status(400).json({
+            message:
+              "A package must contain at least one service, and only laboratory or imaging services.",
+          } as addLaboratoryRequest.error);
+        }
+        for (const c of own) {
+          entries.push({ service_id: c.service_id, package_id });
+        }
+      }
+    }
+
     const laboratory_item_result = [];
-    for (const service of services) {
+    for (const entry of entries) {
       const item_id = await generateLaboratoryItemID(client);
       const { rows } = await client.query(
         `INSERT INTO test_request_items
-           (item_id, request_id, service_id, status, bill_id)
-         VALUES ($1, $2, $3, 'Requested', $4)
+           (item_id, request_id, service_id, status, bill_id, package_id)
+         VALUES ($1, $2, $3, 'Requested', $4, $5)
          RETURNING *`,
-        [item_id, request_id, service.service_id, bill_id],
+        [item_id, request_id, entry.service_id, bill_id, entry.package_id],
       );
       laboratory_item_result.push(rows[0]);
     }
@@ -449,10 +499,9 @@ export async function addLaboratoryRequest(
     await client.query("ROLLBACK").catch(console.error);
     if (error.code === "23503") {
       return res.status(400).json({
-        message: "Invalid patient or service ID.",
+        message: "Invalid patient, service or package ID.",
       } as addLaboratoryRequest.error);
     }
-    console.error(error);
     return res.status(500).json({
       message: "Internal server error.",
     } as addLaboratoryRequest.error);

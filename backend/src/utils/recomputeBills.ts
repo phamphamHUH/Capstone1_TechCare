@@ -28,7 +28,7 @@ export async function recomputeBillTotals(client: PoolClient, bill_id: string) {
            SELECT sv.price
            FROM test_request_items tri
            JOIN services sv ON sv.service_id = tri.service_id
-           JOIN test_requests trON tr.request_id = tri.request_id
+           JOIN test_requests tr ON tr.request_id = tri.request_id
            WHERE tri.bill_id = bb.bill_id
              AND lower(trim(tri.status)) NOT IN ('cancelled', 'canceled', 'rejected')
              AND lower(trim(tr.status)) NOT IN ('cancelled', 'canceled', 'rejected')

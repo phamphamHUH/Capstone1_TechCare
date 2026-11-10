@@ -263,6 +263,7 @@ const TABLES: TableDefinition[] = [
       item_id: "VARCHAR(255) UNIQUE NOT NULL",
       request_id: "VARCHAR(255) NOT NULL REFERENCES test_requests(request_id)",
       service_id: "VARCHAR(255) NOT NULL REFERENCES services(service_id)",
+      package_id: "VARCHAR(255) REFERENCES packages(package_id)",
       processed_by: "VARCHAR(255) REFERENCES users(user_id)",
       queue_id: "VARCHAR(255) REFERENCES queue_entries(queue_id)",
       bill_id: "VARCHAR(255) REFERENCES bills(bill_id)",

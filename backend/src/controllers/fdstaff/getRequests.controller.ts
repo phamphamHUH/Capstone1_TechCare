@@ -452,31 +452,132 @@ export async function getBillDetails(
 ) {
   // GET /api/fdstaff/billings/:bill_id/details
   const bill_id = String(req.params.bill_id);
+
   try {
     const [rows, linkedItems] = await Promise.all([
       selectBills(bill_id),
-      sql`SELECT * FROM (
-        SELECT 'consultation'::text AS line_type, cr.consultation_record_id AS item_id, NULL::text AS request_id,
-          cr.service_id, s.service_name, s.service_category, s.price, 1 AS quantity, cr.status, cr.requested_at AS created_at
-        FROM consultation_records cr JOIN services s ON s.service_id = cr.service_id
-        WHERE cr.bill_id = ${bill_id} AND LOWER(TRIM(cr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
-        UNION ALL
-        SELECT 'laboratory'::text, tri.item_id, tri.request_id, tri.service_id, s.service_name, s.service_category,
-          s.price, 1, tri.status, tri.created_at
-        FROM test_request_items tri JOIN services s ON s.service_id = tri.service_id
-        JOIN test_requests tr ON tr.request_id = tri.request_id
-        WHERE tri.bill_id = ${bill_id} AND LOWER(TRIM(tri.status)) NOT IN ('cancelled', 'canceled', 'rejected')
-          AND LOWER(TRIM(tr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
-      ) lines ORDER BY created_at, item_id`,
+      sql`
+        SELECT * FROM (
+          SELECT
+            'consultation'::text AS line_type,
+            cr.consultation_record_id AS item_id,
+            NULL::text AS request_id,
+            cr.service_id,
+            s.service_name,
+            s.service_category,
+            s.price,
+            1 AS quantity,
+            cr.status,
+            cr.requested_at AS created_at,
+            NULL::text AS package_id,
+            NULL::jsonb AS components
+          FROM consultation_records cr
+          JOIN services s ON s.service_id = cr.service_id
+          WHERE cr.bill_id = ${bill_id}
+            AND LOWER(TRIM(cr.status)) NOT IN (
+              'cancelled',
+              'canceled',
+              'rejected'
+            )
+
+          UNION ALL
+
+          SELECT
+            'laboratory'::text,
+            tri.item_id,
+            tri.request_id,
+            tri.service_id,
+            s.service_name,
+            s.service_category,
+            CASE
+              WHEN tri.package_id IS NULL THEN s.price
+              ELSE 0
+            END,
+            1,
+            tri.status,
+            tri.created_at,
+            tri.package_id,
+            NULL::jsonb
+          FROM test_request_items tri
+          JOIN services s ON s.service_id = tri.service_id
+          JOIN test_requests tr ON tr.request_id = tri.request_id
+          WHERE tri.bill_id = ${bill_id}
+            AND LOWER(TRIM(tri.status)) NOT IN (
+              'cancelled',
+              'canceled',
+              'rejected'
+            )
+            AND LOWER(TRIM(tr.status)) NOT IN (
+              'cancelled',
+              'canceled',
+              'rejected'
+            )
+
+          UNION ALL
+
+          SELECT
+            'package'::text,
+            MIN(tri.item_id)::text,
+            NULL::text,
+            NULL::text,
+            pkg.package_name,
+            'Package',
+            pkg.package_price,
+            COUNT(DISTINCT tri.request_id)::int,
+            NULL::text,
+            MIN(tri.created_at),
+            tri.package_id,
+            COALESCE(
+              jsonb_agg(
+                jsonb_build_object(
+                  'item_id', tri.item_id,
+                  'service_id', s.service_id,
+                  'service_name', s.service_name,
+                  'service_category', s.service_category,
+                  'service_type', LOWER(TRIM(s.service_type))
+                )
+                ORDER BY tri.created_at, tri.item_id
+              ) FILTER (WHERE s.service_id IS NOT NULL),
+              '[]'::jsonb
+            )
+          FROM test_request_items tri
+          JOIN packages pkg ON pkg.package_id = tri.package_id
+          JOIN test_requests tr ON tr.request_id = tri.request_id
+          LEFT JOIN services s ON s.service_id = tri.service_id
+          WHERE tri.bill_id = ${bill_id}
+            AND tri.package_id IS NOT NULL
+            AND LOWER(TRIM(tri.status)) NOT IN (
+              'cancelled',
+              'canceled',
+              'rejected'
+            )
+            AND LOWER(TRIM(tr.status)) NOT IN (
+              'cancelled',
+              'canceled',
+              'rejected'
+            )
+          GROUP BY
+            tri.package_id,
+            pkg.package_name,
+            pkg.package_price
+        ) lines
+        ORDER BY
+          created_at,
+          item_id
+      `,
     ]);
 
     if (rows.length === 0) {
-      return res.status(404).json({ message: "Bill not found." });
+      return res.status(404).json({
+        message: "Bill not found.",
+      });
     }
 
     const { items: savedItems, ...bill } = rows[0];
     const saved = Array.isArray(savedItems) ? savedItems : [];
-    // Paid bills keep the prices that were charged, never today's catalog prices.
+
+    // Paid bills retain the exact prices charged at payment time.
+    // Legacy bills with no linked rows fall back to their saved item list.
     const items =
       bill.status === "Paid" || linkedItems.length === 0 ? saved : linkedItems;
 
@@ -486,12 +587,12 @@ export async function getBillDetails(
     });
   } catch (error) {
     console.error("Unable to load bill details:", error);
-    return res
-      .status(500)
-      .json({ message: "Bill details could not be loaded." });
+
+    return res.status(500).json({
+      message: "Bill details could not be loaded.",
+    });
   }
 }
-
 export async function getMedicalHistory(
   req: Request,
   res: Response<getMedicalHistory.response | getMedicalHistory.error>,
