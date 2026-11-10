@@ -8,6 +8,7 @@ import {
   Plus,
   TriangleAlert,
   CircleAlert,
+  CheckCircle2,
 } from "lucide-react";
 import api from "#lib/axios";
 import type { Service } from "../../../../interface/Service";
@@ -133,7 +134,10 @@ function ServiceList({
 
         <div className="flex flex-col gap-2 h-96 overflow-y-auto">
           {servicesList.length === 0 ? (
-            <EmptyState message="No services selected." description="Select services from the list to add them to this request." />
+            <EmptyState
+              message="No services selected."
+              description="Select services from the list to add them to this request."
+            />
           ) : (
             servicesList.map((service) => (
               <div
@@ -224,16 +228,7 @@ function ServiceList({
           }}
         />
       )}
-      {success && (
-        <RequestSuccessModal
-          requestId={success.requestId}
-          serviceCount={success.count}
-          serviceType={activeTab}
-          onClose={() => {
-            setSuccess(null);
-          }}
-        />
-      )}
+
       {success && (
         <UniversalModal
           isOpen
