@@ -3,6 +3,7 @@ import type { QueueEntry } from "../../../interface/Queue";
 import { formatAge, formatDateTime } from "../../../utils/formats";
 import calculateAge from "../../../utils/calculateAge";
 import MedicalHistoryTab from "../components/ActiveConsultation/MedicalHistoryTab";
+import DigitalDocumentsTab from "../components/ActiveConsultation/DigitalDocumentsTab";
 import Overview from "../components/ActiveConsultation/Overview";
 import LoadingScreen from "../../../components/LoadingScreen";
 import LoadingRegion from "../../../components/LoadingRegion";
@@ -184,7 +185,14 @@ function ActiveConsultation({
 
               {activeTab === "laboratory-results" && <div>lab</div>}
 
-              {activeTab === "digital-documents" && <div>file</div>}
+              {activeTab === "digital-documents" && (
+                <DigitalDocumentsTab
+                  key={`${selectedQueue.patient_id}:${selectedQueue.consultation_record_id}`}
+                  patientId={selectedQueue.patient_id}
+                  consultationRecordId={selectedQueue.consultation_record_id}
+                  onReturn={() => setActiveTab("overview")}
+                />
+              )}
 
               {activeTab === "prescription" && <div>prescription</div>}
             </section>
