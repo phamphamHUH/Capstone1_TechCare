@@ -3,7 +3,9 @@ import bcrypt from "bcryptjs";
 import cloudinary from "../../config/cloudinary.js";
 import { sql, pool } from "../../config/db.js";
 import {
+  generateImagingQueueId,
   generateLaboratoryQueueId,
+  generateQueueNumberImaging,
   generateQueueNumberLaboratory,
 } from "../../utils/generateId.js";
 import { publishQueueChange } from "../../services/queue-sse/index.js";
@@ -72,7 +74,11 @@ export async function updatePatient(
     // multipart/form-data sends everything as strings, so blank inputs arrive as "".
     // Numeric/date columns can't accept "", so convert blanks to null.
     const toNumberOrNull = (value: unknown): number | null => {
-      if (value === undefined || value === null || String(value).trim() === "") {
+      if (
+        value === undefined ||
+        value === null ||
+        String(value).trim() === ""
+      ) {
         return null;
       }
       const n = Number(value);
@@ -101,6 +107,23 @@ export async function updatePatient(
         message: "Patient not found.",
       } as updatePatient.error);
     }
+
+    // =========================
+    // EMAIL CHANGE
+    // =========================
+    // Verified patient: keep their current email and put the new one in
+    // pending_email until they confirm it (they stay verified meanwhile).
+    // Unverified patient: just replace the email.
+    // Either way a verification link is sent to the new email below.
+    const emailChanged =
+      Boolean(email?.trim()) &&
+      email.trim().toLowerCase() !==
+        String(existingPatient.email).toLowerCase();
+
+    const newEmail =
+      emailChanged && !existingPatient.is_verified ? email.trim() : null;
+    const newPendingEmail =
+      emailChanged && existingPatient.is_verified ? email.trim() : null;
 
     let imageUrl: string | null = null;
     if (req.file) {
@@ -343,7 +366,7 @@ export async function confirmPayment(
   res: Response<confirmPayment.response | confirmPayment.error>,
 ) {
   // PATCH /api/fdstaff/billings/:bill_id/pay
-  // A pending bill is paid first, then its laboratory tests are forwarded.
+  // A pending bill is paid first, then its laboratory and imaging tests are forwarded.
   // A paid bill is never charged again: the same call only retries forwarding.
   const { bill_id } = req.params as { bill_id: string };
   const {
@@ -409,29 +432,92 @@ export async function confirmPayment(
           .json({ message: "Patient is not eligible for this discount." });
       }
 
+      // Package components cost 0; each package is billed once at its own price.
       const { rows: linkedItems } = await client.query(
-        `SELECT 'consultation'::text AS line_type, cr.consultation_record_id AS item_id, NULL::text AS request_id,
-           cr.service_id, s.service_name, s.service_category, s.price, 1 AS quantity
-         FROM consultation_records cr
-         JOIN services s ON s.service_id = cr.service_id
-         WHERE cr.bill_id = $1 AND LOWER(TRIM(cr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
-         UNION ALL
-         SELECT 'laboratory'::text, lri.lab_item_id, lri.request_id, lri.service_id, s.service_name, s.service_category, s.price, 1
-         FROM laboratory_request_items lri
-         JOIN services s ON s.service_id = lri.service_id
-         JOIN laboratory_requests lr ON lr.request_id = lri.request_id
-         WHERE lri.bill_id = $1 AND LOWER(TRIM(lri.status)) NOT IN ('cancelled', 'canceled', 'rejected')
-           AND LOWER(TRIM(lr.status)) NOT IN ('cancelled', 'canceled', 'rejected')`,
+        `SELECT
+          'consultation'::text AS line_type,
+          cr.consultation_record_id AS item_id,
+          NULL::text AS request_id,
+          cr.service_id,
+          s.service_name,
+          s.service_category,
+          s.price,
+          1 AS quantity,
+          NULL::text AS package_id,
+          NULL::jsonb AS components
+        FROM consultation_records cr
+        JOIN services s ON s.service_id = cr.service_id
+        WHERE cr.bill_id = $1
+          AND LOWER(TRIM(cr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+
+        UNION ALL
+
+        SELECT
+          'laboratory'::text,
+          MIN(tri.item_id)::text,
+          tri.request_id,
+          tri.service_id,
+          s.service_name,
+          s.service_category,
+          s.price,
+          COUNT(*)::int,
+          NULL::text,
+          NULL::jsonb
+        FROM test_request_items tri
+        JOIN services s ON s.service_id = tri.service_id
+        JOIN test_requests tr ON tr.request_id = tri.request_id
+        WHERE tri.bill_id = $1
+          AND tri.package_id IS NULL
+          AND LOWER(TRIM(tri.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+          AND LOWER(TRIM(tr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+        GROUP BY tri.request_id, tri.service_id, s.service_name, s.service_category, s.price
+
+        UNION ALL
+
+        SELECT
+          'package'::text,
+          MIN(tri.item_id)::text,
+          NULL::text,
+          NULL::text,
+          pkg.package_name,
+          'Package',
+          pkg.package_price,
+          COUNT(DISTINCT tri.request_id)::int,
+          tri.package_id,
+          COALESCE(
+            jsonb_agg(
+              jsonb_build_object(
+                'service_id', s.service_id,
+                'service_name', s.service_name,
+                'service_type', LOWER(TRIM(s.service_type))
+              )
+            ) FILTER (WHERE s.service_id IS NOT NULL),
+            '[]'::jsonb
+          )
+        FROM test_request_items tri
+        JOIN packages pkg ON pkg.package_id = tri.package_id
+        JOIN test_requests tr ON tr.request_id = tri.request_id
+        LEFT JOIN services s ON s.service_id = tri.service_id
+        WHERE tri.bill_id = $1
+          AND tri.package_id IS NOT NULL
+          AND LOWER(TRIM(tri.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+          AND LOWER(TRIM(tr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+        GROUP BY tri.package_id, pkg.package_name, pkg.package_price`,
         [bill_id],
       );
 
       // Legacy bills have no linked rows, only their saved item list.
+      const legacyItems: Record<string, any>[] = Array.isArray(found.items)
+        ? found.items
+        : [];
+
       const source: Record<string, any>[] =
         linkedItems.length > 0
           ? linkedItems
-          : Array.isArray(found.items)
-            ? found.items
-            : [];
+          : legacyItems.filter(
+              (item) =>
+                item?.line_type !== "laboratory" || item?.package_id == null,
+            );
       const items = source.map((item) => ({
         ...item,
         price:
@@ -439,6 +525,7 @@ export async function confirmPayment(
             ? NaN
             : Number(item.price),
         quantity: Number(item.quantity ?? 1),
+        components: Array.isArray(item.components) ? item.components : [],
       }));
 
       if (
@@ -522,15 +609,19 @@ export async function confirmPayment(
         [bill_id],
       );
       await client.query(
-        `UPDATE laboratory_requests lr
-         SET is_paid = TRUE, status = 'Paid', is_priority = COALESCE($2, lr.is_priority), updated_at = NOW()
-         WHERE EXISTS (SELECT 1 FROM laboratory_request_items lri WHERE lri.request_id = lr.request_id AND lri.bill_id = $1)
-           AND LOWER(TRIM(lr.status)) NOT IN ('cancelled', 'canceled', 'rejected')`,
+        `UPDATE test_requests tr
+         SET status = 'Paid', is_priority = COALESCE($2, tr.is_priority), updated_at = NOW()
+         WHERE EXISTS (SELECT 1 FROM test_request_items tri WHERE tri.request_id = tr.request_id AND tri.bill_id = $1)
+           AND LOWER(TRIM(tr.status)) NOT IN ('cancelled', 'canceled', 'rejected')`,
         [bill_id, priority ?? null],
       );
     }
     await client.query("COMMIT");
 
+    // 2. Forward laboratory and imaging tests in a separate transaction, so a
+    // forwarding problem can never undo the payment. Each request gets one
+    // queue entry per service type and room. Package components are normal
+    // items here, so they route by their own service type and room.
     // Receipt email for a new payment (information only, not awaited).
     if (!already_paid) {
       const paid = bill;
@@ -565,14 +656,15 @@ export async function confirmPayment(
       await client.query("BEGIN");
       await client.query("SELECT pg_advisory_xact_lock(hashtext('queue_ids'))");
       const { rows: labItems } = await client.query(
-        `SELECT lri.lab_item_id, lri.request_id, lri.queue_id, lri.status, lr.patient_id, lr.is_priority, s.room
-         FROM laboratory_request_items lri
-         JOIN services s ON s.service_id = lri.service_id
-         JOIN laboratory_requests lr ON lr.request_id = lri.request_id
-         WHERE lri.bill_id = $1 AND LOWER(TRIM(lri.status)) NOT IN ('cancelled', 'canceled', 'rejected')
-           AND LOWER(TRIM(lr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
-         ORDER BY lri.request_id, lri.lab_item_id
-         FOR UPDATE OF lri`,
+        `SELECT tri.item_id, tri.request_id, tri.queue_id, tri.status, tr.patient_id, tr.is_priority,
+                s.room, LOWER(TRIM(s.service_type)) AS service_type
+         FROM test_request_items tri
+         JOIN services s ON s.service_id = tri.service_id
+         JOIN test_requests tr ON tr.request_id = tri.request_id
+         WHERE tri.bill_id = $1 AND LOWER(TRIM(tri.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+           AND LOWER(TRIM(tr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+         ORDER BY tri.request_id, tri.item_id
+         FOR UPDATE OF tri`,
         [bill_id],
       );
       has_laboratory_items = labItems.length > 0;
@@ -582,44 +674,47 @@ export async function confirmPayment(
         unforwarded.some(
           (item) =>
             String(item.status).trim().toLowerCase() !== "requested" ||
-            !String(item.room ?? "").trim(),
+            !String(item.room ?? "").trim() ||
+            !["laboratory", "imaging"].includes(item.service_type),
         )
       ) {
         queued = false;
         forwardingError =
-          "Payment was recorded, but some laboratory tests still need an assigned room before they can be forwarded.";
+          "Payment was recorded, but some tests still need an assigned room or a valid service type (laboratory or imaging) before they can be forwarded.";
         await client.query("ROLLBACK");
       } else {
-        // Group by room only (a bill belongs to one patient).
+        // Group by service type + room (a bill belongs to one patient).
         const groups = new Map<string, typeof unforwarded>();
         for (const item of unforwarded) {
-          groups.set(item.room, [...(groups.get(item.room) ?? []), item]);
+          const key = `${item.service_type}|${item.room}`;
+          groups.set(key, [...(groups.get(key) ?? []), item]);
         }
 
         for (const group of groups.values()) {
-          const { patient_id, room } = group[0];
+          const { patient_id, room, service_type } = group[0];
+          const isImaging = service_type === "imaging";
           const groupPriority = group.some((item) => item.is_priority === true);
 
-          // Reuse only today's open queue, since the lab page lists today's entries.
+          // Reuse only today's open queue of the same type, since each page lists today's entries.
           const {
             rows: [existing],
           } = await client.query(
             `SELECT q.queue_id
              FROM queue_entries q
              WHERE q.patient_id = $1
-               AND q.queue_id LIKE 'LAB-%'
+               AND q.queue_id LIKE $3
                AND LOWER(TRIM(q.status)) IN ('waiting', 'serving')
                AND q.created_at >= CURRENT_DATE
                AND q.created_at < CURRENT_DATE + INTERVAL '1 day'
                AND EXISTS (
                  SELECT 1
-                 FROM laboratory_request_items lri
-                 JOIN services s ON s.service_id = lri.service_id
-                 WHERE lri.queue_id = q.queue_id AND s.room = $2
+                 FROM test_request_items tri
+                 JOIN services s ON s.service_id = tri.service_id
+                 WHERE tri.queue_id = q.queue_id AND s.room = $2
                )
              ORDER BY q.created_at
              LIMIT 1`,
-            [patient_id, room],
+            [patient_id, room, isImaging ? "IMG-%" : "LAB-%"],
           );
 
           let queue_id: string;
@@ -637,11 +732,12 @@ export async function confirmPayment(
               if (upgraded.rowCount) priorityRooms.push({ patient_id, room });
             }
           } else {
-            queue_id = await generateLaboratoryQueueId(client);
-            const queue_number = await generateQueueNumberLaboratory(
-              client,
-              room,
-            );
+            queue_id = isImaging
+              ? await generateImagingQueueId(client)
+              : await generateLaboratoryQueueId(client);
+            const queue_number = isImaging
+              ? await generateQueueNumberImaging(client, room)
+              : await generateQueueNumberLaboratory(client, room);
             await client.query(
               `INSERT INTO queue_entries (queue_id, patient_id, queue_number, is_priority, status)
                VALUES ($1, $2, $3, $4, 'Waiting')`,
@@ -651,19 +747,17 @@ export async function confirmPayment(
             if (groupPriority) priorityRooms.push({ patient_id, room });
           }
 
-          const ids = group.map((item) => item.lab_item_id);
+          const ids = group.map((item) => item.item_id);
           const { rows: linked } = await client.query(
-            `UPDATE laboratory_request_items
+            `UPDATE test_request_items
              SET queue_id = $1, status = 'Waiting', updated_at = NOW()
-             WHERE lab_item_id = ANY($2::text[])
+             WHERE item_id = ANY($2::text[])
                AND queue_id IS NULL AND LOWER(TRIM(status)) = 'requested'
-             RETURNING lab_item_id`,
+             RETURNING item_id`,
             [queue_id, ids],
           );
           if (linked.length !== ids.length) {
-            throw new Error(
-              "Some laboratory items changed while being forwarded.",
-            );
+            throw new Error("Some items changed while being forwarded.");
           }
 
           queueChanged = true;
@@ -676,7 +770,7 @@ export async function confirmPayment(
       queued = false;
       queueChanged = false;
       forwardingError =
-        "Payment was recorded, but laboratory forwarding failed. Retry forwarding from the paid bill.";
+        "Payment was recorded, but forwarding failed. Retry forwarding from the paid bill.";
     }
 
     if (queueChanged) {

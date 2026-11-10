@@ -48,7 +48,7 @@ router.get("/laboratory-results/saved", getSavedLaboratoryResults);
 router.get("/laboratory-results", getReleasedLaboratoryResults);
 
 // POST ROUTES
-router.post("/laboratory-results/:lab_item_id", saveLaboratoryResult);
+router.post("/laboratory-results/:item_id", saveLaboratoryResult);
 
 // PATCH ROUTES
 router.patch("/laboratory-requests/analysis/start", startLaboratoryAnalysis);

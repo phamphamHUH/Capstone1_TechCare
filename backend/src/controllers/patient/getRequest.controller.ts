@@ -24,7 +24,9 @@ export async function getMedicalHistory(
     } = req.query as getMedicalHistory.query;
 
     if (!patient_id) {
-      return res.status(400).json({ message: "Patient ID is required." } as getMedicalHistory.error);
+      return res.status(400).json({
+        message: "Patient ID is required.",
+      } as getMedicalHistory.error);
     }
 
     const pageNum = Math.max(parseInt(page as string) || 1, 1);
@@ -48,15 +50,15 @@ export async function getMedicalHistory(
 
         SELECT
           'laboratory'::text,
-          lri.lab_item_id,
+          tri.item_id,
           s.service_name,
           'Laboratory'::text,
-          lri.status,
-          lr.requested_at
-        FROM laboratory_request_items lri
-        JOIN laboratory_requests lr ON lr.request_id = lri.request_id
-        JOIN services s             ON s.service_id = lri.service_id
-        WHERE lr.patient_id = ${patient_id}
+          tri.status,
+          tr.requested_at
+        FROM test_request_items tri
+        JOIN test_requests tr ON tr.request_id = tri.request_id
+        JOIN services s             ON s.service_id = tri.service_id
+        WHERE tr.patient_id = ${patient_id}
       )
       SELECT *, COUNT(*) OVER() AS total_count
       FROM history
@@ -74,7 +76,9 @@ export async function getMedicalHistory(
 
     return res.status(200).json({
       message: "Medical history successfully fetched.",
-      records: rows.map(({ total_count, ...r }) => r as getMedicalHistory.record),
+      records: rows.map(
+        ({ total_count, ...r }) => r as getMedicalHistory.record,
+      ),
       pagination: {
         page: pageNum,
         limit: limitNum,
@@ -84,13 +88,17 @@ export async function getMedicalHistory(
     } as getMedicalHistory.response);
   } catch (error) {
     console.error("Error fetching medical history:", error);
-    return res.status(500).json({ message: "Failed to fetch medical history" } as getMedicalHistory.error);
+    return res.status(500).json({
+      message: "Failed to fetch medical history",
+    } as getMedicalHistory.error);
   }
 }
 
 export async function getMedicalHistoryDetails(
   req: Request,
-  res: Response<getMedicalHistoryDetails.response | getMedicalHistoryDetails.error>,
+  res: Response<
+    getMedicalHistoryDetails.response | getMedicalHistoryDetails.error
+  >,
 ) {
   try {
     const { record_type, record_id } = req.params;
@@ -98,28 +106,28 @@ export async function getMedicalHistoryDetails(
     if (record_type === "laboratory") {
       const [labDetails] = await sql`
         SELECT 
-          lri.lab_item_id, lri.status, lri.updated_at,
+          tri.item_id, tri.status, tri.updated_at,
           s.service_name, s.room,
           CONCAT_WS(' ', req_u.first_name, req_u.last_name)   AS requested_by,
           req_u.role                                          AS requested_by_role,
           CONCAT_WS(' ', proc_u.first_name, proc_u.last_name) AS processed_by,  
           proc_u.role                                         AS processed_by_role
-          FROM laboratory_request_items lri
-          JOIN service s                                      ON s.service_id = lri.service_id
-          LEFT JOIN users req_u                               ON req_u.user_id = lr.requested_by
-          LEFT JOIN users proc_u                              ON proc_u.user_id = lri.processed_by
-          WHERE lri.lab_item_id = ${record_id}
+          FROM test_request_items tri
+          JOIN service s                                      ON s.service_id = tri.service_id
+          LEFT JOIN users req_u                               ON req_u.user_id = tr.requested_by
+          LEFT JOIN users proc_u                              ON proc_u.user_id = tri.processed_by
+          WHERE tri.item_id = ${record_id}
       `;
 
       if (!labDetails)
-        return res
-          .status(404)
-          .json({ message: "Laboratory record not found." } as getMedicalHistoryDetails.error);
+        return res.status(404).json({
+          message: "Laboratory record not found.",
+        } as getMedicalHistoryDetails.error);
 
       const results = await sql`
         SELECT result_value, remarks
-        FROM laboratory_results
-        WHERE lab_item_id = ${record_id}
+        FROM test_results
+        WHERE item_id = ${record_id}
         ORDER BY id
       `;
 
@@ -144,9 +152,9 @@ export async function getMedicalHistoryDetails(
       `;
 
       if (!consDetails)
-        return res
-          .status(404)
-          .json({ message: "Consultation record not found." } as getMedicalHistoryDetails.error);
+        return res.status(404).json({
+          message: "Consultation record not found.",
+        } as getMedicalHistoryDetails.error);
 
       return res.status(200).json({
         message: "Consultation record successfully fetched",
@@ -155,10 +163,14 @@ export async function getMedicalHistoryDetails(
       } as getMedicalHistoryDetails.consultationResponse);
     }
 
-    return res.status(400).json({ message: "Invalid record type." } as getMedicalHistoryDetails.error);
+    return res.status(400).json({
+      message: "Invalid record type.",
+    } as getMedicalHistoryDetails.error);
   } catch (error) {
     console.error("Error fetching current prescriptions:", error);
-    return res.status(500).json({ message: "Failed to fetch prescriptions" } as getMedicalHistoryDetails.error);
+    return res.status(500).json({
+      message: "Failed to fetch prescriptions",
+    } as getMedicalHistoryDetails.error);
   }
 }
 
@@ -172,24 +184,26 @@ export async function getMedicalHistoryFull(
     if (record_type === "laboratory") {
       const [fullLab] = await sql`
         SELECT
-          lri.lab_item_id, lri.status, lri.updated_at,
-          lr.result_value, lr.remarks, lr.verified_by, lr.verified_at,
+          tri.item_id, tri.status, tri.updated_at,
+          tr.result_value, tr.remarks, tr.verified_by, tr.verified_at,
           s.service_name, s.room,
           CONCAT_WS(' ', req_u.first_name, req_u.last_name)   AS requested_by,
           req_u.role                                          AS requested_by_role,
           CONCAT_WS(' ', proc_u.first_name, proc_u.last_name) AS processed_by,  
           proc_u.role                                         AS processed_by_role
-          FROM laboratory_request_items lri
-          JOIN services s                                     ON s.service_id = lri.service_id
-          JOIN laboratory_requests lr                         ON lr.request_id = lri.request_id
-          LEFT JOIN users req_u                               ON req_u.user_id = lr.requested_by
-          LEFT JOIN users proc_u                              ON proc_u.user_id = lri.processed_by
-          WHERE lri.lab_item_id = ${record_id}
+          FROM test_request_items tri
+          JOIN services s                                     ON s.service_id = tri.service_id
+          JOIN test_requests tr                        ON tr.request_id = tri.request_id
+          LEFT JOIN users req_u                               ON req_u.user_id = tr.requested_by
+          LEFT JOIN users proc_u                              ON proc_u.user_id = tri.processed_by
+          WHERE tri.item_id = ${record_id}
 
       `;
 
       if (!fullLab)
-        return res.status(404).json({ message: "Laboratory record not found" } as getMedicalHistoryFull.error);
+        return res.status(404).json({
+          message: "Laboratory record not found",
+        } as getMedicalHistoryFull.error);
 
       return res.status(200).json({
         message: "Full laboratory details successfully fetched",
@@ -211,9 +225,9 @@ export async function getMedicalHistoryFull(
       `;
 
       if (!consDetails)
-        return res
-          .status(404)
-          .json({ message: "Consultation record not found." } as getMedicalHistoryFull.error);
+        return res.status(404).json({
+          message: "Consultation record not found.",
+        } as getMedicalHistoryFull.error);
 
       return res.status(200).json({
         message: "Consultation record and prescription/s successfully fetched",
@@ -222,21 +236,29 @@ export async function getMedicalHistoryFull(
       } as getMedicalHistoryFull.consultationResponse);
     }
 
-    return res.status(400).json({ message: "Invalid record type." } as getMedicalHistoryFull.error);
+    return res
+      .status(400)
+      .json({ message: "Invalid record type." } as getMedicalHistoryFull.error);
   } catch (error) {
-    return res.status(500).json({ message: "Internal server error" } as getMedicalHistoryFull.error);
+    return res.status(500).json({
+      message: "Internal server error",
+    } as getMedicalHistoryFull.error);
   }
 }
 
 export async function getCurrentPrescriptions(
   req: Request,
-  res: Response<getCurrentPrescriptions.response | getCurrentPrescriptions.error>,
+  res: Response<
+    getCurrentPrescriptions.response | getCurrentPrescriptions.error
+  >,
 ) {
   try {
     const { patient_id } = req.params;
 
     if (!patient_id) {
-      return res.status(400).json({ message: "Patient ID is required." } as getCurrentPrescriptions.error);
+      return res.status(400).json({
+        message: "Patient ID is required.",
+      } as getCurrentPrescriptions.error);
     }
 
     const prescriptions = await sql`
@@ -247,11 +269,15 @@ export async function getCurrentPrescriptions(
       ORDER BY prescribed_at DESC
     `;
 
-    return res
-      .status(200)
-      .json({ message: "Prescriptions successfully fetched.", prescriptions: prescriptions as unknown as getCurrentPrescriptions.prescription[] } as getCurrentPrescriptions.response);
+    return res.status(200).json({
+      message: "Prescriptions successfully fetched.",
+      prescriptions:
+        prescriptions as unknown as getCurrentPrescriptions.prescription[],
+    } as getCurrentPrescriptions.response);
   } catch (error) {
     console.error("Error fetching current prescriptions:", error);
-    return res.status(500).json({ message: "Failed to fetch prescriptions" } as getCurrentPrescriptions.error);
+    return res.status(500).json({
+      message: "Failed to fetch prescriptions",
+    } as getCurrentPrescriptions.error);
   }
 }

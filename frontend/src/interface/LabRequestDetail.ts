@@ -1,5 +1,5 @@
 export type LaboratoryRequestItem = {
-  lab_item_id: string;
+  item_id: string;
   queue_id: string | null;
   status: string;
   processed_by: string | null;

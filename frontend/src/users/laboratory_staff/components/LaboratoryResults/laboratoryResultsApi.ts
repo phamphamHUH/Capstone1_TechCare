@@ -22,13 +22,13 @@ export {
   normalizeAnalysisRequests,
   patientAge,
 } from "./laboratoryAnalysis";
-export const LABORATORY_REQUESTS_ENDPOINT =
+export const test_requests_ENDPOINT =
   "/api/labstaff/laboratory-results/analysis-items";
 export const LABORATORY_TEMPLATES_ENDPOINT =
   "/api/labstaff/laboratory-results/form-templates/";
 
 type AnalysisReadyItem = {
-  lab_item_id: string;
+  item_id: string;
   request_id: string;
   patient_id: string;
   service_name: string;
@@ -60,7 +60,7 @@ async function loadAnalysisRequests(
   room: string,
   signal?: AbortSignal,
 ): Promise<AnalysisRequest[]> {
-  const response = await api.get(LABORATORY_REQUESTS_ENDPOINT, {
+  const response = await api.get(test_requests_ENDPOINT, {
     params: { room },
     signal,
   });
@@ -77,7 +77,7 @@ async function loadAnalysisRequests(
   if (
     items.some(
       (item) =>
-        !item.lab_item_id ||
+        !item.item_id ||
         !item.request_id ||
         !item.patient_id ||
         !item.service_id ||

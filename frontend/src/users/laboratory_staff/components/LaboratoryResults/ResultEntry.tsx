@@ -1,8 +1,18 @@
 import FieldError from "../../../../components/FieldError";
 import EmptyState from "../../../../components/EmptyState";
-import LoadingScreen, { LoadingSpinner } from "../../../../components/LoadingScreen";
+import LoadingScreen, {
+  LoadingSpinner,
+} from "../../../../components/LoadingScreen";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Check, ChevronDown, ChevronRight, Eye, Search, TestTubeDiagonal } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Eye,
+  Search,
+  TestTubeDiagonal,
+} from "lucide-react";
 import type {
   AnalysisRequest,
   LaboratoryReportData,
@@ -348,7 +358,7 @@ export default function ResultEntry({
         room: request.room,
         request_id: request.requestId,
         patient_id: request.patientId,
-        lab_item_id: test?.id || null,
+        item_id: test?.id || null,
         service_id: test?.serviceId || template.service_id,
         form_id: template.form_id,
         template_version: template.version ?? null,
@@ -599,9 +609,13 @@ export default function ResultEntry({
                         </label>
                       ))}
                       {!visibleTemplates.length && !failure && (
-                        <EmptyState message={search
-                            ? "No templates match your search."
-                            : "No published templates match the requested tests."} />
+                        <EmptyState
+                          message={
+                            search
+                              ? "No templates match your search."
+                              : "No published templates match the requested tests."
+                          }
+                        />
                       )}
                     </div>
                   )}
@@ -669,9 +683,7 @@ export default function ResultEntry({
                   {failure && <AnalysisNotice error>{failure}</AnalysisNotice>}
                   {notice && <AnalysisNotice>{notice}</AnalysisNotice>}
                   {errors._form && (
-                    <FieldError className="mb-2">
-                      {errors._form}
-                    </FieldError>
+                    <FieldError className="mb-2">{errors._form}</FieldError>
                   )}
                   <TemplateFields
                     components={template.components}
@@ -748,9 +760,7 @@ export default function ResultEntry({
                     Preview
                   </AnalysisButton>
                   <AnalysisButton type="submit" disabled={readOnly}>
-                    {saving && (
-                      <LoadingSpinner size={14} />
-                    )}
+                    {saving && <LoadingSpinner size={14} />}
                     {saving
                       ? "Saving..."
                       : savedResultId

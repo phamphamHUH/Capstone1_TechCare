@@ -38,7 +38,7 @@ export namespace getLaboratoryRequestDetails {
   }
 
   export interface itemDetails {
-    lab_item_id: string;
+    item_id: string;
     queue_id: string | null;
     status: string;
     processed_by: string | null;
@@ -60,23 +60,22 @@ export namespace getLaboratoryRequestDetails {
   }
 }
 
-
 export namespace getLaboratoryQueues {
   export interface queueItem {
-  id: number;
-  queue_id: string;
-  patient_id: string;
-  patient_name: string;
-  queue_number: number;
-  is_priority: boolean;
-  status: string;
-  created_at: string;
-  updated_at: string;
-  room: string;
-  service_name: string;
-  service_type: string;
-  service_category: string;
-}
+    id: number;
+    queue_id: string;
+    patient_id: string;
+    patient_name: string;
+    queue_number: number;
+    is_priority: boolean;
+    status: string;
+    created_at: string;
+    updated_at: string;
+    room: string;
+    service_name: string;
+    service_type: string;
+    service_category: string;
+  }
 
   export type response = queueItem[];
 
@@ -109,7 +108,7 @@ export namespace getRoomSpecificServices {
 
 export namespace getLaboratoryQueueItems {
   export interface queueItem {
-    lab_item_id: string;
+    item_id: string;
     request_id: string;
     queue_id: string | null;
     service_id: string;
@@ -137,7 +136,7 @@ export namespace getAnalysisItems {
   }
 
   export interface analysisItem {
-    lab_item_id: string;
+    item_id: string;
     request_id: string;
     service_id: string;
     queue_id: string | null;
@@ -173,7 +172,7 @@ export namespace getSavedLaboratoryResults {
 
   export interface resultItem {
     result_id: string;
-    lab_item_id: string;
+    item_id: string;
     results: unknown;
     remarks: string | null;
     image_url: string | null;
@@ -196,7 +195,7 @@ export namespace getSavedLaboratoryResults {
 
 export namespace getAnalysisReadyRequests {
   export interface readyRequest {
-    lab_item_id: string;
+    item_id: string;
     request_id: string;
     service_id: string;
     room: string;
@@ -241,7 +240,7 @@ export namespace getAvailableFormTemplates {
 export namespace getReleasedLaboratoryResults {
   export interface releasedResult {
     result_id: string;
-    lab_item_id: string;
+    item_id: string;
     results: unknown;
     remarks: string | null;
     image_url: string | null;

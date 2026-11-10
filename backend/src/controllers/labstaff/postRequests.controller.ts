@@ -4,18 +4,19 @@ import type { saveLaboratoryResult } from "./dto/post.dto.js";
 
 export async function saveLaboratoryResult(
   req: Request,
-  res: Response<
-    saveLaboratoryResult.response | saveLaboratoryResult.error
-  >,
+  res: Response<saveLaboratoryResult.response | saveLaboratoryResult.error>,
 ) {
   try {
-    const { lab_item_id } = req.params;
-    const { results, remarks, image_url, room } = req.body as saveLaboratoryResult.body;
+    const { item_id } = req.params;
+    const { results, remarks, image_url, room } =
+      req.body as saveLaboratoryResult.body;
     if (typeof room !== "string" || !room.trim()) {
-      return res.status(400).json({ message: "room is required" } as saveLaboratoryResult.error);
+      return res
+        .status(400)
+        .json({ message: "room is required" } as saveLaboratoryResult.error);
     }
 
-    if (!lab_item_id) {
+    if (!item_id) {
       return res.status(400).json({
         message: "Laboratory item ID is required.",
       } as saveLaboratoryResult.error);
@@ -46,9 +47,9 @@ export async function saveLaboratoryResult(
     }
 
     const [item] = await sql`
-      SELECT lab_item_id
-      FROM laboratory_request_items
-      WHERE lab_item_id = ${lab_item_id}
+      SELECT item_id
+      FROM test_request_items
+      WHERE item_id = ${item_id}
       LIMIT 1
     `;
 
@@ -61,44 +62,42 @@ export async function saveLaboratoryResult(
     const result_id = `RES-${crypto.randomUUID()}`;
     const [savedResult] = await sql`
       WITH eligible AS MATERIALIZED (
-        SELECT ri.lab_item_id FROM laboratory_request_items ri
+        SELECT ri.item_id FROM test_request_items ri
         JOIN services s ON s.service_id = ri.service_id
-        WHERE ri.lab_item_id = ${lab_item_id} AND s.room = ${room}
+        WHERE ri.item_id = ${item_id} AND s.room = ${room}
           AND ri.status = 'In Progress'
-          AND NOT EXISTS (SELECT 1 FROM laboratory_results r WHERE r.lab_item_id = ri.lab_item_id AND r.status = 'Released')
+          AND NOT EXISTS (SELECT 1 FROM test_results r WHERE r.item_id = ri.item_id AND r.status = 'Released')
         FOR UPDATE OF ri
       ), updated AS (
-        UPDATE laboratory_results r SET
+        UPDATE test_results r SET
           results = ${JSON.stringify(results)}::jsonb,
           remarks = ${typeof remarks === "string" ? remarks.trim() || null : null},
           image_url = ${typeof image_url === "string" ? image_url.trim() || null : null},
           updated_at = NOW()
-        FROM eligible e WHERE r.lab_item_id = e.lab_item_id AND r.status = 'Pending'
+        FROM eligible e WHERE r.item_id = e.item_id AND r.status = 'Pending'
         RETURNING r.*
       ), inserted AS (
-        INSERT INTO laboratory_results (result_id, lab_item_id, results, remarks, image_url)
-        SELECT ${result_id}, e.lab_item_id, ${JSON.stringify(results)}::jsonb,
+        INSERT INTO test_results (result_id, item_id, results, remarks, image_url)
+        SELECT ${result_id}, e.item_id, ${JSON.stringify(results)}::jsonb,
           ${typeof remarks === "string" ? remarks.trim() || null : null},
           ${typeof image_url === "string" ? image_url.trim() || null : null}
-        FROM eligible e WHERE NOT EXISTS (SELECT 1 FROM laboratory_results r WHERE r.lab_item_id = e.lab_item_id)
+        FROM eligible e WHERE NOT EXISTS (SELECT 1 FROM test_results r WHERE r.item_id = e.item_id)
         RETURNING *
       ), saved AS (
         SELECT * FROM updated UNION ALL SELECT * FROM inserted
       ), completed AS (
-        UPDATE laboratory_request_items ri SET status = 'Completed', updated_at = NOW()
-        FROM saved WHERE ri.lab_item_id = saved.lab_item_id
-        RETURNING ri.lab_item_id
+        UPDATE test_request_items ri SET status = 'Completed', updated_at = NOW()
+        FROM saved WHERE ri.item_id = saved.item_id
+        RETURNING ri.item_id
       )
-      SELECT saved.* FROM saved JOIN completed USING (lab_item_id)
+      SELECT saved.* FROM saved JOIN completed USING (item_id)
     `;
 
     if (!savedResult)
-      return res
-        .status(409)
-        .json({
-          message:
-            "Only an in-progress test in this room can be saved. Refresh the list to check its status.",
-        } as saveLaboratoryResult.error);
+      return res.status(409).json({
+        message:
+          "Only an in-progress test in this room can be saved. Refresh the list to check its status.",
+      } as saveLaboratoryResult.error);
 
     return res.status(201).json({
       message: "Laboratory results saved successfully.",

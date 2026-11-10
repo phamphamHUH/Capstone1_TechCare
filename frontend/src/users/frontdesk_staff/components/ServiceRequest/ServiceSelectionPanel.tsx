@@ -58,7 +58,11 @@ function ServiceSelectionPanel({
         <h1 className="font-bold text-lg mb-3">
           {activeTab === "laboratory"
             ? "Select Laboratory Services"
-            : "Select Consultation Service"}
+            : activeTab === "consultation"
+              ? "Select Consultation Service"
+              : activeTab === "imaging"
+                ? "Select Imaging Services"
+                : "Select Packaged Service"}
         </h1>
         <div className="mb-4 flex w-full flex-wrap items-center gap-2">
           <div className="relative min-w-55 flex-1 basis-70">

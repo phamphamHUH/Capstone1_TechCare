@@ -235,32 +235,28 @@ const TABLES: TableDefinition[] = [
   },
 
   {
-    table: "laboratory_requests",
+    table: "test_requests",
     columns: {
       id: "SERIAL PRIMARY KEY",
       request_id: "VARCHAR(255) UNIQUE NOT NULL",
-      consultation_record_id:
-        "VARCHAR(255) REFERENCES consultation_records(consultation_record_id)",
       patient_id: "VARCHAR(255) NOT NULL REFERENCES patients(patient_id)",
       requested_by: "VARCHAR(255) NOT NULL REFERENCES users(user_id)",
       status: "VARCHAR(20) NOT NULL DEFAULT 'Requested'",
-      is_paid: "BOOLEAN NOT NULL DEFAULT FALSE",
       is_priority: "BOOLEAN NOT NULL DEFAULT FALSE",
       request_date: "DATE NOT NULL DEFAULT CURRENT_DATE",
-      estimated_release_date: "DATE",
       requested_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
       updated_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
     },
   },
 
   {
-    table: "laboratory_request_items",
+    table: "test_request_items",
     columns: {
       id: "SERIAL PRIMARY KEY",
-      lab_item_id: "VARCHAR(255) UNIQUE NOT NULL",
-      request_id:
-        "VARCHAR(255) NOT NULL REFERENCES laboratory_requests(request_id)",
+      item_id: "VARCHAR(255) UNIQUE NOT NULL",
+      request_id: "VARCHAR(255) NOT NULL REFERENCES test_requests(request_id)",
       service_id: "VARCHAR(255) NOT NULL REFERENCES services(service_id)",
+      package_id: "VARCHAR(255) REFERENCES packages(package_id)",
       processed_by: "VARCHAR(255) REFERENCES users(user_id)",
       queue_id: "VARCHAR(255) REFERENCES queue_entries(queue_id)",
       bill_id: "VARCHAR(255) REFERENCES bills(bill_id)",
@@ -272,12 +268,11 @@ const TABLES: TableDefinition[] = [
   },
 
   {
-    table: "laboratory_results",
+    table: "test_results",
     columns: {
       id: "SERIAL PRIMARY KEY",
       result_id: "VARCHAR(255) UNIQUE NOT NULL",
-      lab_item_id:
-        "VARCHAR(255) NOT NULL REFERENCES laboratory_request_items(lab_item_id)",
+      item_id: "VARCHAR(255) NOT NULL REFERENCES test_request_items(item_id)",
       results: "JSONB NOT NULL DEFAULT '[]'::jsonb",
       status: "VARCHAR(20) NOT NULL DEFAULT 'Pending'",
       remarks: "TEXT",
@@ -422,7 +417,7 @@ function generateCreateTableSQL(table: TableDefinition): string {
 
 // export async function ensureLaboratoryResultStatus(): Promise<void> {
 //   await sql`
-//     ALTER TABLE laboratory_results
+//     ALTER TABLE test_results
 //     ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'Pending',
 //     ADD COLUMN IF NOT EXISTS released_at TIMESTAMP,
 //     ADD COLUMN IF NOT EXISTS released_by VARCHAR(255)

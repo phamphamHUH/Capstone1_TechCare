@@ -60,11 +60,11 @@ export namespace cancelQueueEntry {
 export namespace startLaboratoryAnalysis {
   export interface body {
     room?: string;
-    lab_item_ids?: string[];
+    item_ids?: string[];
   }
 
   export interface item {
-    lab_item_id: string;
+    item_id: string;
     status: string;
     [key: string]: unknown;
   }
