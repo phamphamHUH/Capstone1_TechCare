@@ -1,5 +1,4 @@
 import EmptyState from "../../../../components/EmptyState";
-import ServiceFilters from "./ServiceFilters";
 import type { SortOrder, Service } from "../../../../interface/Service";
 import { Syringe, ChevronDown, Search } from "lucide-react";
 
