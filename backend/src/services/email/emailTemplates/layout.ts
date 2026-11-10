@@ -3,6 +3,7 @@ import { ENV } from "../../../config/env.js";
 // =========================
 // SHARED EMAIL LAYOUT
 // =========================
+// Every email is information only: nothing has to be clicked or confirmed.
 // One look for every email, built to render the same in Gmail (web + app),
 // Outlook (desktop, which uses Word to render), Outlook.com, Apple Mail,
 // Yahoo and phone mail apps:
@@ -10,9 +11,6 @@ import { ENV } from "../../../config/env.js";
 // - every style inline; <style> only adds extras (phone sizes, dark mode)
 //   that clients without <style> support can safely skip
 // - a light card that stays readable when an app forces dark mode
-//
-// NOTE: sendEmail's console fallback logs the FIRST href in the html, so the
-// action button must stay the first link in the email.
 
 export type Email = {
   to: string;
@@ -41,23 +39,53 @@ const COLOR = {
 
 const FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
 
+export type DetailRow = {
+  label: string;
+  value: string;
+  // Bold row with a line above it, e.g. the total on a receipt.
+  strong?: boolean;
+};
+
 export type LayoutOptions = {
   // Short summary shown next to the subject in the inbox list (hidden in the email).
   preview: string;
   heading: string;
   greeting?: string;
   paragraphs: string[];
-  button: { text: string; link: string };
-  // Small grey box under the button: expiry, "ignore if this wasn't you", ...
+  // Label / value table under the text: username, receipt lines, ...
+  details?: DetailRow[];
+  // Optional shortcut, e.g. "Log in to TechCare". Never required to do anything.
+  button?: { text: string; link: string };
+  // Small grey box at the end: privacy notes, who to contact, ...
   note?: string;
 };
 
-export function layout({ preview, heading, greeting, paragraphs, button, note }: LayoutOptions) {
+function detailsTable(rows: DetailRow[]) {
+  const cell = `font-family:${FONT};font-size:15px;line-height:22px;padding:10px 0`;
+
+  const body = rows
+    .map(({ label, value, strong }) => {
+      const line = strong ? `border-top:2px solid ${COLOR.text};` : `border-top:1px solid ${COLOR.border};`;
+      const weight = strong ? "font-weight:700;" : "";
+      return `<tr>
+                  <td class="${strong ? "dv" : "dl"}" style="${cell};${line}${weight}color:${strong ? COLOR.text : COLOR.muted};padding-right:16px">${escapeHtml(label)}</td>
+                  <td class="dv" align="right" style="${cell};${line}${weight}color:${COLOR.text};text-align:right;word-break:break-word">${escapeHtml(value)}</td>
+                </tr>`;
+    })
+    .join("");
+
+  return `<tr>
+          <td class="px" style="padding:0 40px 24px">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${body}</table>
+          </td>
+        </tr>`;
+}
+
+export function layout({ preview, heading, greeting, paragraphs, details, button, note }: LayoutOptions) {
   const clinic = escapeHtml(ENV.EMAIL_FROM_NAME);
-  const link = escapeHtml(button.link);
   const year = new Date().getFullYear();
 
-  const body = [greeting, ...paragraphs]
+  const text = [greeting, ...paragraphs]
     .filter((line): line is string => Boolean(line))
     .map(
       (line) =>
@@ -65,16 +93,32 @@ export function layout({ preview, heading, greeting, paragraphs, button, note }:
     )
     .join("");
 
+  const detailsBlock = details?.length ? detailsTable(details) : "";
+
+  const buttonBlock = button
+    ? `<tr>
+          <td class="px" style="padding:0 40px 28px">
+            <table role="presentation" class="btn" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td align="center" bgcolor="${COLOR.brand}" style="border-radius:8px;background:${COLOR.brand}">
+                  <a href="${escapeHtml(button.link)}" target="_blank" style="display:inline-block;padding:14px 28px;border:1px solid ${COLOR.brand};border-radius:8px;font-family:${FONT};font-size:16px;line-height:20px;font-weight:700;color:#ffffff;text-decoration:none">${escapeHtml(button.text)}</a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>`
+    : "";
+
   const noteBlock = note
     ? `<tr>
-        <td style="padding:0 40px 8px" class="px">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-            <tr>
-              <td class="note" style="padding:14px 16px;background:${COLOR.noteBg};border:1px solid ${COLOR.border};border-radius:8px;font-family:${FONT};font-size:14px;line-height:20px;color:${COLOR.muted}">${escapeHtml(note)}</td>
-            </tr>
-          </table>
-        </td>
-      </tr>`
+          <td class="px" style="padding:0 40px 32px">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td class="note" style="padding:14px 16px;background:${COLOR.noteBg};border:1px solid ${COLOR.border};border-radius:8px;font-family:${FONT};font-size:14px;line-height:20px;color:${COLOR.muted}">${escapeHtml(note)}</td>
+              </tr>
+            </table>
+          </td>
+        </tr>`
     : "";
 
   return `<!DOCTYPE html>
@@ -105,11 +149,13 @@ export function layout({ preview, heading, greeting, paragraphs, button, note }:
   @media (prefers-color-scheme:dark){
     .bg{background:#0b1220 !important}
     .card{background:#111827 !important;border-color:#1f2937 !important}
-    .card p,.card h1{color:#f1f5f9 !important}
+    .card p,.card h1,.dv{color:#f1f5f9 !important}
+    .dl{color:#94a3b8 !important}
+    .dl,.dv{border-color:#334155 !important}
     .note{background:#0f172a !important;border-color:#1f2937 !important;color:#94a3b8 !important}
-    .muted,.muted a{color:#94a3b8 !important}
+    .muted{color:#94a3b8 !important}
   }
-  [data-ogsc] .card p,[data-ogsc] .card h1{color:#f1f5f9 !important}
+  [data-ogsc] .card p,[data-ogsc] .card h1,[data-ogsc] .dv{color:#f1f5f9 !important}
 </style>
 </head>
 <body class="bg" style="margin:0;padding:0;background:${COLOR.page}">
@@ -131,27 +177,12 @@ export function layout({ preview, heading, greeting, paragraphs, button, note }:
                 <tr>
                   <td class="px" style="padding:32px 40px 8px">
                     <h1 class="h1" style="margin:0 0 20px;font-family:${FONT};font-size:24px;line-height:32px;font-weight:700;color:${COLOR.text}">${escapeHtml(heading)}</h1>
-                    ${body}
+                    ${text}
                   </td>
                 </tr>
-                <tr>
-                  <td class="px" style="padding:8px 40px 28px">
-                    <table role="presentation" class="btn" cellpadding="0" cellspacing="0" border="0">
-                      <tr>
-                        <td align="center" bgcolor="${COLOR.brand}" style="border-radius:8px;background:${COLOR.brand}">
-                          <a href="${link}" target="_blank" style="display:inline-block;padding:14px 28px;border:1px solid ${COLOR.brand};border-radius:8px;font-family:${FONT};font-size:16px;line-height:20px;font-weight:700;color:#ffffff;text-decoration:none">${escapeHtml(button.text)}</a>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
+                ${detailsBlock}
+                ${buttonBlock}
                 ${noteBlock}
-                <tr>
-                  <td class="px muted" style="padding:16px 40px 32px;font-family:${FONT};font-size:13px;line-height:20px;color:${COLOR.muted}">
-                    Button not working? Copy this link into your browser:<br>
-                    <a href="${link}" target="_blank" style="color:${COLOR.brand};word-break:break-all;text-decoration:underline">${link}</a>
-                  </td>
-                </tr>
               </table>
             </td>
           </tr>

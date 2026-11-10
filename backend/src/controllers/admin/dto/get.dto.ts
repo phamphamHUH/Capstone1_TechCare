@@ -24,7 +24,6 @@ export namespace getAllUsers {
     account_status: boolean;
     profile_photo: string | null;
     active: boolean;
-    is_verified: boolean; // false = hasn't confirmed their email, can't log in
     created_at: string;
     updated_at: string;
   }

@@ -59,22 +59,6 @@ function PatientRecords({
     }
   }
 
-  // =========================
-  // RESEND VERIFICATION EMAIL
-  // =========================
-  async function resendVerification(patient: Patient) {
-    try {
-      const response = await api.post(
-        `/api/fdstaff/patients/${patient.patient_id}/verification-email`,
-      );
-      alert(response.data.message);
-    } catch (error: unknown) {
-      alert(
-        (error as { response?: { data?: { message?: string } } }).response?.data
-          ?.message || "Something went wrong",
-      );
-    }
-  }
   const filteredPatients = patients.filter((patient) => {
     const fullName = `${patient.first_name} ${patient.last_name}`.toLowerCase();
     const q = search.toLowerCase();

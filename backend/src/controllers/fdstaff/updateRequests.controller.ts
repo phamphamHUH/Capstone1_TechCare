@@ -16,8 +16,9 @@ import type {
   confirmPayment,
   resetPatientPassword,
 } from "./dto/update.dto.js";
-import { sendPatientVerificationEmail } from "../../services/email/sendEmail.js";
-import { MIN_PASSWORD_LENGTH } from "../../utils/emailToken.js";
+import { MIN_PASSWORD_LENGTH } from "../../utils/password.js";
+import { sendEmailToPatient } from "../../services/email/sendEmail.js";
+import { paymentReceiptEmail } from "../../services/email/emailTemplates.js";
 
 export async function updatePatient(
   req: Request,
@@ -89,7 +90,7 @@ export async function updatePatient(
     const birthdateValue = birthdate?.trim() ? birthdate : null;
 
     const [existingPatient] = await sql`
-            SELECT patient_id, email, is_verified
+            SELECT patient_id
             FROM patients
             WHERE patient_id = ${patient_id}
         `;
@@ -99,20 +100,6 @@ export async function updatePatient(
         message: "Patient not found.",
       } as updatePatient.error);
     }
-
-    // =========================
-    // EMAIL CHANGE
-    // =========================
-    // Verified patient: keep their current email and put the new one in
-    // pending_email until they confirm it (they stay verified meanwhile).
-    // Unverified patient: just replace the email.
-    // Either way a verification link is sent to the new email below.
-    const emailChanged =
-      Boolean(email?.trim()) &&
-      email.trim().toLowerCase() !== String(existingPatient.email).toLowerCase();
-
-    const newEmail = emailChanged && !existingPatient.is_verified ? email.trim() : null;
-    const newPendingEmail = emailChanged && existingPatient.is_verified ? email.trim() : null;
 
     let imageUrl: string | null = null;
     if (req.file) {
@@ -131,8 +118,7 @@ export async function updatePatient(
         last_name = COALESCE(${last_name}, last_name),
         suffix = COALESCE(${suffix}, suffix),
         sex = COALESCE(${sex}, sex),
-        email = COALESCE(${newEmail}, email),
-        pending_email = CASE WHEN ${emailChanged} THEN ${newPendingEmail} ELSE pending_email END,
+        email = COALESCE(${email?.trim() || null}, email),
         street = COALESCE(${street}, street),
         barangay = COALESCE(${barangay}, barangay),
         city = COALESCE(${city}, city),
@@ -163,20 +149,11 @@ export async function updatePatient(
 
     const age = calculateAge(updatedPatient.birthdate);
 
-    let message = "Patient updated successfully.";
-
-    if (emailChanged) {
-      const emailSent = await sendPatientVerificationEmail(String(patient_id));
-      message = emailSent
-        ? `Patient updated. A verification link was sent to ${email.trim()}.`
-        : "Patient updated, but the verification email couldn't be sent. Resend it from Patient Records.";
-    }
-
-    // Don't send the password hash or link token to the client.
-    const { password_hash, verify_token, ...safePatient } = updatedPatient;
+    // Don't send the password hash to the client.
+    const { password_hash, ...safePatient } = updatedPatient;
 
     return res.status(200).json({
-      message,
+      message: "Patient updated successfully.",
       patient: { ...safePatient, age } as unknown as updatePatient.patient,
     } as updatePatient.response);
   } catch (error: any) {
@@ -552,6 +529,26 @@ export async function confirmPayment(
       );
     }
     await client.query("COMMIT");
+
+    // Receipt email for a new payment (information only, not awaited).
+    if (!already_paid) {
+      const paid = bill;
+      void sendEmailToPatient(String(paid.patient_id), (to, firstName) =>
+        paymentReceiptEmail(to, firstName, {
+          receiptNumber: paid.invoice_id ?? paid.bill_id,
+          paidAt: paid.paid_at,
+          paymentMethod: paid.payment_method,
+          referenceNumber: paid.reference_num,
+          items: (Array.isArray(paid.items) ? paid.items : []).map((item: Record<string, any>) => ({
+            name: String(item.service_name ?? "Service"),
+            amount: Number(item.price ?? 0) * Number(item.quantity ?? 1),
+          })),
+          discountLabel: paid.discount_type,
+          discountAmount: Number(paid.discount_amount ?? 0),
+          total: Number(paid.total_amount ?? 0),
+        }),
+      );
+    }
 
     // 2. Forward laboratory tests in a separate transaction, so a forwarding
     // problem can never undo the payment. Each request gets one queue entry per room.

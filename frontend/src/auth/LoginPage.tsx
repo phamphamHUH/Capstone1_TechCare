@@ -1,7 +1,7 @@
 import ErrorMessage from "../components/ErrorMessage";
 import { LoadingSpinner } from "../components/LoadingScreen";
 import { useEffect, useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import axios from "axios";
 import api from "../lib/axios";
@@ -198,13 +198,6 @@ function LoginPage() {
 
                     <span className="text-sm text-gray-800">Remember me</span>
                   </label>
-
-                  <Link
-                    to="/forgot-password"
-                    className="text-sm text-sky-800 hover:underline cursor-pointer"
-                  >
-                    Forgot password?
-                  </Link>
                 </div>
               </div>
 

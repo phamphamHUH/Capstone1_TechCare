@@ -51,27 +51,13 @@ export namespace addUser {
   }
 
   export interface response {
-    user: user; // is_verified is false until they click the emailed link
+    user: user;
     message: string;
   }
 
   export interface error {
     message?: string;
     error?: string;
-  }
-}
-
-// =========================
-// RESEND VERIFICATION EMAIL
-// POST /api/admin/users/:user_id/verification-email
-// =========================
-export namespace resendUserVerification {
-  export interface response {
-    message: string;
-  }
-
-  export interface error {
-    message: string;
   }
 }
 

@@ -44,21 +44,6 @@ function UserProfile({
     }
   }
 
-  // =========================
-  // RESEND CONFIRMATION EMAIL (employee hasn't verified yet)
-  // =========================
-  async function resendVerification() {
-    try {
-      const response = await api.post(`api/admin/users/${user.user_id}/verification-email`);
-      alert(response.data.message);
-    } catch (error: unknown) {
-      alert(
-        (error as { response?: { data?: { message?: string } } }).response?.data
-          ?.message || "Something went wrong",
-      );
-    }
-  }
-
   const fullName = [
     user.first_name,
     user.middle_name,
@@ -206,16 +191,6 @@ function UserProfile({
                     <KeyRound size={16} />
                     Reset password
                   </button>
-
-                  {/* Not verified yet: they can't log in until they confirm */}
-                  {user.is_verified === false && (
-                    <button
-                      onClick={resendVerification}
-                      className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-800 transition hover:bg-amber-100"
-                    >
-                      Resend confirmation email
-                    </button>
-                  )}
 
                   <button
                     onClick={() => setIsModalOpen(true)}

@@ -21,7 +21,6 @@ export type User = {
   profile_photo: string | null;
   active: boolean;
   account_status: boolean;
-  is_verified: boolean; // false = hasn't confirmed their email, can't log in yet
   created_at: string;
   updated_at: string;
 };

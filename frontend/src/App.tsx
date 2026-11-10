@@ -2,9 +2,6 @@ import { useEffect } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router";
 import LoginPage from "./auth/LoginPage";
 import SignupPage from "./auth/SignupPage";
-import VerifyEmailPage from "./auth/VerifyEmailPage";
-import ForgotPasswordPage from "./auth/ForgotPasswordPage";
-import ResetPasswordPage from "./auth/ResetPasswordPage";
 import Admin from "./users/admin/Admin";
 import Doctor from "./users/doctor/Doctor";
 import FrontdeskStaff from "./users/frontdesk_staff/FrontdeskStaff";
@@ -34,9 +31,6 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/sign-up" element={<SignupPage />} />
         {/* Opened from email links, no login needed */}
-        <Route path="/verify-email" element={<VerifyEmailPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route
           path="/admin"
           element={

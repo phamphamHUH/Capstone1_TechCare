@@ -187,17 +187,3 @@ export namespace addConsultationRecord {
     message: string;
   }
 }
-
-// =========================
-// RESEND PATIENT VERIFICATION EMAIL
-// POST /api/fdstaff/patients/:patient_id/verification-email
-// =========================
-export namespace resendPatientVerification {
-  export interface response {
-    message: string;
-  }
-
-  export interface error {
-    message: string;
-  }
-}

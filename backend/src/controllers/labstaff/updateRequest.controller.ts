@@ -9,6 +9,8 @@ import type {
   releaseLaboratoryResult,
 } from "./dto/update.dto.js";
 import { publishQueueChange } from "../../services/queue-sse/index.js";
+import { sendEmailToPatient } from "../../services/email/sendEmail.js";
+import { labResultsReadyEmail } from "../../services/email/emailTemplates.js";
 export async function acceptQueueEntry(
   req: Request,
   res: Response<acceptQueueEntry.response | acceptQueueEntry.error>,
@@ -519,6 +521,9 @@ export async function releaseLaboratoryResult(
       } as releaseLaboratoryResult.error);
     }
 
+    // Tell the patient (information only, not awaited).
+    void notifyPatientResultReleased(String(result.lab_item_id));
+
     return res.status(200).json({
       message: "Laboratory result released successfully.",
       result,
@@ -529,5 +534,25 @@ export async function releaseLaboratoryResult(
     return res.status(500).json({
       message: "Internal Server Error",
     } as releaseLaboratoryResult.error);
+  }
+}
+
+// Emails the patient that one of their laboratory results was released.
+async function notifyPatientResultReleased(labItemId: string) {
+  try {
+    const [item] = await sql`
+      SELECT lr.patient_id, s.service_name
+      FROM laboratory_request_items lri
+      JOIN laboratory_requests lr ON lr.request_id = lri.request_id
+      JOIN services s ON s.service_id = lri.service_id
+      WHERE lri.lab_item_id = ${labItemId}
+    `;
+    if (!item) return;
+
+    await sendEmailToPatient(String(item.patient_id), (to, firstName) =>
+      labResultsReadyEmail(to, firstName, item.service_name),
+    );
+  } catch (error) {
+    console.error("RESULT RELEASED EMAIL ERROR:", error);
   }
 }

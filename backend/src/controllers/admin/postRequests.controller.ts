@@ -16,9 +16,9 @@ import type {
   addAction,
   addFormTemplates,
   addPackages,
-  resendUserVerification,
 } from "./dto/post.dto.js";
-import { sendUserVerificationEmail } from "../../services/email/sendEmail.js";
+import { sendEmail } from "../../services/email/sendEmail.js";
+import { employeeAccountCreatedEmail } from "../../services/email/emailTemplates.js";
 
 ///// the token generation on add user is just for testing purposes,
 /// it will be removed later on. optional lang kasi no need tokens right after sign up, its usually on login========
@@ -146,8 +146,7 @@ export async function addUser(
         date_hired,
         shift_start,
         shift_end,
-        profile_photo,
-        is_verified
+        profile_photo
       )
       VALUES (
         ${userId},
@@ -170,8 +169,7 @@ export async function addUser(
         ${date_hired},
         ${finalShiftStart},
         ${finalShiftEnd},
-        ${profile_photo},
-        FALSE
+        ${profile_photo}
       )
       RETURNING *
     `;
@@ -179,25 +177,23 @@ export async function addUser(
     console.log("INSERT RESULT:", signUpResult);
 
     // =========================
-    // EMAIL VERIFICATION
+    // WELCOME EMAIL (information only)
     // =========================
-    // The employee can't log in until they click the link in this email.
-    const emailSent = await sendUserVerificationEmail(userId);
+    // Not awaited: the account works right away, the email is just a heads-up.
+    void sendEmail(employeeAccountCreatedEmail(email, first_name, username, role));
 
     // =========================
     // REMOVE SENSITIVE DATA
     // =========================
-    // Prevents the password hash and link token from being sent to the client.
-    const { password_hash, verify_token, reset_token, ...safeUser } = signUpResult[0];
+    // Prevents the password hash from being sent to the client.
+    const { password_hash, ...safeUser } = signUpResult[0];
 
     // =========================
     // RESPONSE
     // =========================
     return res.status(201).json({
       user: safeUser,
-      message: emailSent
-        ? `User created! A confirmation email was sent to ${email}. They can log in after confirming it.`
-        : "User created, but the confirmation email couldn't be sent. Use Resend link on their profile.",
+      message: "User created successfully",
     } as addUser.response);
 
     // {
@@ -611,45 +607,5 @@ export async function addPackages(
     return res.status(500).json({
       message: "error on package controller",
     } as addPackages.error);
-  }
-}
-
-// =========================
-// RESEND VERIFICATION EMAIL
-// =========================
-// POST /api/admin/users/:user_id/verification-email
-// For employees who haven't confirmed their email yet (they can't log in).
-export async function resendUserVerification(
-  req: Request,
-  res: Response<resendUserVerification.response | resendUserVerification.error>,
-) {
-  try {
-    const { user_id } = req.params;
-
-    const [user] = await sql`
-      SELECT email, is_verified FROM users WHERE user_id = ${user_id}
-    `;
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found." });
-    }
-
-    if (user.is_verified) {
-      return res.status(409).json({ message: "This email is already verified." });
-    }
-
-    const emailSent = await sendUserVerificationEmail(String(user_id));
-
-    if (!emailSent) {
-      return res.status(502).json({ message: "The email couldn't be sent. Please try again." });
-    }
-
-    return res.status(200).json({
-      message: `A new confirmation email was sent to ${user.email}.`,
-    });
-  } catch (error) {
-    console.error("RESEND USER VERIFICATION ERROR:", error);
-
-    return res.status(500).json({ message: "Internal Server Error" });
   }
 }
