@@ -9,6 +9,14 @@ import type {
   releaseLaboratoryResult,
 } from "./dto/update.dto.js";
 import { publishQueueChange } from "../../services/queue-sse/index.js";
+import {
+  actorId,
+  notifyCalled,
+  notifyCancelled,
+  notifySkipped,
+} from "../../services/notifications/index.js";
+import { sendEmailToPatient } from "../../services/email/sendEmail.js";
+import { labResultsReadyEmail } from "../../services/email/emailTemplates.js";
 export async function acceptQueueEntry(
   req: Request,
   res: Response<acceptQueueEntry.response | acceptQueueEntry.error>,
@@ -40,9 +48,9 @@ export async function acceptQueueEntry(
         AND LOWER(q.status) IN ('waiting', 'skipped')
         AND EXISTS (
           SELECT 1
-          FROM laboratory_request_items lri
-          JOIN services s ON s.service_id = lri.service_id
-          WHERE lri.queue_id = q.queue_id
+          FROM test_request_items tri
+          JOIN services s ON s.service_id = tri.service_id
+          WHERE tri.queue_id = q.queue_id
             AND s.room::text = ${roomText}
         )
       RETURNING q.*
@@ -54,9 +62,9 @@ export async function acceptQueueEntry(
           q.status,
           EXISTS (
             SELECT 1
-            FROM laboratory_request_items lri
-            JOIN services s ON s.service_id = lri.service_id
-            WHERE lri.queue_id = q.queue_id
+            FROM test_request_items tri
+            JOIN services s ON s.service_id = tri.service_id
+            WHERE tri.queue_id = q.queue_id
               AND s.room::text = ${roomText}
           ) AS in_room
         FROM queue_entries q
@@ -80,6 +88,7 @@ export async function acceptQueueEntry(
     }
 
     publishQueueChange();
+    void notifyCalled(updated.patient_id, "laboratory", roomText);
     return res.status(200).json({
       message: "Queue entry accepted and now being served.",
       queue: updated,
@@ -126,7 +135,7 @@ export async function completeQueueEntry(
           AND LOWER(q.status) IN ('serving', 'completed')
           AND EXISTS (
             SELECT 1
-            FROM laboratory_request_items ri
+            FROM test_request_items ri
             JOIN services item_service
               ON item_service.service_id = ri.service_id
             WHERE ri.queue_id = q.queue_id
@@ -136,7 +145,7 @@ export async function completeQueueEntry(
             LOWER(q.status) = 'completed'
             OR EXISTS (
               SELECT 1
-              FROM laboratory_request_items ri
+              FROM test_request_items ri
               JOIN services item_service
                 ON item_service.service_id = ri.service_id
               WHERE ri.queue_id = q.queue_id
@@ -152,7 +161,7 @@ export async function completeQueueEntry(
         RETURNING q.*
       ),
       collected_items AS (
-        UPDATE laboratory_request_items ri
+        UPDATE test_request_items ri
         SET
           status = 'Specimen Collected',
           updated_at = NOW()
@@ -165,7 +174,7 @@ export async function completeQueueEntry(
             'waiting',
             'serving'
           )
-        RETURNING ri.lab_item_id
+        RETURNING ri.item_id
       )
       SELECT
         cq.*,
@@ -179,7 +188,7 @@ export async function completeQueueEntry(
           q.status,
           EXISTS (
             SELECT 1
-            FROM laboratory_request_items ri
+            FROM test_request_items ri
             JOIN services s ON s.service_id = ri.service_id
             WHERE ri.queue_id = q.queue_id
               AND s.room::text = ${room}
@@ -255,10 +264,10 @@ export async function skipQueueEntry(
         qe.status,
         (
           SELECT s.room::text
-          FROM laboratory_request_items lri
-          JOIN services s ON s.service_id = lri.service_id
-          WHERE lri.queue_id = qe.queue_id
-          ORDER BY lri.lab_item_id
+          FROM test_request_items tri
+          JOIN services s ON s.service_id = tri.service_id
+          WHERE tri.queue_id = qe.queue_id
+          ORDER BY tri.item_id
           LIMIT 1
         ) AS room
       FROM queue_entries qe
@@ -293,9 +302,9 @@ export async function skipQueueEntry(
         AND LOWER(q.status) = 'waiting'
         AND EXISTS (
           SELECT 1
-          FROM laboratory_request_items lri
-          JOIN services s ON s.service_id = lri.service_id
-          WHERE lri.queue_id = q.queue_id
+          FROM test_request_items tri
+          JOIN services s ON s.service_id = tri.service_id
+          WHERE tri.queue_id = q.queue_id
             AND s.room::text = ${room}
         );
     `;
@@ -312,6 +321,7 @@ export async function skipQueueEntry(
       RETURNING *;
     `;
     publishQueueChange();
+    if (updatedQueue[0]) void notifySkipped(updatedQueue[0].patient_id, "laboratory");
     return res.status(200).json({
       message: "Queue skipped successfully and returned to the queue.",
       queue: updatedQueue[0],
@@ -398,15 +408,16 @@ export async function cancelQueueEntry(
     // Store the cancellation reason against the associated
     // laboratory request item.
     const updatedItems = await sql`
-      UPDATE laboratory_request_items
+      UPDATE test_request_items
       SET
         reason = ${cancellationReason},
         updated_at = NOW()
       WHERE queue_id = ${queue_id}
-      RETURNING lab_item_id, request_id, queue_id, reason;
+      RETURNING item_id, request_id, queue_id, reason;
     `;
 
     publishQueueChange();
+    void notifyCancelled(updatedQueue[0].patient_id, "laboratory", actorId(req), cancellationReason);
     return res.status(200).json({
       message: "Queue cancelled successfully.",
       queue: updatedQueue[0],
@@ -428,16 +439,15 @@ export async function startLaboratoryAnalysis(
     startLaboratoryAnalysis.response | startLaboratoryAnalysis.error
   >,
 ) {
-  const { room, lab_item_ids } = (req.body ??
-    {}) as startLaboratoryAnalysis.body;
+  const { room, item_ids } = (req.body ?? {}) as startLaboratoryAnalysis.body;
   if (
     typeof room !== "string" ||
     !room.trim() ||
-    !Array.isArray(lab_item_ids) ||
-    !lab_item_ids.length ||
-    lab_item_ids.length > 100 ||
-    lab_item_ids.some((id) => typeof id !== "string" || !id.trim()) ||
-    new Set(lab_item_ids).size !== lab_item_ids.length
+    !Array.isArray(item_ids) ||
+    !item_ids.length ||
+    item_ids.length > 100 ||
+    item_ids.some((id) => typeof id !== "string" || !id.trim()) ||
+    new Set(item_ids).size !== item_ids.length
   ) {
     return res.status(400).json({
       message: "A room and distinct laboratory item IDs are required.",
@@ -446,20 +456,20 @@ export async function startLaboratoryAnalysis(
   try {
     const items = await sql`
       WITH eligible AS MATERIALIZED (
-        SELECT ri.lab_item_id FROM laboratory_request_items ri
+        SELECT ri.item_id FROM test_request_items ri
         JOIN services s ON s.service_id = ri.service_id
-        WHERE ri.lab_item_id = ANY(${lab_item_ids}::text[]) AND s.room = ${room}
+        WHERE ri.item_id = ANY(${item_ids}::text[]) AND s.room = ${room}
           AND ri.status IN ('Specimen Collected', 'In Progress')
-          AND NOT EXISTS (SELECT 1 FROM laboratory_results r WHERE r.lab_item_id = ri.lab_item_id)
+          AND NOT EXISTS (SELECT 1 FROM test_results r WHERE r.item_id = ri.item_id)
         FOR UPDATE OF ri
       )
-      UPDATE laboratory_request_items ri SET status = 'In Progress',
+      UPDATE test_request_items ri SET status = 'In Progress',
         updated_at = CASE WHEN ri.status = 'In Progress' THEN ri.updated_at ELSE NOW() END
-      WHERE ri.lab_item_id IN (SELECT lab_item_id FROM eligible)
-        AND (SELECT count(*) FROM eligible) = ${lab_item_ids.length}
-      RETURNING ri.lab_item_id, ri.status
+      WHERE ri.item_id IN (SELECT item_id FROM eligible)
+        AND (SELECT count(*) FROM eligible) = ${item_ids.length}
+      RETURNING ri.item_id, ri.status
     `;
-    if (items.length !== lab_item_ids.length)
+    if (items.length !== item_ids.length)
       return res.status(409).json({
         message:
           "Some tests are already completed or are not collected samples in this room. Refresh the list.",
@@ -491,19 +501,19 @@ export async function releaseLaboratoryResult(
     }
 
     const [result] = await sql`
-      UPDATE laboratory_results
+      UPDATE test_results
       SET
         status = 'Released',
         updated_at = NOW()
       WHERE result_id = ${result_id}
         AND status = 'Pending'
-      RETURNING result_id, lab_item_id, status, updated_at;
+      RETURNING result_id, item_id, status, updated_at;
     `;
 
     if (!result) {
       const [existing] = await sql`
         SELECT result_id, status
-        FROM laboratory_results
+        FROM test_results
         WHERE result_id = ${result_id}
         LIMIT 1;
       `;
@@ -519,6 +529,9 @@ export async function releaseLaboratoryResult(
       } as releaseLaboratoryResult.error);
     }
 
+    // Tell the patient (information only, not awaited).
+    void notifyPatientResultReleased(String(result.lab_item_id));
+
     return res.status(200).json({
       message: "Laboratory result released successfully.",
       result,
@@ -529,5 +542,25 @@ export async function releaseLaboratoryResult(
     return res.status(500).json({
       message: "Internal Server Error",
     } as releaseLaboratoryResult.error);
+  }
+}
+
+// Emails the patient that one of their laboratory results was released.
+async function notifyPatientResultReleased(labItemId: string) {
+  try {
+    const [item] = await sql`
+      SELECT lr.patient_id, s.service_name
+      FROM laboratory_request_items lri
+      JOIN laboratory_requests lr ON lr.request_id = lri.request_id
+      JOIN services s ON s.service_id = lri.service_id
+      WHERE lri.lab_item_id = ${labItemId}
+    `;
+    if (!item) return;
+
+    await sendEmailToPatient(String(item.patient_id), (to, firstName) =>
+      labResultsReadyEmail(to, firstName, item.service_name),
+    );
+  } catch (error) {
+    console.error("RESULT RELEASED EMAIL ERROR:", error);
   }
 }

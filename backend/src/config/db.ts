@@ -49,16 +49,15 @@ const TABLES: TableDefinition[] = [
       account_status: "BOOLEAN NOT NULL DEFAULT TRUE",
       profile_photo: "TEXT",
       active: "BOOLEAN NOT NULL DEFAULT FALSE",
-      // Email verification: an employee can't log in until is_verified is TRUE.
-      // Default TRUE so existing accounts keep working; addUser inserts FALSE.
-      is_verified: "BOOLEAN NOT NULL DEFAULT TRUE",
-      verify_token: "VARCHAR(64)", // SHA-256 of the link token
-      verify_expires_at: "TIMESTAMP",
-      // "Forgot password" link (employees only).
-      reset_token: "VARCHAR(64)", // SHA-256 of the link token
-      reset_expires_at: "TIMESTAMP",
       created_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
       updated_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      // Doctor-specific fields
+      prc_license_number: "VARCHAR(50)",
+      ptr_number: "VARCHAR(50)",
+      s2_license: "VARCHAR(50)",
+      medical_specialty: "VARCHAR(100)",
+      subspecialty: "VARCHAR(100)",
+      board_certification: "VARCHAR(100)",
     },
   },
 
@@ -105,12 +104,6 @@ const TABLES: TableDefinition[] = [
       shift_end: "TIME NOT NULL DEFAULT '17:00:00'",
       last_login: "TIMESTAMP",
       account_status: "BOOLEAN NOT NULL DEFAULT TRUE",
-      // Email verification: patients can use their account without it, but
-      // the clinic sends no emails until is_verified is TRUE.
-      is_verified: "BOOLEAN NOT NULL DEFAULT FALSE",
-      pending_email: "VARCHAR(255)", // new email waiting to be confirmed
-      verify_token: "VARCHAR(64)", // SHA-256 of the link token
-      verify_expires_at: "TIMESTAMP",
       profile_photo: "TEXT",
       active: "BOOLEAN NOT NULL DEFAULT FALSE",
       civil_status: "VARCHAR(50) NOT NULL DEFAULT 'Single'",
@@ -242,32 +235,28 @@ const TABLES: TableDefinition[] = [
   },
 
   {
-    table: "laboratory_requests",
+    table: "test_requests",
     columns: {
       id: "SERIAL PRIMARY KEY",
       request_id: "VARCHAR(255) UNIQUE NOT NULL",
-      consultation_record_id:
-        "VARCHAR(255) REFERENCES consultation_records(consultation_record_id)",
       patient_id: "VARCHAR(255) NOT NULL REFERENCES patients(patient_id)",
       requested_by: "VARCHAR(255) NOT NULL REFERENCES users(user_id)",
       status: "VARCHAR(20) NOT NULL DEFAULT 'Requested'",
-      is_paid: "BOOLEAN NOT NULL DEFAULT FALSE",
       is_priority: "BOOLEAN NOT NULL DEFAULT FALSE",
       request_date: "DATE NOT NULL DEFAULT CURRENT_DATE",
-      estimated_release_date: "DATE",
       requested_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
       updated_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
     },
   },
 
   {
-    table: "laboratory_request_items",
+    table: "test_request_items",
     columns: {
       id: "SERIAL PRIMARY KEY",
-      lab_item_id: "VARCHAR(255) UNIQUE NOT NULL",
-      request_id:
-        "VARCHAR(255) NOT NULL REFERENCES laboratory_requests(request_id)",
+      item_id: "VARCHAR(255) UNIQUE NOT NULL",
+      request_id: "VARCHAR(255) NOT NULL REFERENCES test_requests(request_id)",
       service_id: "VARCHAR(255) NOT NULL REFERENCES services(service_id)",
+      package_id: "VARCHAR(255) REFERENCES packages(package_id)",
       processed_by: "VARCHAR(255) REFERENCES users(user_id)",
       queue_id: "VARCHAR(255) REFERENCES queue_entries(queue_id)",
       bill_id: "VARCHAR(255) REFERENCES bills(bill_id)",
@@ -279,12 +268,11 @@ const TABLES: TableDefinition[] = [
   },
 
   {
-    table: "laboratory_results",
+    table: "test_results",
     columns: {
       id: "SERIAL PRIMARY KEY",
       result_id: "VARCHAR(255) UNIQUE NOT NULL",
-      lab_item_id:
-        "VARCHAR(255) NOT NULL REFERENCES laboratory_request_items(lab_item_id)",
+      item_id: "VARCHAR(255) NOT NULL REFERENCES test_request_items(item_id)",
       results: "JSONB NOT NULL DEFAULT '[]'::jsonb",
       status: "VARCHAR(20) NOT NULL DEFAULT 'Pending'",
       remarks: "TEXT",
@@ -377,6 +365,23 @@ const TABLES: TableDefinition[] = [
     },
   },
 
+  // In-app queue notifications for doctors, lab staff and patients.
+  // One row per person. Each person keeps only their 10 newest
+  // (services/notifications/notify.ts deletes the older ones).
+  {
+    table: "notifications",
+    columns: {
+      id: "SERIAL PRIMARY KEY",
+      recipient_type: "VARCHAR(10) NOT NULL", // 'user' (staff) or 'patient'
+      recipient_id: "VARCHAR(255) NOT NULL", // users.user_id or patients.patient_id
+      type: "VARCHAR(50) NOT NULL", // priority-patient, cancellation, queued, called, skipped
+      title: "VARCHAR(255) NOT NULL",
+      message: "TEXT",
+      is_read: "BOOLEAN NOT NULL DEFAULT FALSE",
+      created_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
+    },
+  },
+
   {
     table: "sse_test",
     columns: {
@@ -412,7 +417,7 @@ function generateCreateTableSQL(table: TableDefinition): string {
 
 // export async function ensureLaboratoryResultStatus(): Promise<void> {
 //   await sql`
-//     ALTER TABLE laboratory_results
+//     ALTER TABLE test_results
 //     ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'Pending',
 //     ADD COLUMN IF NOT EXISTS released_at TIMESTAMP,
 //     ADD COLUMN IF NOT EXISTS released_by VARCHAR(255)
@@ -430,25 +435,6 @@ export async function connectNeon(): Promise<void> {
     }
 
     // await ensureLaboratoryResultStatus();
-
-    // CREATE TABLE IF NOT EXISTS doesn't add new columns to existing tables,
-    // so add the email verification columns here (safe to run every boot).
-    await sql`
-      ALTER TABLE users
-      ADD COLUMN IF NOT EXISTS is_verified BOOLEAN NOT NULL DEFAULT TRUE,
-      ADD COLUMN IF NOT EXISTS verify_token VARCHAR(64),
-      ADD COLUMN IF NOT EXISTS verify_expires_at TIMESTAMP,
-      ADD COLUMN IF NOT EXISTS reset_token VARCHAR(64),
-      ADD COLUMN IF NOT EXISTS reset_expires_at TIMESTAMP
-    `;
-    await sql`
-      ALTER TABLE patients
-      ADD COLUMN IF NOT EXISTS is_verified BOOLEAN NOT NULL DEFAULT FALSE,
-      ADD COLUMN IF NOT EXISTS pending_email VARCHAR(255),
-      ADD COLUMN IF NOT EXISTS verify_token VARCHAR(64),
-      ADD COLUMN IF NOT EXISTS verify_expires_at TIMESTAMP
-    `;
-
     // await sql`
     //   ALTER TABLE consultation_records
     //   ADD COLUMN IF NOT EXISTS cancellation_reason VARCHAR(255)

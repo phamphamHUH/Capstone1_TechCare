@@ -68,36 +68,60 @@ function LaboratoryReportValue({ value }: { value: unknown }) {
     (test): test is Record<string, unknown> =>
       Boolean(test) && typeof test === "object",
   );
+  if (!tests.length)
+    return <p className="text-gray-500">No test values recorded.</p>;
   return (
-    <dl className="space-y-3">
-      {tests.map((test, i) => (
-        <div
-          key={i}
-          className="border-b border-gray-200 pb-3 last:border-b-0 last:pb-0"
-        >
-          <dt className="font-semibold">
-            {String(
-              test.name || test.test || test.parameter || "Test " + (i + 1),
-            )}
-          </dt>
-          <dd className="mt-1">
-            <ClinicalValue
-              value={test.result ?? test.value ?? test.result_value}
-            />
-            {typeof test.unit === "string" && " " + test.unit}
-          </dd>
-          {Boolean(test.reference_range || test.referenceRange) && (
-            <dd className="mt-1 text-xs text-gray-500">
-              Reference range:{" "}
-              {String(test.reference_range || test.referenceRange)}
-            </dd>
-          )}
-        </div>
-      ))}
-    </dl>
+    <div className="overflow-x-auto rounded-md border border-gray-200">
+      <table className="w-full min-w-[440px] table-fixed border-collapse text-left text-sm">
+        <thead className="bg-gray-50 text-xs font-semibold uppercase text-gray-600">
+          <tr>
+            <th
+              scope="col"
+              className="w-[38%] border-b border-gray-200 px-3 py-2"
+            >
+              Test
+            </th>
+            <th
+              scope="col"
+              className="w-[27%] border-b border-gray-200 px-3 py-2"
+            >
+              Result
+            </th>
+            <th
+              scope="col"
+              className="w-[35%] border-b border-gray-200 px-3 py-2"
+            >
+              Reference
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {tests.map((test, i) => (
+            <tr key={i} className="even:bg-gray-50">
+              <th
+                scope="row"
+                className="border-b border-gray-100 px-3 py-2 font-medium text-gray-800"
+              >
+                {String(
+                  test.name || test.test || test.parameter || "Test " + (i + 1),
+                )}
+              </th>
+              <td className="border-b border-gray-100 px-3 py-2">
+                <ClinicalValue
+                  value={test.result ?? test.value ?? test.result_value}
+                />
+                {typeof test.unit === "string" && test.unit && ` ${test.unit}`}
+              </td>
+              <td className="border-b border-gray-100 px-3 py-2 text-gray-600">
+                {String(test.reference_range ?? test.referenceRange ?? "—")}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
-
 function PrescriptionSummary({ value }: { value: unknown }) {
   let items = value;
   if (typeof value === "string") {

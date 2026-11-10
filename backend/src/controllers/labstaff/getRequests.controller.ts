@@ -62,33 +62,33 @@ export async function getLaboratoryQueues(
         COALESCE(
           (
             SELECT s.service_name
-            FROM laboratory_request_items lri
-            JOIN services s ON s.service_id = lri.service_id
-            WHERE lri.queue_id = q.queue_id
+            FROM test_request_items tri
+            JOIN services s ON s.service_id = tri.service_id
+            WHERE tri.queue_id = q.queue_id
               AND s.room::text = ${room}
-            ORDER BY lri.lab_item_id
+            ORDER BY tri.item_id
             LIMIT 1
           ), ''
         ) AS service_name,
         COALESCE(
           (
             SELECT s.service_type
-            FROM laboratory_request_items lri
-            JOIN services s ON s.service_id = lri.service_id
-            WHERE lri.queue_id = q.queue_id
+            FROM test_request_items tri
+            JOIN services s ON s.service_id = tri.service_id
+            WHERE tri.queue_id = q.queue_id
               AND s.room::text = ${room}
-            ORDER BY lri.lab_item_id
+            ORDER BY tri.item_id
             LIMIT 1
           ), ''
         ) AS service_type,
         COALESCE(
           (
             SELECT s.service_category
-            FROM laboratory_request_items lri
-            JOIN services s ON s.service_id = lri.service_id
-            WHERE lri.queue_id = q.queue_id
+            FROM test_request_items tri
+            JOIN services s ON s.service_id = tri.service_id
+            WHERE tri.queue_id = q.queue_id
               AND s.room::text = ${room}
-            ORDER BY lri.lab_item_id
+            ORDER BY tri.item_id
             LIMIT 1
           ), ''
         ) AS service_category
@@ -97,9 +97,9 @@ export async function getLaboratoryQueues(
       WHERE q.queue_id LIKE 'LAB-%'
         AND EXISTS (
           SELECT 1
-          FROM laboratory_request_items lri
-          JOIN services s ON s.service_id = lri.service_id
-          WHERE lri.queue_id = q.queue_id
+          FROM test_request_items tri
+          JOIN services s ON s.service_id = tri.service_id
+          WHERE tri.queue_id = q.queue_id
             AND s.room::text = ${room}
         )
         AND q.created_at >= CURRENT_DATE
@@ -107,9 +107,7 @@ export async function getLaboratoryQueues(
       ORDER BY q.queue_number ASC, q.id ASC
     `;
 
-    return res
-      .status(200)
-      .json(queues as getLaboratoryQueues.response);
+    return res.status(200).json(queues as getLaboratoryQueues.response);
   } catch (error) {
     console.error(error);
     return res
@@ -138,12 +136,12 @@ export async function getLaboratoryRequestDetails(
       SELECT
         json_build_object(
           'request', json_build_object(
-            'request_id', lr.request_id,
-            'consultation_record_id', lr.consultation_record_id,
-            'requested_by', lr.requested_by,
+            'request_id', tr.request_id,
+            'consultation_record_id', tr.consultation_record_id,
+            'requested_by', tr.requested_by,
             'is_priority', q.is_priority,
             'status', q.status,
-            'is_paid', lr.is_paid,
+            'is_paid', tr.is_paid,
             'patient_id', p.patient_id,
             'first_name', p.first_name,
             'last_name', p.last_name,
@@ -157,13 +155,13 @@ export async function getLaboratoryRequestDetails(
             'birthdate', p.birthdate,
             'emergency_contact_name', p.guardian_name,
             'emergency_contact', p.guardian_contact,
-            'requested_at', lr.requested_at,
-            'updated_at', lr.updated_at
+            'requested_at', tr.requested_at,
+            'updated_at', tr.updated_at
           ),
           'items', COALESCE((
             SELECT json_agg(
               json_build_object(
-                'lab_item_id', ri.lab_item_id,
+                'item_id', ri.item_id,
                 'queue_id', ri.queue_id,
                 'status', ri.status,
                 'processed_by', ri.processed_by,
@@ -180,19 +178,19 @@ export async function getLaboratoryRequestDetails(
               )
               ORDER BY (s.room = ${room}) DESC, ri.created_at ASC
             )
-            FROM laboratory_request_items ri
+            FROM test_request_items ri
             JOIN services s ON s.service_id = ri.service_id
-            WHERE ri.request_id = lr.request_id
+            WHERE ri.request_id = tr.request_id
           ), '[]'::json)
         ) AS response
       FROM queue_entries q
-      JOIN laboratory_requests lr ON lr.request_id = (
+      JOIN test_requests tr ON tr.request_id = (
         SELECT ri2.request_id
-        FROM laboratory_request_items ri2
+        FROM test_request_items ri2
         WHERE ri2.queue_id = q.queue_id
         LIMIT 1
       )
-      JOIN patients p ON p.patient_id = lr.patient_id
+      JOIN patients p ON p.patient_id = tr.patient_id
       WHERE q.queue_id = ${queue_id}
     `;
 
@@ -224,7 +222,7 @@ export async function getLaboratoryQueueItems(
 
     const items = await sql`
       SELECT
-        ri.lab_item_id,
+        ri.item_id,
         ri.request_id,
         ri.queue_id,
         ri.service_id,
@@ -236,15 +234,13 @@ export async function getLaboratoryQueueItems(
         s.service_type,
         s.service_category,
         s.room
-      FROM laboratory_request_items ri
+      FROM test_request_items ri
       JOIN services s ON s.service_id = ri.service_id
       WHERE ri.queue_id = ${queue_id}
       ORDER BY ri.created_at ASC
     `;
 
-    return res
-      .status(200)
-      .json(items as getLaboratoryQueueItems.response);
+    return res.status(200).json(items as getLaboratoryQueueItems.response);
   } catch (error) {
     console.error(error);
     return res.status(500).json({
@@ -262,7 +258,7 @@ export async function getAnalysisReadyRequests(
   try {
     const analysisReadyRequests = await sql`
       SELECT
-        ri.lab_item_id,
+        ri.item_id,
         ri.request_id,
         ri.service_id,
         s.room,
@@ -271,7 +267,7 @@ export async function getAnalysisReadyRequests(
         ri.status,
         ri.created_at,
         ri.updated_at
-      FROM laboratory_request_items ri
+      FROM test_request_items ri
       JOIN services s ON s.service_id = ri.service_id
       WHERE ri.status = 'Collected'
       ORDER BY ri.created_at ASC
@@ -279,9 +275,7 @@ export async function getAnalysisReadyRequests(
 
     return res
       .status(200)
-      .json(
-        analysisReadyRequests as getAnalysisReadyRequests.response,
-      );
+      .json(analysisReadyRequests as getAnalysisReadyRequests.response);
   } catch (error) {
     console.error(error);
     return res.status(500).json({
@@ -301,22 +295,22 @@ export async function getAnalysisItems(
       .json({ message: "room is required" } as getAnalysisItems.error);
   try {
     const items = await sql`
-      SELECT ri.lab_item_id, ri.request_id, ri.service_id, ri.queue_id, ri.status,
+      SELECT ri.item_id, ri.request_id, ri.service_id, ri.queue_id, ri.status,
         s.room, s.service_name, s.service_type,
-        lr.patient_id, lr.requested_at,
+        tr.patient_id, tr.requested_at,
         p.first_name, p.last_name, p.middle_name, p.suffix, p.birthdate, p.sex,
-        COALESCE(q.is_priority, lr.is_priority) AS is_priority,
+        COALESCE(q.is_priority, tr.is_priority) AS is_priority,
         COALESCE(q.status, ri.status) AS request_status,
         CASE WHEN ri.status IN ('Completed', 'Released') OR EXISTS (
-          SELECT 1 FROM laboratory_results r WHERE r.lab_item_id = ri.lab_item_id
+          SELECT 1 FROM test_results r WHERE r.item_id = ri.item_id
             AND r.status IN ('Pending', 'Released')
         ) THEN 'Completed'
         WHEN ri.status = 'In Progress' THEN 'In Progress'
         ELSE 'Ready for Analysis' END AS analysis_status
-      FROM laboratory_request_items ri
+      FROM test_request_items ri
       JOIN services s ON s.service_id = ri.service_id
-      JOIN laboratory_requests lr ON lr.request_id = ri.request_id
-      JOIN patients p ON p.patient_id = lr.patient_id
+      JOIN test_requests tr ON tr.request_id = ri.request_id
+      JOIN patients p ON p.patient_id = tr.patient_id
       LEFT JOIN queue_entries q ON q.queue_id = ri.queue_id
       WHERE s.room = ${room}
         AND ri.status IN ('Specimen Collected', 'In Progress', 'Completed', 'Released')
@@ -344,8 +338,8 @@ export async function getSavedLaboratoryResults(
       .json({ message: "room is required" } as getSavedLaboratoryResults.error);
   try {
     const results = await sql`
-      SELECT r.* FROM laboratory_results r
-      JOIN laboratory_request_items ri ON ri.lab_item_id = r.lab_item_id
+      SELECT r.* FROM test_results r
+      JOIN test_request_items ri ON ri.item_id = r.item_id
       JOIN services s ON s.service_id = ri.service_id
       WHERE s.room = ${room} AND r.status IN ('Pending', 'Released')
       ORDER BY r.updated_at DESC
@@ -413,7 +407,7 @@ export async function getReleasedLaboratoryResults(
     const results = await sql`
       SELECT
         result_id,
-        lab_item_id,
+        item_id,
         results,
         remarks,
         image_url,
@@ -421,15 +415,14 @@ export async function getReleasedLaboratoryResults(
         verified_at,
         created_at,
         updated_at
-      FROM laboratory_results
+      FROM test_results
       WHERE status = 'Released'
       ORDER BY updated_at DESC;
     `;
 
     return res.status(200).json({
       message: "Released laboratory results fetched successfully.",
-      results:
-        results as getReleasedLaboratoryResults.releasedResult[],
+      results: results as getReleasedLaboratoryResults.releasedResult[],
     } as getReleasedLaboratoryResults.response);
   } catch (error) {
     console.error("Unable to fetch released laboratory results:", error);

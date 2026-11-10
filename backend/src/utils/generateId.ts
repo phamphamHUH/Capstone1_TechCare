@@ -189,7 +189,7 @@ export async function generateLaboratoryRequestID(client: PoolClient) {
   const prefix = `${year}-${month}${day}`;
   const { rows: labRequestsCreatedToday } = await client.query(
     `SELECT request_id
-     FROM laboratory_requests
+     FROM test_requests
      WHERE request_id LIKE $1
      ORDER BY request_id DESC
      LIMIT 1`,
@@ -213,17 +213,17 @@ export async function generateLaboratoryItemID(client: PoolClient) {
 
   const prefix = `${year}-${month}${day}`;
   const { rows: labItemsCreatedToday } = await client.query(
-    `SELECT lab_item_id
-     FROM laboratory_request_items
-     WHERE lab_item_id LIKE $1
-     ORDER BY lab_item_id DESC
+    `SELECT item_id
+     FROM test_request_items
+     WHERE item_id LIKE $1
+     ORDER BY item_id DESC
      LIMIT 1`,
     [`LI-${prefix}-%`],
   );
 
   const nextNumber =
     labItemsCreatedToday.length > 0
-      ? Number(labItemsCreatedToday[0].lab_item_id.slice(-4)) + 1
+      ? Number(labItemsCreatedToday[0].item_id.slice(-4)) + 1
       : 1;
 
   return `LI-${prefix}-${String(nextNumber).padStart(4, "0")}`;
@@ -392,6 +392,18 @@ export async function generateConsultationQueueId(client: PoolClient) {
   return `CONS-${String(nextNumber).padStart(4, "0")}`;
 }
 
+export async function generateQueueNumberConsultation(client: PoolClient) {
+  const { rows } = await client.query(
+    `SELECT COALESCE(MAX(queue_number), 0) + 1 AS next
+     FROM queue_entries
+     WHERE queue_id LIKE 'CONS-%'
+       AND (created_at AT TIME ZONE 'Asia/Manila')::date =
+           (NOW() AT TIME ZONE 'Asia/Manila')::date`,
+  );
+
+  return Number(rows[0].next);
+}
+
 export async function generateLaboratoryQueueId(client: PoolClient) {
   const { rows } = await client.query(
     `SELECT queue_id
@@ -407,18 +419,6 @@ export async function generateLaboratoryQueueId(client: PoolClient) {
   return `LAB-${String(nextNumber).padStart(4, "0")}`;
 }
 
-export async function generateQueueNumberConsultation(client: PoolClient) {
-  const { rows } = await client.query(
-    `SELECT COALESCE(MAX(queue_number), 0) + 1 AS next
-     FROM queue_entries
-     WHERE queue_id LIKE 'CONS-%'
-       AND (created_at AT TIME ZONE 'Asia/Manila')::date =
-           (NOW() AT TIME ZONE 'Asia/Manila')::date`,
-  );
-
-  return Number(rows[0].next);
-}
-
 export async function generateQueueNumberLaboratory(
   client: PoolClient,
   room: string,
@@ -431,9 +431,47 @@ export async function generateQueueNumberLaboratory(
            (NOW() AT TIME ZONE 'Asia/Manila')::date
        AND EXISTS (
          SELECT 1
-         FROM laboratory_request_items lri
-         JOIN services s ON s.service_id = lri.service_id
-         WHERE lri.queue_id = qe.queue_id
+         FROM test_request_items tri
+         JOIN services s ON s.service_id = tri.service_id
+         WHERE tri.queue_id = qe.queue_id
+           AND s.room::text = $1
+       )`,
+    [room],
+  );
+
+  return Number(rows[0].next);
+}
+
+export async function generateImagingQueueId(client: PoolClient) {
+  const { rows } = await client.query(
+    `SELECT queue_id
+     FROM queue_entries
+     WHERE queue_id LIKE 'IMG-%'
+     ORDER BY SPLIT_PART(queue_id, '-', 2)::int DESC
+     LIMIT 1`,
+  );
+
+  const last = rows[0]?.queue_id;
+  const nextNumber = last ? Number(last.split("-")[1]) + 1 : 1;
+
+  return `IMG-${String(nextNumber).padStart(4, "0")}`;
+}
+
+export async function generateQueueNumberImaging(
+  client: PoolClient,
+  room: string,
+) {
+  const { rows } = await client.query(
+    `SELECT COALESCE(MAX(qe.queue_number), 0) + 1 AS next
+     FROM queue_entries qe
+     WHERE qe.queue_id LIKE 'IMG-%'
+       AND (qe.created_at AT TIME ZONE 'Asia/Manila')::date =
+           (NOW() AT TIME ZONE 'Asia/Manila')::date
+       AND EXISTS (
+         SELECT 1
+         FROM test_request_items tri
+         JOIN services s ON s.service_id = tri.service_id
+         WHERE tri.queue_id = qe.queue_id
            AND s.room::text = $1
        )`,
     [room],

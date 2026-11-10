@@ -11,7 +11,7 @@ import type {
   updateService,
   resetUserPassword,
 } from "./dto/update.dto.js";
-import { MIN_PASSWORD_LENGTH } from "../../utils/emailToken.js";
+import { MIN_PASSWORD_LENGTH } from "../../utils/password.js";
 
 // =========================
 // UPDATE USER
@@ -494,12 +494,9 @@ export async function resetUserPassword(
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Also cancels any "forgot password" link they requested.
     const [user] = await sql`
       UPDATE users
       SET password_hash = ${hashedPassword},
-          reset_token = NULL,
-          reset_expires_at = NULL,
           updated_at = NOW()
       WHERE user_id = ${user_id}
       RETURNING username

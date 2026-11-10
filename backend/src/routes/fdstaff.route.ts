@@ -21,7 +21,6 @@ import {
   addConsultationRecord,
   addLaboratoryRequest,
   addPatient,
-  resendPatientVerification,
   // addToQueue,
 } from "../controllers/fdstaff/postRequests.controller.js";
 import {
@@ -60,7 +59,6 @@ router.get(
 
 // POST requests
 router.post("/patients", upload.single("image"), addPatient);
-router.post("/patients/:patient_id/verification-email", resendPatientVerification);
 //uploading multiple files
 // router.post(
 //   "/patients",

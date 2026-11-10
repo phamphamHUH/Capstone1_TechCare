@@ -291,11 +291,11 @@ function InformationCard({ onClose, queueIdCard, room }: InformationCardProps) {
                       <tbody>
                         {requestDetail.items.map((item) => {
                           const disabled = !item.in_current_room;
-                          const selected = selectedItemId === item.lab_item_id;
+                          const selected = selectedItemId === item.item_id;
 
                           return (
                             <tr
-                              key={item.lab_item_id}
+                              key={item.item_id}
                               aria-disabled={disabled}
                               tabIndex={disabled ? -1 : 0}
                               title={
@@ -306,14 +306,14 @@ function InformationCard({ onClose, queueIdCard, room }: InformationCardProps) {
                               onClick={
                                 disabled
                                   ? undefined
-                                  : () => setSelectedItemId(item.lab_item_id)
+                                  : () => setSelectedItemId(item.item_id)
                               }
                               onKeyDown={
                                 disabled
                                   ? undefined
                                   : (e) => {
                                       if (e.key === "Enter")
-                                        setSelectedItemId(item.lab_item_id);
+                                        setSelectedItemId(item.item_id);
                                     }
                               }
                               className={
@@ -324,7 +324,7 @@ function InformationCard({ onClose, queueIdCard, room }: InformationCardProps) {
                                     }`
                               }
                             >
-                              <td className="text-xs">{item.lab_item_id}</td>
+                              <td className="text-xs">{item.item_id}</td>
                               <td className="text-xs">
                                 {item.service.service_name}
                               </td>

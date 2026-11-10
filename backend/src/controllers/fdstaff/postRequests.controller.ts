@@ -23,10 +23,11 @@ import type {
   addToQueue,
   addLaboratoryRequest,
   addConsultationRecord,
-  resendPatientVerification,
 } from "./dto/post.dto.js";
 import { publishQueueChange } from "../../services/queue-sse/index.js";
-import { sendPatientVerificationEmail } from "../../services/email/sendEmail.js";
+import { actorId, notifyPriorityPatient, notifyQueued } from "../../services/notifications/index.js";
+import { sendEmail } from "../../services/email/sendEmail.js";
+import { patientAccountCreatedEmail } from "../../services/email/emailTemplates.js";
 import { recomputeBillTotals } from "../../utils/recomputeBills.js";
 import { getOrCreateOpenBill } from "../../utils/getOrCreateBill.js";
 export async function addPatient(
@@ -188,19 +189,16 @@ export async function addPatient(
     const age = calculateAge(birthdate);
 
     // =========================
-    // EMAIL VERIFICATION
+    // WELCOME EMAIL (information only)
     // =========================
-    // The patient can use their account right away, but the clinic sends
-    // them no emails until they click this link.
-    const emailSent = await sendPatientVerificationEmail(patientId);
+    // Not awaited: the patient shouldn't wait on the email provider.
+    if (email) void sendEmail(patientAccountCreatedEmail(email, first_name, patientId));
 
-    // Don't send the password hash or link token to the client.
-    const { password_hash, verify_token, ...safePatient } = response[0];
+    // Don't send the password hash to the client.
+    const { password_hash, ...safePatient } = response[0];
 
     return res.status(201).json({
-      message: emailSent
-        ? `Patient added successfully. A verification email was sent to ${email}.`
-        : "Patient added successfully, but the verification email couldn't be sent. Resend it from Patient Records.",
+      message: "Patient added successfully.",
       patient: { ...safePatient, age } as unknown as addPatient.patient,
     } as addPatient.response);
   } catch (error: any) {
@@ -385,124 +383,15 @@ export async function addBills(
   }
 }
 
-// export async function addToQueue(
-//   req: Request,
-//   res: Response<addToQueue.response | addToQueue.error>,
-// ) {
-//   const { record_type, record_id, is_priority } = req.body as addToQueue.body;
-
-//   if (
-//     (record_type !== "laboratory" && record_type !== "consultation") ||
-//     !record_id ||
-//     typeof is_priority !== "boolean"
-//   ) {
-//     return res.status(400).json({
-//       message: "record_type, record_id and is_priority are required.",
-//     } as addToQueue.error);
-//   }
-
-//   const client = await pool.connect();
-//   try {
-//     await client.query("BEGIN");
-//     await client.query("SELECT pg_advisory_xact_lock(hashtext('queue_ids'))");
-
-//     // 1. load the source record (patient, service, current queue_id)
-//     const { rows } =
-//       record_type === "laboratory"
-//         ? await client.query(
-//             `SELECT lr.patient_id, lri.service_id, lri.queue_id
-//              FROM laboratory_request_items lri
-//              JOIN laboratory_requests lr ON lr.request_id = lri.request_id
-//              WHERE lri.lab_item_id = $1
-//              FOR UPDATE OF lri`,
-//             [record_id],
-//           )
-//         : await client.query(
-//             `SELECT patient_id, service_id, queue_id
-//              FROM consultation_records
-//              WHERE consultation_record_id = $1
-//              FOR UPDATE`,
-//             [record_id],
-//           );
-
-//     if (rows.length === 0) {
-//       await client.query("ROLLBACK");
-//       return res
-//         .status(404)
-//         .json({ message: "Record not found." } as addToQueue.error);
-//     }
-//     if (rows[0].queue_id) {
-//       await client.query("ROLLBACK");
-//       return res
-//         .status(409)
-//         .json({ message: "Already added to the queue." } as addToQueue.error);
-//     }
-
-//     const { patient_id, service_id } = rows[0];
-
-//     // 2. generate the queue ID and number (same transaction, after the lock)
-//     const isLab = record_type === "laboratory";
-
-//     const queue_id = isLab
-//       ? await generateLaboratoryQueueId()
-//       : await generateConsultationQueueId();
-
-//     const queue_number = isLab
-//       ? await generateQueueNumberLaboratory()
-//       : await generateQueueNumberConsultation();
-
-//     // 3. create the queue entry
-//     const { rows: queueRows } = await client.query(
-//       `INSERT INTO queue_entries
-//          (queue_id, patient_id, service_id, queue_number, is_priority, status)
-//        VALUES ($1, $2, $3, $4, $5, 'Waiting')
-//        RETURNING *`,
-//       [queue_id, patient_id, service_id, queue_number, is_priority],
-//     );
-
-//     // 4. link it back to the source record
-//     if (isLab) {
-//       await client.query(
-//         `UPDATE laboratory_request_items
-//          SET queue_id = $1, updated_at = NOW(), status = 'Waiting'
-//          WHERE lab_item_id = $2`,
-//         [queue_id, record_id],
-//       );
-//     } else {
-//       await client.query(
-//         `UPDATE consultation_records
-//          SET queue_id = $1, status = 'Waiting'
-//          WHERE consultation_record_id = $2`,
-//         [queue_id, record_id],
-//       );
-//     }
-
-//     await client.query("COMMIT");
-//     return res.status(201).json({
-//       message: "Added to queue.",
-//       queue: queueRows[0] as unknown as addToQueue.queue,
-//     } as addToQueue.response);
-//   } catch (error) {
-//     await client.query("ROLLBACK").catch(console.error);
-//     console.error("Error adding to queue:", error);
-//     if ((error as { code?: string }).code === "23503") {
-//       return res
-//         .status(400)
-//         .json({ message: "Invalid patient or service." } as addToQueue.error);
-//     }
-//     return res
-//       .status(500)
-//       .json({ message: "Internal server error." } as addToQueue.error);
-//   } finally {
-//     client.release();
-//   }
-// }
-
 export async function addLaboratoryRequest(
   req: Request,
   res: Response<addLaboratoryRequest.response | addLaboratoryRequest.error>,
 ) {
-  const { patient_id, services } = req.body as addLaboratoryRequest.body;
+  const {
+    patient_id,
+    services = [],
+    packages = [],
+  } = req.body as addLaboratoryRequest.body;
   const user_id =
     req.user?.user_id ?? (!ENV.IS_PRODUCTION ? "U-26-1001-0004" : undefined);
 
@@ -510,11 +399,12 @@ export async function addLaboratoryRequest(
     !patient_id ||
     !user_id ||
     !Array.isArray(services) ||
-    services.length === 0
+    !Array.isArray(packages) ||
+    services.length + packages.length === 0
   ) {
     return res.status(400).json({
       message:
-        "Patient ID and User ID are required and at least one service must be provided.",
+        "Patient ID and User ID are required and at least one service or package must be provided.",
     } as addLaboratoryRequest.error);
   }
 
@@ -525,7 +415,7 @@ export async function addLaboratoryRequest(
 
     const request_id = await generateLaboratoryRequestID(client);
     const { rows: laboratory_request_result } = await client.query(
-      `INSERT INTO laboratory_requests (request_id, patient_id, requested_by)
+      `INSERT INTO test_requests (request_id, patient_id, requested_by)
        VALUES ($1, $2, $3)
        RETURNING *`,
       [request_id, patient_id, user_id],
@@ -533,15 +423,60 @@ export async function addLaboratoryRequest(
 
     const { bill_id, is_new } = await getOrCreateOpenBill(client, patient_id);
 
+    // Single services are added as they are; packages are expanded into
+    // their component services and remember which package they came from.
+    const packageIds = [...new Set(packages.map((p) => p.package_id))];
+    const entries: { service_id: string; package_id: string | null }[] =
+      services.map((s) => ({ service_id: s.service_id, package_id: null }));
+
+    if (packageIds.length > 0) {
+      const { rows: activePackages } = await client.query(
+        `SELECT package_id FROM packages
+         WHERE package_id = ANY($1::text[]) AND active = TRUE`,
+        [packageIds],
+      );
+      if (activePackages.length !== packageIds.length) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({
+          message: "Invalid or inactive package ID.",
+        } as addLaboratoryRequest.error);
+      }
+
+      const { rows: components } = await client.query(
+        `SELECT ps.package_id, ps.service_id, LOWER(TRIM(s.service_type)) AS service_type
+         FROM package_services ps
+         JOIN services s ON s.service_id = ps.service_id
+         WHERE ps.package_id = ANY($1::text[])`,
+        [packageIds],
+      );
+
+      for (const package_id of packageIds) {
+        const own = components.filter((c) => c.package_id === package_id);
+        if (
+          own.length === 0 ||
+          own.some((c) => !["laboratory", "imaging"].includes(c.service_type))
+        ) {
+          await client.query("ROLLBACK");
+          return res.status(400).json({
+            message:
+              "A package must contain at least one service, and only laboratory or imaging services.",
+          } as addLaboratoryRequest.error);
+        }
+        for (const c of own) {
+          entries.push({ service_id: c.service_id, package_id });
+        }
+      }
+    }
+
     const laboratory_item_result = [];
-    for (const service of services) {
-      const lab_item_id = await generateLaboratoryItemID(client);
+    for (const entry of entries) {
+      const item_id = await generateLaboratoryItemID(client);
       const { rows } = await client.query(
-        `INSERT INTO laboratory_request_items
-           (lab_item_id, request_id, service_id, status, bill_id)
-         VALUES ($1, $2, $3, 'Requested', $4)
+        `INSERT INTO test_request_items
+           (item_id, request_id, service_id, status, bill_id, package_id)
+         VALUES ($1, $2, $3, 'Requested', $4, $5)
          RETURNING *`,
-        [lab_item_id, request_id, service.service_id, bill_id],
+        [item_id, request_id, entry.service_id, bill_id, entry.package_id],
       );
       laboratory_item_result.push(rows[0]);
     }
@@ -562,10 +497,9 @@ export async function addLaboratoryRequest(
     await client.query("ROLLBACK").catch(console.error);
     if (error.code === "23503") {
       return res.status(400).json({
-        message: "Invalid patient or service ID.",
+        message: "Invalid patient, service or package ID.",
       } as addLaboratoryRequest.error);
     }
-    console.error(error);
     return res.status(500).json({
       message: "Internal server error.",
     } as addLaboratoryRequest.error);
@@ -635,6 +569,10 @@ export async function addConsultationRecord(
 
     await client.query("COMMIT");
     publishQueueChange();
+    void notifyQueued(patient_id, "consultation", queue_result.queue_number);
+    if (is_priority === true) {
+      void notifyPriorityPatient(patient_id, "consultation", actorId(req));
+    }
 
     return res.status(201).json({
       message: "Consultation record added successfully.",
@@ -666,35 +604,45 @@ export async function addConsultationRecord(
 // =========================
 // POST /api/fdstaff/patients/:patient_id/verification-email
 // Goes to their new email if they changed it, otherwise to their current one.
-export async function resendPatientVerification(
-  req: Request,
-  res: Response<resendPatientVerification.response | resendPatientVerification.error>,
-) {
-  try {
-    const { patient_id } = req.params;
+// export async function resendPatientVerification(
+//   req: Request,
+//   res: Response<
+//     resendPatientVerification.response | resendPatientVerification.error
+//   >,
+// ) {
+//   try {
+//     const { patient_id } = req.params;
 
-    const [patient] = await sql`
-      SELECT is_verified, pending_email FROM patients WHERE patient_id = ${patient_id}
-    `;
+//     const [patient] = await sql`
+//       SELECT is_verified, pending_email FROM patients WHERE patient_id = ${patient_id}
+//     `;
 
-    if (!patient) {
-      return res.status(404).json({ message: "Patient not found." });
-    }
+//     if (!patient) {
+//       return res.status(404).json({ message: "Patient not found." });
+//     }
 
-    if (patient.is_verified && !patient.pending_email) {
-      return res.status(409).json({ message: "This patient's email is already verified." });
-    }
+//     if (patient.is_verified && !patient.pending_email) {
+//       return res
+//         .status(409)
+//         .json({ message: "This patient's email is already verified." });
+//     }
 
-    const emailSent = await sendPatientVerificationEmail(String(patient_id));
+//     const emailSent = await sendPatientVerificationEmail(String(patient_id));
 
-    if (!emailSent) {
-      return res.status(502).json({ message: "The email couldn't be sent. Please try again." });
-    }
+//     if (!emailSent) {
+//       return res
+//         .status(502)
+//         .json({ message: "The email couldn't be sent. Please try again." });
+//     }
 
-    return res.status(200).json({ message: "A new verification email was sent." });
-  } catch (error) {
-    console.error("RESEND PATIENT VERIFICATION ERROR:", error);
+//     return res
+//       .status(200)
+//       .json({ message: "A new verification email was sent." });
+//   } catch (error) {
+//     console.error("RESEND PATIENT VERIFICATION ERROR:", error);
 
-    return res.status(500).json({ message: "Failed to send the verification email." });
-  }
-}
+//     return res
+//       .status(500)
+//       .json({ message: "Failed to send the verification email." });
+//   }
+// }

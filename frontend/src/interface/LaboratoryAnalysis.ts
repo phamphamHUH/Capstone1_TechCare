@@ -77,7 +77,7 @@ export interface ResultEntryPayload {
   room: string;
   request_id: string;
   patient_id: string;
-  lab_item_id: string | null;
+  item_id: string | null;
   service_id: string;
   form_id: string;
   template_version: number | null;

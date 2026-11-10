@@ -58,10 +58,10 @@ export async function getPortalHistory(req: Request, res: Response) {
       FROM consultation_records cr JOIN services s ON s.service_id = cr.service_id
       WHERE cr.patient_id = $1
       UNION ALL
-      SELECT 'laboratory'::text, li.lab_item_id, s.service_name, s.room,
+      SELECT 'laboratory'::text, li.item_id, s.service_name, s.room,
         'Laboratory'::text, li.status, lr.requested_at
-      FROM laboratory_request_items li
-      JOIN laboratory_requests lr ON lr.request_id = li.request_id
+      FROM test_request_items li
+      JOIN test_requests lr ON lr.request_id = li.request_id
       JOIN services s ON s.service_id = li.service_id WHERE lr.patient_id = $1
     ), filtered AS (SELECT * FROM history ${filters.length ? `WHERE ${filters.join(" AND ")}` : ""})`;
     const count = await sql.query(
@@ -113,15 +113,15 @@ export async function getPortalRecord(req: Request, res: Response) {
     }
     if (record_type === "laboratory") {
       const [record] = await sql`
-        SELECT li.lab_item_id, li.status, lr.requested_at AS occurred_at, s.service_name, s.room,
+        SELECT li.item_id AS lab_item_id, li.status, lr.requested_at AS occurred_at, s.service_name, s.room,
           CONCAT_WS(' ', ru.first_name, ru.last_name) AS requested_by, ru.role AS requested_by_role,
           CONCAT_WS(' ', pu.first_name, pu.last_name) AS processed_by, pu.role AS processed_by_role
-        FROM laboratory_request_items li
-        JOIN laboratory_requests lr ON lr.request_id = li.request_id
+        FROM test_request_items li
+        JOIN test_requests lr ON lr.request_id = li.request_id
         JOIN services s ON s.service_id = li.service_id
         LEFT JOIN users ru ON ru.user_id = lr.requested_by
         LEFT JOIN users pu ON pu.user_id = li.processed_by
-        WHERE li.lab_item_id = ${record_id} AND lr.patient_id = ${patientId}
+        WHERE li.item_id = ${record_id} AND lr.patient_id = ${patientId}
       `;
       if (!record)
         return res
@@ -129,7 +129,7 @@ export async function getPortalRecord(req: Request, res: Response) {
           .json({ message: "Laboratory record not found." });
       const results = await sql`
         SELECT result_id, results, remarks, verified_at, released_at
-        FROM laboratory_results WHERE lab_item_id = ${record_id} AND status = 'Released'
+        FROM test_results WHERE item_id = ${record_id} AND status = 'Released'
         ORDER BY created_at DESC
       `;
       return res.json({ record_type, ...record, results });
@@ -156,11 +156,11 @@ type QueueRow = {
 export async function getPortalReleasedResult(req: Request, res: Response) {
   try {
     const results = await sql`
-      SELECT r.result_id, r.lab_item_id, r.results, r.remarks, r.image_url,
+      SELECT r.result_id, r.item_id AS lab_item_id, r.results, r.remarks, r.image_url,
         r.verified_by, r.verified_at, r.created_at, r.updated_at
-      FROM laboratory_results r
-      JOIN laboratory_request_items li ON li.lab_item_id = r.lab_item_id
-      JOIN laboratory_requests lr ON lr.request_id = li.request_id
+      FROM test_results r
+      JOIN test_request_items li ON li.item_id = r.item_id
+      JOIN test_requests lr ON lr.request_id = li.request_id
       WHERE r.result_id = ${req.params.result_id} AND r.status = 'Released'
         AND lr.patient_id = ${res.locals.patientId}
     `;
@@ -215,9 +215,9 @@ export async function getPortalQueues(_req: Request, res: Response) {
       LEFT JOIN consultation_records cr ON cr.queue_id = q.queue_id
       LEFT JOIN services cs ON cs.service_id = cr.service_id
       LEFT JOIN LATERAL (
-        SELECT s.service_type, s.service_name, s.room FROM laboratory_request_items li
+        SELECT s.service_type, s.service_name, s.room FROM test_request_items li
         JOIN services s ON s.service_id = li.service_id WHERE li.queue_id = q.queue_id
-        ORDER BY li.lab_item_id LIMIT 1
+        ORDER BY li.item_id LIMIT 1
       ) lab ON TRUE
       WHERE q.created_at >= CURRENT_DATE AND q.created_at < CURRENT_DATE + INTERVAL '1 day'
     `) as QueueRow[];
@@ -260,8 +260,8 @@ export async function getPortalQueues(_req: Request, res: Response) {
         };
       });
     const [release] = await sql`
-      SELECT COUNT(*) AS awaiting_results FROM laboratory_request_items li
-      JOIN laboratory_requests lr ON lr.request_id = li.request_id
+      SELECT COUNT(*) AS awaiting_results FROM test_request_items li
+      JOIN test_requests lr ON lr.request_id = li.request_id
       WHERE lr.patient_id = ${res.locals.patientId} AND li.status = 'Completed'
     `;
     return res.json({

@@ -14,7 +14,7 @@ export namespace saveLaboratoryResult {
 
   export interface laboratoryResult {
     result_id: string;
-    lab_item_id: string;
+    item_id: string;
     results: unknown;
     remarks: string | null;
     image_url: string | null;

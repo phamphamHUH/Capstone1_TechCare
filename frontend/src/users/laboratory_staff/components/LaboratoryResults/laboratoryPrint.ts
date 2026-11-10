@@ -3,7 +3,8 @@ import { CLINIC_INFO } from "../../../../lib/clinicInfo";
 // Full portrait long bond sheet; the report occupies only its top half.
 export const REPORT_WIDTH = 816;
 export const REPORT_MIN_HEIGHT = 1248;
-export const REPORT_PAPER_LABEL = "Long bond · 8.5 × 13 in · Portrait · Top half only";
+export const REPORT_PAPER_LABEL =
+  "Long bond · 8.5 × 13 in · Portrait · Top half only";
 export const REPORT_LOGO = CLINIC_INFO.logoUrl;
 
 export const REPORT_FRAME_HTML = /* HTML */ `<!doctype html>
@@ -226,26 +227,6 @@ export const REPORT_FRAME_HTML = /* HTML */ `<!doctype html>
         }
         .parameters tbody th {
           font-weight: bold;
-        }
-        .microscopy {
-          text-align: left;
-        }
-        .microscopy th,
-        .microscopy td {
-          height: 18px;
-          padding-top: 1px;
-          padding-bottom: 1px;
-        }
-        .microscopy th {
-          width: 28%;
-          font-weight: bold;
-        }
-        .microscopy td {
-          width: 22%;
-        }
-        .microscopy-single th,
-        .microscopy-single td {
-          width: 50%;
         }
         .result-value {
           font-weight: bold;

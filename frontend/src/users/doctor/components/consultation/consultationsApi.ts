@@ -18,10 +18,16 @@ export function toApiFailure(error: unknown, fallback: string): ApiFailure {
       | { message?: string; errors?: FieldErrors }
       | undefined;
     if (data?.message || data?.errors) {
-      return { message: data.message ?? fallback, fieldErrors: data.errors ?? {} };
+      return {
+        message: data.message ?? fallback,
+        fieldErrors: data.errors ?? {},
+      };
     }
     if (!error.response) {
-      return { message: "Can't reach the server. Check your connection.", fieldErrors: {} };
+      return {
+        message: "Can't reach the server. Check your connection.",
+        fieldErrors: {},
+      };
     }
   }
   return { message: fallback, fieldErrors: {} };
@@ -32,7 +38,10 @@ function currentDoctorId(): string | undefined {
   try {
     const stored = sessionStorage.getItem("user");
     if (stored) {
-      const user = JSON.parse(stored) as { user_id?: string | number; role?: string };
+      const user = JSON.parse(stored) as {
+        user_id?: string | number;
+        role?: string;
+      };
       if (user.role !== "doctor") return undefined;
       return user.user_id === undefined || user.user_id === null
         ? undefined
@@ -98,7 +107,7 @@ export type SubmitLabRequestInput = {
 export type SubmittedLabRequest = {
   /** The API returns the inserted row inside an array. */
   request: { request_id: string }[];
-  items: { lab_item_id: string; service_id: string }[];
+  items: { item_id: string; service_id: string }[];
 };
 
 export async function submitLaboratoryRequest(input: SubmitLabRequestInput) {

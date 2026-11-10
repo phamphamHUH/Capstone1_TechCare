@@ -7,7 +7,14 @@ import ServiceList from "../components/ServiceRequest/ServiceList";
 import PatientSelectionHeader from "../components/ServiceRequest/PatientSelectionHeader";
 import type { SortOrder, Service } from "../../../interface/Service";
 import type { Patient } from "../../../interface/Patient";
-import { Syringe, Clipboard } from "lucide-react";
+import {
+  Syringe,
+  Clipboard,
+  BoneFracture,
+  Package,
+  TriangleAlert,
+} from "lucide-react";
+import ConfirmDialog from "#components/ConfirmDialog";
 
 type ServiceRequestProps = {
   services: Service[];
@@ -31,12 +38,14 @@ function ServiceRequest({
   const [activeTab, setActiveTab] = useState("laboratory");
   const [patient, setPatient] = useState<Patient | null>(null);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [pendingTab, setPendingTab] = useState<string | null>(null);
 
   // FILTERS
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortOrder>("a-z");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [pageNumber, setPageNumber] = useState(1);
+  const isolatedTabs = ["consultation", "package"];
 
   // reset to page 1 whenever a filter changes (in handlers, not in an effect)
   const handleSearch = (value: string) => {
@@ -106,6 +115,25 @@ function ServiceRequest({
   };
   const clearServices = () => setSelectedServices([]);
 
+  const switchTab = (tab: string) => {
+    clearServices();
+    handleTab(tab);
+  };
+
+  const handleTabClick = (tab: string) => {
+    if (tab === activeTab) return;
+
+    const needsClear =
+      isolatedTabs.includes(tab) || isolatedTabs.includes(activeTab);
+
+    if (needsClear && selectedServices.length > 0) {
+      setPendingTab(tab); // ask first
+      return;
+    }
+    if (needsClear) clearServices();
+    handleTab(tab);
+  };
+
   const cards = [
     {
       service_type: "laboratory",
@@ -114,10 +142,22 @@ function ServiceRequest({
       icon: Syringe,
     },
     {
+      service_type: "imaging",
+      mainHeading: "Imaging Services",
+      subHeading: "Request Imaging tests and diagnosis",
+      icon: BoneFracture,
+    },
+    {
       service_type: "consultation",
       mainHeading: "Consultation Services",
       subHeading: "Request Consultation or Specialist Service",
       icon: Clipboard,
+    },
+    {
+      service_type: "package",
+      mainHeading: "Packages",
+      subHeading: "Request Packaged Services for lower price",
+      icon: Package,
     },
   ];
   if (loading && services.length === 0) {
@@ -135,24 +175,22 @@ function ServiceRequest({
         onSelectPatient={setPatient}
         onRegister={() => setPage("patient-registration")}
       />
-      <section className="flex gap-5 px-8 mt-6">
+      {/* SERVICE TABS */}
+      <section className="flex gap-3 mt-6 px-8">
         {cards.map((card, index) => {
           const Icon = card.icon;
           return (
             <div
-              className={`flex items-center border w-90 justify-center gap-5 py-3 rounded-3xl cursor-pointer shadow-md 
-                      hover:text-blue-600 hover:border-blue-200 hover:scale-101 active:scale-100 active:text-blue-600 
-                      ${activeTab === card.service_type ? "text-blue-400 " : "border-gray-200"}`}
+              className={`flex flex-1 min-w-0 items-center justify-center gap-3 border px-3 py-3 rounded-lg cursor-pointer shadow-md
+                hover:text-sky-600 hover:border-sky-200 hover:scale-101 active:scale-100 active:text-sky-600
+                ${activeTab === card.service_type ? "text-sky-400" : "border-gray-200"}`}
               key={index}
-              onClick={() => {
-                clearServices();
-                setActiveTab(card.service_type);
-              }}
+              onClick={() => handleTabClick(card.service_type)}
             >
-              <Icon size={25} />
-              <div>
-                <h1 className="text-lg font-bold">{card.mainHeading}</h1>
-                <h3 className="text-sm">{card.subHeading}</h3>
+              <Icon size={25} className="shrink-0" />
+              <div className="min-w-0">
+                <h1 className="text-md font-bold">{card.mainHeading}</h1>
+                <h3 className="text-xs">{card.subHeading}</h3>
               </div>
             </div>
           );
@@ -162,7 +200,7 @@ function ServiceRequest({
         loading={loading && services.length > 0}
         message="Refreshing available services..."
       >
-        <div className="border border-gray-200 rounded-xl mt-5 mx-8 grid grid-cols-5 min-h-7/12 shadow-lg">
+        <div className="border border-gray-200 rounded-md mt-5 mx-8 grid grid-cols-5 min-h-7/12 shadow-lg">
           <div className="col-span-3 border-r border-gray-200 px-8 py-5 flex flex-col justify-between">
             <ServiceSelectionPanel
               services={pageItems}
@@ -197,6 +235,24 @@ function ServiceRequest({
           </div>
         </div>
       </LoadingRegion>
+      {pendingTab && (
+        <ConfirmDialog
+          tone="warning"
+          icon={TriangleAlert}
+          title="Switch Service Type?"
+          confirmLabel="Switch & Clear"
+          cancelLabel="Stay Here"
+          description={`Switching to ${
+            cards.find((c) => c.service_type === pendingTab)?.mainHeading ??
+            "this tab"
+          } will clear your currently selected services. Do you want to continue?`}
+          onCancel={() => setPendingTab(null)}
+          onConfirm={() => {
+            switchTab(pendingTab);
+            setPendingTab(null);
+          }}
+        />
+      )}
     </main>
   );
 }

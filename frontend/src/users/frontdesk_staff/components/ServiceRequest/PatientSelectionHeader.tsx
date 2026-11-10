@@ -42,7 +42,7 @@ function PatientSelectionHeader({
 
   return (
     <>
-      <div className="flex justify-between border mx-8 mt-5 px-5 py-3 border-gray-200 rounded-xl shadow-lg">
+      <div className="flex justify-between border mx-8 mt-5 px-5 py-3 border-gray-200 rounded-md shadow-lg">
         {patient ? (
           <div className="flex items-center gap-4">
             <div className="relative h-20 w-20 overflow-hidden rounded-full bg-gray-100">

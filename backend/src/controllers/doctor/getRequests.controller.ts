@@ -212,16 +212,16 @@ export async function getMedicalHistory(
 
         SELECT
           'laboratory'::text,
-          lri.lab_item_id::text,
+          tri.item_id::text,
           s.service_name::text,
           s.room::text,
           'Laboratory'::text,
-          lri.status::text,
-          lr.requested_at
-        FROM laboratory_request_items lri
-        JOIN laboratory_requests lr ON lr.request_id = lri.request_id
-        JOIN services s ON s.service_id = lri.service_id
-        WHERE lr.patient_id = ${patient_id}
+          tri.status::text,
+          tr.requested_at
+        FROM test_request_items tri
+        JOIN test_requests tr ON tr.request_id = tri.request_id
+        JOIN services s ON s.service_id = tri.service_id
+        WHERE tr.patient_id = ${patient_id}
       )
       SELECT *, COUNT(*) OVER() AS total_count
       FROM history
@@ -265,13 +265,13 @@ export async function getMedicalHistory(
   }
 }
 
-// laboratory_results stores one row per lab item with a JSON list of tests.
+// test_results stores one row per lab item with a JSON list of tests.
 // The doctor's history screen shows one line per test.
-async function selectLabResultLines(lab_item_id: string) {
+async function selectLabResultLines(item_id: string) {
   const rows = await sql`
     SELECT result_id, results, remarks, verified_by, verified_at, image_url, created_at
-    FROM laboratory_results
-    WHERE lab_item_id = ${lab_item_id}
+    FROM test_results
+    WHERE item_id = ${item_id}
     ORDER BY created_at
   `;
 
@@ -315,21 +315,21 @@ export async function getMedicalHistoryDetails(
     if (record_type === "laboratory") {
       const [labDetails] = await sql`
         SELECT
-          lri.lab_item_id,
-          lri.status,
-          lri.updated_at,
+          tri.item_id,
+          tri.status,
+          tri.updated_at,
           s.service_name,
           s.room,
           CONCAT_WS(' ', req_u.first_name, req_u.last_name) AS requested_by,
           req_u.role AS requested_by_role,
           CONCAT_WS(' ', proc_u.first_name, proc_u.last_name) AS processed_by,
           proc_u.role AS processed_by_role
-        FROM laboratory_request_items lri
-        JOIN services s ON s.service_id = lri.service_id
-        JOIN laboratory_requests lr ON lr.request_id = lri.request_id
-        LEFT JOIN users req_u ON req_u.user_id = lr.requested_by
-        LEFT JOIN users proc_u ON proc_u.user_id = lri.processed_by
-        WHERE lri.lab_item_id = ${record_id}
+        FROM test_request_items tri
+        JOIN services s ON s.service_id = tri.service_id
+        JOIN test_requests tr ON tr.request_id = tri.request_id
+        LEFT JOIN users req_u ON req_u.user_id = tr.requested_by
+        LEFT JOIN users proc_u ON proc_u.user_id = tri.processed_by
+        WHERE tri.item_id = ${record_id}
       `;
 
       if (!labDetails) {
@@ -343,7 +343,7 @@ export async function getMedicalHistoryDetails(
       return res.status(200).json({
         message: "Laboratory record and result/s successfully fetched",
         record_type: "laboratory",
-        lab_item_id: String(labDetails.lab_item_id),
+        item_id: String(labDetails.item_id),
         status: String(labDetails.status),
         updated_at: String(labDetails.updated_at),
         service_name: String(labDetails.service_name),
@@ -437,21 +437,21 @@ export async function getMedicalHistoryFull(
     if (record_type === "laboratory") {
       const [fullLab] = await sql`
         SELECT
-          lri.lab_item_id,
-          lri.status,
-          lri.updated_at,
+          tri.item_id,
+          tri.status,
+          tri.updated_at,
           s.service_name,
           s.room,
           CONCAT_WS(' ', req_u.first_name, req_u.last_name) AS requested_by,
           req_u.role AS requested_by_role,
           CONCAT_WS(' ', proc_u.first_name, proc_u.last_name) AS processed_by,
           proc_u.role AS processed_by_role
-        FROM laboratory_request_items lri
-        JOIN services s ON s.service_id = lri.service_id
-        JOIN laboratory_requests lr ON lr.request_id = lri.request_id
-        LEFT JOIN users req_u ON req_u.user_id = lr.requested_by
-        LEFT JOIN users proc_u ON proc_u.user_id = lri.processed_by
-        WHERE lri.lab_item_id = ${record_id}
+        FROM test_request_items tri
+        JOIN services s ON s.service_id = tri.service_id
+        JOIN test_requests tr ON tr.request_id = tri.request_id
+        LEFT JOIN users req_u ON req_u.user_id = tr.requested_by
+        LEFT JOIN users proc_u ON proc_u.user_id = tri.processed_by
+        WHERE tri.item_id = ${record_id}
       `;
 
       if (!fullLab) {
@@ -463,7 +463,7 @@ export async function getMedicalHistoryFull(
       return res.status(200).json({
         message: "Full laboratory details successfully fetched",
         record_type: "laboratory",
-        lab_item_id: String(fullLab.lab_item_id),
+        item_id: String(fullLab.item_id),
         status: String(fullLab.status),
         updated_at: String(fullLab.updated_at),
         results: await selectLabResultLines(String(record_id)),

@@ -1,6 +1,6 @@
 export type LaboratoryItem = {
   id: number;
-  lab_item_id: string;
+  item_id: string;
   status: string;
   created_at: string;
   updated_at: string;

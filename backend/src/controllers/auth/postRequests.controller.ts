@@ -4,15 +4,7 @@ import bcrypt from "bcryptjs";
 import type { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { ENV } from "../../config/env.js";
-import type {
-  login,
-  verifyEmail,
-  forgotPassword,
-  resetPassword,
-} from "./dto/post.dto.js";
-import { createToken, hashToken, MIN_PASSWORD_LENGTH } from "../../utils/emailToken.js";
-import { sendEmail } from "../../services/email/sendEmail.js";
-import { passwordResetEmail } from "../../services/email/emailTemplates.js";
+import type { login } from "./dto/post.dto.js";
 
 export async function login(
   req: Request,
@@ -125,14 +117,6 @@ export async function login(
       } as login.error);
     }
 
-    // Employees must confirm their email first (patients don't have to).
-    if (accountType === "user" && account.is_verified === false) {
-      return res.status(403).json({
-        message:
-          "Please confirm your email first. Check your inbox for the link, or ask the administrator to resend it.",
-      } as login.error);
-    }
-
     // =========================
     // UPDATE LOGIN STATUS
     // =========================
@@ -195,8 +179,7 @@ export async function login(
     // REMOVE SENSITIVE DATA
     // =========================
     // Prevents the password hash from being sent to the client.
-    // Also keep the email link tokens out of the response.
-    const { password_hash, verify_token, reset_token, ...safeAccount } = account;
+    const { password_hash, ...safeAccount } = account;
 
     // =========================
     // RESPONSE
@@ -216,173 +199,5 @@ export async function login(
     return res.status(500).json({
       error: "Internal Server Error",
     } as login.error);
-  }
-}
-
-// =========================
-// VERIFY EMAIL (link from the email)
-// =========================
-// POST /api/auth/verify-email  { token }
-// Works for both employees and patients: checks users first, then patients
-// (same order as login).
-export async function verifyEmail(
-  req: Request,
-  res: Response<verifyEmail.response | verifyEmail.error>,
-) {
-  try {
-    const { token } = req.body as verifyEmail.body;
-
-    if (!token) {
-      return res.status(400).json({ message: "This link is invalid." });
-    }
-
-    const tokenHash = hashToken(token);
-
-    // =========================
-    // EMPLOYEE
-    // =========================
-    const [user] = await sql`
-      UPDATE users
-      SET is_verified = TRUE, verify_token = NULL, verify_expires_at = NULL
-      WHERE verify_token = ${tokenHash} AND verify_expires_at > NOW()
-      RETURNING username
-    `;
-
-    if (user) {
-      return res.status(200).json({
-        message: "Your email is confirmed. You can now log in.",
-        accountType: "user",
-      });
-    }
-
-    // =========================
-    // PATIENT
-    // =========================
-    // If they changed their email, the new one (pending_email) replaces it.
-    const [patient] = await sql`
-      UPDATE patients
-      SET email = COALESCE(pending_email, email),
-          pending_email = NULL,
-          is_verified = TRUE,
-          verify_token = NULL,
-          verify_expires_at = NULL
-      WHERE verify_token = ${tokenHash} AND verify_expires_at > NOW()
-      RETURNING email
-    `;
-
-    if (patient) {
-      return res.status(200).json({
-        message: "Your email is verified. You'll now receive emails from the clinic.",
-        accountType: "patient",
-      });
-    }
-
-    return res.status(400).json({
-      message: "This link is invalid, already used, or expired. Ask the clinic to send a new one.",
-    });
-  } catch (error: any) {
-    // 23505 = unique violation: another patient took this email meanwhile.
-    if (error?.code === "23505") {
-      return res.status(409).json({
-        message: "This email is already used by another account. Please contact the clinic.",
-      });
-    }
-
-    console.error("VERIFY EMAIL ERROR:", error);
-
-    return res.status(500).json({ message: "Internal Server Error" });
-  }
-}
-
-// =========================
-// FORGOT PASSWORD (employees only)
-// =========================
-// POST /api/auth/forgot-password  { email }
-// Always gives the same answer so nobody can check who has an account.
-// Patients reset their password at the front desk instead.
-export async function forgotPassword(
-  req: Request,
-  res: Response<forgotPassword.response | forgotPassword.error>,
-) {
-  const answer =
-    "If this email belongs to a staff account, we sent you a reset link. Patients: please visit the clinic front desk to reset your password.";
-
-  try {
-    const { email } = req.body as forgotPassword.body;
-
-    if (!email) {
-      return res.status(400).json({ message: "Please enter your email." });
-    }
-
-    const { token, tokenHash } = createToken();
-
-    // Saving a new token also cancels any older link.
-    const [user] = await sql`
-      UPDATE users
-      SET reset_token = ${tokenHash},
-          reset_expires_at = NOW() + INTERVAL '30 minutes'
-      WHERE LOWER(email) = ${email.trim().toLowerCase()}
-        AND account_status = TRUE
-        AND is_verified = TRUE
-      RETURNING first_name, email
-    `;
-
-    if (user) {
-      await sendEmail(passwordResetEmail(user.email, user.first_name, token));
-    }
-
-    return res.status(200).json({ message: answer });
-  } catch (error) {
-    console.error("FORGOT PASSWORD ERROR:", error);
-
-    return res.status(500).json({ message: "Internal Server Error" });
-  }
-}
-
-// =========================
-// RESET PASSWORD (link from the email, employees only)
-// =========================
-// POST /api/auth/reset-password  { token, password }
-export async function resetPassword(
-  req: Request,
-  res: Response<resetPassword.response | resetPassword.error>,
-) {
-  try {
-    const { token, password } = req.body as resetPassword.body;
-
-    if (!password || password.length < MIN_PASSWORD_LENGTH) {
-      return res.status(400).json({
-        message: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`,
-      });
-    }
-
-    if (!token) {
-      return res.status(400).json({ message: "This link is invalid." });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Clearing reset_token makes the link work only once.
-    const [user] = await sql`
-      UPDATE users
-      SET password_hash = ${hashedPassword},
-          reset_token = NULL,
-          reset_expires_at = NULL,
-          updated_at = NOW()
-      WHERE reset_token = ${hashToken(token)} AND reset_expires_at > NOW()
-      RETURNING username
-    `;
-
-    if (!user) {
-      return res.status(400).json({
-        message: "This link is invalid, already used, or expired. Request a new one.",
-      });
-    }
-
-    return res.status(200).json({ message: "Your password has been changed. You can now log in." });
-  } catch (error) {
-    console.error("RESET PASSWORD ERROR:", error);
-
-    return res.status(500).json({ message: "Internal Server Error" });
   }
 }
