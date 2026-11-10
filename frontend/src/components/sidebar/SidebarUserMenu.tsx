@@ -32,7 +32,7 @@ function SidebarUserMenu() {
     try {
       setLogoutStatus("Logging out...");
 
-      if (user?.user_id) {
+      if (user?.user_id && user.role !== "patient") {
         await api.patch("/api/auth/logout", {
           user_id: user.user_id,
         });
@@ -85,9 +85,9 @@ function SidebarUserMenu() {
           menuOpen ? "bg-gray-100" : ""
         }`}
       >
-        {user.profile_photo ? (
+        {user.profile_photo || user.image_url ? (
           <img
-            src={user.profile_photo}
+            src={user.profile_photo || user.image_url}
             alt="profile"
             className="w-10 h-10 shrink-0 rounded-full border object-cover"
           />

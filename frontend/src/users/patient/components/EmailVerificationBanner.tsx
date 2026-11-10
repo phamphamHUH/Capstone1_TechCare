@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../../../lib/axios";
+import { LoadingSpinner } from "../../../components/LoadingScreen";
 
 type EmailStatus = {
   email: string;
@@ -10,9 +11,10 @@ type EmailStatus = {
 // Yellow banner at the top of the patient portal.
 // Shows while the patient's email isn't verified (no emails from the clinic)
 // or while a changed email hasn't been confirmed yet. Hidden otherwise.
-function EmailVerificationBanner() {
+function EmailVerificationBanner({ refreshKey = 0 }: { refreshKey?: number }) {
   const [status, setStatus] = useState<EmailStatus | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     async function loadStatus() {
@@ -24,9 +26,11 @@ function EmailVerificationBanner() {
       }
     }
     loadStatus();
-  }, []);
+  }, [refreshKey]);
 
   async function resendLink() {
+    setSending(true);
+    setMessage(null);
     try {
       const response = await api.post("/api/patient/verification-email");
       setMessage(response.data.message);
@@ -35,6 +39,8 @@ function EmailVerificationBanner() {
         (error as { response?: { data?: { message?: string } } }).response?.data
           ?.message || "Something went wrong",
       );
+    } finally {
+      setSending(false);
     }
   }
 
@@ -42,22 +48,28 @@ function EmailVerificationBanner() {
   if (status.is_verified && !status.pending_email) return null;
 
   return (
-    <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-      <p>
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+      <p className="min-w-0 flex-1 basis-96 break-words">
         {status.pending_email
           ? `Please confirm your new email (${status.pending_email}). Until then, clinic emails still go to ${status.email}.`
           : `Your email (${status.email}) isn't verified yet, so you won't receive emails from the clinic. Your account still works normally.`}
       </p>
 
-      <div className="mt-2 flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"
           onClick={resendLink}
-          className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold cursor-pointer hover:bg-amber-100"
+          disabled={sending}
+          className="inline-flex items-center gap-2 rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm font-medium cursor-pointer hover:bg-amber-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Send verification link
+          {sending && <LoadingSpinner size={16} />}
+          {sending ? "Sending..." : "Send verification link"}
         </button>
-        {message && <span className="text-xs">{message}</span>}
+        {message && (
+          <span role="status" className="text-sm">
+            {message}
+          </span>
+        )}
       </div>
     </div>
   );

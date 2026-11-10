@@ -23,6 +23,7 @@ export type HistoryRecord = {
   service_category: string;
   status: string;
   occurred_at: string;
+  room?: string | null;
 };
 
 export type Pagination = {
@@ -48,7 +49,9 @@ export type PrescriptionItem = {
   dose?: string;
   frequency?: string;
   duration?: string;
+  duration_days?: number | string;
   instructions?: string;
+  instruction?: string;
 };
 
 export type PrescriptionRecord = {
@@ -66,4 +69,45 @@ export type PrescriptionRecord = {
 export type PrescriptionsResponse = {
   message?: string;
   prescriptions: PrescriptionRecord[];
+};
+
+export type PatientVisitDetails = {
+  record_type: "consultation" | "laboratory";
+  service_name: string;
+  status: string;
+  room?: string | null;
+  requested_by?: string | null;
+  requested_by_role?: string | null;
+  processed_by?: string | null;
+  processed_by_role?: string | null;
+  occurred_at: string;
+  presenting_complaint?: unknown;
+  diagnosis?: unknown;
+  vital_signs?: unknown;
+  physical_examination?: unknown;
+  notes?: unknown;
+  prescriptions?: PrescriptionRecord[];
+  results?: {
+    result_id: string;
+    results: unknown;
+    remarks?: string | null;
+    released_at?: string | null;
+  }[];
+};
+
+export type PatientQueueEntry = {
+  queue_id: string;
+  queue_number: number;
+  service_type: string;
+  service_name: string;
+  room: string | null;
+  status: string;
+  now_serving: number[];
+  requests_ahead: number;
+};
+
+export type PatientQueueResponse = {
+  queues: PatientQueueEntry[];
+  awaiting_results: number;
+  updated_at: string;
 };
