@@ -1,9 +1,9 @@
 import { useRef, useState } from "react";
-import { Syringe, Trash2, Plus } from "lucide-react";
+import { Syringe, Trash2, Plus, CheckCircle2 } from "lucide-react";
 import api from "#lib/axios";
 import type { Service } from "../../../../interface/Service";
-import RequestSuccessModal from "./RequestSuccessModal";
 import ConfirmDialog from "../../../../components/ConfirmDialog";
+import UniversalModal from "#components/UniversalModal";
 
 type ServiceListProps = {
   services: Service[];
@@ -63,7 +63,10 @@ function ServiceList({
         });
 
         setSuccess({
-          requestId: (Array.isArray(res.data.request) ? res.data.request[0] : res.data.request)?.request_id,
+          requestId: (Array.isArray(res.data.request)
+            ? res.data.request[0]
+            : res.data.request
+          )?.request_id,
           count: selectedServices.length,
         });
       } else {
@@ -184,16 +187,46 @@ function ServiceList({
           {submitting ? "Submitting..." : "Submit Request"}
         </button>
       </div>
-      {removing && <ConfirmDialog tone="warning" title="Remove Service?" confirmLabel="Remove" description={`Are you sure you want to remove "${removing.service_name}" from the selected services?`} onCancel={() => setRemoving(null)} onConfirm={() => { onToggleService(removing.service_id); setRemoving(null); }} />}
-      {clearing && <ConfirmDialog tone="warning" title="Discard Changes?" confirmLabel="Discard Changes" cancelLabel="Keep Editing" description="Clear all selected services? This will discard the current service selection." onCancel={() => setClearing(false)} onConfirm={() => { onClearAll(); setClearing(false); }} />}
-      {success && (
-        <RequestSuccessModal
-          requestId={success.requestId}
-          serviceCount={success.count}
-          serviceType={activeTab}
-          onClose={() => {
-            setSuccess(null);
+      {removing && (
+        <ConfirmDialog
+          tone="warning"
+          title="Remove Service?"
+          confirmLabel="Remove"
+          description={`Are you sure you want to remove "${removing.service_name}" from the selected services?`}
+          onCancel={() => setRemoving(null)}
+          onConfirm={() => {
+            onToggleService(removing.service_id);
+            setRemoving(null);
           }}
+        />
+      )}
+      {clearing && (
+        <ConfirmDialog
+          tone="warning"
+          title="Discard Changes?"
+          confirmLabel="Discard Changes"
+          cancelLabel="Keep Editing"
+          description="Clear all selected services? This will discard the current service selection."
+          onCancel={() => setClearing(false)}
+          onConfirm={() => {
+            onClearAll();
+            setClearing(false);
+          }}
+        />
+      )}
+      {success && (
+        <UniversalModal
+          isOpen
+          type="success"
+          title="Request Submitted"
+          description={
+            `${success.count} ${activeTab} service${success.count === 1 ? "" : "s"} added successfully.` +
+            (success.requestId ? ` Request ID: ${success.requestId}` : "")
+          }
+          icon={<CheckCircle2 size={36} />}
+          closeOnOverlayClick
+          onClose={() => setSuccess(null)}
+          actions={[{ label: "Done", onClick: () => setSuccess(null) }]}
         />
       )}
     </>

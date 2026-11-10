@@ -13,7 +13,7 @@ export type ConsultationTabs =
   | "overview"
   | "medical-history"
   | "laboratory-results"
-  | "file-attachments"
+  | "digital-documents"
   | "prescription";
 
 function ActiveConsultation({ selectedQueue }: ActiveConsultationProps) {
@@ -34,8 +34,7 @@ function ActiveConsultation({ selectedQueue }: ActiveConsultationProps) {
   }[] = [
     { id: "overview", label: "Overview" },
     { id: "medical-history", label: "Medical History" },
-    { id: "laboratory-results", label: "Laboratory Results" },
-    { id: "file-attachments", label: "File Attachments" },
+    { id: "digital-documents", label: "Digital Documents" },
   ];
 
   return (
@@ -150,8 +149,7 @@ function ActiveConsultation({ selectedQueue }: ActiveConsultationProps) {
             {activeTab === "medical-history" && (
               <MedicalHistoryTab patientId={selectedQueue.patient_id} />
             )}
-            {activeTab === "laboratory-results" && <div>lab</div>}
-            {activeTab === "file-attachments" && <div>file</div>}
+            {activeTab === "digital-documents" && <div>file</div>}
             {activeTab === "prescription" && <div>prescription</div>}
           </section>
         </>

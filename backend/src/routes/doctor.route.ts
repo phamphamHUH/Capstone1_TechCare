@@ -24,6 +24,7 @@ import {
   // getLaboratoryServices,
   // getConsultationPatient,
 } from "../controllers/doctor/getRequests.controller.js";
+import { getAllservices } from "../controllers/admin/getRequests.controller.js";
 const router = Router();
 
 if (ENV.IS_PRODUCTION) {
@@ -36,6 +37,7 @@ router.post("/prescriptions/:consultation_record_id", addPrescriptions);
 // GET requests
 router.get("/laboratory-results/:result_id", getReleasedLaboratoryResults);
 router.get("/services/:room", getRoomSpecificServices);
+router.get("/services", getAllservices);
 // router.get("/laboratory-services", getLaboratoryServices);
 // router.get("/consultation-patients/:patient_id", getConsultationPatient);
 router.get("/consultation-queues/room/:room", getConsultationQueues);

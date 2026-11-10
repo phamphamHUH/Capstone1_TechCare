@@ -430,7 +430,7 @@ function Overview({ selectedQueue, onProceed }: OverviewProps) {
           type="button"
           className="rounded-lg border cursor-pointer border-gray-300 px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
         >
-          Save Draft
+          End Consultation
         </button>
         <button
           type="button"

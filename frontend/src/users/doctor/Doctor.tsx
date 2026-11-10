@@ -12,19 +12,20 @@ import { useSearchParams } from "react-router";
 import DigitizedDocument from "./pages/DigitizedDocument";
 import ConsultationQueue from "./pages/ConsultationQueue";
 import MedicalHistory from "./pages/MedicalHistory";
-import LaboratoryRequest from "./pages/LaboratoryRequest";
 import DoctorDashboard from "./pages/DoctorDashboard";
 import Consultation from "./pages/Consultation";
 import type { Service } from "../../interface/Service";
 import type { QueueEntry } from "../../interface/Queue";
 import api from "#lib/axios";
 import ActiveConsultation from "./pages/ActiveConsultation";
+import TestRequest from "./pages/TestRequest";
 
 function Doctor() {
   const [open, setOpen] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [services, setServices] = useState<Service[]>([]);
+  const [roomServices, setRoomServices] = useState<Service[]>([]);
   const [queues, setQueues] = useState<QueueEntry[]>([]);
   const [selectedQueue, setSelectedQueue] = useState<QueueEntry | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -53,11 +54,6 @@ function Doctor() {
       icon: <Stethoscope size={20} />,
     },
     {
-      page: "digitized-document",
-      label: "Digitized Document",
-      icon: <FileText size={20} />,
-    },
-    {
       page: "consultation-queue",
       label: "Consultation Queue",
       icon: <ListOrdered size={20} />,
@@ -66,11 +62,6 @@ function Doctor() {
       page: "active-consultation",
       label: "Active Consultation",
       icon: <Stethoscope size={20} />,
-    },
-    {
-      page: "medical-history",
-      label: "Medical History",
-      icon: <FileClock size={20} />,
     },
     {
       page: "laboratory-request",
@@ -88,12 +79,17 @@ function Doctor() {
       setLoading(true);
       setError(null);
 
-      const servicesRes = await api.get(
+      const roomServicesRes = await api.get(
         `/api/doctor/services/${encodeURIComponent(room)}`,
       );
 
-      setServices(servicesRes.data?.services ?? []);
+      setRoomServices(roomServicesRes.data?.services ?? []);
 
+      const servicesRes = await api.get(`/api/doctor/services`);
+      setServices([
+        ...(servicesRes.data.services ?? []),
+        ...(servicesRes.data.packages ?? []),
+      ]);
       const queuesRes = await api.get(
         `/api/doctor/consultation-queues/room/${encodeURIComponent(room)}`,
       );
@@ -150,18 +146,9 @@ function Doctor() {
             />
           )}
 
-          {page === "digitized-document" && (
-            <DigitizedDocument
-              loading={loading}
-              open={open}
-              setOpen={setOpen}
-              loadData={loadData}
-            />
-          )}
-
           {page === "consultation-queue" && (
             <ConsultationQueue
-              services={services}
+              services={roomServices}
               queues={queues}
               room={room}
               loading={loading}
@@ -174,24 +161,18 @@ function Doctor() {
           )}
 
           {page === "active-consultation" && (
-            <ActiveConsultation selectedQueue={selectedQueue} room={room} />
-          )}
-
-          {page === "medical-history" && (
-            <MedicalHistory
-              loading={loading}
-              open={open}
-              setOpen={setOpen}
-              loadData={loadData}
-            />
+            <ActiveConsultation selectedQueue={selectedQueue} />
           )}
 
           {page === "laboratory-request" && (
-            <LaboratoryRequest
-              loading={loading}
+            <TestRequest
+              services={services}
               open={open}
               setOpen={setOpen}
               loadData={loadData}
+              loading={loading}
+              setPage={setPage}
+              selectedQueue={selectedQueue}
             />
           )}
         </div>
