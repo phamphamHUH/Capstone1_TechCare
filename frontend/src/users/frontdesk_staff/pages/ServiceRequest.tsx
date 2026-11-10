@@ -1,3 +1,6 @@
+import LoadingScreen from "../../../components/LoadingScreen";
+import LoadingRegion from "../../../components/LoadingRegion";
+import ErrorMessage from "../../../components/ErrorMessage";
 import React, { useState } from "react";
 import ServiceSelectionPanel from "../components/ServiceRequest/ServiceSelectionPanel";
 import ServiceList from "../components/ServiceRequest/ServiceList";
@@ -13,11 +16,18 @@ type ServiceRequestProps = {
   loadData: () => Promise<void>;
   loading: boolean;
   setPage: (page: string) => void;
+  error?: string;
 };
 
 const PAGE_SIZE = 10;
 
-function ServiceRequest({ services, loadData, setPage }: ServiceRequestProps) {
+function ServiceRequest({
+  services,
+  loadData,
+  setPage,
+  loading,
+  error,
+}: ServiceRequestProps) {
   const [activeTab, setActiveTab] = useState("laboratory");
   const [patient, setPatient] = useState<Patient | null>(null);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
@@ -110,10 +120,16 @@ function ServiceRequest({ services, loadData, setPage }: ServiceRequestProps) {
       icon: Clipboard,
     },
   ];
+  if (loading && services.length === 0) {
+    return (
+      <LoadingScreen variant="page" message="Loading available services..." />
+    );
+  }
 
   return (
     <main className="flex-1 min-w-0 pb-5">
       <h1 className="text-2xl font-bold px-6">Select Service Type</h1>
+      {error && <ErrorMessage className="mx-6 mt-5">{error}</ErrorMessage>}
       <PatientSelectionHeader
         patient={patient}
         onSelectPatient={setPatient}
@@ -173,8 +189,50 @@ function ServiceRequest({ services, loadData, setPage }: ServiceRequestProps) {
               await loadData();
             }}
           />
+      <ServiceTypeTabs
+        activeTab={activeTab}
+        setActiveTab={handleTab}
+        onClearAll={clearServices}
+      />
+      <LoadingRegion
+        loading={loading && services.length > 0}
+        message="Refreshing available services..."
+      >
+        <div className="border border-gray-200 rounded-xl mt-5 mx-8 grid grid-cols-5 min-h-7/12 shadow-lg">
+          <div className="col-span-3 border-r border-gray-200 px-8 py-5 flex flex-col justify-between">
+            <ServiceSelectionPanel
+              services={pageItems}
+              loadFailed={Boolean(error)}
+              activeTab={activeTab}
+              search={search}
+              setSearch={handleSearch}
+              sort={sort}
+              setSort={handleSort}
+              categoryFilter={categoryFilter}
+              setCategoryFilter={handleCategory}
+              categoryOptions={categoryOptions}
+              onToggleService={toggleService}
+              selectedServices={selectedServices}
+              pagination={pagination}
+              onPageChange={setPageNumber}
+            />
+          </div>
+          <div className="col-span-2 px-8 py-5 flex flex-col justify-between">
+            <ServiceList
+              activeTab={activeTab}
+              services={services}
+              selectedServices={selectedServices}
+              patientId={patient?.patient_id ?? null}
+              onToggleService={toggleService}
+              onClearAll={clearServices}
+              onSubmitted={async () => {
+                setPatient(null);
+                await loadData();
+              }}
+            />
+          </div>
         </div>
-      </div>
+      </LoadingRegion>
     </main>
   );
 }

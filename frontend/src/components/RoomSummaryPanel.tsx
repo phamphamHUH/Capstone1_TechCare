@@ -11,11 +11,13 @@ import {
 import type { Queue } from "../interface/Queue";
 import type { Service } from "../interface/Service";
 
+export type ServiceStatusFilter = "all" | "active" | "inactive";
+
 type RoomSummaryPanelProps = {
   services: Service[];
   queues: Queue[];
   roomLabel: string;
-  onViewServices: () => void;
+  onViewServices: (filter: ServiceStatusFilter) => void;
 };
 
 type Stat = {
@@ -96,7 +98,7 @@ function RoomSummaryPanel({
       label: "Collected",
       subLabel: "Completed",
       value: queues.filter(
-        (queue) => queue.status.toLocaleLowerCase() === "Completed",
+        (queue) => queue.status.toLocaleLowerCase() === "completed",
       ).length,
       icon: FileCheck,
     },
@@ -144,7 +146,7 @@ function RoomSummaryPanel({
               </h3>
               <button
                 type="button"
-                onClick={onViewServices}
+                onClick={() => onViewServices("all")}
                 className="cursor-pointer text-sm text-sky-700 hover:underline"
               >
                 View All Services

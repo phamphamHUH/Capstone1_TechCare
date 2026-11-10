@@ -1,3 +1,5 @@
+import ErrorMessage from "../../../components/ErrorMessage";
+import { LoadingSpinner } from "../../../components/LoadingScreen";
 import { useEffect, useState } from "react";
 import { Upload, User, UserPlus } from "lucide-react";
 import api from "../../../lib/axios";
@@ -156,6 +158,7 @@ const ROW_4 = "grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2 lg:grid-cols-4";
 const ROW_5 = "grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2 lg:grid-cols-5";
 
 function PatientRegistration({ loadData }: PatientRegistrationProps) {
+  const [formError, setFormError] = useState("");
   const [form, setForm] = useState<FormState>(initialForm);
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -186,8 +189,8 @@ function PatientRegistration({ loadData }: PatientRegistrationProps) {
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith("image/")) return alert("Please select an image file.");
-    if (file.size > 5 * 1024 * 1024) return alert("Profile photo must be smaller than 5MB.");
+    if (!file.type.startsWith("image/")) return setFormError("Please select an image file.");
+    if (file.size > 5 * 1024 * 1024) return setFormError("Profile photo must be smaller than 5MB.");
     if (preview) URL.revokeObjectURL(preview);
     setImage(file);
     setPreview(URL.createObjectURL(file));
@@ -212,11 +215,12 @@ function PatientRegistration({ loadData }: PatientRegistrationProps) {
   }
 
   async function handleSubmit(e: React.FormEvent) {
+    setFormError("");
     e.preventDefault();
 
     const { first_name, last_name, sex, birthdate, email, contact_number, street, barangay, city, province, zip_code } = form;
     if (!first_name || !last_name || !sex || !birthdate || !email || !contact_number || !street || !barangay || !city || !province || !zip_code) {
-      alert("Please fill out all required fields.");
+      setFormError("Please fill out all required fields.");
       return;
     }
 
@@ -239,9 +243,9 @@ function PatientRegistration({ loadData }: PatientRegistrationProps) {
       resetForm();
       await loadData();
     } catch (error: unknown) {
-      alert(
+      setFormError(
         (error as { response?: { data?: { message?: string } } }).response?.data?.message ||
-        "Something went wrong",
+        "Unable to complete this action. Please try again.",
       );
       console.error(error);
     } finally {
@@ -258,6 +262,7 @@ function PatientRegistration({ loadData }: PatientRegistrationProps) {
           <h2 className="text-2xl font-bold text-slate-900">Register Patient</h2>
         </div>
 
+        {formError && <ErrorMessage>{formError}</ErrorMessage>}
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* 1. Personal Information */}
           <Section number={1} title="Personal Information">
@@ -425,7 +430,7 @@ function PatientRegistration({ loadData }: PatientRegistrationProps) {
               disabled={submitting}
               className="flex items-center gap-2 rounded-lg bg-sky-400 px-4 py-2 text-sm text-white hover:bg-sky-500 disabled:opacity-50"
             >
-              <UserPlus size={16} />
+              {submitting ? <LoadingSpinner size={16} /> : <UserPlus size={16} />}
               {submitting ? "Registering…" : "Register"}
             </button>
           </div>

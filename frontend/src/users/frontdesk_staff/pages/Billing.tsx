@@ -1,6 +1,10 @@
+import ErrorMessage from "../../../components/ErrorMessage";
+import LoadingScreen, {
+  LoadingSpinner,
+} from "../../../components/LoadingScreen";
 import { useMemo, useState } from "react";
 import axios from "axios";
-import { LoaderCircle, RefreshCw, Search } from "lucide-react";
+import { RefreshCw, Search } from "lucide-react";
 import api from "../../../lib/axios";
 import type {
   Bill,
@@ -8,6 +12,7 @@ import type {
   BillingNotice,
   BillingStatistics,
   PaymentOptions,
+  PaymentOutcome,
   PaymentResult,
 } from "../../../interface/Billing";
 import { peso } from "../../../utils/formats";
@@ -96,7 +101,10 @@ function Billing({ bills, loading, error, loadData }: BillingProps) {
   }
 
   // Paying and retrying forwarding use the same endpoint. A paid bill is never charged twice.
-  async function submitPayment(billId: string, body: Partial<PaymentOptions>) {
+  async function submitPayment(
+    billId: string,
+    body: Partial<PaymentOptions>,
+  ): Promise<PaymentOutcome> {
     setSubmitting(true);
     setActionError("");
     setNotice(null);
@@ -115,7 +123,15 @@ function Billing({ bills, loading, error, loadData }: BillingProps) {
         ),
       );
       setSubmitting(false);
-      return;
+      return { status: "failed" };
+    }
+
+    if (result?.bill?.bill_id !== billId || result.bill.status !== "Paid") {
+      setActionError(
+        "The server did not confirm a paid bill. Refresh the bill before trying again.",
+      );
+      setSubmitting(false);
+      return { status: "failed" };
     }
 
     const lab = result.has_laboratory_items
@@ -131,18 +147,37 @@ function Billing({ bills, loading, error, loadData }: BillingProps) {
       });
 
     // The payment is saved by now, so a failed refresh must not look like a failed payment.
-    try {
-      const [{ data }] = await Promise.all([
-        api.get<BillDetails>(`/api/fdstaff/billings/${billId}/details`),
-        loadData(),
-      ]);
-      setDetails(data);
-    } catch {
+    const [detailResponse, listResponse] = await Promise.allSettled([
+      api.get<BillDetails>(`/api/fdstaff/billings/${billId}/details`),
+      loadData(),
+    ]);
+    let invoiceReady = false;
+    if (detailResponse.status === "fulfilled") {
+      const data = detailResponse.value.data;
+      if (
+        data?.bill?.bill_id === billId &&
+        data.bill.status === "Paid" &&
+        Array.isArray(data.items)
+      ) {
+        setDetails(data);
+        invoiceReady = Boolean(
+          data.bill.payment_method &&
+            data.bill.payment_method !== "Not recorded",
+        );
+      }
+    }
+    if (!invoiceReady || listResponse.status === "rejected") {
       setActionError(
         "The payment is saved, but this page could not refresh. Use Back and Refresh to see the latest status.",
       );
     }
     setSubmitting(false);
+    return {
+      status: "recorded",
+      alreadyPaid: Boolean(result.already_paid),
+      invoiceReady,
+      forwarded: Boolean(result.queued && result.has_laboratory_items),
+    };
   }
 
   if (details) {
@@ -176,29 +211,9 @@ function Billing({ bills, loading, error, loadData }: BillingProps) {
         tests.
       </p>
 
-      {error && (
-        <div
-          role="alert"
-          className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
-        >
-          <span>{error}</span>
-          <button
-            type="button"
-            disabled={loading}
-            onClick={() => void loadData()}
-            className="cursor-pointer rounded border border-red-300 bg-white px-3 py-1 font-medium disabled:opacity-50"
-          >
-            Try Again
-          </button>
-        </div>
-      )}
+      {error && <ErrorMessage className="mt-4">{error}</ErrorMessage>}
       {actionError && (
-        <p
-          role="alert"
-          className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
-        >
-          {actionError}
-        </p>
+        <ErrorMessage className="mt-4">{actionError}</ErrorMessage>
       )}
       {stats.awaitingLaboratory > 0 && (
         <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
@@ -255,29 +270,25 @@ function Billing({ bills, loading, error, loadData }: BillingProps) {
           onClick={() => void loadData()}
           className="flex h-9 cursor-pointer items-center gap-2 rounded-sm border border-gray-300 px-3 text-sm text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {loading ? (
-            <LoaderCircle
-              size={16}
-              className="animate-spin motion-reduce:animate-none"
-            />
-          ) : (
-            <RefreshCw size={16} />
-          )}
+          {loading ? <LoadingSpinner size={16} /> : <RefreshCw size={16} />}
           Refresh
         </button>
       </div>
 
       {opening && (
-        <p role="status" className="mb-3 text-sm text-gray-500">
-          Loading the selected bill...
-        </p>
+        <LoadingScreen
+          message="Loading the selected bill..."
+          variant="inline"
+          className="py-3"
+        />
       )}
 
       <BillingTable
         key={`${tab}-${search}`}
         bills={visibleBills}
         variant={tab}
-        loading={loading && bills.length === 0}
+        loading={loading}
+        error={error}
         emptyMessage={
           error
             ? "The latest bills could not be loaded."

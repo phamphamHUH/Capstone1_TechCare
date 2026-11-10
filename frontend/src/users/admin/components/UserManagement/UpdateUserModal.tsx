@@ -1,3 +1,5 @@
+import ErrorMessage from "../../../../components/ErrorMessage";
+import { LoadingSpinner } from "../../../../components/LoadingScreen";
 import { useRef, useState } from "react";
 import type { User } from "../../../../interface/User";
 import {
@@ -32,6 +34,7 @@ function UpdateUserModal({
   onClose,
   loadData,
 }: Props) {
+  const [formError, setFormError] = useState("");
   const [username, setUsername] = useState(user.username);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -113,12 +116,12 @@ function UpdateUserModal({
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      alert("Please select an image file.");
+      setFormError("Please select an image file.");
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      alert("Profile photo must be less than 5MB.");
+      setFormError("Profile photo must be less than 5MB.");
       return;
     }
 
@@ -127,13 +130,14 @@ function UpdateUserModal({
   };
 
   const editUser = async () => {
+    setFormError("");
     if (password && password !== confirmPassword) {
-      alert("Your passwords do not match.");
+      setFormError("Your passwords do not match.");
       return;
     }
 
     if (role === LAB_STAFF_ROLE && !department) {
-      alert("Please select a room for the laboratory staff.");
+      setFormError("Please select a room for the laboratory staff.");
       return;
     }
 
@@ -191,7 +195,7 @@ function UpdateUserModal({
 
     } catch (error) {
       console.error("UPDATE USER ERROR:", error);
-      alert("Failed to update user.");
+      setFormError("Failed to update user.");
     } finally {
       setSaving(false);
     }
@@ -251,6 +255,7 @@ function UpdateUserModal({
 
         {/* Content */}
         <div className="max-h-[82vh] overflow-y-auto p-6">
+          {formError && <ErrorMessage className="mb-4">{formError}</ErrorMessage>}
 
           {/* Profile Hero */}
           <div className="overflow-hidden rounded-3xl bg-white shadow-sm">
@@ -820,7 +825,7 @@ function UpdateUserModal({
               disabled={saving}
               className="flex items-center gap-2 rounded-xl bg-gray-900 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <Save size={16} />
+              {saving ? <LoadingSpinner size={16} /> : <Save size={16} />}
 
               {saving ? "Saving..." : "Save Changes"}
             </button>

@@ -49,6 +49,14 @@ const TABLES: TableDefinition[] = [
       account_status: "BOOLEAN NOT NULL DEFAULT TRUE",
       profile_photo: "TEXT",
       active: "BOOLEAN NOT NULL DEFAULT FALSE",
+      // Email verification: an employee can't log in until is_verified is TRUE.
+      // Default TRUE so existing accounts keep working; addUser inserts FALSE.
+      is_verified: "BOOLEAN NOT NULL DEFAULT TRUE",
+      verify_token: "VARCHAR(64)", // SHA-256 of the link token
+      verify_expires_at: "TIMESTAMP",
+      // "Forgot password" link (employees only).
+      reset_token: "VARCHAR(64)", // SHA-256 of the link token
+      reset_expires_at: "TIMESTAMP",
       created_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
       updated_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
     },
@@ -97,6 +105,12 @@ const TABLES: TableDefinition[] = [
       shift_end: "TIME NOT NULL DEFAULT '17:00:00'",
       last_login: "TIMESTAMP",
       account_status: "BOOLEAN NOT NULL DEFAULT TRUE",
+      // Email verification: patients can use their account without it, but
+      // the clinic sends no emails until is_verified is TRUE.
+      is_verified: "BOOLEAN NOT NULL DEFAULT FALSE",
+      pending_email: "VARCHAR(255)", // new email waiting to be confirmed
+      verify_token: "VARCHAR(64)", // SHA-256 of the link token
+      verify_expires_at: "TIMESTAMP",
       profile_photo: "TEXT",
       active: "BOOLEAN NOT NULL DEFAULT FALSE",
       civil_status: "VARCHAR(50) NOT NULL DEFAULT 'Single'",
@@ -416,6 +430,24 @@ export async function connectNeon(): Promise<void> {
     }
 
     // await ensureLaboratoryResultStatus();
+
+    // CREATE TABLE IF NOT EXISTS doesn't add new columns to existing tables,
+    // so add the email verification columns here (safe to run every boot).
+    await sql`
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS is_verified BOOLEAN NOT NULL DEFAULT TRUE,
+      ADD COLUMN IF NOT EXISTS verify_token VARCHAR(64),
+      ADD COLUMN IF NOT EXISTS verify_expires_at TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS reset_token VARCHAR(64),
+      ADD COLUMN IF NOT EXISTS reset_expires_at TIMESTAMP
+    `;
+    await sql`
+      ALTER TABLE patients
+      ADD COLUMN IF NOT EXISTS is_verified BOOLEAN NOT NULL DEFAULT FALSE,
+      ADD COLUMN IF NOT EXISTS pending_email VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS verify_token VARCHAR(64),
+      ADD COLUMN IF NOT EXISTS verify_expires_at TIMESTAMP
+    `;
 
     // await sql`
     //   ALTER TABLE consultation_records

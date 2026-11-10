@@ -1,3 +1,4 @@
+import ErrorMessage from "../../../../components/ErrorMessage";
 import React, {
   useRef,
   useState,
@@ -25,7 +26,6 @@ function QueueTable({
   setQueueIdCard,
   room,
   loadData,
-  setSelectedQueue,
 }: QueueTableProps) {
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<
@@ -162,14 +162,7 @@ function QueueTable({
 
   return (
     <>
-      {acceptError && (
-        <p
-          role="alert"
-          className="border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700"
-        >
-          {acceptError}
-        </p>
-      )}
+      {acceptError && <ErrorMessage>{acceptError}</ErrorMessage>}
 
       <table className="w-full table-fixed">
         <colgroup>

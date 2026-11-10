@@ -69,7 +69,7 @@ test("an unrecorded legacy payment is shown honestly, not as a zero charge", () 
 test("the billing page renders loading, error and empty states without fake data", () => {
   assert.match(render(Billing, { ...pageProps, loading: true }), /Loading bills/);
   const failed = render(Billing, { ...pageProps, error: "Bills could not be loaded." });
-  assert.match(failed, /role="alert"/); assert.match(failed, /Try Again/); assert.doesNotMatch(failed, /No pending bills/);
+  assert.match(failed, /role="alert"/); assert.doesNotMatch(failed, /Try Again/); assert.doesNotMatch(failed, /No pending bills/);
   const empty = render(Billing, pageProps);
   assert.match(empty, /No pending bills/); assert.match(empty, /Pending Billing Queue \(0\)/); assert.match(empty, /Paid Payment History \(0\)/);
   assert.match(empty, /Refresh/); assert.doesNotMatch(empty, /₱/);

@@ -14,7 +14,10 @@ import type {
   serveQueueEntry,
   skipQueueEntry,
   confirmPayment,
+  resetPatientPassword,
 } from "./dto/update.dto.js";
+import { sendPatientVerificationEmail } from "../../services/email/sendEmail.js";
+import { MIN_PASSWORD_LENGTH } from "../../utils/emailToken.js";
 
 export async function updatePatient(
   req: Request,
@@ -25,9 +28,9 @@ export async function updatePatient(
   try {
     const { patient_id } = req.params;
 
+    // Password isn't changed here; use PATCH /patients/:patient_id/password.
     const {
       username,
-      password,
       first_name,
       middle_name,
       last_name,
@@ -85,19 +88,32 @@ export async function updatePatient(
 
     const birthdateValue = birthdate?.trim() ? birthdate : null;
 
-    const existingPatient = await sql`
-            SELECT patient_id
+    const [existingPatient] = await sql`
+            SELECT patient_id, email, is_verified
             FROM patients
             WHERE patient_id = ${patient_id}
         `;
 
-    if (existingPatient.length === 0) {
+    if (!existingPatient) {
       return res.status(404).json({
         message: "Patient not found.",
       } as updatePatient.error);
     }
 
-    let hashedPassword = null;
+    // =========================
+    // EMAIL CHANGE
+    // =========================
+    // Verified patient: keep their current email and put the new one in
+    // pending_email until they confirm it (they stay verified meanwhile).
+    // Unverified patient: just replace the email.
+    // Either way a verification link is sent to the new email below.
+    const emailChanged =
+      Boolean(email?.trim()) &&
+      email.trim().toLowerCase() !== String(existingPatient.email).toLowerCase();
+
+    const newEmail = emailChanged && !existingPatient.is_verified ? email.trim() : null;
+    const newPendingEmail = emailChanged && existingPatient.is_verified ? email.trim() : null;
+
     let imageUrl: string | null = null;
     if (req.file) {
       const uploaded = await cloudinary.uploader.upload(req.file.path, {
@@ -106,21 +122,17 @@ export async function updatePatient(
       imageUrl = uploaded.secure_url;
     }
 
-    if (password) {
-      hashedPassword = await bcrypt.hash(password, 10);
-    }
-
     const [updatedPatient] = await sql`
       UPDATE patients
       SET
         username = COALESCE(${username}, username),
-        password_hash = COALESCE(${hashedPassword}, password_hash),
         first_name = COALESCE(${first_name}, first_name),
         middle_name = COALESCE(${middle_name}, middle_name),
         last_name = COALESCE(${last_name}, last_name),
         suffix = COALESCE(${suffix}, suffix),
         sex = COALESCE(${sex}, sex),
-        email = COALESCE(${email}, email),
+        email = COALESCE(${newEmail}, email),
+        pending_email = CASE WHEN ${emailChanged} THEN ${newPendingEmail} ELSE pending_email END,
         street = COALESCE(${street}, street),
         barangay = COALESCE(${barangay}, barangay),
         city = COALESCE(${city}, city),
@@ -151,16 +163,78 @@ export async function updatePatient(
 
     const age = calculateAge(updatedPatient.birthdate);
 
+    let message = "Patient updated successfully.";
+
+    if (emailChanged) {
+      const emailSent = await sendPatientVerificationEmail(String(patient_id));
+      message = emailSent
+        ? `Patient updated. A verification link was sent to ${email.trim()}.`
+        : "Patient updated, but the verification email couldn't be sent. Resend it from Patient Records.";
+    }
+
+    // Don't send the password hash or link token to the client.
+    const { password_hash, verify_token, ...safePatient } = updatedPatient;
+
     return res.status(200).json({
-      message: "Patient updated successfully.",
-      patient: { ...updatedPatient, age } as unknown as updatePatient.patient,
+      message,
+      patient: { ...safePatient, age } as unknown as updatePatient.patient,
     } as updatePatient.response);
-  } catch (error) {
+  } catch (error: any) {
+    // 23505 = unique violation: another patient already uses this email.
+    if (error?.code === "23505") {
+      return res.status(409).json({
+        message: "Another patient already uses this email.",
+      } as updatePatient.error);
+    }
+
     console.error(error);
 
     return res.status(500).json({
       message: "Internal server error.",
     } as updatePatient.error);
+  }
+}
+
+// =========================
+// RESET PATIENT PASSWORD
+// =========================
+// PATCH /api/fdstaff/patients/:patient_id/password
+// The front desk types the new password and gives it to the patient.
+// This is the only way a patient's password is reset.
+export async function resetPatientPassword(
+  req: Request,
+  res: Response<resetPatientPassword.response | resetPatientPassword.error>,
+) {
+  try {
+    const { patient_id } = req.params;
+    const { password } = req.body as resetPatientPassword.body;
+
+    if (!password || password.length < MIN_PASSWORD_LENGTH) {
+      return res.status(400).json({
+        message: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`,
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const [patient] = await sql`
+      UPDATE patients
+      SET password_hash = ${hashedPassword}, updated_at = NOW()
+      WHERE patient_id = ${patient_id}
+      RETURNING first_name, last_name
+    `;
+
+    if (!patient) {
+      return res.status(404).json({ message: "Patient not found." });
+    }
+
+    return res.status(200).json({
+      message: `Password for ${patient.first_name} ${patient.last_name} has been reset.`,
+    });
+  } catch (error) {
+    console.error("RESET PATIENT PASSWORD ERROR:", error);
+
+    return res.status(500).json({ message: "Internal server error." });
   }
 }
 
@@ -524,7 +598,7 @@ export async function confirmPayment(
           const { patient_id, room } = group[0];
           const groupPriority = group.some((item) => item.is_priority === true);
 
-          // Reuse the patient's open queue for this room, if there is one.
+          // Reuse only today's open queue, since the lab page lists today's entries.
           const {
             rows: [existing],
           } = await client.query(
@@ -533,6 +607,8 @@ export async function confirmPayment(
              WHERE q.patient_id = $1
                AND q.queue_id LIKE 'LAB-%'
                AND LOWER(TRIM(q.status)) IN ('waiting', 'serving')
+               AND q.created_at >= CURRENT_DATE
+               AND q.created_at < CURRENT_DATE + INTERVAL '1 day'
                AND EXISTS (
                  SELECT 1
                  FROM laboratory_request_items lri

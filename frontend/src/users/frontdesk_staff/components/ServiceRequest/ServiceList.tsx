@@ -1,5 +1,14 @@
+import ErrorMessage from "../../../../components/ErrorMessage";
+import EmptyState from "../../../../components/EmptyState";
+import { LoadingSpinner } from "../../../../components/LoadingScreen";
 import { useRef, useState } from "react";
-import { Syringe, Trash2, Plus, CheckCircle2 } from "lucide-react";
+import {
+  Syringe,
+  Trash2,
+  Plus,
+  TriangleAlert,
+  CircleAlert,
+} from "lucide-react";
 import api from "#lib/axios";
 import type { Service } from "../../../../interface/Service";
 import ConfirmDialog from "../../../../components/ConfirmDialog";
@@ -26,6 +35,7 @@ function ServiceList({
 }: ServiceListProps) {
   const [submitting, setSubmitting] = useState(false);
   const pending = useRef(false);
+  const headingRef = useRef<HTMLHeadingElement>(null);
   const [removing, setRemoving] = useState<Service | null>(null);
   const [clearing, setClearing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -99,7 +109,11 @@ function ServiceList({
     <>
       <div className="flex flex-col flex-1 min-h-0">
         <div className="flex items-center justify-between mb-5 pb-5 border-b border-gray-200">
-          <h1 className="font-bold text-lg">
+          <h1
+            ref={headingRef}
+            tabIndex={-1}
+            className="font-bold text-lg outline-none"
+          >
             {activeTab === "laboratory"
               ? `Selected Laboratory Services (${servicesList.length})`
               : "Select Consultation Service"}
@@ -119,15 +133,7 @@ function ServiceList({
 
         <div className="flex flex-col gap-2 h-96 overflow-y-auto">
           {servicesList.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-96 gap-1">
-              <div className="p-3 rounded-2xl bg-blue-50 text-blue-600 mb-2">
-                <Syringe size={20} />
-              </div>
-              <p className="text-sm font-bold">No services selected yet.</p>
-              <p className="text-xs text-gray-500">
-                Select your preferred services on the left to add.
-              </p>
-            </div>
+            <EmptyState message="No services selected." description="Select services from the list to add them to this request." />
           ) : (
             servicesList.map((service) => (
               <div
@@ -161,12 +167,11 @@ function ServiceList({
         </div>
       </div>
 
+      {error && <ErrorMessage className="mt-3">{error}</ErrorMessage>}
       <div
         className={`border-t mt-5 border-gray-200 py-3 flex items-center ${servicesList.length > 0 ? "justify-between" : "justify-end"}`}
       >
-        {error ? (
-          <p className="text-xs text-red-500">{error}</p>
-        ) : initialTotalPrice > 0 ? (
+        {initialTotalPrice > 0 ? (
           <h1 className="font-semibold">
             Initial Total Price: ₱
             {initialTotalPrice.toLocaleString("en-PH", {
@@ -183,13 +188,16 @@ function ServiceList({
                      bg-blue-600 gap-1 hover:bg-blue-700
                      disabled:cursor-not-allowed disabled:bg-gray-300 disabled:hover:bg-gray-300"
         >
-          <Plus size={15} />
+          {submitting ? <LoadingSpinner size={15} /> : <Plus size={15} />}
           {submitting ? "Submitting..." : "Submit Request"}
         </button>
       </div>
       {removing && (
         <ConfirmDialog
           tone="warning"
+          icon={TriangleAlert}
+          confirmIcon={Trash2}
+          returnFocusRef={headingRef}
           title="Remove Service?"
           confirmLabel="Remove"
           description={`Are you sure you want to remove "${removing.service_name}" from the selected services?`}
@@ -203,14 +211,26 @@ function ServiceList({
       {clearing && (
         <ConfirmDialog
           tone="warning"
+          icon={CircleAlert}
+          returnFocusRef={headingRef}
           title="Discard Changes?"
           confirmLabel="Discard Changes"
           cancelLabel="Keep Editing"
-          description="Clear all selected services? This will discard the current service selection."
+          description="You have unsaved service selections. Discarding them will clear the selected services."
           onCancel={() => setClearing(false)}
           onConfirm={() => {
             onClearAll();
             setClearing(false);
+          }}
+        />
+      )}
+      {success && (
+        <RequestSuccessModal
+          requestId={success.requestId}
+          serviceCount={success.count}
+          serviceType={activeTab}
+          onClose={() => {
+            setSuccess(null);
           }}
         />
       )}

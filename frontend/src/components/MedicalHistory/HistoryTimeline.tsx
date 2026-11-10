@@ -1,3 +1,5 @@
+import EmptyState from "../EmptyState";
+import LoadingScreen from "../LoadingScreen";
 import {
   FlaskConical,
   Stethoscope,
@@ -10,6 +12,7 @@ type HistoryTimelineProps = {
   records: HistoryRecord[];
   pagination: Pagination | null;
   loading: boolean;
+  loadFailed?: boolean;
   onPageChange: (page: number) => void;
   setSelectedRecord: (selectedRecord: HistoryRecord) => void;
 };
@@ -59,32 +62,22 @@ function HistoryTimeline({
   records,
   pagination,
   loading,
+  loadFailed,
   onPageChange,
   setSelectedRecord,
 }: HistoryTimelineProps) {
   // First load: nothing to show yet
   if (loading && records.length === 0) {
-    return (
-      <ul className="mt-2 animate-pulse">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <li
-            key={i}
-            className="ml-8 flex items-center gap-4 border-b border-gray-100 py-3"
-          >
-            <div className="h-8 w-24 rounded bg-gray-100" />
-            <div className="size-10 rounded-xl bg-gray-100" />
-            <div className="h-8 flex-1 rounded bg-gray-100" />
-          </li>
-        ))}
-      </ul>
-    );
+    return <LoadingScreen message="Loading medical history..." />;
   }
 
   if (records.length === 0) {
     return (
-      <p className="py-10 text-center text-sm text-gray-400">
-        No records found.
-      </p>
+      <EmptyState
+        message={
+          loadFailed ? "Medical history is unavailable." : "No records found."
+        }
+      />
     );
   }
 

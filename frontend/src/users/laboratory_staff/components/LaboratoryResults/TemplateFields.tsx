@@ -1,3 +1,4 @@
+import FieldError from "../../../../components/FieldError";
 import type { BuilderComponent } from "../../../../interface/FormTemplate";
 import type { ResultValues } from "../../../../interface/LaboratoryAnalysis";
 import { Plus, X } from "lucide-react";
@@ -17,7 +18,6 @@ const limit = (value: string | number | undefined) =>
   value === "" || value === undefined ? undefined : Number(value);
 const inputClass =
   "h-9 w-full min-w-0 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 outline-none placeholder:text-gray-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-50 aria-invalid:border-rose-400 aria-invalid:bg-rose-50 disabled:opacity-50";
-const errorClass = "mt-1 text-xs leading-relaxed text-rose-700";
 
 type FieldInputProps = {
   component: BuilderComponent;
@@ -158,9 +158,9 @@ function TableField({
                         }
                       />
                       {errors[path] && (
-                        <p className={errorClass} id={`${path}-error`}>
+                        <FieldError id={`${path}-error`}>
                           {errors[path]}
-                        </p>
+                        </FieldError>
                       )}
                     </td>
                   );
@@ -288,10 +288,10 @@ export default function TemplateFields({
 
             if (!inputTypes.has(component.type)) {
               return (
-                <p className={errorClass} key={component.id}>
+                <FieldError key={component.id}>
                   {"Unsupported template field: "}
                   {component.label}
-                </p>
+                </FieldError>
               );
             }
 
@@ -378,9 +378,9 @@ export default function TemplateFields({
                     )}
                   </fieldset>
                   {error && (
-                    <p className={errorClass} id={`result-${key}-error`}>
+                    <FieldError id={`result-${key}-error`}>
                       {error}
-                    </p>
+                    </FieldError>
                   )}
                 </div>
               );
@@ -407,9 +407,9 @@ export default function TemplateFields({
                     disabled={disabled}
                   />
                   {error && (
-                    <p className={errorClass} id={`result-${key}-error`}>
+                    <FieldError id={`result-${key}-error`}>
                       {error}
-                    </p>
+                    </FieldError>
                   )}
                   {flag && !error && (
                     <span

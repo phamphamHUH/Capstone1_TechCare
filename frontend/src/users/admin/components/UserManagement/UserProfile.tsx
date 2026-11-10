@@ -1,8 +1,10 @@
+import ErrorMessage from "../../../../components/ErrorMessage";
 import api from "#lib/axios";
 import { useState } from "react";
 import type { User } from "../../../../interface/User";
 import { ConfirmationModal } from "./ConfirmationModal";
-import { X, Mail, Phone, MapPin, Calendar, Clock, Pencil } from "lucide-react";
+import { X, Mail, Phone, MapPin, Calendar, Clock, Pencil, KeyRound } from "lucide-react";
+import ResetPasswordModal from "../../../../components/ResetPasswordModal";
 
 type Props = {
   loadData: () => Promise<void>;
@@ -19,8 +21,43 @@ function UserProfile({
   setShowUpdateUser,
   setSelectedUser,
 }: Props) {
+  const [formError, setFormError] = useState("");
   const [updating, setUpdating] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
+
+  // =========================
+  // RESET PASSWORD (admin types the new password)
+  // =========================
+  async function resetPassword(password: string) {
+    try {
+      const response = await api.patch(`api/admin/users/${user.user_id}/password`, {
+        password,
+      });
+      alert(response.data.message);
+      setShowResetPassword(false);
+    } catch (error: unknown) {
+      alert(
+        (error as { response?: { data?: { message?: string } } }).response?.data
+          ?.message || "Something went wrong",
+      );
+    }
+  }
+
+  // =========================
+  // RESEND CONFIRMATION EMAIL (employee hasn't verified yet)
+  // =========================
+  async function resendVerification() {
+    try {
+      const response = await api.post(`api/admin/users/${user.user_id}/verification-email`);
+      alert(response.data.message);
+    } catch (error: unknown) {
+      alert(
+        (error as { response?: { data?: { message?: string } } }).response?.data
+          ?.message || "Something went wrong",
+      );
+    }
+  }
 
   const fullName = [
     user.first_name,
@@ -44,6 +81,7 @@ function UserProfile({
   };
 
   async function updateAccountStatus() {
+    setFormError("");
     setIsModalOpen(false); // Close modal first
     setUpdating(true);
 
@@ -62,7 +100,7 @@ function UserProfile({
       alert(response.data.message);
       await loadData();
     } catch (error: unknown) {
-      alert(
+      setFormError(
         (
           error as {
             response?: {
@@ -71,7 +109,7 @@ function UserProfile({
               };
             };
           }
-        ).response?.data?.message || "Something went wrong",
+        ).response?.data?.message || "Unable to complete this action. Please try again.",
       );
     } finally {
       setUpdating(false);
@@ -110,6 +148,7 @@ function UserProfile({
 
         {/* Content */}
         <div className="max-h-[82vh] overflow-y-auto p-6">
+          {formError && <ErrorMessage className="mb-4">{formError}</ErrorMessage>}
           {/* Profile Hero */}
           <div className="overflow-hidden rounded-3xl bg-white shadow-sm">
             <div className="h-36 bg-linear-to-r from-gray-100 via-gray-50 to-gray-100" />
@@ -159,6 +198,25 @@ function UserProfile({
                     Edit
                   </button>
 
+                  {/* Reset Password */}
+                  <button
+                    onClick={() => setShowResetPassword(true)}
+                    className="flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-800 transition hover:bg-gray-50"
+                  >
+                    <KeyRound size={16} />
+                    Reset password
+                  </button>
+
+                  {/* Not verified yet: they can't log in until they confirm */}
+                  {user.is_verified === false && (
+                    <button
+                      onClick={resendVerification}
+                      className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-800 transition hover:bg-amber-100"
+                    >
+                      Resend confirmation email
+                    </button>
+                  )}
+
                   <button
                     onClick={() => setIsModalOpen(true)}
                     disabled={updating}
@@ -191,6 +249,14 @@ function UserProfile({
                     }
                     isDangerous={user.account_status}
                   />
+
+                  {showResetPassword && (
+                    <ResetPasswordModal
+                      name={fullName}
+                      onClose={() => setShowResetPassword(false)}
+                      onSave={resetPassword}
+                    />
+                  )}
                 </div>
               </div>
 

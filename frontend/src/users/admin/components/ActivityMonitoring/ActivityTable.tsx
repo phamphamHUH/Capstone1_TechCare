@@ -1,8 +1,10 @@
+import EmptyState from "../../../../components/EmptyState";
 import type { Dispatch, SetStateAction } from "react";
 import type { Activity } from "../../../../interface/Activity.ts";
 
 type ActivityTableProps = {
   activities: Activity[];
+  error?: string;
   selectedActivityId: number | null;
   setSelectedForm: Dispatch<SetStateAction<number | null>>;
   setShowActivityDetails: Dispatch<SetStateAction<boolean>>;
@@ -10,6 +12,7 @@ type ActivityTableProps = {
 
 function ActivityTable({
   activities,
+  error,
   selectedActivityId,
   setSelectedForm,
   setShowActivityDetails,
@@ -120,9 +123,7 @@ function ActivityTable({
             })
           ) : (
             <tr>
-              <td colSpan={6} className="px-4 py-16 text-center text-gray-400">
-                No activities found.
-              </td>
+              <td colSpan={6} className="p-4"><EmptyState compact message={error ? "Activity logs are unavailable." : "No activities found."} /></td>
             </tr>
           )}
         </tbody>

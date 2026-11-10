@@ -1,3 +1,4 @@
+import EmptyState from "../../../../components/EmptyState";
 import { useMemo, useState } from "react";
 import type { ServiceCatalogItem } from "../../../../interface/Analytics";
 import {
@@ -81,9 +82,7 @@ function ServiceCatalogTable({ services }: ServiceCatalogTableProps) {
           <tbody>
             {visible.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-10 text-center text-gray-400">
-                  No services match this filter
-                </td>
+                <td colSpan={6} className="p-4"><EmptyState compact message="No services match this filter." /></td>
               </tr>
             ) : (
               visible.map((service) => (

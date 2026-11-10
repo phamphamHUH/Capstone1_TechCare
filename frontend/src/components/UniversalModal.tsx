@@ -1,149 +1,250 @@
-import type { ReactNode } from "react";
-import { X } from "lucide-react";
+import ErrorMessage from "./ErrorMessage";
+import { LoadingSpinner } from "./LoadingScreen";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ComponentProps,
+  type ReactNode,
+} from "react";
+import { Dialog } from "@base-ui/react/dialog";
+import { CircleCheck, CircleX, Info, TriangleAlert, X } from "lucide-react";
+import { cn } from "../lib/utils";
 
-type ModalType = "info" | "success" | "warning" | "danger";
+export type ModalType = "info" | "success" | "warning" | "danger";
+export type ModalFocusTarget = ComponentProps<
+  typeof Dialog.Popup
+>["finalFocus"];
 
-type ModalAction = {
-  label: string;
-  onClick: () => void;
+export type ModalAction = {
+  id?: string;
+  label: ReactNode;
+  onClick: () => void | Promise<void>;
   icon?: ReactNode;
   variant?: "primary" | "secondary" | "warning" | "danger";
   disabled?: boolean;
   loading?: boolean;
+  pendingLabel?: ReactNode;
 };
 
-type UniversalModalProps = {
+export type UniversalModalProps = {
   isOpen: boolean;
+  title: ReactNode;
+  description?: ReactNode;
   onClose: () => void;
-  title: string;
-  description?: string;
+  actions?: ModalAction[];
   type?: ModalType;
   icon?: ReactNode;
-  actions?: ModalAction[];
+  children?: ReactNode;
+  busy?: boolean;
+  error?: ReactNode;
+  showError?: boolean;
+  onActionError?: (cause: unknown) => void;
+  initialFocus?: ModalFocusTarget;
+  initialFocusAction?: string;
+  finalFocus?: ModalFocusTarget;
+  /** Identifies a new step when the contents change while the dialog stays open. */
+  focusKey?: string | number | null;
   showCloseButton?: boolean;
   closeOnOverlayClick?: boolean;
+  className?: string;
 };
 
-const modalStyles: Record<ModalType, { icon: string; defaultIcon: string }> = {
-  info: {
-    icon: "bg-sky-100 text-sky-500",
-    defaultIcon: "text-sky-500",
-  },
-  success: {
-    icon: "bg-green-100 text-green-500",
-    defaultIcon: "text-green-500",
-  },
-  warning: {
-    icon: "bg-orange-100 text-orange-500",
-    defaultIcon: "text-orange-500",
-  },
-  danger: {
-    icon: "bg-red-100 text-red-500",
-    defaultIcon: "text-red-500",
-  },
-};
+const TONES = {
+  info: { icon: Info, badge: "bg-[#e7f3ff] text-[#008bff]" },
+  success: { icon: CircleCheck, badge: "bg-[#e7f7ec] text-[#29c85b]" },
+  warning: { icon: TriangleAlert, badge: "bg-[#fff3e2] text-[#ff9800]" },
+  danger: { icon: CircleX, badge: "bg-[#ffe9ef] text-[#ff2f5d]" },
+} as const;
 
-const buttonStyles = {
-  primary: "bg-sky-500 text-white hover:bg-sky-600",
-  secondary: "border border-gray-200 bg-white text-gray-700 hover:bg-gray-50",
-  warning: "bg-orange-500 text-white hover:bg-orange-600",
-  danger: "bg-red-500 text-white hover:bg-red-600",
-};
-
-function UniversalModal({
+/** Shared dialog for any page: configure content and actions; callers control when it closes. */
+export default function UniversalModal({
   isOpen,
-  onClose,
   title,
   description,
+  onClose,
+  actions = [],
   type = "info",
   icon,
-  actions = [],
+  children,
+  busy = false,
+  error,
+  showError = true,
+  onActionError,
+  initialFocus,
+  initialFocusAction,
+  finalFocus,
+  focusKey,
   showCloseButton = true,
   closeOnOverlayClick = false,
+  className,
 }: UniversalModalProps) {
-  if (!isOpen) return null;
+  const [activeAction, setActiveAction] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [errorScope, setErrorScope] = useState({ isOpen, focusKey });
+  const actionLock = useRef(false);
+  const buttons = useRef(new Map<string, HTMLButtonElement>());
+  const resolvedActions = actions.map((action, index) => ({
+    ...action,
+    id: action.id ?? `action-${index}`,
+    variant:
+      action.variant ??
+      (index === actions.length - 1 ? "primary" : "secondary"),
+  }));
+  const blocked =
+    busy || activeAction !== null || actions.some((action) => action.loading);
+  const firstAction =
+    initialFocusAction ??
+    resolvedActions.find(
+      (action) => action.variant === "secondary" && !action.disabled,
+    )?.id ??
+    resolvedActions.find((action) => !action.disabled)?.id;
+  const DefaultIcon = TONES[type].icon;
 
-  const styles = modalStyles[type];
+  // Clear a previous step's error before rendering a newly opened dialog.
+  if (errorScope.isOpen !== isOpen || errorScope.focusKey !== focusKey) {
+    setErrorScope({ isOpen, focusKey });
+    setActionError(null);
+  }
+
+  useEffect(() => {
+    if (!isOpen || initialFocus !== undefined || !firstAction) return;
+    const frame = requestAnimationFrame(() =>
+      buttons.current.get(firstAction)?.focus(),
+    );
+    return () => cancelAnimationFrame(frame);
+  }, [isOpen, focusKey, firstAction, initialFocus]);
+
+  async function runAction(action: ModalAction & { id: string }) {
+    if (blocked || action.disabled || actionLock.current) return;
+    actionLock.current = true;
+    setActiveAction(action.id);
+    setActionError(null);
+    try {
+      await action.onClick();
+    } catch (cause) {
+      if (onActionError) onActionError(cause);
+      else setActionError("Unable to complete this action. Please try again.");
+    } finally {
+      actionLock.current = false;
+      setActiveAction(null);
+    }
+  }
 
   return (
-    <div
-      className="fixed inset-0 z-100 flex items-center justify-center bg-black/50 p-4"
-      onMouseDown={(event) => {
-        if (closeOnOverlayClick && event.target === event.currentTarget) {
-          onClose();
-        }
+    <Dialog.Root
+      open={isOpen}
+      disablePointerDismissal={!closeOnOverlayClick}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen && !blocked && !actionLock.current) onClose();
       }}
     >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="universal-modal-title"
-        className="relative w-full max-w-md rounded-xl bg-white px-6 py-7 shadow-xl"
-      >
-        {showCloseButton && (
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close modal"
-            className="absolute right-4 top-4 text-gray-400 transition hover:text-gray-700"
-          >
-            <X size={18} />
-          </button>
-        )}
-
-        {/* Modal Header */}
-        <div className="mb-7 flex items-center gap-5 pr-5">
-          <div
-            className={`flex h-20 w-20 shrink-0 items-center justify-center rounded-full ${styles.icon}`}
-          >
-            {icon}
-          </div>
-
-          <div>
-            <h2
-              id="universal-modal-title"
-              className="text-base font-bold text-slate-900"
-            >
-              {title}
-            </h2>
-
-            {description && (
-              <p className="mt-1 text-xs leading-relaxed text-slate-500">
-                {description}
-              </p>
+      <Dialog.Portal>
+        <Dialog.Backdrop className="fixed inset-0 z-100 bg-black/50" />
+        <Dialog.Viewport className="fixed inset-0 z-110 flex items-center justify-center overflow-y-auto p-4">
+          <Dialog.Popup
+            aria-modal="true"
+            initialFocus={
+              initialFocus ??
+              (() =>
+                (firstAction ? buttons.current.get(firstAction) : null) ?? true)
+            }
+            finalFocus={finalFocus}
+            aria-busy={blocked}
+            className={cn(
+              "relative max-h-[calc(100dvh-2rem)] w-full max-w-[440px] overflow-y-auto rounded-xl border border-[#d7e2ef] bg-white px-5 py-6 font-sans shadow-xl outline-none sm:px-6",
+              className,
             )}
-          </div>
-        </div>
-
-        {/* Modal Actions */}
-        {actions.length > 0 && (
-          <div
-            className={`grid gap-2 ${
-              actions.length === 1 ? "grid-cols-1" : "grid-cols-2"
-            }`}
           >
-            {actions.map((action, index) => (
-              <button
-                key={`${action.label}-${index}`}
+            {showCloseButton && (
+              <Dialog.Close
                 type="button"
-                onClick={action.onClick}
-                disabled={action.disabled || action.loading}
-                className={`flex h-10 items-center justify-center gap-2 rounded-md px-3 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${
-                  buttonStyles[
-                    action.variant ??
-                      (index === actions.length - 1 ? "primary" : "secondary")
-                  ]
-                }`}
+                aria-label="Close dialog"
+                disabled={blocked}
+                className="absolute right-3 top-3 flex size-6 cursor-pointer items-center justify-center rounded text-[#8a9bb2] hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {action.icon}
-                {action.loading ? "Please wait..." : action.label}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+                <X size={16} />
+              </Dialog.Close>
+            )}
+            <div className="flex min-h-24 items-center gap-4 sm:gap-5">
+              <span
+                aria-hidden="true"
+                className={`flex size-16 shrink-0 items-center justify-center rounded-full sm:size-18 ${TONES[type].badge}`}
+              >
+                {icon ?? <DefaultIcon size={32} strokeWidth={1.7} />}
+              </span>
+              <div className="min-w-0 pr-2">
+                <Dialog.Title className="text-base font-bold leading-snug text-[#0b4278] sm:text-lg">
+                  {title}
+                </Dialog.Title>
+                {description && (
+                  <Dialog.Description
+                    render={<div />}
+                    className="mt-1.5 text-xs leading-relaxed text-[#5c7b9f]"
+                  >
+                    {description}
+                  </Dialog.Description>
+                )}
+              </div>
+            </div>
+            {children && <div className="mt-4">{children}</div>}
+            {showError && (error || actionError) && (
+              <ErrorMessage className="mt-3">
+                {error || actionError}
+              </ErrorMessage>
+            )}
+            {actions.length > 0 && (
+              <footer
+                className={
+                  actions.length === 1
+                    ? "mt-6 flex justify-center"
+                    : "mt-6 grid grid-cols-2 gap-3"
+                }
+              >
+                {resolvedActions.map((action) => {
+                  const secondary = action.variant === "secondary";
+                  const loading =
+                    action.loading ||
+                    activeAction === action.id ||
+                    (busy && !secondary);
+                  return (
+                    <button
+                      key={action.id}
+                      ref={(node) => {
+                        if (node) buttons.current.set(action.id, node);
+                        else buttons.current.delete(action.id);
+                      }}
+                      type="button"
+                      disabled={blocked || action.disabled}
+                      onClick={() => void runAction(action)}
+                      className={cn(
+                        "inline-flex min-h-9 min-w-0 cursor-pointer items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-xs font-medium focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-60",
+                        actions.length === 1 && "w-40",
+                        secondary
+                          ? "border-[#dce8f6] bg-white text-[#0b4278] hover:bg-sky-50 focus-visible:outline-sky-500"
+                          : action.variant === "danger"
+                            ? "border-red-500 bg-red-500 text-white hover:bg-red-600 focus-visible:outline-red-500"
+                            : action.variant === "warning" || type === "warning"
+                              ? "border-[#ff9800] bg-[#ff9800] text-white hover:bg-orange-600 focus-visible:outline-orange-500"
+                              : "border-[#008bff] bg-[#008bff] text-white hover:bg-sky-600 focus-visible:outline-sky-500",
+                      )}
+                    >
+                      {loading ? (
+                        <LoadingSpinner size={15} className="shrink-0" />
+                      ) : (
+                        action.icon
+                      )}
+                      {loading
+                        ? (action.pendingLabel ?? "Please wait...")
+                        : action.label}
+                    </button>
+                  );
+                })}
+              </footer>
+            )}
+          </Dialog.Popup>
+        </Dialog.Viewport>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }
-
-export default UniversalModal;

@@ -1,3 +1,6 @@
+import ErrorMessage from "../../../../components/ErrorMessage";
+import EmptyState from "../../../../components/EmptyState";
+import UniversalModal from "../../../../components/UniversalModal";
 import { useState } from "react";
 import api from "../../../../lib/axios";
 import { X, PackagePlus, FlaskConical, Search, Trash } from "lucide-react";
@@ -17,12 +20,14 @@ const ROOM_OPTIONS = [
 ];
 
 function AddService({ loadData, onClose, services }: Props) {
+  const [formError, setFormError] = useState("");
   const [serviceName, setServiceName] = useState("");
   const [price, setPrice] = useState("");
   const [serviceType, setServiceType] = useState("");
   const [serviceCategory, setServiceCategory] = useState("");
   const [room, setRoom] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [created, setCreated] = useState<"service" | "package" | null>(null);
   const [serviceTab, setServiceTab] = useState("single-service");
   const [isActive, setIsActive] = useState(true);
   const [searchFilter, setSearchFilter] = useState("");
@@ -30,6 +35,7 @@ function AddService({ loadData, onClose, services }: Props) {
   const [checkedServices, setCheckedServices] = useState<string[]>([]);
 
   async function addService() {
+    setFormError("");
     if (
       !serviceName ||
       price === "" ||
@@ -37,31 +43,30 @@ function AddService({ loadData, onClose, services }: Props) {
       !serviceCategory ||
       !room
     ) {
-      alert("Please fill out all fields.");
+      setFormError("Please fill out all fields.");
       return;
     }
 
     if (isNaN(Number(price))) {
-      alert("Price must be a number.");
+      setFormError("Price must be a number.");
       return;
     }
 
     setSubmitting(true);
     try {
-      const response = await api.post("/api/admin/services", {
+      await api.post("/api/admin/services", {
         service_type: serviceType,
         service_name: serviceName,
         service_category: serviceCategory,
         price: Number(price),
         room,
       });
-      alert(response.data.message);
+      setCreated("service");
       loadData();
-      onClose();
     } catch (error: unknown) {
-      alert(
+      setFormError(
         (error as { response?: { data?: { message?: string } } }).response?.data
-          ?.message || "Something went wrong",
+          ?.message || "The service could not be added.",
       );
       console.error(error);
     } finally {
@@ -70,39 +75,39 @@ function AddService({ loadData, onClose, services }: Props) {
   }
 
   async function addPackage() {
+    setFormError("");
     if (!serviceName.trim() || price === "" || selectedServices.length === 0) {
-      alert(
+      setFormError(
         "Package name, package price, and at least one service are required.",
       );
       return;
     }
 
     if (isNaN(Number(price)) || Number(price) < 0) {
-      alert("Package price must be a valid non-negative number.");
+      setFormError("Package price must be a valid non-negative number.");
       return;
     }
 
     if (Number(price) > originalPrice) {
-      alert("Package price cannot be greater than the original price.");
+      setFormError("Package price cannot be greater than the original price.");
       return;
     }
 
     setSubmitting(true);
 
     try {
-      const response = await api.post("/api/admin/packages", {
+      await api.post("/api/admin/packages", {
         package_name: serviceName.trim(),
         price: Number(price),
         services: selectedServices.map((service) => service.service_id),
       });
 
-      alert(response.data.message);
+      setCreated("package");
       loadData();
-      onClose();
     } catch (error: unknown) {
-      alert(
+      setFormError(
         (error as { response?: { data?: { message?: string } } }).response?.data
-          ?.message || "Something went wrong",
+          ?.message || "The package could not be added.",
       );
       console.error(error);
     } finally {
@@ -144,6 +149,19 @@ function AddService({ loadData, onClose, services }: Props) {
     0,
   );
 
+  if (created) {
+    return (
+      <UniversalModal
+        isOpen
+        type="success"
+        title={created === "package" ? "Package Added" : "Service Added"}
+        description={`The ${created} has been successfully added.`}
+        onClose={onClose}
+        actions={[{ label: "OK", onClick: onClose }]}
+      />
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="w-4/11 bg-white py-4 px-6 shadow-xl rounded-lg">
@@ -161,6 +179,7 @@ function AddService({ loadData, onClose, services }: Props) {
             <X size={20} />
           </button>
         </div>
+        {formError && <ErrorMessage className="mb-4">{formError}</ErrorMessage>}
         <div>
           <div className="grid grid-cols-2 gap-5 mb-5">
             <label
@@ -374,9 +393,7 @@ function AddService({ loadData, onClose, services }: Props) {
                         </button>
                       ))
                     ) : (
-                      <p className="px-3 py-3 text-xs text-gray-400">
-                        No matching services found.
-                      </p>
+                      <EmptyState message="No matching services found." />
                     )}
                   </div>
                 )}
@@ -408,6 +425,17 @@ function AddService({ loadData, onClose, services }: Props) {
                   </thead>
 
                   <tbody className="divide-y divide-gray-100">
+                    {selectedServices.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="p-4">
+                          <EmptyState
+                            compact
+                            message="No services selected."
+                            description="Select services to include in this package."
+                          />
+                        </td>
+                      </tr>
+                    )}
                     {selectedServices.map((service) => (
                       <tr
                         key={service.service_id}

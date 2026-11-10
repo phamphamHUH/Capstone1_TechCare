@@ -1,10 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ChevronDown, Search, Calendar } from "lucide-react";
-// import HistoryPanel from "./HistoryPanel";
-// import VisitDetails from "./VisitDetails";
 import type {
   HistoryRecord,
-  Pagination,
   Result,
 } from "../../../../interface/HistoryRecord";
 import { useDebounce } from "../../../../utils/debounce";
@@ -12,6 +9,7 @@ import axios from "axios";
 import api from "#lib/axios";
 import HistoryTimeline from "#components/MedicalHistory/HistoryTimeline";
 import VisitDetails from "#components/MedicalHistory/VisitDetails";
+import ErrorMessage from "#components/ErrorMessage";
 
 type MedicalHistoryTabProps = {
   patientId: string | null;
@@ -66,18 +64,24 @@ function MedicalHistoryTab({ patientId }: MedicalHistoryTabProps) {
         if (axios.isCancel(err)) return;
         setResult((prev) => ({
           key,
-          records: prev?.records ?? [],
-          pagination: prev?.pagination ?? null,
-          error: err.response?.data?.message ?? err.message,
+          records: prev?.key.startsWith(`${patientId}?`) ? prev.records : [],
+          pagination: prev?.key.startsWith(`${patientId}?`)
+            ? prev.pagination
+            : null,
+          error:
+            err.response?.data?.message ??
+            "Patient medical history could not be loaded.",
         }));
       });
 
     return () => controller.abort();
-  }, [key]);
+  }, [key, patientId]);
 
   const loading = result?.key !== key;
-  const records = result?.records ?? [];
-  const pagination = result?.pagination ?? null;
+  const records = result?.key.startsWith(`${patientId}?`) ? result.records : [];
+  const pagination = result?.key.startsWith(`${patientId}?`)
+    ? result.pagination
+    : null;
   const error = result && !loading ? result.error : null;
 
   return (
@@ -99,7 +103,7 @@ function MedicalHistoryTab({ patientId }: MedicalHistoryTabProps) {
             <input
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => withReset(setSearch)(e.target.value)}
               placeholder="Search..."
               className="h-9 w-full rounded-lg border border-gray-200 bg-gray-50 pl-9 pr-3 text-sm text-gray-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-400/20"
             />
@@ -107,7 +111,7 @@ function MedicalHistoryTab({ patientId }: MedicalHistoryTabProps) {
           <label className="relative shrink-0">
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e) => withReset(setStatusFilter)(e.target.value)}
               className="h-9 min-w-25 appearance-none rounded-lg border border-gray-200 bg-gray-50 px-3 pr-8 text-sm text-gray-600 outline-none transition hover:border-gray-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-400/20"
             >
               <option value="all">All Status</option>
@@ -127,7 +131,7 @@ function MedicalHistoryTab({ patientId }: MedicalHistoryTabProps) {
           <label className="relative shrink-0">
             <select
               value={serviceFilter}
-              onChange={(e) => setServiceFilter(e.target.value)}
+              onChange={(e) => withReset(setServiceFilter)(e.target.value)}
               className="h-9 min-w-27.5 appearance-none rounded-lg border border-gray-200 bg-gray-50 px-3 pr-8 text-sm text-gray-600 outline-none transition hover:border-gray-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-400/20"
             >
               <option value="all">Service: All</option>
@@ -153,7 +157,7 @@ function MedicalHistoryTab({ patientId }: MedicalHistoryTabProps) {
           [&::-webkit-calendar-picker-indicator]:cursor-pointer
           [&::-webkit-calendar-picker-indicator]:opacity-0"
               value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
+              onChange={(e) => withReset(setStartDate)(e.target.value)}
             />
             <Calendar
               size={16}
@@ -174,7 +178,7 @@ function MedicalHistoryTab({ patientId }: MedicalHistoryTabProps) {
           [&::-webkit-calendar-picker-indicator]:cursor-pointer
           [&::-webkit-calendar-picker-indicator]:opacity-0"
               value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
+              onChange={(e) => withReset(setEndDate)(e.target.value)}
             />
             <Calendar
               size={16}
@@ -182,17 +186,15 @@ function MedicalHistoryTab({ patientId }: MedicalHistoryTabProps) {
             />
           </label>
         </section>
-        {error ? (
-          <p className="py-10 text-center text-sm text-red-500">{error}</p>
-        ) : (
-          <HistoryTimeline
-            records={records}
-            pagination={pagination}
-            loading={loading}
-            onPageChange={setPage}
-            setSelectedRecord={setSelectedRecord}
-          />
-        )}
+        {error && <ErrorMessage className="mb-4">{error}</ErrorMessage>}
+        <HistoryTimeline
+          records={records}
+          pagination={pagination}
+          loading={loading}
+          loadFailed={Boolean(error)}
+          onPageChange={setPage}
+          setSelectedRecord={setSelectedRecord}
+        />
       </main>
 
       <aside className="col-span-2 border shadow-lg rounded-md px-5 py-6 border-gray-200  h-fit">

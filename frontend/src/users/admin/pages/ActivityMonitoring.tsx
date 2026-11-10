@@ -1,3 +1,6 @@
+import LoadingScreen from "../../../components/LoadingScreen";
+import LoadingRegion from "../../../components/LoadingRegion";
+import ErrorMessage from "../../../components/ErrorMessage";
 import { useEffect, useState } from "react";
 import ActivityDetails from "../components/ActivityMonitoring/ActivityDetails";
 import ActivityTable from "../components/ActivityMonitoring/ActivityTable";
@@ -19,11 +22,14 @@ type ActivityMonitoringModalProps = {
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   loadData: () => Promise<void>;
   loading: boolean;
+  error?: string;
 };
 
 function ActivityMonitoring({
   activities,
   loadData,
+  loading,
+  error,
 }: ActivityMonitoringModalProps) {
   useEffect(() => {
     loadData();
@@ -105,6 +111,10 @@ function ActivityMonitoring({
       return sort === "newest" ? dateB - dateA : dateA - dateB;
     });
 
+  if (loading && activities.length === 0) {
+    return <LoadingScreen variant="page" message="Loading activity logs..." />;
+  }
+
   return (
     <main className="flex-1 min-w-0">
       <div className="mx-6">
@@ -114,6 +124,7 @@ function ActivityMonitoring({
             <h3 className="font-light">Track Activities</h3>
           </div>
         </div>
+        {error && <ErrorMessage className="mb-5">{error}</ErrorMessage>}
         <div>
           <ActivityStats stats={stats} />
         </div>
@@ -129,17 +140,23 @@ function ActivityMonitoring({
           severity={severity}
           setSeverity={setSeverity}
         />
-        <div className="flex flex-col gap-4 lg:flex-row">
-          <div className="min-w-0 flex-1">
-            <ActivityTable
-              activities={filteredActivities}
-              selectedActivityId={selectedFormId}
-              setSelectedForm={setSelectedFormId}
-              setShowActivityDetails={setShowActivityDetails}
-            />
+        <LoadingRegion
+          loading={loading && activities.length > 0}
+          message="Refreshing activity logs..."
+        >
+          <div className="flex flex-col gap-4 lg:flex-row">
+            <div className="min-w-0 flex-1">
+              <ActivityTable
+                activities={filteredActivities}
+                error={error}
+                selectedActivityId={selectedFormId}
+                setSelectedForm={setSelectedFormId}
+                setShowActivityDetails={setShowActivityDetails}
+              />
+            </div>
+            <ActivityDetails activity={selectedActivity} />
           </div>
-          <ActivityDetails activity={selectedActivity} />
-        </div>
+        </LoadingRegion>
       </div>
     </main>
   );
