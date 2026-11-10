@@ -143,7 +143,7 @@ const TABLES: TableDefinition[] = [
       package_id: "VARCHAR(255) UNIQUE NOT NULL",
       package_name: "VARCHAR(255) NOT NULL",
       package_price: "NUMERIC(10,2) NOT NULL",
-      active: "BOOLEAN NOT NULL DEFAULT TRUE",
+      status: "VARCHAR(50) NOT NULL DEFAULT 'Active'",
       created_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
       updated_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
     },

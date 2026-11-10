@@ -2,12 +2,12 @@ import LoadingScreen from "../../../components/LoadingScreen";
 import LoadingRegion from "../../../components/LoadingRegion";
 import ErrorMessage from "../../../components/ErrorMessage";
 import React, { useState } from "react";
+import ServiceTypeTabs from "../components/ServiceRequest/ServiceTypeTabs";
 import ServiceSelectionPanel from "../components/ServiceRequest/ServiceSelectionPanel";
 import ServiceList from "../components/ServiceRequest/ServiceList";
 import PatientSelectionHeader from "../components/ServiceRequest/PatientSelectionHeader";
 import type { SortOrder, Service } from "../../../interface/Service";
 import type { Patient } from "../../../interface/Patient";
-import { Syringe, Clipboard } from "lucide-react";
 
 type ServiceRequestProps = {
   services: Service[];
@@ -106,20 +106,6 @@ function ServiceRequest({
   };
   const clearServices = () => setSelectedServices([]);
 
-  const cards = [
-    {
-      service_type: "laboratory",
-      mainHeading: "Laboratory Services",
-      subHeading: "Request Laboratory tests and diagnosis",
-      icon: Syringe,
-    },
-    {
-      service_type: "consultation",
-      mainHeading: "Consultation Services",
-      subHeading: "Request Consultation or Specialist Service",
-      icon: Clipboard,
-    },
-  ];
   if (loading && services.length === 0) {
     return (
       <LoadingScreen variant="page" message="Loading available services..." />
@@ -135,60 +121,6 @@ function ServiceRequest({
         onSelectPatient={setPatient}
         onRegister={() => setPage("patient-registration")}
       />
-      <section className="flex gap-5 px-8 mt-6">
-        {cards.map((card, index) => {
-          const Icon = card.icon;
-          return (
-            <div
-              className={`flex items-center border w-90 justify-center gap-5 py-3 rounded-3xl cursor-pointer shadow-md 
-                      hover:text-blue-600 hover:border-blue-200 hover:scale-101 active:scale-100 active:text-blue-600 
-                      ${activeTab === card.service_type ? "text-blue-400 " : "border-gray-200"}`}
-              key={index}
-              onClick={() => {
-                clearServices();
-                setActiveTab(card.service_type);
-              }}
-            >
-              <Icon size={25} />
-              <div>
-                <h1 className="text-lg font-bold">{card.mainHeading}</h1>
-                <h3 className="text-sm">{card.subHeading}</h3>
-              </div>
-            </div>
-          );
-        })}
-      </section>
-      <div className="border border-gray-200 rounded-xl mt-5 mx-8 grid grid-cols-5 min-h-7/12 shadow-lg">
-        <div className="col-span-3 border-r border-gray-200 px-8 py-5 flex flex-col justify-between">
-          <ServiceSelectionPanel
-            services={pageItems}
-            activeTab={activeTab}
-            search={search}
-            setSearch={handleSearch}
-            sort={sort}
-            setSort={handleSort}
-            categoryFilter={categoryFilter}
-            setCategoryFilter={handleCategory}
-            categoryOptions={categoryOptions}
-            onToggleService={toggleService}
-            selectedServices={selectedServices}
-            pagination={pagination}
-            onPageChange={setPageNumber}
-          />
-        </div>
-        <div className="col-span-2 px-8 py-5 flex flex-col justify-between">
-          <ServiceList
-            activeTab={activeTab}
-            services={services}
-            selectedServices={selectedServices}
-            patientId={patient?.patient_id ?? null}
-            onToggleService={toggleService}
-            onClearAll={clearServices}
-            onSubmitted={async () => {
-              setPatient(null);
-              await loadData();
-            }}
-          />
       <ServiceTypeTabs
         activeTab={activeTab}
         setActiveTab={handleTab}

@@ -111,42 +111,21 @@ export namespace getAllQueueEntries {
 }
 
 export namespace getAllServices {
-  export interface Service {
-    id: number;
+  export interface service {
     service_id: string;
-    service_type: string;
     service_name: string;
-    service_category: string;
     price: number | string;
+    service_type: string;
     room: string;
-    active: boolean;
-    created_at: string;
-    updated_at: string;
-  }
-
-  export interface ServicePackage {
-    id: number;
-    service_id: string;
-    service_name: string;
-    service_type: "package";
-    service_category: string;
-    price: string;
-    room: string;
-    active: boolean;
-    service_ids: string[];
-    service_names: string[];
-    created_at: string;
-    updated_at: string;
+    [key: string]: unknown;
   }
 
   export interface response {
-    services: Service[];
-    packages: ServicePackage[];
+    services: service[];
   }
 
   export interface error {
-    message?: string;
-    error?: string;
+    message: string;
   }
 }
 
