@@ -9,6 +9,12 @@ import type {
   releaseLaboratoryResult,
 } from "./dto/update.dto.js";
 import { publishQueueChange } from "../../services/queue-sse/index.js";
+import {
+  actorId,
+  notifyCalled,
+  notifyCancelled,
+  notifySkipped,
+} from "../../services/notifications/index.js";
 import { sendEmailToPatient } from "../../services/email/sendEmail.js";
 import { labResultsReadyEmail } from "../../services/email/emailTemplates.js";
 export async function acceptQueueEntry(
@@ -82,6 +88,7 @@ export async function acceptQueueEntry(
     }
 
     publishQueueChange();
+    void notifyCalled(updated.patient_id, "laboratory", roomText);
     return res.status(200).json({
       message: "Queue entry accepted and now being served.",
       queue: updated,
@@ -314,6 +321,7 @@ export async function skipQueueEntry(
       RETURNING *;
     `;
     publishQueueChange();
+    if (updatedQueue[0]) void notifySkipped(updatedQueue[0].patient_id, "laboratory");
     return res.status(200).json({
       message: "Queue skipped successfully and returned to the queue.",
       queue: updatedQueue[0],
@@ -409,6 +417,7 @@ export async function cancelQueueEntry(
     `;
 
     publishQueueChange();
+    void notifyCancelled(updatedQueue[0].patient_id, "laboratory", actorId(req), cancellationReason);
     return res.status(200).json({
       message: "Queue cancelled successfully.",
       queue: updatedQueue[0],

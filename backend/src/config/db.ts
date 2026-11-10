@@ -370,6 +370,23 @@ const TABLES: TableDefinition[] = [
     },
   },
 
+  // In-app queue notifications for doctors, lab staff and patients.
+  // One row per person. Each person keeps only their 10 newest
+  // (services/notifications/notify.ts deletes the older ones).
+  {
+    table: "notifications",
+    columns: {
+      id: "SERIAL PRIMARY KEY",
+      recipient_type: "VARCHAR(10) NOT NULL", // 'user' (staff) or 'patient'
+      recipient_id: "VARCHAR(255) NOT NULL", // users.user_id or patients.patient_id
+      type: "VARCHAR(50) NOT NULL", // priority-patient, cancellation, queued, called, skipped
+      title: "VARCHAR(255) NOT NULL",
+      message: "TEXT",
+      is_read: "BOOLEAN NOT NULL DEFAULT FALSE",
+      created_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
+    },
+  },
+
   {
     table: "sse_test",
     columns: {
@@ -423,25 +440,6 @@ export async function connectNeon(): Promise<void> {
     }
 
     // await ensureLaboratoryResultStatus();
-
-    // Email verification and "forgot password" were removed (emails are
-    // information only now), so drop their old columns. Safe to run every boot.
-    await sql`
-      ALTER TABLE users
-      DROP COLUMN IF EXISTS is_verified,
-      DROP COLUMN IF EXISTS verify_token,
-      DROP COLUMN IF EXISTS verify_expires_at,
-      DROP COLUMN IF EXISTS reset_token,
-      DROP COLUMN IF EXISTS reset_expires_at
-    `;
-    await sql`
-      ALTER TABLE patients
-      DROP COLUMN IF EXISTS is_verified,
-      DROP COLUMN IF EXISTS pending_email,
-      DROP COLUMN IF EXISTS verify_token,
-      DROP COLUMN IF EXISTS verify_expires_at
-    `;
-
     // await sql`
     //   ALTER TABLE consultation_records
     //   ADD COLUMN IF NOT EXISTS cancellation_reason VARCHAR(255)

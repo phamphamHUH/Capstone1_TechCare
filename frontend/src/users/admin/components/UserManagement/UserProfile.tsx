@@ -2,7 +2,7 @@ import ErrorMessage from "../../../../components/ErrorMessage";
 import api from "#lib/axios";
 import { useState } from "react";
 import type { User } from "../../../../interface/User";
-import { ConfirmationModal } from "./ConfirmationModal";
+import { ConfirmationModal } from "./UserProfile/ConfirmationModal";
 import { X, Mail, Phone, MapPin, Calendar, Clock, Pencil, KeyRound } from "lucide-react";
 import ResetPasswordModal from "../../../../components/ResetPasswordModal";
 import { DOCTOR_FIELDS } from "./doctorField";

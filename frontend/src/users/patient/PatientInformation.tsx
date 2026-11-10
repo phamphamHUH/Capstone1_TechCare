@@ -1,4 +1,5 @@
 import ErrorMessage from "../../components/ErrorMessage";
+import NotificationBell from "../../components/NotificationBell";
 import { useMemo, useState } from "react";
 import { FileClock, LogOut, Menu, Pill } from "lucide-react";
 import { useNavigate } from "react-router";
@@ -69,14 +70,18 @@ function PatientInformation() {
             </h1>
           </div>
 
-          <button
-            type="button"
-            onClick={logout}
-            className="flex items-center gap-2 rounded-lg border border-red-300 px-3 py-2 text-xs font-semibold text-red-500 hover:bg-red-50"
-          >
-            <LogOut size={14} />
-            Logout
-          </button>
+          <div className="flex items-center gap-2">
+            <NotificationBell basePath="/api/patient/notifications" />
+
+            <button
+              type="button"
+              onClick={logout}
+              className="flex items-center gap-2 rounded-lg border border-red-300 px-3 py-2 text-xs font-semibold text-red-500 hover:bg-red-50"
+            >
+              <LogOut size={14} />
+              Logout
+            </button>
+          </div>
         </div>
       </header>
 

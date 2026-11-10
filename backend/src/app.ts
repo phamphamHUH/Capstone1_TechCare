@@ -12,6 +12,7 @@ import labstaffRoutes from "./routes/labstaff.route.js";
 import doctorRoutes from "./routes/doctor.route.js";
 import patientRoutes from "./routes/patient.route.js";
 import queueRoutes from "./routes/queue.route.js";
+import notificationRoutes from "./routes/notification.route.js";
 import sseTestRoutes from "./routes/tests/sse.routes.js";
 
 const upload = multer({
@@ -45,6 +46,7 @@ app.use("/api/sse", sseTestRoutes);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/queue", queueRoutes);
+app.use("/api/notifications", notificationRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/fdstaff", fdstaffRoutes);
 app.use("/api/labstaff", labstaffRoutes);

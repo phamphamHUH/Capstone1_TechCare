@@ -3,6 +3,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import type { Request, Response } from "express";
 import type { deleteQueue, deletePatient } from "./dto/delete.dto.js";
 import { publishQueueChange } from "../../services/queue-sse/index.js";
+import { actorId, notifyCancelled } from "../../services/notifications/index.js";
 export async function deleteQueue(
   req: Request,
   res: Response<deleteQueue.response | deleteQueue.error>,
@@ -12,7 +13,7 @@ export async function deleteQueue(
     const { queue_id } = req.params;
     client = await pool.connect();
     await client.query("BEGIN");
-    const { rows: [entry] } = await client.query("SELECT status FROM queue_entries WHERE queue_id = $1 FOR UPDATE", [queue_id]);
+    const { rows: [entry] } = await client.query("SELECT status, patient_id FROM queue_entries WHERE queue_id = $1 FOR UPDATE", [queue_id]);
     if (!entry) {
       await client.query("ROLLBACK");
       return res.status(404).json({
@@ -30,6 +31,11 @@ export async function deleteQueue(
     await client.query("UPDATE consultation_records SET status = 'Cancelled', cancellation_reason = 'Cancelled by front desk' WHERE queue_id = $1 AND LOWER(status) IN ('created', 'in queue')", [queue_id]);
     await client.query("COMMIT");
     publishQueueChange();
+    // LAB-... queues belong to the laboratory, CONS-... to the doctors.
+    if (String(entry.status).toLowerCase() === "waiting") {
+      const kind = String(queue_id).startsWith("LAB-") ? "laboratory" : "consultation";
+      void notifyCancelled(entry.patient_id, kind, actorId(req), "Cancelled by front desk");
+    }
     return res.status(200).json({
       message: "Queue entry cancelled successfully",
     } as deleteQueue.response);

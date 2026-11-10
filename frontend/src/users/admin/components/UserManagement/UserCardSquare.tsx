@@ -1,15 +1,7 @@
-import { useEffect, useRef, useState } from "react";
-import { AtSign, Clock, Flag, Hash, MoreHorizontal } from "lucide-react";
+import { AtSign, Clock, Flag, Hash } from "lucide-react";
 import type { User } from "../../../../interface/User";
-
-const ROLE_LABELS: Record<string, string> = {
-  admin: "Admin",
-  doctor: "Doctor",
-  "laboratory-staff": "Laboratory Staff",
-  "frontdesk-staff": "Front Desk Staff",
-  patient: "Patient",
-};
-const roleLabel = (role: string) => ROLE_LABELS[role] ?? role;
+import UserCardMenu from "./UserCardMenu";
+import { getUserDisplay, roleLabel } from "./userCardUtils";
 
 type Props = {
   user: User;
@@ -17,45 +9,17 @@ type Props = {
   setShowUserProfile: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
-// "09:00:00" -> "9:00 AM"
-function formatTime(time?: string | null) {
-  if (!time) return "";
-  const [h, m] = time.split(":").map(Number);
-  if (Number.isNaN(h) || Number.isNaN(m)) return "";
-  return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`;
-}
-
 function UserCardSquare({
   user,
   setSelectedUser,
   setShowUserProfile,
 }: Props) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  const fullName = [user.first_name, user.middle_name, user.last_name, user.suffix]
-    .filter(Boolean)
-    .join(" ");
-  const initials = `${user.first_name?.charAt(0) || ""}${user.last_name?.charAt(0) || ""}`;
-  const shift =
-    user.shift_start && user.shift_end
-      ? `${formatTime(user.shift_start)} - ${formatTime(user.shift_end)}`
-      : "—";
+  const { fullName, initials, shift } = getUserDisplay(user);
 
   const openProfile = () => {
     setSelectedUser(user);
     setShowUserProfile(true);
   };
-
-  // Close the ... menu when clicking elsewhere
-  useEffect(() => {
-    if (!menuOpen) return;
-    const close = (e: MouseEvent) => {
-      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
-    };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, [menuOpen]);
 
   return (
     <div
@@ -77,47 +41,7 @@ function UserCardSquare({
           {user.active ? "Active" : "Inactive"}
         </span>
 
-        <div ref={menuRef} className="relative">
-          <button
-            type="button"
-            aria-label="More options"
-            onClick={(e) => {
-              e.stopPropagation();
-              setMenuOpen((o) => !o);
-            }}
-            className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
-          >
-            <MoreHorizontal size={18} />
-          </button>
-
-          {menuOpen && (
-            <div className="absolute right-0 top-7 z-10 w-36 overflow-hidden rounded-lg border border-gray-200 bg-white text-xs shadow-lg">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setMenuOpen(false);
-                  openProfile();
-                }}
-                className="block w-full px-3 py-2 text-left hover:bg-gray-50"
-              >
-                View Profile
-              </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setMenuOpen(false);
-                  setSelectedUser(user);
-                  setShowUserProfile(true);
-                }}
-                className="block w-full px-3 py-2 text-left hover:bg-gray-50"
-              >
-                Edit Details
-              </button>
-            </div>
-          )}
-        </div>
+        <UserCardMenu onViewProfile={openProfile} onEditDetails={openProfile} />
       </div>
 
       {/* Avatar */}

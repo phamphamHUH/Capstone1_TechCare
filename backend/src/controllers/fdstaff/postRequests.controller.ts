@@ -25,6 +25,7 @@ import type {
   addConsultationRecord,
 } from "./dto/post.dto.js";
 import { publishQueueChange } from "../../services/queue-sse/index.js";
+import { actorId, notifyPriorityPatient, notifyQueued } from "../../services/notifications/index.js";
 import { sendEmail } from "../../services/email/sendEmail.js";
 import { patientAccountCreatedEmail } from "../../services/email/emailTemplates.js";
 import { recomputeBillTotals } from "../../utils/recomputeBills.js";
@@ -632,6 +633,10 @@ export async function addConsultationRecord(
 
     await client.query("COMMIT");
     publishQueueChange();
+    void notifyQueued(patient_id, "consultation", queue_result.queue_number);
+    if (is_priority === true) {
+      void notifyPriorityPatient(patient_id, "consultation", actorId(req));
+    }
 
     return res.status(201).json({
       message: "Consultation record added successfully.",
