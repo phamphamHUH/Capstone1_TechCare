@@ -3,13 +3,13 @@ import type { Request, Response } from "express";
 import type {
   getAllUsers,
   getAllActivities,
-  getAllservices,
   getMyActivities,
   getFormTemplateById,
   getAllFormTemplates,
   getSalesAnalytics as SalesAnalyticsDTO,
   getServiceAnalytics as ServiceAnalyticsDTO,
   getAnalyticsBills as AnalyticsBillsDTO,
+  getAllServices,
 } from "./dto/get.dto.js";
 import {
   ANALYTICS_RANGES,
@@ -92,7 +92,7 @@ export async function getAllActivities(
 // GET ALL SERVICES
 export async function getAllservices(
   req: Request,
-  res: Response<getAllservices.response | getAllservices.error>,
+  res: Response<getAllServices.response | getAllServices.error>,
 ) {
   try {
     const services = await sql`
@@ -110,7 +110,7 @@ export async function getAllservices(
         'Package'::text                           AS service_category,
         p.package_price                           AS price,
         '-'::text                                 AS room,
-        (LOWER(TRIM(p.status)) = 'active')        AS active,
+        p.active,
         COALESCE(
           ARRAY_AGG(ps.service_id ORDER BY ps.service_id)
             FILTER (WHERE ps.service_id IS NOT NULL),
@@ -129,17 +129,16 @@ export async function getAllservices(
       GROUP BY p.id
       ORDER BY p.package_id ASC
     `;
-
     return res.status(200).json({
       services,
       packages,
-    } as getAllservices.response);
+    } as getAllServices.response);
   } catch (error) {
     console.error("GET ALL SERVICES ERROR:", error);
 
     return res.status(500).json({
       message: "Internal Server Error",
-    } as getAllservices.error);
+    } as getAllServices.error);
   }
 }
 
@@ -646,9 +645,8 @@ export async function getServiceAnalytics(
           (sum, service) => sum + service.orders,
           0,
         ),
-        unused_active_services: active.filter(
-          (service) => service.orders === 0,
-        ).length,
+        unused_active_services: active.filter((service) => service.orders === 0)
+          .length,
       },
       services,
     });

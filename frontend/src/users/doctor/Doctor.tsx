@@ -6,13 +6,13 @@ import { useSearchParams } from "react-router";
 import DigitizedDocument from "./pages/DigitizedDocument";
 import ConsultationQueue from "./pages/ConsultationQueue";
 import MedicalHistory from "./pages/MedicalHistory";
-import LaboratoryRequest from "./pages/LaboratoryRequest";
 import DoctorDashboard from "./pages/DoctorDashboard";
 import Consultation from "./pages/Consultation";
 import type { Service } from "../../interface/Service";
 import type { QueueEntry } from "../../interface/Queue";
 import api from "#lib/axios";
 import ActiveConsultation from "./pages/ActiveConsultation";
+import TestRequest from "./pages/TestRequest";
 
 function Doctor() {
   const [open, setOpen] = useState(true);
@@ -20,6 +20,7 @@ function Doctor() {
   const [error, setError] = useState<string | null>(null);
   const [queueLoadFailed, setQueueLoadFailed] = useState(false);
   const [services, setServices] = useState<Service[]>([]);
+  const [roomServices, setRoomServices] = useState<Service[]>([]);
   const [queues, setQueues] = useState<QueueEntry[]>([]);
   const latestLoad = useRef(0);
   const [selectedQueue, setSelectedQueue] = useState<QueueEntry | null>(null);
@@ -48,11 +49,6 @@ function Doctor() {
       icon: <Stethoscope size={20} />,
     },
     {
-      page: "digitized-document",
-      label: "Digitized Document",
-      icon: <FileText size={20} />,
-    },
-    {
       page: "consultation-queue",
       label: "Consultation Queue",
       icon: <ListOrdered size={20} />,
@@ -61,11 +57,6 @@ function Doctor() {
       page: "active-consultation",
       label: "Active Consultation",
       icon: <Stethoscope size={20} />,
-    },
-    {
-      page: "medical-history",
-      label: "Medical History",
-      icon: <FileClock size={20} />,
     },
     {
       page: "laboratory-request",
@@ -173,18 +164,9 @@ function Doctor() {
             />
           )}
 
-          {page === "digitized-document" && (
-            <DigitizedDocument
-              loading={loading}
-              open={open}
-              setOpen={setOpen}
-              loadData={loadData}
-            />
-          )}
-
           {page === "consultation-queue" && (
             <ConsultationQueue
-              services={services}
+              services={roomServices}
               queues={queues}
               room={room}
               loading={loading}
@@ -220,11 +202,14 @@ function Doctor() {
           )}
 
           {page === "laboratory-request" && (
-            <LaboratoryRequest
-              loading={loading}
+            <TestRequest
+              services={services}
               open={open}
               setOpen={setOpen}
               loadData={loadData}
+              loading={loading}
+              setPage={setPage}
+              selectedQueue={selectedQueue}
             />
           )}
         </div>
