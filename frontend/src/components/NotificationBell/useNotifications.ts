@@ -7,14 +7,18 @@ const TOAST_MS = 6000;
 
 // Loads the person's notifications from REST and reloads them every time the
 // notification stream signals a change (same pattern as the queue pages).
-// A notification that wasn't there on the previous load is shown as a toast.
+// A notification that wasn't there on the previous load is shown as a toast,
+// except "It's your turn", which opens a pop-up until it's closed.
 // basePath: "/api/notifications" (staff) or "/api/patient/notifications".
 export function useNotifications(basePath: string) {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [toast, setToast] = useState<AppNotification | null>(null);
+  // "It's your turn" (type "called") is shown as a pop-up that stays until
+  // the patient closes it, instead of a toast that disappears.
+  const [turnAlert, setTurnAlert] = useState<AppNotification | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
-  // Highest id already shown; null until the first load (no toast for old ones).
+  // Highest id already shown; null until the first load (no pop-ups for old ones).
   const newestSeenId = useRef<number | null>(null);
 
   const loadNotifications = useCallback(async () => {
@@ -23,13 +27,20 @@ export function useNotifications(basePath: string) {
       setNotifications(data.notifications);
       setUnreadCount(data.unread_count);
 
-      const newest = data.notifications[0];
-      if (newestSeenId.current !== null && newest && newest.id > newestSeenId.current && !newest.is_read) {
+      const seen = newestSeenId.current;
+      const fresh = seen === null ? [] : data.notifications.filter((item) => item.id > seen && !item.is_read);
+
+      const called = fresh.find((item) => item.type === "called");
+      if (called) setTurnAlert(called);
+
+      const newest = fresh.find((item) => item.type !== "called");
+      if (newest) {
         setToast(newest);
         window.clearTimeout(toastTimer.current);
         toastTimer.current = window.setTimeout(() => setToast(null), TOAST_MS);
       }
-      newestSeenId.current = Math.max(newestSeenId.current ?? 0, newest?.id ?? 0);
+
+      newestSeenId.current = Math.max(seen ?? 0, data.notifications[0]?.id ?? 0);
     } catch {
       // Keep the last good list; the next signal or reconnect loads again.
     }
@@ -79,5 +90,20 @@ export function useNotifications(basePath: string) {
     setToast(null);
   }, []);
 
-  return { notifications, unreadCount, toast, markRead, markAllRead, dismissToast };
+  // Closing the "It's your turn" pop-up also marks it as read.
+  const dismissTurnAlert = useCallback(() => {
+    if (turnAlert) void markRead(turnAlert.id);
+    setTurnAlert(null);
+  }, [turnAlert, markRead]);
+
+  return {
+    notifications,
+    unreadCount,
+    toast,
+    turnAlert,
+    markRead,
+    markAllRead,
+    dismissToast,
+    dismissTurnAlert,
+  };
 }

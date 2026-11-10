@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Ban, Bell, BellRing, CheckCheck, ListOrdered, RotateCcw, Star, X } from "lucide-react";
 import type { AppNotification, NotificationType } from "../interface/Notification";
 import { useNotifications } from "./NotificationBell/useNotifications";
+import UniversalModal from "./UniversalModal";
 
 const TYPE_STYLE: Record<NotificationType, { icon: typeof Bell; className: string }> = {
   "priority-patient": { icon: Star, className: "bg-amber-50 text-amber-700" },
@@ -71,10 +72,21 @@ type NotificationBellProps = {
   basePath: string;
 };
 
-// Queue notifications: unread badge, dropdown list (up to 10), and a toast
-// for new ones. Used in the staff Header and the patient portal header.
+// Queue notifications: unread badge, dropdown list (up to 10), a toast for
+// new ones, and a pop-up when it's the patient's turn. Used in the staff
+// Header and the patient portal header (always on screen, so it works on
+// every page).
 function NotificationBell({ basePath }: NotificationBellProps) {
-  const { notifications, unreadCount, toast, markRead, markAllRead, dismissToast } = useNotifications(basePath);
+  const {
+    notifications,
+    unreadCount,
+    toast,
+    turnAlert,
+    markRead,
+    markAllRead,
+    dismissToast,
+    dismissTurnAlert,
+  } = useNotifications(basePath);
   const [open, setOpen] = useState(false);
   const wrapper = useRef<HTMLDivElement>(null);
 
@@ -174,6 +186,18 @@ function NotificationBell({ basePath }: NotificationBellProps) {
           </button>
         </div>
       )}
+
+      {/* "It's your turn": stays on screen, whatever page they're on, until closed. */}
+      <UniversalModal
+        isOpen={turnAlert !== null}
+        type="success"
+        icon={<BellRing size={22} />}
+        title={turnAlert?.title ?? ""}
+        description={turnAlert?.message ?? undefined}
+        onClose={dismissTurnAlert}
+        closeOnOverlayClick={false}
+        actions={[{ label: "OK, I'm on my way", onClick: dismissTurnAlert }]}
+      />
     </div>
   );
 }
