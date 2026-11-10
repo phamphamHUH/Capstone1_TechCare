@@ -227,7 +227,7 @@ export function normalizeAnalysisRequests(
       return name
         ? [
             {
-              id: text(item.lab_item_id),
+              id: text(item.item_id),
               serviceId: text(item.service_id, service.service_id),
               name,
               description: text(

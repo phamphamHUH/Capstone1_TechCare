@@ -1,5 +1,4 @@
 import EmptyState from "../../../../components/EmptyState";
-import ServiceFilters from "./ServiceFilters";
 import type { SortOrder, Service } from "../../../../interface/Service";
 import { Syringe } from "lucide-react";
 
@@ -59,7 +58,11 @@ function ServiceSelectionPanel({
         <h1 className="font-bold text-lg mb-3">
           {activeTab === "laboratory"
             ? "Select Laboratory Services"
-            : "Select Consultation Service"}
+            : activeTab === "consultation"
+              ? "Select Consultation Service"
+              : activeTab === "imaging"
+                ? "Select Imaging Services"
+                : "Select Packaged Service"}
         </h1>
         <ServiceFilters
           search={search}

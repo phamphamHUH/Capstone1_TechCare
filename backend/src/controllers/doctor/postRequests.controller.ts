@@ -120,7 +120,7 @@ export async function addLaboratoryRequest(
 
       const request_id = await generateLaboratoryRequestID(client);
       const { rows: laboratory_request_result } = await client.query(
-        `INSERT INTO laboratory_requests (
+        `INSERT INTO test_requests (
            request_id,
            patient_id,
            consultation_record_id,
@@ -146,12 +146,12 @@ export async function addLaboratoryRequest(
 
       const laboratory_item_result = [];
       for (const service_id of service_ids) {
-        const lab_item_id = await generateLaboratoryItemID(client);
+        const item_id = await generateLaboratoryItemID(client);
         const { rows } = await client.query(
-          `INSERT INTO laboratory_request_items (lab_item_id, request_id, service_id, status, bill_id)
+          `INSERT INTO test_request_items (item_id, request_id, service_id, status, bill_id)
            VALUES ($1, $2, $3, 'Requested', $4)
            RETURNING *`,
-          [lab_item_id, request_id, service_id, bill_id],
+          [item_id, request_id, service_id, bill_id],
         );
         laboratory_item_result.push(rows[0]);
       }

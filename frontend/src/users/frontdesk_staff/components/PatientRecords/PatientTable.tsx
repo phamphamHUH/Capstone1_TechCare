@@ -9,14 +9,13 @@ type PatientTableProps = {
   loadFailed?: boolean;
   onEdit?: (patient: Patient) => void;
   onResetPassword?: (patient: Patient) => void;
-  onResendVerification?: (patient: Patient) => void;
 };
 
 function PatientTable({
   patients,
+  loadFailed,
   onEdit,
   onResetPassword,
-  onResendVerification,
 }: PatientTableProps) {
   const [, setSearchParams] = useSearchParams();
 
@@ -101,15 +100,6 @@ function PatientTable({
                       {patient.contact_number}
                     </div>
                     <div className="text-xs text-gray-400">{patient.email}</div>
-
-                    {/* Email verification: unverified patients get no emails */}
-                    {patient.pending_email ? (
-                      <span className="text-xs text-amber-700">New email not confirmed yet</span>
-                    ) : patient.is_verified ? (
-                      <span className="text-xs text-green-700">Email verified</span>
-                    ) : (
-                      <span className="text-xs text-gray-500">Email not verified</span>
-                    )}
                   </td>
 
                   <td className="px-4 py-1 text-gray-700">
@@ -152,16 +142,6 @@ function PatientTable({
                       >
                         Reset password
                       </button>
-
-                      {(!patient.is_verified || patient.pending_email) && (
-                        <button
-                          type="button"
-                          onClick={() => onResendVerification?.(patient)}
-                          className="text-xs text-sky-700 underline cursor-pointer"
-                        >
-                          Resend verification
-                        </button>
-                      )}
                     </div>
                   </td>
                 </tr>

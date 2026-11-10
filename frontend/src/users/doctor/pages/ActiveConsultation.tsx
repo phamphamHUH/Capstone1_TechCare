@@ -60,6 +60,7 @@ function ActiveConsultation({
     >
       <div className="px-6 overflow-x-auto flex flex-col space-y-6 z-0">
         {error && <ErrorMessage>{error}</ErrorMessage>}
+
         {selectedQueue ? (
           <>
             {/* HEADER */}
@@ -116,11 +117,13 @@ function ActiveConsultation({
                       Priority
                     </span>
                   )}
+
                   {selectedQueue.is_pwd && (
                     <span className="rounded-full bg-orange-100 px-3 py-0.5 text-orange-700">
                       PWD
                     </span>
                   )}
+
                   {calculateAge(selectedQueue.birthdate) >= 60 && (
                     <span className="rounded-full bg-orange-100 px-3 py-0.5 text-orange-700">
                       Senior
@@ -140,37 +143,35 @@ function ActiveConsultation({
                 <p>In Consultation</p>
               </div>
 
-              {/* CONSULTATION TABS */}
-              <div className="mt-6">
-                <nav className="flex gap-6">
-                  {consultationTabs.map((tab) => (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`pb-3 text-sm font-medium transition-colors cursor-pointer border-b-2 ${
-                        activeTab === tab.id
-                          ? "border-sky-600 text-sky-600"
-                          : "border-transparent text-gray-500 hover:text-gray-800"
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </nav>
-              </div>
-            </section>
             {/* TAB CONTENT */}
             <section>
-              {activeTab === "overview" && <div>overviewness</div>}
+              {activeTab === "overview" && (
+                <Overview
+                  key={selectedQueue.consultation_record_id}
+                  selectedQueue={selectedQueue}
+                  onProceed={() => setActiveTab("prescription")}
+                />
+              )}
+
               {activeTab === "medical-history" && (
                 <MedicalHistoryTab
                   key={selectedQueue.patient_id}
                   patientId={selectedQueue.patient_id}
                 />
               )}
+
               {activeTab === "laboratory-results" && <div>lab</div>}
-              {activeTab === "file-attachments" && <div>file</div>}
+
+              {activeTab === "digital-documents" && (
+                <DigitalDocumentsTab
+                  key={`${selectedQueue.patient_id}:${selectedQueue.consultation_record_id}`}
+                  patientId={selectedQueue.patient_id}
+                  consultationRecordId={selectedQueue.consultation_record_id}
+                  onReturn={() => setActiveTab("overview")}
+                />
+              )}
+
+              {activeTab === "prescription" && <div>prescription</div>}
             </section>
           </>
         ) : (

@@ -30,12 +30,15 @@ export type Bill = {
 };
 
 export type BillItem = {
-  line_type?: "consultation" | "laboratory";
   item_id?: string;
+  service_id?: string;
   service_name: string;
-  service_category?: string;
-  price: number | string | null;
-  quantity?: number;
+  service_category?: string | null;
+  service_type?: string | null;
+  line_type?: string | null;
+  price: number | null;
+  quantity?: number | null;
+  package_id?: string | null;
 };
 
 // GET /api/fdstaff/billings/:bill_id/details

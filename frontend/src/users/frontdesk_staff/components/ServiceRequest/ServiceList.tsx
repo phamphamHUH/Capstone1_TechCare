@@ -8,6 +8,7 @@ import {
   Plus,
   TriangleAlert,
   CircleAlert,
+  CheckCircle2,
 } from "lucide-react";
 import api from "#lib/axios";
 import type { Service } from "../../../../interface/Service";
@@ -43,6 +44,8 @@ function ServiceList({
     requestId?: string;
     count: number;
   } | null>(null);
+  const isLabRequest = activeTab === "laboratory" || activeTab === "imaging";
+  const isTestRequest = isLabRequest || activeTab === "package";
 
   const servicesList = selectedServices
     .map((id) => services.find((service) => service.service_id === id))
@@ -66,11 +69,25 @@ function ServiceList({
       setSubmitting(true);
       setError(null);
 
-      if (activeTab === "laboratory") {
-        const res = await api.post("/api/fdstaff/laboratory-requests", {
-          patient_id: patientId,
-          services: selectedServices.map((service_id) => ({ service_id })),
-        });
+      if (isTestRequest) {
+        // laboratory, imaging and packages share the same endpoint;
+        // packages are sent by package_id and expanded on the server
+        const body =
+          activeTab === "package"
+            ? {
+                patient_id: patientId,
+                packages: selectedServices.map((package_id) => ({
+                  package_id,
+                })),
+              }
+            : {
+                patient_id: patientId,
+                services: selectedServices.map((service_id) => ({
+                  service_id,
+                })),
+              };
+
+        const res = await api.post("/api/fdstaff/laboratory-requests", body);
 
         setSuccess({
           requestId: (Array.isArray(res.data.request)
@@ -114,9 +131,11 @@ function ServiceList({
             tabIndex={-1}
             className="font-bold text-lg outline-none"
           >
-            {activeTab === "laboratory"
-              ? `Selected Laboratory Services (${servicesList.length})`
-              : "Select Consultation Service"}
+            {isLabRequest
+              ? `Selected ${activeTab === "imaging" ? "Imaging" : "Laboratory"} Services (${servicesList.length})`
+              : activeTab === "package"
+                ? `Selected Packages (${servicesList.length})`
+                : "Select Consultation Service"}
           </h1>
           {servicesList.length > 0 && (
             <button
@@ -133,7 +152,10 @@ function ServiceList({
 
         <div className="flex flex-col gap-2 h-96 overflow-y-auto">
           {servicesList.length === 0 ? (
-            <EmptyState message="No services selected." description="Select services from the list to add them to this request." />
+            <EmptyState
+              message="No services selected."
+              description="Select services from the list to add them to this request."
+            />
           ) : (
             servicesList.map((service) => (
               <div

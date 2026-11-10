@@ -1,5 +1,6 @@
 import ErrorMessage from "../../../../components/ErrorMessage";
 import { LoadingSpinner } from "../../../../components/LoadingScreen";
+import UniversalModal from "../../../../components/UniversalModal";
 import { useRef, useState } from "react";
 import type { Patient } from "../../../../interface/Patient";
 import { X, Mail, Phone, MapPin, Save, ArrowLeft, Camera } from "lucide-react";
@@ -12,14 +13,19 @@ type Props = {
   loadData: () => Promise<void>;
 };
 
+type Notice = {
+  type: "success" | "danger";
+  title: string;
+  message: string;
+  after?: () => void;
+};
+
 const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 const SEX_OPTIONS = ["Male", "Female"];
 const CIVIL_STATUS_OPTIONS = ["Single", "Married", "Widowed", "Separated"];
 const SMOKING_OPTIONS = ["Yes", "No", "Former"];
 const ALCOHOL_OPTIONS = ["None", "Occasional", "Regular"];
 
-// Same keys the registration form sends, minus the address parts
-// (barangay, city, province and ZIP are already merged into `address`)
 function buildForm(p: Patient | null) {
   return {
     first_name: p?.first_name ?? "",
@@ -129,6 +135,11 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Confirmations and results (all hooks must stay above the early return below)
+  const [confirmSave, setConfirmSave] = useState(false);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [notice, setNotice] = useState<Notice | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Guard: nothing to edit if no patient was selected
@@ -143,6 +154,25 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
     .join(" ");
   const initials = `${form.first_name.charAt(0)}${form.last_name.charAt(0)}`;
   const age = form.birthdate ? String(Math.max(0, calculateAge(form.birthdate))) : "";
+
+  // Anything changed compared to what was loaded?
+  const original = buildForm(patient);
+  const isDirty =
+    image !== null ||
+    (Object.keys(form) as (keyof FormState)[]).some((k) => form[k] !== original[k]);
+
+  const closeNotice = () => {
+    const after = notice?.after;
+    setNotice(null);
+    after?.();
+  };
+
+  // Every way of leaving (X, back arrow, Cancel, clicking outside) comes through here
+  const requestClose = () => {
+    if (saving) return;
+    if (isDirty) setConfirmDiscard(true);
+    else onClose();
+  };
 
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -159,11 +189,13 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
 
     // Only revoke previews we created ourselves, not the saved image URL
     if (image && preview) URL.revokeObjectURL(preview);
+    setError(null);
     setImage(file);
     setPreview(URL.createObjectURL(file));
   }
 
-  async function handleSave() {
+  // Runs after the person confirms "Save changes"
+  async function saveChanges() {
     setSaving(true);
     setError(null);
     try {
@@ -178,14 +210,24 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
         `/api/fdstaff/patients/${patient.patient_id}`,
         formData,
       );
-      alert(response.data.message);
-      await loadData();
-      onClose();
+
+      setConfirmSave(false);
+      setNotice({
+        type: "success",
+        title: "Patient updated",
+        message: response.data.message,
+        after: onClose, // close the editor only after the person clicks OK
+      });
+      void loadData();
     } catch (err) {
-      setError(
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+      setConfirmSave(false);
+      setNotice({
+        type: "danger",
+        title: "Couldn't save changes",
+        message:
+          (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
           (err instanceof Error ? err.message : "Unable to complete this action. Please try again."),
-      );
+      });
     } finally {
       setSaving(false);
     }
@@ -194,7 +236,7 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
   return (
     <>
       {/* Overlay */}
-      <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={requestClose} />
 
       {/* Modal */}
       <div className="fixed left-1/2 top-1/2 z-50 flex w-[94%] max-w-5xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-3xl bg-gray-50 shadow-2xl">
@@ -202,7 +244,7 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
         <div className="flex items-center justify-between border-b border-gray-100 bg-white px-6 py-5">
           <div className="flex items-center gap-3">
             <button
-              onClick={onClose}
+              onClick={requestClose}
               disabled={saving}
               className="flex h-9 w-9 items-center justify-center rounded-full text-gray-400 transition hover:bg-red-100 hover:text-red-900 disabled:opacity-50"
             >
@@ -215,7 +257,7 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
           </div>
 
           <button
-            onClick={onClose}
+            onClick={requestClose}
             disabled={saving}
             className="flex h-10 w-10 items-center justify-center rounded-full text-gray-400 transition hover:bg-red-100 hover:text-red-900 disabled:opacity-50"
           >
@@ -225,11 +267,7 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
 
         {/* Content */}
         <div className="max-h-[82vh] overflow-y-auto p-6">
-          {error && (
-            <ErrorMessage className="mb-4">
-              {error}
-            </ErrorMessage>
-          )}
+          {error && <ErrorMessage className="mb-4">{error}</ErrorMessage>}
 
           {/* Profile Hero */}
           <div className="overflow-hidden rounded-3xl bg-white shadow-sm">
@@ -439,7 +477,7 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
           {/* Actions */}
           <div className="mt-6 flex justify-end gap-3">
             <button
-              onClick={onClose}
+              onClick={requestClose}
               disabled={saving}
               className="flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-red-100 hover:text-red-900 disabled:opacity-50"
             >
@@ -448,8 +486,9 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
             </button>
 
             <button
-              onClick={handleSave}
-              disabled={saving}
+              onClick={() => setConfirmSave(true)}
+              disabled={saving || !isDirty}
+              title={isDirty ? undefined : "No changes to save"}
               className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {saving ? <LoadingSpinner size={16} /> : <Save size={16} />}
@@ -458,6 +497,49 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
           </div>
         </div>
       </div>
+
+      {/* Confirm: save changes */}
+      <UniversalModal
+        isOpen={confirmSave}
+        type="info"
+        title="Save changes?"
+        description={`This will update ${fullName}'s patient record.`}
+        onClose={() => setConfirmSave(false)}
+        actions={[
+          { label: "Cancel", onClick: () => setConfirmSave(false) },
+          { label: "Save changes", pendingLabel: "Saving...", onClick: saveChanges },
+        ]}
+      />
+
+      {/* Confirm: leave with unsaved changes */}
+      <UniversalModal
+        isOpen={confirmDiscard}
+        type="warning"
+        title="Discard changes?"
+        description="You have unsaved changes. They'll be lost if you leave."
+        onClose={() => setConfirmDiscard(false)}
+        actions={[
+          { label: "Keep editing", onClick: () => setConfirmDiscard(false) },
+          {
+            label: "Discard changes",
+            variant: "danger",
+            onClick: () => {
+              setConfirmDiscard(false);
+              onClose();
+            },
+          },
+        ]}
+      />
+
+      {/* Result of saving */}
+      <UniversalModal
+        isOpen={notice !== null}
+        type={notice?.type ?? "info"}
+        title={notice?.title ?? ""}
+        description={notice?.message}
+        onClose={closeNotice}
+        actions={[{ label: "OK", onClick: closeNotice }]}
+      />
     </>
   );
 }

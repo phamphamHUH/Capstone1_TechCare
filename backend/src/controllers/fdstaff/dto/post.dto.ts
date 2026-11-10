@@ -99,7 +99,7 @@ export namespace addBills {
   export interface bill {
     bill_id: string;
     patient_id: string;
-      services_ids?: string[];
+    services_ids?: string[];
     discount_pct: number | string;
     total_amount: number | string;
     payment_method: string;
@@ -156,7 +156,8 @@ export namespace addLaboratoryRequest {
 
   export interface body {
     patient_id: string;
-    services: serviceItem[];
+    services?: { service_id: string }[];
+    packages?: { package_id: string }[];
   }
 
   export interface response {
@@ -181,20 +182,6 @@ export namespace addConsultationRecord {
     message: string;
     consultation_record: Record<string, unknown>[];
     queue: Record<string, unknown>[];
-  }
-
-  export interface error {
-    message: string;
-  }
-}
-
-// =========================
-// RESEND PATIENT VERIFICATION EMAIL
-// POST /api/fdstaff/patients/:patient_id/verification-email
-// =========================
-export namespace resendPatientVerification {
-  export interface response {
-    message: string;
   }
 
   export interface error {

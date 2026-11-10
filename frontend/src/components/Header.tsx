@@ -1,6 +1,7 @@
 import { LoadingSpinner } from "./LoadingScreen";
 import { RotateCw } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
+import NotificationBell from "./NotificationBell";
 
 type HeaderProps = {
   page: string;
@@ -18,6 +19,8 @@ function Header({
   loadData,
 }: HeaderProps) {
   const role = sessionStorage.getItem("role") ?? "";
+  // Queue notifications are only for doctors and laboratory staff.
+  const hasNotifications = role === "doctor" || role === "laboratory-staff";
 
   return (
     <header className="flex items-center justify-between h-24 gap-4 mb-6 px-6 border-b border-gray-300">
@@ -42,16 +45,20 @@ function Header({
         </div>
       </div>
 
-      <button
-        type="button"
-        onClick={() => void loadData()}
-        disabled={loading}
-        aria-label={loading ? "Refreshing data" : "Reload data"}
-        title="Reload data"
-        className="flex items-center justify-center w-10 h-10 rounded-lg border border-gray-300 text-gray-600 cursor-pointer transition-colors hover:bg-gray-50 hover:text-sky-600 active:bg-gray-100 disabled:opacity-60 disabled:cursor-not-allowed"
-      >
-        {loading ? <LoadingSpinner size={18} /> : <RotateCw size={18} strokeWidth={1.75} />}
-      </button>
+      <div className="flex items-center gap-2">
+        {hasNotifications && <NotificationBell basePath="/api/notifications" />}
+
+        <button
+          type="button"
+          onClick={() => void loadData()}
+          disabled={loading}
+          aria-label={loading ? "Refreshing data" : "Reload data"}
+          title="Reload data"
+          className="flex items-center justify-center w-10 h-10 rounded-lg border border-gray-300 text-gray-600 cursor-pointer transition-colors hover:bg-gray-50 hover:text-sky-600 active:bg-gray-100 disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {loading ? <LoadingSpinner size={18} /> : <RotateCw size={18} strokeWidth={1.75} />}
+        </button>
+      </div>
     </header>
   );
 }

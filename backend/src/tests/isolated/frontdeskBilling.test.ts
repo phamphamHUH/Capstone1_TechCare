@@ -115,7 +115,7 @@ afterAll(async () => {
   await db?.close();
 });
 beforeEach(async () => {
-  await db.exec(`TRUNCATE users, patients, services, bills, queue_entries, consultation_records, laboratory_requests, laboratory_request_items CASCADE;
+  await db.exec(`TRUNCATE users, patients, services, bills, queue_entries, consultation_records, test_requests, test_request_items CASCADE;
     INSERT INTO users(user_id,username,password_hash,first_name,last_name,sex,email,contact_number,address,birthdate,role,date_hired)
       VALUES ('U-TEST','staff','test','Test','Staff','Male','staff@example.test','000','Test','1980-01-01','frontdesk_staff','2020-01-01');
     INSERT INTO patients(patient_id,username,password_hash,first_name,last_name,sex,email,contact_number,street,barangay,city,province,zip_code,birthdate)
@@ -127,8 +127,8 @@ beforeEach(async () => {
     INSERT INTO bills(bill_id,patient_id) VALUES ('B-TEST','P-TEST');
     INSERT INTO consultation_records(consultation_record_id,patient_id,service_id,requested_by,bill_id)
       VALUES ('C-TEST','P-TEST','S-C','U-TEST','B-TEST');
-    INSERT INTO laboratory_requests(request_id,patient_id,requested_by) VALUES ('REQ-TEST','P-TEST','U-TEST');
-    INSERT INTO laboratory_request_items(lab_item_id,request_id,service_id,bill_id) VALUES
+    INSERT INTO test_requests(request_id,patient_id,requested_by) VALUES ('REQ-TEST','P-TEST','U-TEST');
+    INSERT INTO test_request_items(item_id,request_id,service_id,bill_id) VALUES
       ('I-L','REQ-TEST','S-L','B-TEST'),('I-U','REQ-TEST','S-U','B-TEST');`);
 });
 
@@ -174,9 +174,10 @@ test("mixed service payment saves canonical totals, snapshots and one priority q
   expect(
     (await rows("SELECT is_paid FROM consultation_records"))[0].is_paid,
   ).toBe(true);
-  expect(
-    (await rows("SELECT is_paid,status FROM laboratory_requests"))[0],
-  ).toEqual({ is_paid: true, status: "Paid" });
+  expect((await rows("SELECT is_paid,status FROM test_requests"))[0]).toEqual({
+    is_paid: true,
+    status: "Paid",
+  });
   expect(
     (await rows("SELECT is_priority FROM queue_entries"))[0].is_priority,
   ).toBe(true);
@@ -296,7 +297,7 @@ test("invalid cash, transfer reference and eligibility never record a payment", 
 
 test("PWD bank payments exclude cancelled items and retain transfer reference", async () => {
   await db.exec(
-    "UPDATE patients SET birthdate='2000-01-01',is_pwd=true; UPDATE laboratory_request_items SET status='Cancelled' WHERE lab_item_id='I-U'",
+    "UPDATE patients SET birthdate='2000-01-01',is_pwd=true; UPDATE test_request_items SET status='Cancelled' WHERE item_id='I-U'",
   );
   const result = await pay({
     discount_type: "PWD",
@@ -314,7 +315,7 @@ test("PWD bank payments exclude cancelled items and retain transfer reference", 
 });
 
 test("consultation-only payment succeeds without laboratory forwarding", async () => {
-  await db.exec("DELETE FROM laboratory_request_items");
+  await db.exec("DELETE FROM test_request_items");
   expect((await list())[0].laboratory_status).toBe("No laboratory tests");
   const result = await pay({
     discount_type: "Not Eligible",
@@ -370,7 +371,7 @@ test("a legacy Unpaid bill appears as Pending and can really be paid", async () 
 
 test("frontdesk consultation and laboratory requests share one linked open bill", async () => {
   await db.exec(
-    "TRUNCATE bills, consultation_records, laboratory_requests, laboratory_request_items CASCADE",
+    "TRUNCATE bills, consultation_records, test_requests, test_request_items CASCADE",
   );
   const consultation = await invoke(addConsultationRecord, {
     patient_id: "P-TEST",
@@ -393,7 +394,7 @@ test("frontdesk consultation and laboratory requests share one linked open bill"
 
 test("doctor laboratory requests are linked to the open bill and forwarded only after payment", async () => {
   await db.exec(
-    "TRUNCATE bills, consultation_records, laboratory_requests, laboratory_request_items, queue_entries CASCADE",
+    "TRUNCATE bills, consultation_records, test_requests, test_request_items, queue_entries CASCADE",
   );
   const created = await invoke(addDoctorLaboratoryRequest, {
     patient_id: "P-TEST",
@@ -433,7 +434,7 @@ test("doctor laboratory requests accept a consultation that has no assigned doct
 });
 
 test("a saved-items legacy open bill keeps its amount when a new request arrives", async () => {
-  await db.exec(`TRUNCATE bills, consultation_records, laboratory_requests, laboratory_request_items CASCADE;
+  await db.exec(`TRUNCATE bills, consultation_records, test_requests, test_request_items CASCADE;
     INSERT INTO bills(bill_id,patient_id,status,total_amount,items) VALUES ('B-LEGACY','P-TEST','Unpaid',300,'[{"service_name":"Legacy","price":300,"quantity":1}]')`);
   const created = await invoke(addLaboratoryRequest, {
     patient_id: "P-TEST",

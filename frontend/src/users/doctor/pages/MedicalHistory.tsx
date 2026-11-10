@@ -76,7 +76,7 @@ type Details = {
   prescription?: Rx[];
 } & Partial<
   Record<
-    | "lab_item_id"
+    | "item_id"
     | "status"
     | "updated_at"
     | "requested_by"
@@ -143,7 +143,7 @@ function parseLooseJson(value: unknown): unknown {
   }
   const result: Record<string, string> = {};
   const pattern = /"([^"]+)"\s*:\s*"([\s\S]*?)"+\s*(?=,\s*"[^"]+"\s*:|\}\s*$)/g;
-  for (let m; (m = pattern.exec(text));) result[m[1]] = m[2];
+  for (let m; (m = pattern.exec(text)); ) result[m[1]] = m[2];
   return Object.keys(result).length
     ? result
     : text.replace(/^[{[]\s*/, "").replace(/\s*[}\]]$/, "");
@@ -251,14 +251,21 @@ function useApiGet<T>(
       .catch((err) => {
         if (err?.code === "ERR_CANCELED") return;
         console.error(label, err);
-        setState((previous) => ({ key, data: previous.key?.startsWith(`${url}?`) ? previous.data : null, error: describeError(err, label) }));
+        setState((previous) => ({
+          key,
+          data: previous.key?.startsWith(`${url}?`) ? previous.data : null,
+          error: describeError(err, label),
+        }));
       });
     return () => controller.abort();
   }, [url, key, paramsJson, label, validate]);
 
   const current = state.key === key;
   return {
-    data: key && (current || (keep && state.key?.startsWith(`${url}?`))) ? state.data : null,
+    data:
+      key && (current || (keep && state.key?.startsWith(`${url}?`)))
+        ? state.data
+        : null,
     error: key && current ? state.error : null,
     loading: !!key && !current,
   };
@@ -270,13 +277,16 @@ const NoData = ({ children = "No data" }: { children?: ReactNode }) => (
   <EmptyState compact message={children} />
 );
 
-const ErrorBox = ({ message }: { message: string }) => <ErrorMessage>{message}</ErrorMessage>;
+const ErrorBox = ({ message }: { message: string }) => (
+  <ErrorMessage>{message}</ErrorMessage>
+);
 
 const StatusPill = ({ status }: { status?: string | null }) =>
   status ? (
     <span
-      className={`inline-flex w-fit items-center rounded-full px-3 py-1 text-xs font-semibold ${STATUS_COLORS[status.toLowerCase()] ?? "bg-red-50 text-red-700"
-        }`}
+      className={`inline-flex w-fit items-center rounded-full px-3 py-1 text-xs font-semibold ${
+        STATUS_COLORS[status.toLowerCase()] ?? "bg-red-50 text-red-700"
+      }`}
     >
       {status}
     </span>
@@ -472,13 +482,13 @@ function VisitDetails({
       ? []
       : isLab
         ? [
-          ["Requested By", d.requested_by, d.requested_by_role],
-          ["Processed By", d.processed_by, d.processed_by_role],
-        ]
+            ["Requested By", d.requested_by, d.requested_by_role],
+            ["Processed By", d.processed_by, d.processed_by_role],
+          ]
         : [["Consulted By", d.consulted_by]];
     rows = [
       isLab
-        ? ["Lab Item ID", d?.lab_item_id ?? sel.record_id]
+        ? ["Lab Item ID", d?.item_id ?? sel.record_id]
         : ["Consultation ID", d?.consultation_record_id ?? sel.record_id],
       [
         "Date & Time",
@@ -604,20 +614,20 @@ function FullRecordModal({
     ? []
     : isLab
       ? [
-        ["Lab Item ID", full.lab_item_id],
-        ["Status", full.status],
-        ["Room", full.room],
-        ["Last updated", fmtDateTime(full.updated_at)],
-        ["Requested By", full.requested_by, full.requested_by_role],
-        ["Processed By", full.processed_by, full.processed_by_role],
-      ]
+          ["Lab Item ID", full.item_id],
+          ["Status", full.status],
+          ["Room", full.room],
+          ["Last updated", fmtDateTime(full.updated_at)],
+          ["Requested By", full.requested_by, full.requested_by_role],
+          ["Processed By", full.processed_by, full.processed_by_role],
+        ]
       : [
-        ["Consultation ID", full.consultation_record_id],
-        ["Type", full.consultation_type],
-        ["Room", full.room],
-        ["Consulted By", full.consulted_by],
-        ["Date & Time", fmtDateTime(full.consulted_at)],
-      ];
+          ["Consultation ID", full.consultation_record_id],
+          ["Type", full.consultation_type],
+          ["Room", full.room],
+          ["Consulted By", full.consulted_by],
+          ["Date & Time", fmtDateTime(full.consulted_at)],
+        ];
   const results = full?.results ?? [];
   const prescriptions = full?.prescription ?? [];
 
@@ -653,9 +663,7 @@ function FullRecordModal({
           </button>
         </div>
 
-        {loading && (
-          <LoadingScreen message="Loading record..." />
-        )}
+        {loading && <LoadingScreen message="Loading record..." />}
         {error && (
           <div className="mt-4">
             <ErrorBox message={error} />
@@ -862,8 +870,6 @@ function MedicalHistoryContent({
 
   return (
     <main className="min-w-0 flex-1 bg-slate-50">
-
-
       <div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_21rem]">
         <section className="flex min-h-[32rem] flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900">
@@ -942,14 +948,12 @@ function MedicalHistoryContent({
           </div>
 
           <div className="mt-4 flex-1">
-            {list.error && (
-              <ErrorBox message={list.error} />
-            )}
+            {list.error && <ErrorBox message={list.error} />}
             {!patientId ? (
               <EmptyState message="Enter a patient ID to view their medical history." />
             ) : list.loading && records.length === 0 ? (
               <LoadingScreen message="Loading medical history..." />
-            ) : ((records.length === 0 ? (
+            ) : records.length === 0 ? (
               <EmptyState message="No records found for this patient with the current filters." />
             ) : (
               <ol className="relative">
@@ -967,8 +971,9 @@ function MedicalHistoryContent({
                     <button
                       type="button"
                       onClick={() => setSelected(r)}
-                      className={`flex flex-1 items-center gap-4 border-b border-slate-100 px-2 py-3 text-left transition hover:bg-slate-50 ${same(selected, r) ? "bg-slate-50" : ""
-                        }`}
+                      className={`flex flex-1 items-center gap-4 border-b border-slate-100 px-2 py-3 text-left transition hover:bg-slate-50 ${
+                        same(selected, r) ? "bg-slate-50" : ""
+                      }`}
                     >
                       <div className="w-24 shrink-0">
                         <p className="text-xs font-semibold text-slate-900">
@@ -995,7 +1000,7 @@ function MedicalHistoryContent({
                   </li>
                 ))}
               </ol>
-            )))}
+            )}
           </div>
 
           <div className="mt-4 flex items-center justify-between text-xs text-slate-500">
@@ -1019,10 +1024,11 @@ function MedicalHistoryContent({
                   key={n}
                   type="button"
                   onClick={() => setPage(n)}
-                  className={`h-7 min-w-7 rounded-md px-2 font-semibold ${n === page
+                  className={`h-7 min-w-7 rounded-md px-2 font-semibold ${
+                    n === page
                       ? "bg-red-800 text-white"
                       : "border border-slate-200 text-slate-600"
-                    }`}
+                  }`}
                 >
                   {n}
                 </button>

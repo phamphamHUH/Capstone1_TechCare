@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import type { QueueEntry } from "../../../../interface/Queue";
 import api from "#lib/axios";
+import CancelationReason from "./CancelationReason";
 
 type QueueTableProps = {
   filterQueues: QueueEntry[];
@@ -41,6 +42,7 @@ function QueueTable({
     setPrevQueues(filterQueues);
     setPage(1);
   }
+  const [cancelTarget, setCancelTarget] = useState<QueueEntry | null>(null);
 
   const total = filterQueues.length;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -131,30 +133,20 @@ function QueueTable({
     );
 
   // Same base as the other doctor routes; change the path if your cancel route differs
-  const handleCancel = (queue_id: string) => {
-    const reason = window.prompt(
-      "Reason for cancelling this consultation:",
-      "Skipped 3 times without responding",
-    );
-    if (reason === null) return; // staff closed the prompt
+  const handleCancel = (queue: QueueEntry) => setCancelTarget(queue);
 
-    const trimmed = reason.trim();
-    if (!trimmed) {
-      setAcceptError("A cancellation reason is required.");
-      return;
-    }
-    if (trimmed.length > 255) {
-      setAcceptError("Reason must not exceed 255 characters.");
-      return;
-    }
+  const confirmCancel = async (reason: string) => {
+    if (!cancelTarget) return;
+    const queue_id = cancelTarget.queue_id;
+    setCancelTarget(null);
 
-    return runQueueRequest(
+    await runQueueRequest(
       queue_id,
       "cancel",
       () =>
         api.patch(`/api/doctor/consultation-queues/${id(queue_id)}/cancel`, {
           room,
-          reason: trimmed,
+          reason,
         }),
       "Unable to cancel queue.",
     );
@@ -300,7 +292,7 @@ function QueueTable({
                         <button
                           type="button"
                           disabled={acceptingId !== null}
-                          onClick={() => handleCancel(queue.queue_id)}
+                          onClick={() => handleCancel(queue)}
                           className="cursor-pointer rounded-sm border-2 border-red-500 px-4 py-2 text-xs text-red-500 transition-all duration-300 hover:scale-105 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {busy && pendingAction === "cancel"
@@ -358,6 +350,16 @@ function QueueTable({
             </button>
           </div>
         </div>
+      )}
+      {cancelTarget && (
+        <CancelationReason
+          key={cancelTarget.queue_id}
+          queueId={cancelTarget.queue_id}
+          patientName={cancelTarget.patient_name}
+          skipsExhausted={(cancelTarget.skip_count ?? 0) >= MAX_SKIPS}
+          onClose={() => setCancelTarget(null)}
+          onConfirm={confirmCancel}
+        />
       )}
     </>
   );

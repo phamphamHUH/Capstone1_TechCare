@@ -209,7 +209,7 @@ export namespace getBills {
 export namespace getBillDetails {
   export interface BillItem {
     line_type?: "consultation" | "laboratory";
-    item_id?: string; // consultation_record_id or lab_item_id
+    item_id?: string; // consultation_record_id or item_id
     request_id?: string | null;
     service_id?: string;
     service_name: string;
@@ -286,7 +286,7 @@ export namespace getMedicalHistoryDetails {
   export interface laboratoryResponse {
     message: string;
     record_type: string;
-    lab_item_id: string;
+    item_id: string;
     status: string;
     updated_at: string;
     service_name: string;
@@ -335,7 +335,7 @@ export namespace getMedicalHistoryFull {
   export interface laboratoryResponse {
     message: string;
     record_type: string;
-    lab_item_id: string;
+    item_id: string;
     status: string;
     updated_at: string;
     result_value: string | number | null;
@@ -416,7 +416,7 @@ export namespace getPatientMedicalHistory {
 
   export interface laboratoryResult {
     result_id: string;
-    lab_item_id: string;
+    item_id: string;
     result_value: string;
     unit: string | null;
     reference_range: string | null;
@@ -429,7 +429,7 @@ export namespace getPatientMedicalHistory {
   }
 
   export interface laboratoryItem {
-    lab_item_id: string;
+    item_id: string;
     request_id: string;
     service_id: string;
     queue_id?: string | null;

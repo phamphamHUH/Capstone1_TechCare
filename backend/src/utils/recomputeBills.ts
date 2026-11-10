@@ -26,12 +26,12 @@ export async function recomputeBillTotals(client: PoolClient, bill_id: string) {
              AND lower(trim(cr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
            UNION ALL
            SELECT sv.price
-           FROM laboratory_request_items lri
-           JOIN services sv ON sv.service_id = lri.service_id
-           JOIN laboratory_requests lr ON lr.request_id = lri.request_id
-           WHERE lri.bill_id = bb.bill_id
-             AND lower(trim(lri.status)) NOT IN ('cancelled', 'canceled', 'rejected')
-             AND lower(trim(lr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+           FROM test_request_items tri
+           JOIN services sv ON sv.service_id = tri.service_id
+           JOIN test_requests tr ON tr.request_id = tri.request_id
+           WHERE tri.bill_id = bb.bill_id
+             AND lower(trim(tri.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+             AND lower(trim(tr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
          ) l
        ) s
        WHERE bb.bill_id = $1

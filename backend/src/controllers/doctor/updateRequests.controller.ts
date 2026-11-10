@@ -220,6 +220,7 @@ const roomText = room.trim();
     await client.query("COMMIT");
 
     publishQueueChange();
+    void notifyCancelled(entry.patient_id, "consultation", actorId(req), reason.trim());
     return res.status(200).json({
       message: "Consultation request cancelled successfully.",
       queue,
@@ -312,6 +313,7 @@ export async function skipConsultationQueueEntry(
     `;
 
     publishQueueChange();
+    if (updatedQueue[0]) void notifySkipped(updatedQueue[0].patient_id, "consultation");
     return res.status(200).json({
       message: "Queue skipped successfully and returned to the queue.",
       queue: updatedQueue[0],

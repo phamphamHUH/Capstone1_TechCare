@@ -1,4 +1,3 @@
-
 import fs from "node:fs";
 import { ENV } from "../config/env.js";
 import { connectNeon, pool } from "../config/db.js";
@@ -13,9 +12,9 @@ const reset = args.has("--reset");
 const force = args.has("--force");
 
 const WIPE = `
-  TRUNCATE activity_logs, actions, system_activity, bills, laboratory_results,
+  TRUNCATE activity_logs, actions, system_activity, bills, test_results,
            form_components, form_templates, form_component_types,
-           laboratory_request_items, laboratory_requests, prescription_records,
+           test_request_items, test_requests, prescription_records,
            consultation_records, queue_entries, services, patients, users
   RESTART IDENTITY CASCADE;
 `;
@@ -24,14 +23,14 @@ async function main() {
   if ((ENV.IS_PRODUCTION || ENV.NODE_ENV === "production") && !force) {
     console.error(
       "Refusing to seed a production environment. " +
-        "Re-run with --force if you really mean it."
+        "Re-run with --force if you really mean it.",
     );
     process.exit(1);
   }
 
   const seedSql = fs.readFileSync(
     new URL("../seed/seed.sql", import.meta.url),
-    "utf8"
+    "utf8",
   );
 
   console.log("Ensuring tables exist...");
@@ -55,12 +54,14 @@ async function main() {
         (SELECT COUNT(*) FROM services) AS services,
         (SELECT COUNT(*) FROM queue_entries) AS queue_entries,
         (SELECT COUNT(*) FROM consultation_records) AS consultations,
-        (SELECT COUNT(*) FROM laboratory_requests) AS lab_requests,
+        (SELECT COUNT(*) FROM test_requests) AS lab_requests,
         (SELECT COUNT(*) FROM bills) AS bills
     `);
 
     console.log("Done. Row counts:", rows[0]);
-    console.log("\nLogin with the accounts listed in seed.sql. Every password is: password");
+    console.log(
+      "\nLogin with the accounts listed in seed.sql. Every password is: password",
+    );
   } catch (err) {
     await client.query("ROLLBACK").catch(() => undefined);
     throw err;

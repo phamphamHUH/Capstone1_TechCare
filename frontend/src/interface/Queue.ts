@@ -60,7 +60,7 @@ export type QueueStatistics = {
   completedToday: number;
 };
 
-export type QueueTab = "all" | "laboratory" | "consultation";
+export type QueueTab = "all" | "laboratory" | "consultation" | "imaging";
 export type PriorityFilter = "all" | "yes" | "none";
 
 // Which stat card is selected on the Queues page ("all" = none selected).

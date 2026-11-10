@@ -31,12 +31,14 @@ function ServiceRequest({
   const [activeTab, setActiveTab] = useState("laboratory");
   const [patient, setPatient] = useState<Patient | null>(null);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [pendingTab, setPendingTab] = useState<string | null>(null);
 
   // FILTERS
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortOrder>("a-z");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [pageNumber, setPageNumber] = useState(1);
+  const isolatedTabs = ["consultation", "package"];
 
   // reset to page 1 whenever a filter changes (in handlers, not in an effect)
   const handleSearch = (value: string) => {
@@ -130,7 +132,7 @@ function ServiceRequest({
         loading={loading && services.length > 0}
         message="Refreshing available services..."
       >
-        <div className="border border-gray-200 rounded-xl mt-5 mx-8 grid grid-cols-5 min-h-7/12 shadow-lg">
+        <div className="border border-gray-200 rounded-md mt-5 mx-8 grid grid-cols-5 min-h-7/12 shadow-lg">
           <div className="col-span-3 border-r border-gray-200 px-8 py-5 flex flex-col justify-between">
             <ServiceSelectionPanel
               services={pageItems}
@@ -165,6 +167,24 @@ function ServiceRequest({
           </div>
         </div>
       </LoadingRegion>
+      {pendingTab && (
+        <ConfirmDialog
+          tone="warning"
+          icon={TriangleAlert}
+          title="Switch Service Type?"
+          confirmLabel="Switch & Clear"
+          cancelLabel="Stay Here"
+          description={`Switching to ${
+            cards.find((c) => c.service_type === pendingTab)?.mainHeading ??
+            "this tab"
+          } will clear your currently selected services. Do you want to continue?`}
+          onCancel={() => setPendingTab(null)}
+          onConfirm={() => {
+            switchTab(pendingTab);
+            setPendingTab(null);
+          }}
+        />
+      )}
     </main>
   );
 }

@@ -1,13 +1,7 @@
 import SideBar from "#components/SideBar";
 import Header from "#components/Header";
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  LayoutGrid,
-  ListOrdered,
-  FileText,
-  FileClock,
-  Stethoscope,
-} from "lucide-react";
+import { LayoutGrid, ListOrdered, FileText, Stethoscope } from "lucide-react";
 import { useSearchParams } from "react-router";
 import DigitizedDocument from "./pages/DigitizedDocument";
 import ConsultationQueue from "./pages/ConsultationQueue";
@@ -32,7 +26,6 @@ function Doctor() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const room = "Consultation Room";
-
   const page = searchParams.get("page") ?? "dashboard";
 
   function setPage(newPage: string) {
@@ -84,34 +77,56 @@ function Doctor() {
   const currentPage =
     navItems.find((item) => item.page === page)?.label ?? "Dashboard";
 
-  // FETCH SERVICES AND CONSULTATION QUEUES
   const loadData = useCallback(async () => {
     const request = ++latestLoad.current;
+
     setLoading(true);
-    const [servicesRes, queuesRes] = await Promise.allSettled([
+    setError(null);
+
+    const [roomServicesRes, servicesRes, queuesRes] = await Promise.allSettled([
       api.get(`/api/doctor/services/${encodeURIComponent(room)}`),
+      api.get("/api/doctor/services"),
       api.get(
         `/api/doctor/consultation-queues/room/${encodeURIComponent(room)}`,
       ),
     ]);
+
     if (request !== latestLoad.current) return;
+
     const errors: string[] = [];
+
+    if (
+      roomServicesRes.status === "fulfilled" &&
+      Array.isArray(roomServicesRes.value.data?.services)
+    ) {
+      setRoomServices(roomServicesRes.value.data.services);
+    } else {
+      errors.push("Room services could not be loaded.");
+    }
+
     if (
       servicesRes.status === "fulfilled" &&
       Array.isArray(servicesRes.value.data?.services)
     ) {
-      setServices(servicesRes.value.data.services);
+      setServices([
+        ...(servicesRes.value.data.services ?? []),
+        ...(servicesRes.value.data.packages ?? []),
+      ]);
     } else {
       errors.push("Consultation services could not be loaded.");
     }
+
     const queuesLoaded =
       queuesRes.status === "fulfilled" &&
       Array.isArray(queuesRes.value.data?.queueEntries);
+
     setQueueLoadFailed(!queuesLoaded);
+
     if (queuesLoaded) {
       const fetchedQueues: QueueEntry[] = queuesRes.value.data.queueEntries;
+
       setQueues(fetchedQueues);
-      // Restore the active consultation only after a successful queue refresh.
+
       setSelectedQueue(
         fetchedQueues.find(
           (queue) => queue.status?.toLowerCase() === "serving",
@@ -120,11 +135,11 @@ function Doctor() {
     } else {
       errors.push("Consultation queue entries could not be loaded.");
     }
+
     setError(errors.join(" ") || null);
     setLoading(false);
   }, [room]);
 
-  // FETCH DATA WHEN DOCTOR PAGE MOUNTS
   useEffect(() => {
     const initialize = async () => {
       await loadData();

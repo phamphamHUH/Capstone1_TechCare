@@ -29,7 +29,7 @@ export async function getAllUsers(
         suffix, sex, email, contact_number, emergency_contact_name,
         emergency_contact, address, birthdate, role, department,
         employment_status, date_hired, shift_start, shift_end,
-        last_login, account_status, profile_photo, active, is_verified,
+        last_login, account_status, profile_photo, active,
         created_at, updated_at
       FROM users
     `;
@@ -504,9 +504,9 @@ export async function getAnalyticsBills(
             WHERE cr.bill_id = b.bill_id
               AND LOWER(TRIM(cr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
           ) + (
-            SELECT COUNT(*) FROM laboratory_request_items lri
-            WHERE lri.bill_id = b.bill_id
-              AND LOWER(TRIM(lri.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+            SELECT COUNT(*) FROM test_request_items tri
+            WHERE tri.bill_id = b.bill_id
+              AND LOWER(TRIM(tri.status)) NOT IN ('cancelled', 'canceled', 'rejected')
           ) AS item_count,
           to_char(b.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Manila', 'YYYY-MM-DD"T"HH24:MI:SS') AS created_at,
           NULL AS paid_at
@@ -595,10 +595,10 @@ export async function getServiceAnalytics(
           FROM consultation_records cr
           UNION ALL
           SELECT
-            lri.service_id,
-            lri.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Manila',
-            lri.status
-          FROM laboratory_request_items lri
+            tri.service_id,
+            tri.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Manila',
+            tri.status
+          FROM test_request_items tri
         ) ordered
         WHERE LOWER(TRIM(status)) NOT IN ('cancelled', 'canceled', 'rejected')
         GROUP BY service_id

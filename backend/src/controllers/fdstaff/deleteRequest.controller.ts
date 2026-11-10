@@ -3,6 +3,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import type { Request, Response } from "express";
 import type { deleteQueue, deletePatient } from "./dto/delete.dto.js";
 import { publishQueueChange } from "../../services/queue-sse/index.js";
+import { actorId, notifyCancelled } from "../../services/notifications/index.js";
 export async function deleteQueue(
   req: Request,
   res: Response<deleteQueue.response | deleteQueue.error>,
@@ -12,24 +13,47 @@ export async function deleteQueue(
     const { queue_id } = req.params;
     client = await pool.connect();
     await client.query("BEGIN");
-    const { rows: [entry] } = await client.query("SELECT status FROM queue_entries WHERE queue_id = $1 FOR UPDATE", [queue_id]);
+    const {
+      rows: [entry],
+    } = await client.query(
+      "SELECT status FROM queue_entries WHERE queue_id = $1 FOR UPDATE",
+      [queue_id],
+    );
     if (!entry) {
       await client.query("ROLLBACK");
       return res.status(404).json({
         error: "Queue not found",
       } as deleteQueue.error);
     }
-    if (!["waiting", "cancelled"].includes(String(entry.status).toLowerCase())) {
+    if (
+      !["waiting", "cancelled"].includes(String(entry.status).toLowerCase())
+    ) {
       await client.query("ROLLBACK");
-      return res.status(409).json({ error: "Only waiting queue entries can be cancelled." });
+      return res
+        .status(409)
+        .json({ error: "Only waiting queue entries can be cancelled." });
     }
     // Keep the queue and its linked clinical records for history. Deleting the
     // queue previously failed its laboratory/consultation foreign keys.
-    await client.query("UPDATE queue_entries SET status = 'Cancelled', updated_at = NOW() WHERE queue_id = $1", [queue_id]);
-    await client.query("UPDATE laboratory_request_items SET status = 'Cancelled', updated_at = NOW() WHERE queue_id = $1 AND LOWER(status) = 'waiting'", [queue_id]);
-    await client.query("UPDATE consultation_records SET status = 'Cancelled', cancellation_reason = 'Cancelled by front desk' WHERE queue_id = $1 AND LOWER(status) IN ('created', 'in queue')", [queue_id]);
+    await client.query(
+      "UPDATE queue_entries SET status = 'Cancelled', updated_at = NOW() WHERE queue_id = $1",
+      [queue_id],
+    );
+    await client.query(
+      "UPDATE test_request_items SET status = 'Cancelled', updated_at = NOW() WHERE queue_id = $1 AND LOWER(status) = 'waiting'",
+      [queue_id],
+    );
+    await client.query(
+      "UPDATE consultation_records SET status = 'Cancelled', cancellation_reason = 'Cancelled by front desk' WHERE queue_id = $1 AND LOWER(status) IN ('created', 'in queue')",
+      [queue_id],
+    );
     await client.query("COMMIT");
     publishQueueChange();
+    // LAB-... queues belong to the laboratory, CONS-... to the doctors.
+    if (String(entry.status).toLowerCase() === "waiting") {
+      const kind = String(queue_id).startsWith("LAB-") ? "laboratory" : "consultation";
+      void notifyCancelled(entry.patient_id, kind, actorId(req), "Cancelled by front desk");
+    }
     return res.status(200).json({
       message: "Queue entry cancelled successfully",
     } as deleteQueue.response);
@@ -40,7 +64,9 @@ export async function deleteQueue(
     return res.status(500).json({
       error: "Error deleting queue",
     } as deleteQueue.error);
-  } finally { client?.release(); }
+  } finally {
+    client?.release();
+  }
 }
 
 export async function deletePatient(
