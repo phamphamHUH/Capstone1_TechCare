@@ -11,8 +11,8 @@ import {
 } from "lucide-react";
 import api from "#lib/axios";
 import type { Service } from "../../../../interface/Service";
-import RequestSuccessModal from "./RequestSuccessModal";
 import ConfirmDialog from "../../../../components/ConfirmDialog";
+import UniversalModal from "#components/UniversalModal";
 
 type ServiceListProps = {
   services: Service[];
@@ -232,6 +232,21 @@ function ServiceList({
           onClose={() => {
             setSuccess(null);
           }}
+        />
+      )}
+      {success && (
+        <UniversalModal
+          isOpen
+          type="success"
+          title="Request Submitted"
+          description={
+            `${success.count} ${activeTab} service${success.count === 1 ? "" : "s"} added successfully.` +
+            (success.requestId ? ` Request ID: ${success.requestId}` : "")
+          }
+          icon={<CheckCircle2 size={36} />}
+          closeOnOverlayClick
+          onClose={() => setSuccess(null)}
+          actions={[{ label: "Done", onClick: () => setSuccess(null) }]}
         />
       )}
     </>
