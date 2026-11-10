@@ -229,10 +229,10 @@ export async function getAllQueueEntries(
         LEFT JOIN services cs             ON cs.service_id = cr.service_id
         LEFT JOIN LATERAL (
           SELECT ls.service_type, ls.service_category, ls.room::text AS room
-          FROM laboratory_request_items lri
-          JOIN services ls ON ls.service_id = lri.service_id
-          WHERE lri.queue_id = qe.queue_id
-          ORDER BY lri.lab_item_id
+          FROM test_request_items tri
+          JOIN services ls ON ls.service_id = tri.service_id
+          WHERE tri.queue_id = qe.queue_id
+          ORDER BY tri.item_id
           LIMIT 1
         ) lab ON TRUE
         WHERE qe.created_at >= CURRENT_DATE
@@ -312,26 +312,24 @@ export async function getQueueRequests(
       SELECT * FROM (
         SELECT
           'laboratory'::text                          AS record_type,
-          lri.lab_item_id                             AS record_id,
-          lr.patient_id,
+          tri.item_id                                 AS record_id,
+          tr.patient_id,
           CONCAT_WS(' ', p.first_name, p.last_name)   AS patient_name,
           s.service_id,
           s.service_name,
           CONCAT_WS(' ', u.first_name, u.last_name)   AS created_by,
-          lr.requested_at                             AS created_at,
-          lr.request_id,
-          lr.is_paid,
-          lr.status AS request_status,
+          tr.requested_at                             AS created_at,
+          tr.request_id,
+          tr.status                                   AS request_status,
           s.room
-        FROM laboratory_request_items lri
-        JOIN laboratory_requests lr ON lr.request_id = lri.request_id
-        JOIN patients p             ON p.patient_id = lr.patient_id
-        JOIN services s             ON s.service_id = lri.service_id
-        LEFT JOIN users u           ON u.user_id = lr.requested_by
-        WHERE lr.is_paid = TRUE
-          AND lr.status = 'Paid'
-          AND lri.status = 'Requested'
-          AND lri.queue_id IS NULL
+        FROM test_request_items tri
+        JOIN test_requests tr ON tr.request_id = tri.request_id
+        JOIN patients p       ON p.patient_id = tr.patient_id
+        JOIN services s       ON s.service_id = tri.service_id
+        LEFT JOIN users u     ON u.user_id = tr.requested_by
+        WHERE tr.status = 'Paid'
+          AND tri.status = 'Requested'
+          AND tri.queue_id IS NULL
 
         UNION ALL
 
@@ -345,7 +343,6 @@ export async function getQueueRequests(
           CONCAT_WS(' ', u.first_name, u.last_name),
           cr.consulted_at,
           NULL::text,
-          cr.is_paid,
           cr.status,
           s.room
         FROM consultation_records cr
@@ -411,20 +408,20 @@ function selectBills(billId: string | null) {
         FROM consultation_records cr JOIN services s ON s.service_id = cr.service_id
         WHERE cr.bill_id = b.bill_id AND LOWER(TRIM(cr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
         UNION ALL
-        SELECT s.service_name, s.price, lri.created_at
-        FROM laboratory_request_items lri JOIN services s ON s.service_id = lri.service_id
-        JOIN laboratory_requests lr ON lr.request_id = lri.request_id
-        WHERE lri.bill_id = b.bill_id AND LOWER(TRIM(lri.status)) NOT IN ('cancelled', 'canceled', 'rejected')
-          AND LOWER(TRIM(lr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+        SELECT s.service_name, s.price, tri.created_at
+        FROM test_request_items tri JOIN services s ON s.service_id = tri.service_id
+        JOIN test_requests tr ON tr.request_id = tri.request_id
+        WHERE tri.bill_id = b.bill_id AND LOWER(TRIM(tri.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+          AND LOWER(TRIM(tr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
       ) l
     ) lines ON TRUE
     LEFT JOIN LATERAL (
       SELECT COUNT(*) > 0 AS has_items,
-        COALESCE(BOOL_OR(lri.queue_id IS NULL AND LOWER(TRIM(lri.status)) = 'requested'), false) AS has_unforwarded,
-        COALESCE(BOOL_OR(lr.is_priority), false) AS has_priority
-      FROM laboratory_request_items lri JOIN laboratory_requests lr ON lr.request_id = lri.request_id
-      WHERE lri.bill_id = b.bill_id AND LOWER(TRIM(lri.status)) NOT IN ('cancelled', 'canceled', 'rejected')
-        AND LOWER(TRIM(lr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+        COALESCE(BOOL_OR(tri.queue_id IS NULL AND LOWER(TRIM(tri.status)) = 'requested'), false) AS has_unforwarded,
+        COALESCE(BOOL_OR(tr.is_priority), false) AS has_priority
+      FROM test_request_items tri JOIN test_requests tr ON tr.request_id = tri.request_id
+      WHERE tri.bill_id = b.bill_id AND LOWER(TRIM(tri.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+        AND LOWER(TRIM(tr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
     ) lab ON TRUE
     WHERE LOWER(TRIM(b.status)) IN ('pending', 'unpaid', 'paid')
       AND (${billId}::text IS NULL OR b.bill_id = ${billId})
@@ -464,12 +461,12 @@ export async function getBillDetails(
         FROM consultation_records cr JOIN services s ON s.service_id = cr.service_id
         WHERE cr.bill_id = ${bill_id} AND LOWER(TRIM(cr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
         UNION ALL
-        SELECT 'laboratory'::text, lri.lab_item_id, lri.request_id, lri.service_id, s.service_name, s.service_category,
-          s.price, 1, lri.status, lri.created_at
-        FROM laboratory_request_items lri JOIN services s ON s.service_id = lri.service_id
-        JOIN laboratory_requests lr ON lr.request_id = lri.request_id
-        WHERE lri.bill_id = ${bill_id} AND LOWER(TRIM(lri.status)) NOT IN ('cancelled', 'canceled', 'rejected')
-          AND LOWER(TRIM(lr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+        SELECT 'laboratory'::text, tri.item_id, tri.request_id, tri.service_id, s.service_name, s.service_category,
+          s.price, 1, tri.status, tri.created_at
+        FROM test_request_items tri JOIN services s ON s.service_id = tri.service_id
+        JOIN test_requests tr ON tr.request_id = tri.request_id
+        WHERE tri.bill_id = ${bill_id} AND LOWER(TRIM(tri.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+          AND LOWER(TRIM(tr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
       ) lines ORDER BY created_at, item_id`,
     ]);
 
@@ -539,16 +536,16 @@ export async function getMedicalHistory(
 
       SELECT
         'laboratory'::text,
-        lri.lab_item_id::text,
+        tri.item_id::text,
         s.service_name::text,
         s.room::text,
         'Laboratory'::text,
-        lri.status::text,
-        lr.requested_at
-      FROM laboratory_request_items lri
-      JOIN laboratory_requests lr ON lr.request_id = lri.request_id
-      JOIN services s             ON s.service_id = lri.service_id
-      WHERE lr.patient_id = ${patient_id}
+        tri.status::text,
+        tr.requested_at
+      FROM test_request_items tri
+      JOIN test_requests tr ON tr.request_id = tri.request_id
+      JOIN services s             ON s.service_id = tri.service_id
+      WHERE tr.patient_id = ${patient_id}
     )
       SELECT *, COUNT(*) OVER() AS total_count
       FROM history
@@ -596,18 +593,18 @@ export async function getMedicalHistoryDetails(
     if (record_type === "laboratory") {
       const [labDetails] = await sql`
         SELECT
-          lri.lab_item_id, lri.status, lri.updated_at,
+          tri.item_id, tri.status, tri.updated_at,
           s.service_name, s.room,
           CONCAT_WS(' ', req_u.first_name, req_u.last_name)   AS requested_by,
           req_u.role                                          AS requested_by_role,
           CONCAT_WS(' ', proc_u.first_name, proc_u.last_name) AS processed_by,
           proc_u.role                                         AS processed_by_role
-        FROM laboratory_request_items lri
-        JOIN services s                                       ON s.service_id = lri.service_id
-        JOIN laboratory_requests lr                           ON lr.request_id = lri.request_id
-        LEFT JOIN users req_u                                 ON req_u.user_id = lr.requested_by
-        LEFT JOIN users proc_u                                ON proc_u.user_id = lri.processed_by
-        WHERE lri.lab_item_id = ${record_id}
+        FROM test_request_items tri
+        JOIN services s                                       ON s.service_id = tri.service_id
+        JOIN test_requests tr                          ON tr.request_id = tri.request_id
+        LEFT JOIN users req_u                                 ON req_u.user_id = tr.requested_by
+        LEFT JOIN users proc_u                                ON proc_u.user_id = tri.processed_by
+        WHERE tri.item_id = ${record_id}
       `;
 
       if (!labDetails)
@@ -618,8 +615,8 @@ export async function getMedicalHistoryDetails(
       const results = await sql`
         SELECT result_id, results, remarks,
               verified_by, verified_at, image_url, created_at
-        FROM laboratory_results
-        WHERE lab_item_id = ${record_id}
+        FROM test_results
+        WHERE item_id = ${record_id}
         ORDER BY created_at
       `;
 
@@ -695,19 +692,19 @@ export async function getMedicalHistoryFull(
     if (record_type === "laboratory") {
       const [fullLab] = await sql`
         SELECT
-          lri.lab_item_id, lri.status, lri.updated_at,
-          lr.result_value, lr.remarks, lr.verified_by, lr.verified_at,
+          tri.item_id, tri.status, tri.updated_at,
+          tr.result_value, tr.remarks, tr.verified_by, tr.verified_at,
           s.service_name, s.room,
           CONCAT_WS(' ', req_u.first_name, req_u.last_name)   AS requested_by,
           req_u.role                                          AS requested_by_role,
           CONCAT_WS(' ', proc_u.first_name, proc_u.last_name) AS processed_by,  
           proc_u.role                                         AS processed_by_role
-          FROM laboratory_request_items lri
-          JOIN services s                                     ON s.service_id = lri.service_id
-          JOIN laboratory_requests lr                         ON lr.request_id = lri.request_id
-          LEFT JOIN users req_u                               ON req_u.user_id = lr.requested_by
-          LEFT JOIN users proc_u                              ON proc_u.user_id = lri.processed_by
-          WHERE lri.lab_item_id = ${record_id}
+          FROM test_request_items tri
+          JOIN services s                                     ON s.service_id = tri.service_id
+          JOIN test_requests tr                        ON tr.request_id = tri.request_id
+          LEFT JOIN users req_u                               ON req_u.user_id = tr.requested_by
+          LEFT JOIN users proc_u                              ON proc_u.user_id = tri.processed_by
+          WHERE tri.item_id = ${record_id}
 
       `;
 
@@ -814,7 +811,7 @@ type MedicalHistoryLabRequestRow = {
 };
 
 type MedicalHistoryLabItemRow = {
-  lab_item_id: string;
+  item_id: string;
   request_id: string;
   service_id: string;
   status: string;
@@ -828,7 +825,7 @@ type MedicalHistoryLabItemRow = {
 
 type MedicalHistoryLabResultRow = {
   result_id: string;
-  lab_item_id: string;
+  item_id: string;
   result_value: string;
   unit: string | null;
   reference_range: string | null;
@@ -844,14 +841,14 @@ type MedicalHistoryLabResultRow = {
 // =======================================================================
 
 async function resolveLabItemsTable(): Promise<
-  "laboratory_request_items" | "request_items" | null
+  "test_request_items" | "request_items" | null
 > {
   const laboratoryRequestItems = (await sql`
-    SELECT to_regclass('public.laboratory_request_items') AS table_name
+    SELECT to_regclass('public.test_request_items') AS table_name
   `) as { table_name: string | null }[];
 
   if (laboratoryRequestItems[0]?.table_name) {
-    return "laboratory_request_items";
+    return "test_request_items";
   }
 
   const requestItems = (await sql`
@@ -947,13 +944,13 @@ export async function getPatientMedicalHistory(
 
     const labRequests = (await sql`
       SELECT
-        lr.request_id,
-        lr.consultation_record_id,
-        lr.doctor_id,
-        lr.status,
-        lr.is_paid,
-        lr.requested_at,
-        lr.updated_at,
+        tr.request_id,
+        tr.consultation_record_id,
+        tr.doctor_id,
+        tr.status,
+        tr.is_paid,
+        tr.requested_at,
+        tr.updated_at,
 
         u.first_name AS doctor_first_name,
         u.middle_name AS doctor_middle_name,
@@ -963,11 +960,11 @@ export async function getPatientMedicalHistory(
         u.role AS doctor_role
 
       FROM lab_requests lr
-      LEFT JOIN users u ON u.user_id = lr.doctor_id
+      LEFT JOIN users u ON u.user_id = tr.doctor_id
 
-      WHERE lr.patient_id = ${patient_id}
+      WHERE tr.patient_id = ${patient_id}
 
-      ORDER BY lr.requested_at DESC, lr.updated_at DESC
+      ORDER BY tr.requested_at DESC, tr.updated_at DESC
     `) as MedicalHistoryLabRequestRow[];
 
     // LABORATORY ITEMS AND RESULTS
@@ -978,10 +975,10 @@ export async function getPatientMedicalHistory(
     let labItems: MedicalHistoryLabItemRow[] = [];
     let labResults: MedicalHistoryLabResultRow[] = [];
 
-    if (labItemsTable === "laboratory_request_items") {
+    if (labItemsTable === "test_request_items") {
       labItems = (await sql`
         SELECT
-          li.lab_item_id,
+          li.item_id,
           li.request_id,
           li.service_id,
           li.queue_id,
@@ -993,11 +990,11 @@ export async function getPatientMedicalHistory(
           s.service_type,
           s.room
 
-        FROM laboratory_request_items li
+        FROM test_request_items li
         LEFT JOIN services s ON s.service_id = li.service_id
-        JOIN lab_requests lr ON lr.request_id = li.request_id
+        JOIN lab_requests tr ON tr.request_id = li.request_id
 
-        WHERE lr.patient_id = ${patient_id}
+        WHERE tr.patient_id = ${patient_id}
 
         ORDER BY li.created_at DESC, li.updated_at DESC
       `) as MedicalHistoryLabItemRow[];
@@ -1005,7 +1002,7 @@ export async function getPatientMedicalHistory(
       labResults = (await sql`
         SELECT
           r.result_id,
-          r.lab_item_id,
+          r.item_id,
           r.result_value,
           r.unit,
           r.reference_range,
@@ -1016,20 +1013,20 @@ export async function getPatientMedicalHistory(
           r.verified_at,
           r.created_at
 
-        FROM laboratory_results r
-        JOIN laboratory_request_items li
-          ON li.lab_item_id = r.lab_item_id
+        FROM test_results r
+        JOIN test_request_items li
+          ON li.item_id = r.item_id
         JOIN lab_requests lr
-          ON lr.request_id = li.request_id
+          ON tr.request_id = li.request_id
 
-        WHERE lr.patient_id = ${patient_id}
+        WHERE tr.patient_id = ${patient_id}
 
         ORDER BY r.created_at DESC
       `) as MedicalHistoryLabResultRow[];
     } else if (labItemsTable === "request_items") {
       labItems = (await sql`
         SELECT
-          li.lab_item_id,
+          li.item_id,
           li.request_id,
           li.service_id,
           li.status,
@@ -1042,9 +1039,9 @@ export async function getPatientMedicalHistory(
 
         FROM request_items li
         LEFT JOIN services s ON s.service_id = li.service_id
-        JOIN lab_requests lr ON lr.request_id = li.request_id
+        JOIN lab_requests tr ON tr.request_id = li.request_id
 
-        WHERE lr.patient_id = ${patient_id}
+        WHERE tr.patient_id = ${patient_id}
 
         ORDER BY li.created_at DESC, li.updated_at DESC
       `) as MedicalHistoryLabItemRow[];
@@ -1052,7 +1049,7 @@ export async function getPatientMedicalHistory(
       labResults = (await sql`
         SELECT
           r.result_id,
-          r.lab_item_id,
+          r.item_id,
           r.result_value,
           r.unit,
           r.reference_range,
@@ -1063,13 +1060,13 @@ export async function getPatientMedicalHistory(
           r.verified_at,
           r.created_at
 
-        FROM laboratory_results r
+        FROM test_results r
         JOIN request_items li
-          ON li.lab_item_id = r.lab_item_id
+          ON li.item_id = r.item_id
         JOIN lab_requests lr
-          ON lr.request_id = li.request_id
+          ON tr.request_id = li.request_id
 
-        WHERE lr.patient_id = ${patient_id}
+        WHERE tr.patient_id = ${patient_id}
 
         ORDER BY r.created_at DESC
       `) as MedicalHistoryLabResultRow[];
@@ -1081,11 +1078,11 @@ export async function getPatientMedicalHistory(
     const resultsByLabItemId = new Map<string, MedicalHistoryLabResultRow[]>();
 
     for (const result of labResults) {
-      const existing = resultsByLabItemId.get(result.lab_item_id) ?? [];
+      const existing = resultsByLabItemId.get(result.item_id) ?? [];
 
       existing.push(result);
 
-      resultsByLabItemId.set(result.lab_item_id, existing);
+      resultsByLabItemId.set(result.item_id, existing);
     }
 
     // GROUP LAB ITEMS BY REQUEST
@@ -1147,7 +1144,7 @@ export async function getPatientMedicalHistory(
       labRequests.map((request) => {
         const items = (itemsByRequestId.get(request.request_id) ?? []).map(
           (item) => ({
-            lab_item_id: item.lab_item_id,
+            item_id: item.item_id,
             request_id: item.request_id,
             service_id: item.service_id,
             queue_id: item.queue_id,
@@ -1158,7 +1155,7 @@ export async function getPatientMedicalHistory(
             service_type: item.service_type,
             room: item.room,
 
-            results: resultsByLabItemId.get(item.lab_item_id) ?? [],
+            results: resultsByLabItemId.get(item.item_id) ?? [],
           }),
         );
 

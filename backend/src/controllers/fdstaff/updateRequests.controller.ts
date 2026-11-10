@@ -70,7 +70,11 @@ export async function updatePatient(
     // multipart/form-data sends everything as strings, so blank inputs arrive as "".
     // Numeric/date columns can't accept "", so convert blanks to null.
     const toNumberOrNull = (value: unknown): number | null => {
-      if (value === undefined || value === null || String(value).trim() === "") {
+      if (
+        value === undefined ||
+        value === null ||
+        String(value).trim() === ""
+      ) {
         return null;
       }
       const n = Number(value);
@@ -109,10 +113,13 @@ export async function updatePatient(
     // Either way a verification link is sent to the new email below.
     const emailChanged =
       Boolean(email?.trim()) &&
-      email.trim().toLowerCase() !== String(existingPatient.email).toLowerCase();
+      email.trim().toLowerCase() !==
+        String(existingPatient.email).toLowerCase();
 
-    const newEmail = emailChanged && !existingPatient.is_verified ? email.trim() : null;
-    const newPendingEmail = emailChanged && existingPatient.is_verified ? email.trim() : null;
+    const newEmail =
+      emailChanged && !existingPatient.is_verified ? email.trim() : null;
+    const newPendingEmail =
+      emailChanged && existingPatient.is_verified ? email.trim() : null;
 
     let imageUrl: string | null = null;
     if (req.file) {
@@ -438,12 +445,12 @@ export async function confirmPayment(
          JOIN services s ON s.service_id = cr.service_id
          WHERE cr.bill_id = $1 AND LOWER(TRIM(cr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
          UNION ALL
-         SELECT 'laboratory'::text, lri.lab_item_id, lri.request_id, lri.service_id, s.service_name, s.service_category, s.price, 1
-         FROM laboratory_request_items lri
-         JOIN services s ON s.service_id = lri.service_id
-         JOIN laboratory_requests lr ON lr.request_id = lri.request_id
-         WHERE lri.bill_id = $1 AND LOWER(TRIM(lri.status)) NOT IN ('cancelled', 'canceled', 'rejected')
-           AND LOWER(TRIM(lr.status)) NOT IN ('cancelled', 'canceled', 'rejected')`,
+         SELECT 'laboratory'::text, tri.item_id, tri.request_id, tri.service_id, s.service_name, s.service_category, s.price, 1
+         FROM test_request_items tri
+         JOIN services s ON s.service_id = tri.service_id
+         JOIN test_requests tr ON tr.request_id = tri.request_id
+         WHERE tri.bill_id = $1 AND LOWER(TRIM(tri.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+           AND LOWER(TRIM(tr.status)) NOT IN ('cancelled', 'canceled', 'rejected')`,
         [bill_id],
       );
 
@@ -544,10 +551,10 @@ export async function confirmPayment(
         [bill_id],
       );
       await client.query(
-        `UPDATE laboratory_requests lr
-         SET is_paid = TRUE, status = 'Paid', is_priority = COALESCE($2, lr.is_priority), updated_at = NOW()
-         WHERE EXISTS (SELECT 1 FROM laboratory_request_items lri WHERE lri.request_id = lr.request_id AND lri.bill_id = $1)
-           AND LOWER(TRIM(lr.status)) NOT IN ('cancelled', 'canceled', 'rejected')`,
+        `UPDATE test_requests lr
+         SET is_paid = TRUE, status = 'Paid', is_priority = COALESCE($2, tr.is_priority), updated_at = NOW()
+         WHERE EXISTS (SELECT 1 FROM test_request_items tri WHERE tri.request_id = tr.request_id AND tri.bill_id = $1)
+           AND LOWER(TRIM(tr.status)) NOT IN ('cancelled', 'canceled', 'rejected')`,
         [bill_id, priority ?? null],
       );
     }
@@ -563,14 +570,14 @@ export async function confirmPayment(
       await client.query("BEGIN");
       await client.query("SELECT pg_advisory_xact_lock(hashtext('queue_ids'))");
       const { rows: labItems } = await client.query(
-        `SELECT lri.lab_item_id, lri.request_id, lri.queue_id, lri.status, lr.patient_id, lr.is_priority, s.room
-         FROM laboratory_request_items lri
-         JOIN services s ON s.service_id = lri.service_id
-         JOIN laboratory_requests lr ON lr.request_id = lri.request_id
-         WHERE lri.bill_id = $1 AND LOWER(TRIM(lri.status)) NOT IN ('cancelled', 'canceled', 'rejected')
-           AND LOWER(TRIM(lr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
-         ORDER BY lri.request_id, lri.lab_item_id
-         FOR UPDATE OF lri`,
+        `SELECT tri.item_id, tri.request_id, tri.queue_id, tri.status, tr.patient_id, tr.is_priority, s.room
+         FROM test_request_items tri
+         JOIN services s ON s.service_id = tri.service_id
+         JOIN test_requests tr ON tr.request_id = tri.request_id
+         WHERE tri.bill_id = $1 AND LOWER(TRIM(tri.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+           AND LOWER(TRIM(tr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+         ORDER BY tri.request_id, tri.item_id
+         FOR UPDATE OF tri`,
         [bill_id],
       );
       has_laboratory_items = labItems.length > 0;
@@ -611,9 +618,9 @@ export async function confirmPayment(
                AND q.created_at < CURRENT_DATE + INTERVAL '1 day'
                AND EXISTS (
                  SELECT 1
-                 FROM laboratory_request_items lri
-                 JOIN services s ON s.service_id = lri.service_id
-                 WHERE lri.queue_id = q.queue_id AND s.room = $2
+                 FROM test_request_items tri
+                 JOIN services s ON s.service_id = tri.service_id
+                 WHERE tri.queue_id = q.queue_id AND s.room = $2
                )
              ORDER BY q.created_at
              LIMIT 1`,
@@ -646,13 +653,13 @@ export async function confirmPayment(
             );
           }
 
-          const ids = group.map((item) => item.lab_item_id);
+          const ids = group.map((item) => item.item_id);
           const { rows: linked } = await client.query(
-            `UPDATE laboratory_request_items
+            `UPDATE test_request_items
              SET queue_id = $1, status = 'Waiting', updated_at = NOW()
-             WHERE lab_item_id = ANY($2::text[])
+             WHERE item_id = ANY($2::text[])
                AND queue_id IS NULL AND LOWER(TRIM(status)) = 'requested'
-             RETURNING lab_item_id`,
+             RETURNING item_id`,
             [queue_id, ids],
           );
           if (linked.length !== ids.length) {

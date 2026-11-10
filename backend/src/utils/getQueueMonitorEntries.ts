@@ -36,10 +36,10 @@ export async function getQueueMonitorEntries(): Promise<QueueMonitorEntry[]> {
     LEFT JOIN services cs             ON cs.service_id = cr.service_id
     LEFT JOIN LATERAL (
       SELECT ls.service_name, ls.service_type, ls.room::text AS room
-      FROM laboratory_request_items lri
-      JOIN services ls ON ls.service_id = lri.service_id
-      WHERE lri.queue_id = qe.queue_id
-      ORDER BY lri.lab_item_id
+      FROM test_request_items tri
+      JOIN services ls ON ls.service_id = tri.service_id
+      WHERE tri.queue_id = qe.queue_id
+      ORDER BY tri.item_id
       LIMIT 1
     ) lab ON TRUE
     WHERE qe.created_at >= CURRENT_DATE

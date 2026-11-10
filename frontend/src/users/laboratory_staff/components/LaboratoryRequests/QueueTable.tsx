@@ -102,11 +102,7 @@ function QueueTable({
 
   return (
     <>
-      {acceptError && (
-        <ErrorMessage>
-          {acceptError}
-        </ErrorMessage>
-      )}
+      {acceptError && <ErrorMessage>{acceptError}</ErrorMessage>}
 
       <table className="w-full table-fixed">
         <colgroup>
@@ -249,9 +245,7 @@ function QueueTable({
                     {accordionLoading ? (
                       <LoadingScreen message="Loading laboratory items..." />
                     ) : accordionError ? (
-                      <ErrorMessage>
-                        {accordionError}
-                      </ErrorMessage>
+                      <ErrorMessage>{accordionError}</ErrorMessage>
                     ) : laboratoryItems.length === 0 ? (
                       <EmptyState message="No laboratory items found." />
                     ) : (
@@ -287,11 +281,11 @@ function QueueTable({
                         <tbody>
                           {laboratoryItems.map((item) => (
                             <tr
-                              key={item.lab_item_id}
+                              key={item.item_id}
                               className="border-b border-gray-200 bg-white text-sm"
                             >
                               <td className="px-3 py-3 text-center text-xs">
-                                {item.lab_item_id}
+                                {item.item_id}
                               </td>
                               <td className="px-3 py-3 text-center text-xs">
                                 {item.service_name}

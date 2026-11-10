@@ -7,7 +7,7 @@ import ServiceList from "../components/ServiceRequest/ServiceList";
 import PatientSelectionHeader from "../components/ServiceRequest/PatientSelectionHeader";
 import type { SortOrder, Service } from "../../../interface/Service";
 import type { Patient } from "../../../interface/Patient";
-import { Syringe, Clipboard } from "lucide-react";
+import { Syringe, Clipboard, BoneFracture, Package } from "lucide-react";
 
 type ServiceRequestProps = {
   services: Service[];
@@ -119,6 +119,18 @@ function ServiceRequest({
       subHeading: "Request Consultation or Specialist Service",
       icon: Clipboard,
     },
+    {
+      service_type: "imaging",
+      mainHeading: "Imaging Services",
+      subHeading: "Request Imaging tests and diagnosis",
+      icon: BoneFracture,
+    },
+    {
+      service_type: "package",
+      mainHeading: "Packages",
+      subHeading: "Request Packaged Services for lower price",
+      icon: Package,
+    },
   ];
   if (loading && services.length === 0) {
     return (
@@ -135,24 +147,25 @@ function ServiceRequest({
         onSelectPatient={setPatient}
         onRegister={() => setPage("patient-registration")}
       />
-      <section className="flex gap-5 px-8 mt-6">
+      {/* SERVICE TABS */}
+      <section className="flex gap-3 mt-6 px-8">
         {cards.map((card, index) => {
           const Icon = card.icon;
           return (
             <div
-              className={`flex items-center border w-90 justify-center gap-5 py-3 rounded-3xl cursor-pointer shadow-md 
-                      hover:text-blue-600 hover:border-blue-200 hover:scale-101 active:scale-100 active:text-blue-600 
-                      ${activeTab === card.service_type ? "text-blue-400 " : "border-gray-200"}`}
+              className={`flex flex-1 min-w-0 items-center justify-center gap-3 border px-3 py-3 rounded-lg cursor-pointer shadow-md
+                hover:text-sky-600 hover:border-sky-200 hover:scale-101 active:scale-100 active:text-sky-600
+                ${activeTab === card.service_type ? "text-sky-400" : "border-gray-200"}`}
               key={index}
               onClick={() => {
                 clearServices();
-                setActiveTab(card.service_type);
+                handleTab(card.service_type);
               }}
             >
-              <Icon size={25} />
-              <div>
-                <h1 className="text-lg font-bold">{card.mainHeading}</h1>
-                <h3 className="text-sm">{card.subHeading}</h3>
+              <Icon size={25} className="shrink-0" />
+              <div className="min-w-0">
+                <h1 className="text-md font-bold">{card.mainHeading}</h1>
+                <h3 className="text-xs">{card.subHeading}</h3>
               </div>
             </div>
           );
@@ -162,7 +175,7 @@ function ServiceRequest({
         loading={loading && services.length > 0}
         message="Refreshing available services..."
       >
-        <div className="border border-gray-200 rounded-xl mt-5 mx-8 grid grid-cols-5 min-h-7/12 shadow-lg">
+        <div className="border border-gray-200 rounded-md mt-5 mx-8 grid grid-cols-5 min-h-7/12 shadow-lg">
           <div className="col-span-3 border-r border-gray-200 px-8 py-5 flex flex-col justify-between">
             <ServiceSelectionPanel
               services={pageItems}

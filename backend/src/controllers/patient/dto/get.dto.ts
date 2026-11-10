@@ -46,7 +46,7 @@ export namespace getMedicalHistoryDetails {
   export interface laboratoryResponse {
     message: string;
     record_type: string;
-    lab_item_id: string;
+    item_id: string;
     status: string;
     updated_at: string;
     service_name: string;
@@ -83,7 +83,7 @@ export namespace getMedicalHistoryFull {
   export interface laboratoryResponse {
     message: string;
     record_type: string;
-    lab_item_id: string;
+    item_id: string;
     status: string;
     updated_at: string;
     result_value: string | number | null;

@@ -10,7 +10,7 @@ import { inputTypes } from "./laboratoryValidation";
 import { matchingTest, toReportTemplate } from "./reportTemplates";
 import { retryLaboratoryRead } from "./laboratoryNetwork";
 
-export const LABORATORY_RESULTS_ENDPOINT = "/api/labstaff/laboratory-results";
+export const test_results_ENDPOINT = "/api/labstaff/laboratory-results";
 
 type StoredEntry = {
   name: string;
@@ -22,7 +22,7 @@ type StoredEntry = {
 
 export type ReleasedResult = {
   result_id: string;
-  lab_item_id: string;
+  item_id: string;
   results: StoredEntry[];
   remarks?: string;
   created_at?: string;
@@ -41,7 +41,7 @@ function resultText(value: unknown): string | number {
 export async function saveResult(payload: ResultEntryPayload) {
   const template = payload.template_snapshot;
   if (
-    !payload.lab_item_id ||
+    !payload.item_id ||
     !template ||
     template.form_id !== payload.form_id ||
     template.service_id !== payload.service_id ||
@@ -74,14 +74,14 @@ export async function saveResult(payload: ResultEntryPayload) {
   // Store the actual selected admin revision, never reconstruct from a newer one.
   results[0].template_snapshot = template;
   const response = await api.post(
-    `${LABORATORY_RESULTS_ENDPOINT}/${encodeURIComponent(payload.lab_item_id)}`,
+    `${test_results_ENDPOINT}/${encodeURIComponent(payload.item_id)}`,
     { results, remarks: payload.remarks, room: payload.room },
   );
   const saved = response.data?.result;
   if (
     typeof saved?.result_id !== "string" ||
     !saved.result_id.trim() ||
-    saved.lab_item_id !== payload.lab_item_id
+    saved.item_id !== payload.item_id
   ) {
     throw new Error(
       "The server did not confirm this item's saved result. Your entries have been kept.",
@@ -93,7 +93,7 @@ export async function saveResult(payload: ResultEntryPayload) {
 export async function fetchReleasedResults(
   signal?: AbortSignal,
 ): Promise<ReleasedResult[]> {
-  const response = await api.get(LABORATORY_RESULTS_ENDPOINT, { signal });
+  const response = await api.get(test_results_ENDPOINT, { signal });
   const results: unknown = response.data?.results;
   if (
     !Array.isArray(results) ||
@@ -102,8 +102,8 @@ export async function fetchReleasedResults(
         !row ||
         typeof row.result_id !== "string" ||
         !row.result_id.trim() ||
-        typeof row.lab_item_id !== "string" ||
-        !row.lab_item_id.trim() ||
+        typeof row.item_id !== "string" ||
+        !row.item_id.trim() ||
         !Array.isArray(row.results),
     )
   ) {
@@ -118,7 +118,7 @@ export function releasedReports(
 ): LaboratoryReportData[] {
   const itemIds = new Set(request.tests.map((test) => test.id));
   return results
-    .filter((row) => itemIds.has(row.lab_item_id))
+    .filter((row) => itemIds.has(row.item_id))
     .map((row) => {
       const stored = row.results.find(
         (entry) => entry.template_snapshot,
@@ -130,7 +130,7 @@ export function releasedReports(
       }
       const template = toReportTemplate(stored, []);
       const test = matchingTest(request, template);
-      if (test?.id !== row.lab_item_id || !template.components.length) {
+      if (test?.id !== row.item_id || !template.components.length) {
         throw new Error(
           "The saved report template does not match this laboratory item.",
         );
@@ -180,7 +180,7 @@ export async function fetchSavedResults(
 ): Promise<ReleasedResult[]> {
   const response = await retryLaboratoryRead(
     () =>
-      api.get(`${LABORATORY_RESULTS_ENDPOINT}/saved`, {
+      api.get(`${test_results_ENDPOINT}/saved`, {
         params: { room },
         signal,
       }),
@@ -193,7 +193,7 @@ export async function fetchSavedResults(
       (row) =>
         !row ||
         typeof row.result_id !== "string" ||
-        typeof row.lab_item_id !== "string" ||
+        typeof row.item_id !== "string" ||
         !Array.isArray(row.results) ||
         !["Pending", "Released"].includes(row.status),
     )
@@ -211,17 +211,16 @@ export async function startAnalysis(
     throw new Error("Laboratory item IDs are incomplete.");
   const response = await api.patch(
     "/api/labstaff/laboratory-requests/analysis/start",
-    { room: request.room, lab_item_ids: ids },
+    { room: request.room, item_ids: ids },
     { signal },
   );
   const items = response.data?.items;
   if (
     !Array.isArray(items) ||
     items.length !== ids.length ||
-    new Set(items.map((item) => item.lab_item_id)).size !== ids.length ||
+    new Set(items.map((item) => item.item_id)).size !== ids.length ||
     items.some(
-      (item) =>
-        !ids.includes(item.lab_item_id) || item.status !== "In Progress",
+      (item) => !ids.includes(item.item_id) || item.status !== "In Progress",
     )
   )
     throw new Error(
@@ -233,7 +232,7 @@ export function applyReleasedResults(
   requests: AnalysisRequest[],
   results: ReleasedResult[],
 ): AnalysisRequest[] {
-  const releasedIds = new Set(results.map((result) => result.lab_item_id));
+  const releasedIds = new Set(results.map((result) => result.item_id));
   return requests.flatMap((request) => {
     const completed = request.tests.filter((test) => releasedIds.has(test.id));
     const ready = request.tests.filter((test) => !releasedIds.has(test.id));
@@ -250,7 +249,7 @@ export async function releaseResult(
   signal?: AbortSignal,
 ): Promise<ResultReleaseResponse> {
   const response = await api.patch(
-    `${LABORATORY_RESULTS_ENDPOINT}/${encodeURIComponent(payload.result_id)}/release`,
+    `${test_results_ENDPOINT}/${encodeURIComponent(payload.result_id)}/release`,
     undefined,
     { signal },
   );

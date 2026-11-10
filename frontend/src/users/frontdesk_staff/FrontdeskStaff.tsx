@@ -48,55 +48,65 @@ function FrontdeskStaff() {
   }
 
   const loadData = useCallback(async () => {
-    // Only the newest refresh may update state, so a slow response cannot overwrite a newer one.
     const load = ++latestLoad.current;
     setLoading(true);
     const sources = [
       {
         url: "/api/fdstaff/services",
-        key: "services",
+        keys: ["services", "packages"], // merged in this order
         label: "services",
         set: setServices,
       },
       {
         url: "/api/fdstaff/patients",
-        key: "patients",
+        keys: ["patients"],
         label: "patients",
         set: setPatients,
       },
       {
         url: "/api/fdstaff/queues",
-        key: "queueEntries",
+        keys: ["queueEntries"],
         label: "queues",
         set: setQueues,
       },
       {
         url: "/api/fdstaff/queue-requests",
-        key: "requests",
+        keys: ["requests"],
         label: "queue requests",
         set: setQueueRequests,
       },
       {
         url: "/api/fdstaff/billings",
-        key: "bills",
+        keys: ["bills"],
         label: "bills",
         set: setBills,
       },
     ];
+
     const responses = await Promise.allSettled(
       sources.map((source) => api.get(source.url)),
     );
     if (load !== latestLoad.current) return;
+
     const failed: string[] = [];
     responses.forEach((response, index) => {
       const source = sources[index];
-      if (
-        response.status === "fulfilled" &&
-        Array.isArray(response.value.data?.[source.key])
-      ) {
-        source.set(response.value.data[source.key]);
-      } else failed.push(source.label);
+      const data = response.status === "fulfilled" ? response.value.data : null;
+      const [primaryKey] = source.keys;
+
+      // Only the first key is required. Extra keys (packages) are optional,
+      // like `?? []` in the Doctor page.
+      if (Array.isArray(data?.[primaryKey])) {
+        source.set(
+          source.keys.flatMap((key) =>
+            Array.isArray(data[key]) ? data[key] : [],
+          ),
+        );
+      } else {
+        failed.push(source.label);
+      }
     });
+
     setFailedSources(failed);
     setLoading(false);
   }, []);
