@@ -70,7 +70,7 @@ export namespace getAllActivities {
 // =========================
 // GET ALL SERVICES
 // =========================
-export namespace getAllServices {
+export namespace getAllservices {
   export interface Service {
     id: number;
     service_id: string;
