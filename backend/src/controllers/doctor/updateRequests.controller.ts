@@ -9,6 +9,12 @@ import type {
 } from "./dto/update.dto.js";
 import { recomputeBillTotals } from "../../utils/recomputeBills.js";
 import { publishQueueChange } from "../../services/queue-sse/index.js";
+import {
+  actorId,
+  notifyCalled,
+  notifyCancelled,
+  notifySkipped,
+} from "../../services/notifications/index.js";
 import type { addConsultationFindings } from "./dto/post.dto.js";
 import { validateFindings } from "../../utils/consultationValidation.js";
 import { resolveDoctorId } from "../../utils/resolveDoctorId.js";
@@ -74,6 +80,7 @@ export async function acceptConsultationQueue(
     }
 
     publishQueueChange();
+    void notifyCalled(updated.patient_id, "consultation", roomText);
     return res.status(200).json({
       message: "Consultation accepted and now being served.",
       queue: updated,
@@ -313,6 +320,7 @@ export async function cancelConsultationQueue(
     await client.query("COMMIT");
 
     publishQueueChange();
+    void notifyCancelled(entry.patient_id, "consultation", actorId(req), reason.trim());
     return res.status(200).json({
       message: "Consultation request cancelled successfully.",
       queue,
@@ -412,6 +420,7 @@ export async function skipConsultationQueueEntry(
     `;
 
     publishQueueChange();
+    if (updatedQueue[0]) void notifySkipped(updatedQueue[0].patient_id, "consultation");
     return res.status(200).json({
       message: "Queue skipped successfully and returned to the queue.",
       queue: updatedQueue[0],

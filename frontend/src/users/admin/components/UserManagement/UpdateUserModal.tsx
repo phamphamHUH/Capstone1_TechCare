@@ -22,6 +22,8 @@ import {
   LAB_ROOMS,
   LAB_STAFF_ROLE,
 } from "./labRooms";
+import { DOCTOR_FIELDS } from "./doctorField";
+import UniversalModal from "../../../../components/UniversalModal";
 
 type Props = {
   user: User;
@@ -51,7 +53,7 @@ function UpdateUserModal({
 
   const [email, setEmail] = useState(user.email);
   const [contactNumber, setContactNumber] = useState(
-    user.contact_number
+    user.contact_number || ""
   );
   const [address, setAddress] = useState(user.address);
 
@@ -70,20 +72,25 @@ function UpdateUserModal({
     user.date_hired?.substring(0, 10) || ""
   );
 
-  const [shiftStart, setShiftStart] = useState(
-    user.shift_start || ""
+  const [shiftStart, setShiftStart] = useState(user.shift_start || "");
+  const [shiftEnd, setShiftEnd] = useState(user.shift_end || "");
+
+  const [emergencyContactName, setEmergencyContactName] = useState(
+    user.emergency_contact_name || "",
   );
-
-  const [shiftEnd, setShiftEnd] = useState(
-    user.shift_end || ""
-  );
-
-  const [emergencyContactName, setEmergencyContactName] =
-    useState(user.emergency_contact_name || "");
-
   const [emergencyContact, setEmergencyContact] = useState(
-    user.emergency_contact || ""
+    user.emergency_contact || "",
   );
+
+  // Doctor information (only used when role === "doctor")
+  const [doctor, setDoctor] = useState({
+    prc_license_number: user.prc_license_number ?? "",
+    ptr_number: user.ptr_number ?? "",
+    s2_license: user.s2_license ?? "",
+    medical_specialty: user.medical_specialty ?? "",
+    subspecialty: user.subspecialty ?? "",
+    board_certification: user.board_certification ?? "",
+  });
 
   const [hiddenPassword, setHiddenPassword] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -91,26 +98,30 @@ function UpdateUserModal({
   // PFP
   const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
   const [profilePhotoPreview, setProfilePhotoPreview] = useState(
-    user.profile_photo || ""
+    user.profile_photo || "",
   );
+
+  const [notice, setNotice] = useState<{
+    title: string;
+    message: string;
+    after?: () => void;
+  } | null>(null);
+
+  const closeNotice = () => {
+    const after = notice?.after;
+    setNotice(null);
+    after?.();
+  };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const fullName = [
-    firstName,
-    middleName,
-    lastName,
-    suffix,
-  ]
+  const fullName = [firstName, middleName, lastName, suffix]
     .filter(Boolean)
     .join(" ");
 
-  const initials = `${firstName?.charAt(0) || ""}${lastName?.charAt(0) || ""
-    }`;
+  const initials = `${firstName?.charAt(0) || ""}${lastName?.charAt(0) || ""}`;
 
-  const handleProfilePhoto = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleProfilePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
 
     if (!file) return;
@@ -125,6 +136,10 @@ function UpdateUserModal({
       return;
     }
 
+    // Only revoke previews created in the browser, not the saved image URL
+    if (profilePhoto && profilePhotoPreview) {
+      URL.revokeObjectURL(profilePhotoPreview);
+    }
     setProfilePhoto(file);
     setProfilePhotoPreview(URL.createObjectURL(file));
   };
@@ -163,15 +178,14 @@ function UpdateUserModal({
       formData.append("shift_start", shiftStart);
       formData.append("shift_end", shiftEnd);
 
-      formData.append(
-        "emergency_contact_name",
-        emergencyContactName.trim()
-      );
+      formData.append("emergency_contact_name", emergencyContactName.trim());
+      formData.append("emergency_contact", emergencyContact.trim());
 
-      formData.append(
-        "emergency_contact",
-        emergencyContact.trim()
-      );
+      if (role === "doctor") {
+        DOCTOR_FIELDS.forEach(({ key }) =>
+          formData.append(key, doctor[key].trim()),
+        );
+      }
 
       if (password.trim()) {
         formData.append("password", password);
@@ -185,17 +199,22 @@ function UpdateUserModal({
 
       const response = await api.patch(
         `/api/admin/users/${user.user_id}`,
-        formData
+        formData,
       );
 
-      alert(response.data.message);
-
       loadData();
-      onClose();
+      setNotice({
+        title: "User updated",
+        message: response.data.message,
+        after: onClose,
+      });
 
     } catch (error) {
       console.error("UPDATE USER ERROR:", error);
-      setFormError("Failed to update user.");
+      setFormError(
+        (error as { response?: { data?: { message?: string } } }).response?.data
+          ?.message || "Failed to update user.",
+      );
     } finally {
       setSaving(false);
     }
@@ -204,8 +223,7 @@ function UpdateUserModal({
   const inputClass =
     "w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-100";
 
-  const labelClass =
-    "mb-1.5 block text-xs font-medium text-gray-500";
+  const labelClass = "mb-1.5 block text-xs font-medium text-gray-500";
 
   return (
     <>
@@ -217,12 +235,9 @@ function UpdateUserModal({
 
       {/* Modal */}
       <div className="fixed left-1/2 top-1/2 z-50 flex w-[94%] max-w-5xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-3xl bg-gray-50 shadow-2xl">
-
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-100 bg-white px-6 py-5">
-
           <div className="flex items-center gap-3">
-
             <button
               onClick={onClose}
               disabled={saving}
@@ -240,7 +255,6 @@ function UpdateUserModal({
                 Edit account and personal information
               </p>
             </div>
-
           </div>
 
           <button
@@ -250,25 +264,22 @@ function UpdateUserModal({
           >
             <X size={20} />
           </button>
-
         </div>
 
         {/* Content */}
         <div className="max-h-[82vh] overflow-y-auto p-6">
-          {formError && <ErrorMessage className="mb-4">{formError}</ErrorMessage>}
+          {formError && (
+            <ErrorMessage className="mb-4">{formError}</ErrorMessage>
+          )}
 
           {/* Profile Hero */}
           <div className="overflow-hidden rounded-3xl bg-white shadow-sm">
-
-            <div className="h-36 bg-gradient-to-r from-gray-100 via-gray-50 to-gray-100" />
+            <div className="h-36 bg-linear-to-r from-gray-100 via-gray-50 to-gray-100" />
 
             <div className="px-8 pb-8">
-
               <div className="-mt-16 flex items-end justify-between">
-
                 {/* Profile photo */}
                 <div className="relative">
-
                   {profilePhotoPreview ? (
                     <img
                       src={profilePhotoPreview}
@@ -284,9 +295,7 @@ function UpdateUserModal({
                   {/* Camera button */}
                   <button
                     type="button"
-                    onClick={() =>
-                      fileInputRef.current?.click()
-                    }
+                    onClick={() => fileInputRef.current?.click()}
                     className="absolute bottom-1 right-1 flex h-10 w-10 items-center justify-center rounded-xl border-2 border-white bg-gray-900 text-white shadow-lg transition hover:bg-gray-800"
                   >
                     <Camera size={18} />
@@ -299,35 +308,28 @@ function UpdateUserModal({
                     onChange={handleProfilePhoto}
                     className="hidden"
                   />
-
                 </div>
 
                 <span className="flex items-center gap-2 rounded-full bg-green-50 px-4 py-2 text-sm font-medium text-green-700">
                   <span className="h-2 w-2 rounded-full bg-green-500" />
                   Active
                 </span>
-
               </div>
 
               <div className="mt-5">
-
                 <h1 className="text-2xl font-bold tracking-tight text-gray-900">
                   {fullName}
                 </h1>
 
                 <p className="mt-1 text-sm text-gray-500">
-                  <span className="capitalize">
-                    {role}
-                  </span>
+                  <span className="capitalize">{role}</span>
 
                   {department && ` • ${department}`}
                 </p>
 
                 <button
                   type="button"
-                  onClick={() =>
-                    fileInputRef.current?.click()
-                  }
+                  onClick={() => fileInputRef.current?.click()}
                   className="mt-4 text-sm font-medium text-gray-600 transition hover:text-gray-900"
                 >
                   Change profile photo
@@ -338,109 +340,81 @@ function UpdateUserModal({
                     {profilePhoto.name}
                   </p>
                 )}
-
               </div>
-
             </div>
           </div>
 
           {/* Cards */}
           <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-
             {/* Contact */}
             <div className="rounded-3xl bg-white p-6 shadow-sm">
-
               <h2 className="mb-6 text-base font-semibold text-gray-900">
                 Contact Information
               </h2>
 
               <div className="space-y-5">
-
                 <div className="flex gap-4">
-
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100">
                     <Mail size={18} className="text-gray-600" />
                   </div>
 
                   <div className="flex-1">
-                    <label className={labelClass}>
-                      Email
-                    </label>
+                    <label className={labelClass}>Email</label>
 
                     <input
                       type="email"
                       value={email}
-                      onChange={(e) =>
-                        setEmail(e.target.value)
-                      }
+                      onChange={(e) => setEmail(e.target.value)}
                       className={inputClass}
                     />
                   </div>
-
                 </div>
 
                 <div className="flex gap-4">
-
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100">
                     <Phone size={18} className="text-gray-600" />
                   </div>
 
                   <div className="flex-1">
-                    <label className={labelClass}>
-                      Contact Number
-                    </label>
+                    <label className={labelClass}>Contact Number</label>
 
                     <input
                       type="text"
                       value={contactNumber}
-                      onChange={(e) =>
-                        setContactNumber(e.target.value)
-                      }
+                      onChange={(e) => setContactNumber(e.target.value)}
                       className={inputClass}
                     />
                   </div>
-
                 </div>
 
                 <div className="flex gap-4">
-
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100">
                     <MapPin size={18} className="text-gray-600" />
                   </div>
 
                   <div className="flex-1">
-                    <label className={labelClass}>
-                      Address
-                    </label>
+                    <label className={labelClass}>Address</label>
 
                     <textarea
                       value={address}
-                      onChange={(e) =>
-                        setAddress(e.target.value)
-                      }
+                      onChange={(e) => setAddress(e.target.value)}
                       rows={3}
                       className={`${inputClass} resize-none`}
                     />
                   </div>
-
                 </div>
-
               </div>
             </div>
 
             {/* Employment */}
             <div className="rounded-3xl bg-white p-6 shadow-sm">
-
               <h2 className="mb-6 text-base font-semibold text-gray-900">
                 Employment Information
               </h2>
 
               <div className="space-y-5">
-
                 <div>
-                  <label className={labelClass}>
-                    Employee ID
-                  </label>
+                  <label className={labelClass}>Employee ID</label>
 
                   <div className="rounded-xl bg-gray-50 px-3 py-2.5 text-sm font-semibold text-gray-700">
                     {user.user_id}
@@ -448,24 +422,18 @@ function UpdateUserModal({
                 </div>
 
                 <div>
-                  <label className={labelClass}>
-                    Username
-                  </label>
+                  <label className={labelClass}>Username</label>
 
                   <input
                     type="text"
                     value={username}
-                    onChange={(e) =>
-                      setUsername(e.target.value)
-                    }
+                    onChange={(e) => setUsername(e.target.value)}
                     className={inputClass}
                   />
                 </div>
 
                 <div>
-                  <label className={labelClass}>
-                    Role
-                  </label>
+                  <label className={labelClass}>Role</label>
 
                   <select
                     value={role}
@@ -474,8 +442,8 @@ function UpdateUserModal({
                         departmentAfterRoleChange(
                           role,
                           e.target.value,
-                          department
-                        )
+                          department,
+                        ),
                       );
                       setRole(e.target.value);
                     }}
@@ -483,12 +451,8 @@ function UpdateUserModal({
                   >
                     <option value="admin">Admin</option>
                     <option value="doctor">Doctor</option>
-                    <option value="laboratory-staff">
-                      Laboratory Staff
-                    </option>
-                    <option value="frontdesk-staff">
-                      Front Desk Staff
-                    </option>
+                    <option value="laboratory-staff">Laboratory Staff</option>
+                    <option value="frontdesk-staff">Front Desk Staff</option>
                     <option value="patient">Patient</option>
                   </select>
                 </div>
@@ -501,9 +465,7 @@ function UpdateUserModal({
                   {role === LAB_STAFF_ROLE ? (
                     <select
                       value={department}
-                      onChange={(e) =>
-                        setDepartment(e.target.value)
-                      }
+                      onChange={(e) => setDepartment(e.target.value)}
                       className={inputClass}
                     >
                       <option value="">Select Room</option>
@@ -517,9 +479,7 @@ function UpdateUserModal({
                     <input
                       type="text"
                       value={department}
-                      onChange={(e) =>
-                        setDepartment(e.target.value)
-                      }
+                      onChange={(e) => setDepartment(e.target.value)}
                       placeholder="Not assigned"
                       className={inputClass}
                     />
@@ -527,15 +487,11 @@ function UpdateUserModal({
                 </div>
 
                 <div>
-                  <label className={labelClass}>
-                    Employment Status
-                  </label>
+                  <label className={labelClass}>Employment Status</label>
 
                   <select
                     value={employmentStatus}
-                    onChange={(e) =>
-                      setEmploymentStatus(e.target.value)
-                    }
+                    onChange={(e) => setEmploymentStatus(e.target.value)}
                     className={inputClass}
                   >
                     <option value="active">Active</option>
@@ -586,89 +542,67 @@ function UpdateUserModal({
                     />
                   </div>
                 </div>
-
               </div>
             </div>
 
             {/* Personal */}
             <div className="rounded-3xl bg-white p-6 shadow-sm lg:col-span-2">
-
               <h2 className="mb-6 text-base font-semibold text-gray-900">
                 Personal Information
               </h2>
 
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-
                 <div>
-                  <label className={labelClass}>
-                    First Name
-                  </label>
+                  <label className={labelClass}>First Name</label>
 
                   <input
                     type="text"
                     value={firstName}
-                    onChange={(e) =>
-                      setFirstName(e.target.value)
-                    }
+                    onChange={(e) => setFirstName(e.target.value)}
                     className={inputClass}
                   />
                 </div>
 
                 <div>
-                  <label className={labelClass}>
-                    Middle Name
-                  </label>
+                  <label className={labelClass}>Middle Name</label>
 
                   <input
                     type="text"
                     value={middleName}
-                    onChange={(e) =>
-                      setMiddleName(e.target.value)
-                    }
+                    onChange={(e) => setMiddleName(e.target.value)}
                     className={inputClass}
                   />
                 </div>
 
                 <div>
-                  <label className={labelClass}>
-                    Last Name
-                  </label>
+                  <label className={labelClass}>Last Name</label>
 
                   <input
                     type="text"
                     value={lastName}
-                    onChange={(e) =>
-                      setLastName(e.target.value)
-                    }
+                    onChange={(e) => setLastName(e.target.value)}
                     className={inputClass}
                   />
                 </div>
 
                 <div>
-                  <label className={labelClass}>
-                    Suffix
-                  </label>
+                  <label className={labelClass}>Suffix</label>
 
                   <input
                     type="text"
                     value={suffix}
-                    onChange={(e) =>
-                      setSuffix(e.target.value)
-                    }
+                    onChange={(e) => setSuffix(e.target.value)}
                     className={inputClass}
                   />
                 </div>
 
                 <div>
-                  <label className={labelClass}>
-                    Sex
-                  </label>
+                  <label className={labelClass}>Sex</label>
 
+                  {/* Make these values match the casing stored in your database */}
                   <select
                     value={sex}
-                    onChange={(e) =>
-                      setSex(e.target.value)
-                    }
+                    onChange={(e) => setSex(e.target.value)}
                     className={inputClass}
                   >
                     <option value="male">Male</option>
@@ -677,72 +611,80 @@ function UpdateUserModal({
                 </div>
 
                 <div>
-                  <label className={labelClass}>
-                    Birthdate
-                  </label>
+                  <label className={labelClass}>Birthdate</label>
 
                   <input
                     type="date"
                     value={birthdate}
-                    onChange={(e) =>
-                      setBirthdate(e.target.value)
-                    }
+                    onChange={(e) => setBirthdate(e.target.value)}
                     className={inputClass}
                   />
                 </div>
-
               </div>
             </div>
 
+            {/* Doctor */}
+            {role === "doctor" && (
+              <div className="rounded-3xl bg-white p-6 shadow-sm lg:col-span-2">
+                <h2 className="mb-6 text-base font-semibold text-gray-900">
+                  Doctor Information
+                </h2>
+
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                  {DOCTOR_FIELDS.map(({ key, label }) => (
+                    <div key={key}>
+                      <label className={labelClass}>{label}</label>
+
+                      <input
+                        type="text"
+                        value={doctor[key]}
+                        onChange={(e) =>
+                          setDoctor((d) => ({ ...d, [key]: e.target.value }))
+                        }
+                        placeholder="Not provided"
+                        className={inputClass}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Emergency */}
             <div className="rounded-3xl bg-white p-6 shadow-sm lg:col-span-2">
-
               <h2 className="mb-6 text-base font-semibold text-gray-900">
                 Emergency Contact
               </h2>
 
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-
                 <div>
-                  <label className={labelClass}>
-                    Contact Name
-                  </label>
+                  <label className={labelClass}>Contact Name</label>
 
                   <input
                     type="text"
                     value={emergencyContactName}
-                    onChange={(e) =>
-                      setEmergencyContactName(
-                        e.target.value
-                      )
-                    }
+                    onChange={(e) => setEmergencyContactName(e.target.value)}
                     placeholder="Not provided"
                     className={inputClass}
                   />
                 </div>
 
                 <div>
-                  <label className={labelClass}>
-                    Contact Number
-                  </label>
+                  <label className={labelClass}>Contact Number</label>
 
                   <input
                     type="text"
                     value={emergencyContact}
-                    onChange={(e) =>
-                      setEmergencyContact(e.target.value)
-                    }
+                    onChange={(e) => setEmergencyContact(e.target.value)}
                     placeholder="Not provided"
                     className={inputClass}
                   />
                 </div>
-
               </div>
             </div>
 
             {/* Password */}
             <div className="rounded-3xl bg-white p-6 shadow-sm lg:col-span-2">
-
               <h2 className="mb-2 text-base font-semibold text-gray-900">
                 Change Password
               </h2>
@@ -752,65 +694,45 @@ function UpdateUserModal({
               </p>
 
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-
                 <div>
-                  <label className={labelClass}>
-                    New Password
-                  </label>
+                  <label className={labelClass}>New Password</label>
 
                   <div className="flex overflow-hidden rounded-xl border border-gray-200 bg-white focus-within:border-gray-400 focus-within:ring-2 focus-within:ring-gray-100">
-
                     <input
                       type={hiddenPassword ? "password" : "text"}
                       value={password}
-                      onChange={(e) =>
-                        setPassword(e.target.value)
-                      }
+                      onChange={(e) => setPassword(e.target.value)}
                       placeholder="New password"
                       className="w-full px-3 py-2.5 text-sm outline-none"
                     />
 
                     <button
                       type="button"
-                      onClick={() =>
-                        setHiddenPassword(!hiddenPassword)
-                      }
+                      onClick={() => setHiddenPassword(!hiddenPassword)}
                       className="px-3 text-gray-400 transition hover:text-gray-700"
                     >
-                      {hiddenPassword ? (
-                        <Eye size={18} />
-                      ) : (
-                        <EyeOff size={18} />
-                      )}
+                      {hiddenPassword ? <Eye size={18} /> : <EyeOff size={18} />}
                     </button>
-
                   </div>
                 </div>
 
                 <div>
-                  <label className={labelClass}>
-                    Confirm New Password
-                  </label>
+                  <label className={labelClass}>Confirm New Password</label>
 
                   <input
                     type="password"
                     value={confirmPassword}
-                    onChange={(e) =>
-                      setConfirmPassword(e.target.value)
-                    }
+                    onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Confirm new password"
                     className={inputClass}
                   />
                 </div>
-
               </div>
             </div>
-
           </div>
 
           {/* Actions */}
           <div className="mt-6 flex justify-end gap-3">
-
             <button
               onClick={onClose}
               disabled={saving}
@@ -829,11 +751,17 @@ function UpdateUserModal({
 
               {saving ? "Saving..." : "Save Changes"}
             </button>
-
           </div>
-
         </div>
       </div>
+      <UniversalModal
+        isOpen={notice !== null}
+        type="success"
+        title={notice?.title ?? ""}
+        description={notice?.message}
+        onClose={closeNotice}
+        actions={[{ label: "OK", onClick: closeNotice }]}
+      />
     </>
   );
 }

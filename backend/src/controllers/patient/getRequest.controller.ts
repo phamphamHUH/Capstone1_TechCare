@@ -5,7 +5,6 @@ import type {
   getMedicalHistoryDetails,
   getMedicalHistoryFull,
   getCurrentPrescriptions,
-  getMyEmailStatus,
 } from "./dto/get.dto.js";
 
 export async function getMedicalHistory(
@@ -280,37 +279,5 @@ export async function getCurrentPrescriptions(
     return res.status(500).json({
       message: "Failed to fetch prescriptions",
     } as getCurrentPrescriptions.error);
-  }
-}
-
-// =========================
-// MY EMAIL STATUS
-// =========================
-// GET /api/patient/email-status  (patientMiddleware)
-// Used by the portal banner that asks the patient to verify their email.
-export async function getMyEmailStatus(
-  req: Request,
-  res: Response<getMyEmailStatus.response | getMyEmailStatus.error>,
-) {
-  try {
-    const [patient] = await sql`
-      SELECT email, is_verified, pending_email
-      FROM patients
-      WHERE patient_id = ${res.locals.patientId}
-    `;
-
-    if (!patient) {
-      return res.status(404).json({ message: "Patient not found." });
-    }
-
-    return res.status(200).json({
-      email: patient.email,
-      is_verified: patient.is_verified,
-      pending_email: patient.pending_email,
-    });
-  } catch (error) {
-    console.error("GET MY EMAIL STATUS ERROR:", error);
-
-    return res.status(500).json({ message: "Internal Server Error" });
   }
 }

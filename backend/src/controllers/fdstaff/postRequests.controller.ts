@@ -23,10 +23,11 @@ import type {
   addToQueue,
   addLaboratoryRequest,
   addConsultationRecord,
-  resendPatientVerification,
 } from "./dto/post.dto.js";
 import { publishQueueChange } from "../../services/queue-sse/index.js";
-import { sendPatientVerificationEmail } from "../../services/email/sendEmail.js";
+import { actorId, notifyPriorityPatient, notifyQueued } from "../../services/notifications/index.js";
+import { sendEmail } from "../../services/email/sendEmail.js";
+import { patientAccountCreatedEmail } from "../../services/email/emailTemplates.js";
 import { recomputeBillTotals } from "../../utils/recomputeBills.js";
 import { getOrCreateOpenBill } from "../../utils/getOrCreateBill.js";
 export async function addPatient(
@@ -188,19 +189,16 @@ export async function addPatient(
     const age = calculateAge(birthdate);
 
     // =========================
-    // EMAIL VERIFICATION
+    // WELCOME EMAIL (information only)
     // =========================
-    // The patient can use their account right away, but the clinic sends
-    // them no emails until they click this link.
-    const emailSent = await sendPatientVerificationEmail(patientId);
+    // Not awaited: the patient shouldn't wait on the email provider.
+    if (email) void sendEmail(patientAccountCreatedEmail(email, first_name, patientId));
 
-    // Don't send the password hash or link token to the client.
-    const { password_hash, verify_token, ...safePatient } = response[0];
+    // Don't send the password hash to the client.
+    const { password_hash, ...safePatient } = response[0];
 
     return res.status(201).json({
-      message: emailSent
-        ? `Patient added successfully. A verification email was sent to ${email}.`
-        : "Patient added successfully, but the verification email couldn't be sent. Resend it from Patient Records.",
+      message: "Patient added successfully.",
       patient: { ...safePatient, age } as unknown as addPatient.patient,
     } as addPatient.response);
   } catch (error: any) {
@@ -571,6 +569,10 @@ export async function addConsultationRecord(
 
     await client.query("COMMIT");
     publishQueueChange();
+    void notifyQueued(patient_id, "consultation", queue_result.queue_number);
+    if (is_priority === true) {
+      void notifyPriorityPatient(patient_id, "consultation", actorId(req));
+    }
 
     return res.status(201).json({
       message: "Consultation record added successfully.",

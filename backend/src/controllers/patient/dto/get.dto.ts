@@ -147,19 +147,3 @@ export namespace getCurrentPrescriptions {
     message?: string;
   }
 }
-
-// =========================
-// MY EMAIL STATUS
-// GET /api/patient/email-status  (patientMiddleware)
-// =========================
-export namespace getMyEmailStatus {
-  export interface response {
-    email: string;
-    is_verified: boolean;
-    pending_email: string | null; // new email waiting to be confirmed
-  }
-
-  export interface error {
-    message: string;
-  }
-}

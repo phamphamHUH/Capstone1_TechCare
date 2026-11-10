@@ -18,7 +18,6 @@ import {
   addAction,
   addFormTemplates,
   addPackages,
-  resendUserVerification,
 } from "../controllers/admin/postRequests.controller.js";
 import {
   updateFormTemplate,
@@ -64,7 +63,6 @@ router.get("/analytics/services", getServiceAnalytics);
 router.get("/analytics/bills", getAnalyticsBills);
 
 router.post("/add-user", upload.single("image"), addUser);
-router.post("/users/:user_id/verification-email", resendUserVerification);
 router.post("/services", addService);
 router.post("/activities", addActivity);
 router.post("/actions", addAction);

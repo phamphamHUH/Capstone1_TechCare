@@ -18,8 +18,10 @@ import type {
   confirmPayment,
   resetPatientPassword,
 } from "./dto/update.dto.js";
-import { sendPatientVerificationEmail } from "../../services/email/sendEmail.js";
-import { MIN_PASSWORD_LENGTH } from "../../utils/emailToken.js";
+import { MIN_PASSWORD_LENGTH } from "../../utils/password.js";
+import { sendEmailToPatient } from "../../services/email/sendEmail.js";
+import { paymentReceiptEmail } from "../../services/email/emailTemplates.js";
+import { actorId, notifyPriorityPatient, notifyQueued } from "../../services/notifications/index.js";
 
 export async function updatePatient(
   req: Request,
@@ -95,7 +97,7 @@ export async function updatePatient(
     const birthdateValue = birthdate?.trim() ? birthdate : null;
 
     const [existingPatient] = await sql`
-            SELECT patient_id, email, is_verified
+            SELECT patient_id
             FROM patients
             WHERE patient_id = ${patient_id}
         `;
@@ -140,8 +142,7 @@ export async function updatePatient(
         last_name = COALESCE(${last_name}, last_name),
         suffix = COALESCE(${suffix}, suffix),
         sex = COALESCE(${sex}, sex),
-        email = COALESCE(${newEmail}, email),
-        pending_email = CASE WHEN ${emailChanged} THEN ${newPendingEmail} ELSE pending_email END,
+        email = COALESCE(${email?.trim() || null}, email),
         street = COALESCE(${street}, street),
         barangay = COALESCE(${barangay}, barangay),
         city = COALESCE(${city}, city),
@@ -172,20 +173,11 @@ export async function updatePatient(
 
     const age = calculateAge(updatedPatient.birthdate);
 
-    let message = "Patient updated successfully.";
-
-    if (emailChanged) {
-      const emailSent = await sendPatientVerificationEmail(String(patient_id));
-      message = emailSent
-        ? `Patient updated. A verification link was sent to ${email.trim()}.`
-        : "Patient updated, but the verification email couldn't be sent. Resend it from Patient Records.";
-    }
-
-    // Don't send the password hash or link token to the client.
-    const { password_hash, verify_token, ...safePatient } = updatedPatient;
+    // Don't send the password hash to the client.
+    const { password_hash, ...safePatient } = updatedPatient;
 
     return res.status(200).json({
-      message,
+      message: "Patient updated successfully.",
       patient: { ...safePatient, age } as unknown as updatePatient.patient,
     } as updatePatient.response);
   } catch (error: any) {
@@ -630,10 +622,36 @@ export async function confirmPayment(
     // forwarding problem can never undo the payment. Each request gets one
     // queue entry per service type and room. Package components are normal
     // items here, so they route by their own service type and room.
+    // Receipt email for a new payment (information only, not awaited).
+    if (!already_paid) {
+      const paid = bill;
+      void sendEmailToPatient(String(paid.patient_id), (to, firstName) =>
+        paymentReceiptEmail(to, firstName, {
+          receiptNumber: paid.invoice_id ?? paid.bill_id,
+          paidAt: paid.paid_at,
+          paymentMethod: paid.payment_method,
+          referenceNumber: paid.reference_num,
+          items: (Array.isArray(paid.items) ? paid.items : []).map((item: Record<string, any>) => ({
+            name: String(item.service_name ?? "Service"),
+            amount: Number(item.price ?? 0) * Number(item.quantity ?? 1),
+          })),
+          discountLabel: paid.discount_type,
+          discountAmount: Number(paid.discount_amount ?? 0),
+          total: Number(paid.total_amount ?? 0),
+        }),
+      );
+    }
+
+    // 2. Forward laboratory tests in a separate transaction, so a forwarding
+    // problem can never undo the payment. Each request gets one queue entry per room.
     let has_laboratory_items = false;
     let queued = true;
     let forwardingError = "";
     let queueChanged = false;
+    // For notifications once forwarding commits: new lab queues (patient) and
+    // rooms that just got a priority patient (lab staff).
+    const newLabQueues: { patient_id: string; queue_number: number }[] = [];
+    const priorityRooms: { patient_id: string; room: string }[] = [];
     try {
       await client.query("BEGIN");
       await client.query("SELECT pg_advisory_xact_lock(hashtext('queue_ids'))");
@@ -705,12 +723,13 @@ export async function confirmPayment(
             queue_id = existing.queue_id;
             // A priority request makes the whole queue priority.
             if (groupPriority) {
-              await client.query(
+              const upgraded = await client.query(
                 `UPDATE queue_entries
                  SET is_priority = TRUE, updated_at = NOW()
                  WHERE queue_id = $1 AND is_priority = FALSE`,
                 [queue_id],
               );
+              if (upgraded.rowCount) priorityRooms.push({ patient_id, room });
             }
           } else {
             queue_id = isImaging
@@ -724,6 +743,8 @@ export async function confirmPayment(
                VALUES ($1, $2, $3, $4, 'Waiting')`,
               [queue_id, patient_id, queue_number, groupPriority],
             );
+            newLabQueues.push({ patient_id, queue_number });
+            if (groupPriority) priorityRooms.push({ patient_id, room });
           }
 
           const ids = group.map((item) => item.item_id);
@@ -752,7 +773,15 @@ export async function confirmPayment(
         "Payment was recorded, but forwarding failed. Retry forwarding from the paid bill.";
     }
 
-    if (queueChanged) publishQueueChange();
+    if (queueChanged) {
+      publishQueueChange();
+      for (const { patient_id, queue_number } of newLabQueues) {
+        void notifyQueued(patient_id, "laboratory", queue_number);
+      }
+      for (const { patient_id, room } of priorityRooms) {
+        void notifyPriorityPatient(patient_id, "laboratory", actorId(req), room);
+      }
+    }
 
     const { is_senior, is_pwd, ...savedBill } = bill;
     return res.status(200).json({
