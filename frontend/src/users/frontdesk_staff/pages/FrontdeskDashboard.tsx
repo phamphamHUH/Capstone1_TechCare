@@ -2,10 +2,12 @@ import LoadingScreen from "../../../components/LoadingScreen";
 import LoadingRegion from "../../../components/LoadingRegion";
 import ErrorMessage from "../../../components/ErrorMessage";
 import { Users, Clock, List, Receipt, ChevronRight } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import type { Patient } from "../../../interface/Patient";
 import type { Bill } from "../../../interface/Billing";
 import type { QueueEntry } from "../../../interface/Queue";
+import { connectQueueStream } from "../../../services/queue-sse/connectQueueStream";
+import RoomActivity from "./FrontdeskDashboard/RoomActivity";
 
 type FrontdeskDashboardProps = {
   bills: Bill[];
@@ -63,7 +65,10 @@ function FrontdeskDashboard({
   setPage,
   loading,
   error,
+  loadData,
 }: FrontdeskDashboardProps) {
+  useEffect(() => connectQueueStream({ onQueueChanged: loadData }), [loadData]);
+
   const today = new Date().toLocaleDateString("en-CA", {
     timeZone: "Asia/Manila",
   });
@@ -114,6 +119,7 @@ function FrontdeskDashboard({
       >
         <div className="space-y-6 px-6">
           {error && <ErrorMessage>{error}</ErrorMessage>}
+          <RoomActivity queues={queues} />
           {/* =========================
                     FRONTDESK SUMMARY
                 ========================== */}
