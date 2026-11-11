@@ -23,14 +23,14 @@ export default function ComponentSettings({
   allFieldKeys,
 }: ComponentSettingsProps) {
   const [activeTab, setActiveTab] = useState<"properties" | "validation">(
-    "properties"
+    "properties",
   );
   const [newOption, setNewOption] = useState("");
   const [newColHeader, setNewColHeader] = useState("");
 
   if (!component) {
     return (
-      <aside className="w-80 flex-shrink-0 bg-white border border-gray-200 rounded-2xl p-5 flex flex-col items-center justify-center text-center shadow-sm text-gray-400">
+      <aside className="w-80 flex-shrink-0 bg-white border border-gray-200 rounded-md p-5 flex flex-col items-center justify-center text-center shadow-sm text-gray-400">
         <EmptyState message="Select a component on the canvas to configure its properties and validation." />
       </aside>
     );
@@ -100,15 +100,15 @@ export default function ComponentSettings({
     component.validation.inputType === "Number";
 
   return (
-    <aside className="w-80 flex-shrink-0 bg-white border border-gray-200 rounded-2xl p-4 flex flex-col gap-4 shadow-sm overflow-y-auto max-h-[calc(100vh-140px)]">
+    <aside className="w-80 flex-shrink-0 bg-white border border-gray-200 rounded-md p-4 flex flex-col gap-4 shadow-sm overflow-y-auto max-h-[calc(100vh-140px)]">
       {/* Selected Component Header */}
       <div>
         <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
           Selected Component
         </div>
-        <div className="flex items-center justify-between p-2.5 rounded-xl border border-gray-200 bg-gray-50/50">
+        <div className="flex items-center justify-between p-2.5 rounded-md border border-gray-200 bg-gray-50/50">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gray-200/80 flex items-center justify-center font-bold text-xs text-gray-700">
+            <div className="w-8 h-8 rounded-md bg-gray-200/80 flex items-center justify-center font-bold text-xs text-gray-700">
               {getComponentBadge(component.type)}
             </div>
             <div className="flex flex-col text-left">
@@ -123,7 +123,7 @@ export default function ComponentSettings({
           <button
             type="button"
             onClick={() => onDeleteComponent(component.id)}
-            className="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 flex items-center justify-center transition-colors cursor-pointer"
+            className="w-8 h-8 rounded-md bg-red-50 hover:bg-red-100 text-red-600 flex items-center justify-center transition-colors cursor-pointer"
             aria-label="Delete component"
           >
             <Trash2 size={16} />
@@ -132,11 +132,11 @@ export default function ComponentSettings({
       </div>
 
       {/* Tabs */}
-      <div className="grid grid-cols-2 p-1 bg-gray-100 rounded-xl">
+      <div className="grid grid-cols-2 p-1 bg-gray-100 rounded-md">
         <button
           type="button"
           onClick={() => setActiveTab("properties")}
-          className={`py-1.5 text-xs font-semibold rounded-lg transition-all ${
+          className={`py-1.5 text-xs font-semibold rounded-md transition-all ${
             activeTab === "properties"
               ? "bg-white text-sky-600 shadow-sm"
               : "text-gray-500 hover:text-gray-800"
@@ -147,7 +147,7 @@ export default function ComponentSettings({
         <button
           type="button"
           onClick={() => setActiveTab("validation")}
-          className={`py-1.5 text-xs font-semibold rounded-lg transition-all ${
+          className={`py-1.5 text-xs font-semibold rounded-md transition-all ${
             activeTab === "validation"
               ? "bg-white text-sky-600 shadow-sm"
               : "text-gray-500 hover:text-gray-800"
@@ -172,7 +172,7 @@ export default function ComponentSettings({
                 onUpdateComponent({ ...component, label: e.target.value })
               }
               placeholder="e.g. Hemoglobin"
-              className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-sky-400"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-sky-400"
             />
           </div>
 
@@ -191,7 +191,7 @@ export default function ComponentSettings({
                 })
               }
               placeholder="e.g. hemoglobin"
-              className={`w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-1 ${
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 ${
                 isDuplicateKey
                   ? "border-red-400 focus:ring-red-400 bg-red-50/30"
                   : "border-gray-300 focus:ring-sky-400"
@@ -206,7 +206,7 @@ export default function ComponentSettings({
 
           {/* Placeholder */}
           {["text_field", "number_field", "date_field"].includes(
-            component.type
+            component.type,
           ) && (
             <div>
               <label className="block text-gray-700 font-medium mb-1">
@@ -217,14 +217,14 @@ export default function ComponentSettings({
                 value={component.settings.placeholder || ""}
                 onChange={(e) => updateSettings("placeholder", e.target.value)}
                 placeholder="Placeholder text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-sky-400"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-sky-400"
               />
             </div>
           )}
 
           {/* Default Value */}
           {["text_field", "number_field", "static_text"].includes(
-            component.type
+            component.type,
           ) && (
             <div>
               <label className="block text-gray-700 font-medium mb-1">
@@ -235,7 +235,7 @@ export default function ComponentSettings({
                 value={component.settings.defaultValue || ""}
                 onChange={(e) => updateSettings("defaultValue", e.target.value)}
                 placeholder="Default value"
-                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-sky-400"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-sky-400"
               />
             </div>
           )}
@@ -251,7 +251,7 @@ export default function ComponentSettings({
                 value={component.settings.unit || ""}
                 onChange={(e) => updateSettings("unit", e.target.value)}
                 placeholder="e.g. g/dL, %"
-                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-sky-400"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-sky-400"
               />
             </div>
           )}
@@ -269,7 +269,7 @@ export default function ComponentSettings({
                   updateSettings("referenceRange", e.target.value)
                 }
                 placeholder="e.g. 12.0 - 16.0"
-                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-sky-400"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-sky-400"
               />
             </div>
           )}
@@ -286,7 +286,7 @@ export default function ComponentSettings({
                   value={newOption}
                   onChange={(e) => setNewOption(e.target.value)}
                   placeholder="New option"
-                  className="flex-1 px-3 py-1.5 border border-gray-300 rounded-xl text-xs"
+                  className="flex-1 px-3 py-1.5 border border-gray-300 rounded-md text-xs"
                 />
                 <button
                   type="button"
@@ -300,7 +300,7 @@ export default function ComponentSettings({
                       setNewOption("");
                     }
                   }}
-                  className="px-2.5 py-1.5 bg-sky-500 text-white rounded-xl text-xs hover:bg-sky-600"
+                  className="px-2.5 py-1.5 bg-sky-500 text-white rounded-md text-xs hover:bg-sky-600"
                 >
                   <Plus size={14} />
                 </button>
@@ -309,7 +309,7 @@ export default function ComponentSettings({
                 {(component.settings.checkboxOptions || []).map((opt, idx) => (
                   <div
                     key={idx}
-                    className="flex items-center justify-between px-2.5 py-1 bg-gray-50 border border-gray-200 rounded-lg text-xs"
+                    className="flex items-center justify-between px-2.5 py-1 bg-gray-50 border border-gray-200 rounded-md text-xs"
                   >
                     <span>{opt}</span>
                     <button
@@ -342,7 +342,7 @@ export default function ComponentSettings({
                   value={newColHeader}
                   onChange={(e) => setNewColHeader(e.target.value)}
                   placeholder="Column header"
-                  className="flex-1 px-3 py-1.5 border border-gray-300 rounded-xl text-xs"
+                  className="flex-1 px-3 py-1.5 border border-gray-300 rounded-md text-xs"
                 />
                 <button
                   type="button"
@@ -360,7 +360,7 @@ export default function ComponentSettings({
                       setNewColHeader("");
                     }
                   }}
-                  className="px-2.5 py-1.5 bg-sky-500 text-white rounded-xl text-xs hover:bg-sky-600"
+                  className="px-2.5 py-1.5 bg-sky-500 text-white rounded-md text-xs hover:bg-sky-600"
                 >
                   <Plus size={14} />
                 </button>
@@ -369,7 +369,7 @@ export default function ComponentSettings({
                 {(component.settings.tableColumns || []).map((col, idx) => (
                   <div
                     key={col.id}
-                    className="flex items-center justify-between px-2.5 py-1 bg-gray-50 border border-gray-200 rounded-lg text-xs"
+                    className="flex items-center justify-between px-2.5 py-1 bg-gray-50 border border-gray-200 rounded-md text-xs"
                   >
                     <span className="font-medium">{col.header}</span>
                     <button
@@ -403,7 +403,7 @@ export default function ComponentSettings({
                   updateSettings("sectionHeader", e.target.value);
                   onUpdateComponent({ ...component, label: e.target.value });
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-sky-400"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-sky-400"
               />
             </div>
           )}
@@ -419,7 +419,7 @@ export default function ComponentSettings({
                 value={component.settings.staticText || ""}
                 onChange={(e) => updateSettings("staticText", e.target.value)}
                 placeholder="Informational or instructional notice..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-sky-400"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-sky-400"
               />
             </div>
           )}
@@ -462,7 +462,7 @@ export default function ComponentSettings({
                   key={w}
                   type="button"
                   onClick={() => updateSettings("width", w)}
-                  className={`py-1.5 text-xs font-semibold rounded-lg border transition-all ${
+                  className={`py-1.5 text-xs font-semibold rounded-md border transition-all ${
                     (component.settings.width || "FULL") === w
                       ? "bg-sky-500 text-white border-sky-500 shadow-sm"
                       : "border-gray-200 text-gray-600 hover:border-gray-300"
@@ -485,7 +485,7 @@ export default function ComponentSettings({
                   key={align}
                   type="button"
                   onClick={() => updateSettings("alignment", align)}
-                  className={`py-1.5 text-xs font-semibold rounded-lg border capitalize transition-all ${
+                  className={`py-1.5 text-xs font-semibold rounded-md border capitalize transition-all ${
                     (component.settings.alignment || "left") === align
                       ? "bg-sky-500 text-white border-sky-500 shadow-sm"
                       : "border-gray-200 text-gray-600 hover:border-gray-300"
@@ -522,10 +522,8 @@ export default function ComponentSettings({
               </label>
               <select
                 value={component.validation.inputType || "Text"}
-                onChange={(e) =>
-                  updateValidation("inputType", e.target.value)
-                }
-                className="w-full px-2.5 py-1.5 border border-gray-300 rounded-xl bg-white"
+                onChange={(e) => updateValidation("inputType", e.target.value)}
+                className="w-full px-2.5 py-1.5 border border-gray-300 rounded-md bg-white"
               >
                 <option value="Text">Text</option>
                 <option value="Number">Number</option>
@@ -546,10 +544,8 @@ export default function ComponentSettings({
                 <input
                   type="number"
                   value={component.validation.minValue ?? ""}
-                  onChange={(e) =>
-                    updateValidation("minValue", e.target.value)
-                  }
-                  className="w-full px-2.5 py-1.5 border border-gray-300 rounded-xl text-xs"
+                  onChange={(e) => updateValidation("minValue", e.target.value)}
+                  className="w-full px-2.5 py-1.5 border border-gray-300 rounded-md text-xs"
                 />
               </div>
               <div>
@@ -559,10 +555,8 @@ export default function ComponentSettings({
                 <input
                   type="number"
                   value={component.validation.maxValue ?? ""}
-                  onChange={(e) =>
-                    updateValidation("maxValue", e.target.value)
-                  }
-                  className="w-full px-2.5 py-1.5 border border-gray-300 rounded-xl text-xs"
+                  onChange={(e) => updateValidation("maxValue", e.target.value)}
+                  className="w-full px-2.5 py-1.5 border border-gray-300 rounded-md text-xs"
                 />
               </div>
             </div>
@@ -583,7 +577,7 @@ export default function ComponentSettings({
                   onChange={(e) =>
                     updateValidation("decimalPlaces", Number(e.target.value))
                   }
-                  className="w-full px-2.5 py-1.5 border border-gray-300 rounded-xl bg-white text-xs"
+                  className="w-full px-2.5 py-1.5 border border-gray-300 rounded-md bg-white text-xs"
                 >
                   <option value="0">0</option>
                   <option value="1">1</option>
@@ -609,7 +603,7 @@ export default function ComponentSettings({
                     type="number"
                     value={component.validation.refLow ?? ""}
                     onChange={(e) => updateValidation("refLow", e.target.value)}
-                    className="w-full px-2 py-1 border border-gray-300 rounded-lg text-xs"
+                    className="w-full px-2 py-1 border border-gray-300 rounded-md text-xs"
                   />
                 </div>
                 <div>
@@ -622,7 +616,7 @@ export default function ComponentSettings({
                     onChange={(e) =>
                       updateValidation("refNormal", e.target.value)
                     }
-                    className="w-full px-2 py-1 border border-gray-300 rounded-lg text-xs"
+                    className="w-full px-2 py-1 border border-gray-300 rounded-md text-xs"
                   />
                 </div>
                 <div>
@@ -635,7 +629,7 @@ export default function ComponentSettings({
                     onChange={(e) =>
                       updateValidation("refHigh", e.target.value)
                     }
-                    className="w-full px-2 py-1 border border-gray-300 rounded-lg text-xs"
+                    className="w-full px-2 py-1 border border-gray-300 rounded-md text-xs"
                   />
                 </div>
               </div>
@@ -654,7 +648,7 @@ export default function ComponentSettings({
                       type="text"
                       value={component.validation.flagLabels?.low ?? "Good"}
                       onChange={(e) => updateFlagLabels("low", e.target.value)}
-                      className="w-full px-2 py-1 border border-gray-300 rounded-lg text-xs"
+                      className="w-full px-2 py-1 border border-gray-300 rounded-md text-xs"
                     />
                   </div>
                   <div>
@@ -669,7 +663,7 @@ export default function ComponentSettings({
                       onChange={(e) =>
                         updateFlagLabels("normal", e.target.value)
                       }
-                      className="w-full px-2 py-1 border border-gray-300 rounded-lg text-xs"
+                      className="w-full px-2 py-1 border border-gray-300 rounded-md text-xs"
                     />
                   </div>
                   <div>
@@ -680,7 +674,7 @@ export default function ComponentSettings({
                       type="text"
                       value={component.validation.flagLabels?.high ?? "Bad"}
                       onChange={(e) => updateFlagLabels("high", e.target.value)}
-                      className="w-full px-2 py-1 border border-gray-300 rounded-lg text-xs"
+                      className="w-full px-2 py-1 border border-gray-300 rounded-md text-xs"
                     />
                   </div>
                 </div>
@@ -696,9 +690,11 @@ export default function ComponentSettings({
             <textarea
               rows={2}
               value={component.validation.customMessage || ""}
-              onChange={(e) => updateValidation("customMessage", e.target.value)}
+              onChange={(e) =>
+                updateValidation("customMessage", e.target.value)
+              }
               placeholder="This message will show if input is invalid"
-              className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-sky-400"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-sky-400"
             />
           </div>
         </div>

@@ -1,7 +1,15 @@
 import ErrorMessage from "../../../../components/ErrorMessage";
 import EmptyState from "../../../../components/EmptyState";
 import React, { useState } from "react";
-import { Search, Plus, Pill, Pencil, Trash2, FileCheck2, X } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Pill,
+  Pencil,
+  Trash2,
+  FileCheck2,
+  X,
+} from "lucide-react";
 import type { Medication, PatientInfo } from "./types";
 import { COMMON_MEDICATIONS } from "./mockData";
 import PatientPrescriptionCard from "./PatientPrescriptionCard";
@@ -36,7 +44,9 @@ export default function CreatePrescriptionView({
   // Medication form state
   const [searchQuery, setSearchQuery] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [editingMedicationId, setEditingMedicationId] = useState<string | null>(null);
+  const [editingMedicationId, setEditingMedicationId] = useState<string | null>(
+    null,
+  );
 
   const [name, setName] = useState("");
   const [dosage, setDosage] = useState("");
@@ -50,11 +60,13 @@ export default function CreatePrescriptionView({
     ? COMMON_MEDICATIONS.filter(
         (m) =>
           m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          m.instructions.toLowerCase().includes(searchQuery.toLowerCase())
+          m.instructions.toLowerCase().includes(searchQuery.toLowerCase()),
       )
     : [];
 
-  const handleSelectSuggestion = (suggestion: (typeof COMMON_MEDICATIONS)[0]) => {
+  const handleSelectSuggestion = (
+    suggestion: (typeof COMMON_MEDICATIONS)[0],
+  ) => {
     setName(suggestion.name);
     setDosage(suggestion.dosage);
     setFrequency(suggestion.frequency);
@@ -155,11 +167,13 @@ export default function CreatePrescriptionView({
       {/* Main Two-Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Add Medication Form (7 cols) */}
-        <div className="lg:col-span-7 bg-white border border-gray-200 rounded-2xl p-6 shadow-xs">
+        <div className="lg:col-span-7 bg-white border border-gray-200 rounded-md p-6 shadow-xs">
           <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-5">
             <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
               <Pill size={18} className="text-blue-600" />
-              <span>{editingMedicationId ? "Edit Medication" : "Add Medication"}</span>
+              <span>
+                {editingMedicationId ? "Edit Medication" : "Add Medication"}
+              </span>
             </h2>
 
             {editingMedicationId && (
@@ -193,13 +207,13 @@ export default function CreatePrescriptionView({
                 }}
                 onFocus={() => setShowSuggestions(true)}
                 placeholder="Search medication (e.g. Paracetamol, Amoxicillin)..."
-                className="w-full pl-10 pr-4 py-2.5 bg-gray-50/70 border border-gray-200 rounded-xl text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-50/70 border border-gray-200 rounded-md text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               />
             </div>
 
             {/* Suggestions dropdown */}
             {showSuggestions && filteredSuggestions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 z-30 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-56 overflow-y-auto divide-y divide-gray-100">
+              <div className="absolute top-full left-0 right-0 z-30 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-56 overflow-y-auto divide-y divide-gray-100">
                 {filteredSuggestions.map((s, idx) => (
                   <button
                     key={idx}
@@ -240,7 +254,7 @@ export default function CreatePrescriptionView({
                     setFormError(null);
                   }}
                   placeholder="e.g. Paracetamol 500 mg"
-                  className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white"
+                  className="w-full px-3.5 py-2.5 border border-gray-200 rounded-md text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white"
                 />
               </div>
 
@@ -257,7 +271,7 @@ export default function CreatePrescriptionView({
                     setFormError(null);
                   }}
                   placeholder="e.g. 500 mg, 1 tablet"
-                  className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white"
+                  className="w-full px-3.5 py-2.5 border border-gray-200 rounded-md text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white"
                 />
               </div>
             </div>
@@ -271,7 +285,7 @@ export default function CreatePrescriptionView({
                 <select
                   value={frequency}
                   onChange={(e) => setFrequency(e.target.value)}
-                  className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
+                  className="w-full px-3.5 py-2.5 border border-gray-200 rounded-md text-xs text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
                 >
                   <option value="Once daily">Once daily (OD)</option>
                   <option value="Twice daily">Twice daily (BID)</option>
@@ -294,7 +308,7 @@ export default function CreatePrescriptionView({
                 <select
                   value={duration}
                   onChange={(e) => setDuration(e.target.value)}
-                  className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
+                  className="w-full px-3.5 py-2.5 border border-gray-200 rounded-md text-xs text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
                 >
                   <option value="3 days">3 days</option>
                   <option value="5 days">5 days</option>
@@ -320,7 +334,7 @@ export default function CreatePrescriptionView({
                 value={instructions}
                 onChange={(e) => setInstructions(e.target.value)}
                 placeholder="e.g. After meals, as needed for fever or pain, complete full course, etc."
-                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white resize-none"
+                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-md text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white resize-none"
               />
             </div>
 
@@ -328,11 +342,13 @@ export default function CreatePrescriptionView({
             <div className="flex justify-end pt-2">
               <button
                 type="submit"
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold text-xs px-5 py-2.5 rounded-xl shadow-xs transition-colors cursor-pointer"
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold text-xs px-5 py-2.5 rounded-md shadow-xs transition-colors cursor-pointer"
               >
                 <Plus size={15} />
                 <span>
-                  {editingMedicationId ? "Update Medication" : "Add to Prescription"}
+                  {editingMedicationId
+                    ? "Update Medication"
+                    : "Add to Prescription"}
                 </span>
               </button>
             </div>
@@ -340,7 +356,7 @@ export default function CreatePrescriptionView({
         </div>
 
         {/* Right Column: Prescription List (5 cols) */}
-        <div className="lg:col-span-5 bg-white border border-gray-200 rounded-2xl p-6 shadow-xs flex flex-col justify-between min-h-[420px]">
+        <div className="lg:col-span-5 bg-white border border-gray-200 rounded-md p-6 shadow-xs flex flex-col justify-between min-h-[420px]">
           <div>
             <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
               <div className="flex items-center gap-2">
@@ -364,12 +380,13 @@ export default function CreatePrescriptionView({
             {/* Medication Cards List */}
             {medications.length === 0 ? (
               <div className="py-14 flex flex-col items-center justify-center text-center text-gray-400 px-4">
-                <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center mb-3">
+                <div className="w-14 h-14 rounded-md bg-blue-50 text-blue-500 flex items-center justify-center mb-3">
                   <Pill size={26} />
                 </div>
                 <EmptyState message="No medications added yet." />
                 <p className="text-[11px] text-gray-400 mt-1 max-w-xs leading-relaxed">
-                  Fill in the medication details on the left form and click "Add to Prescription".
+                  Fill in the medication details on the left form and click "Add
+                  to Prescription".
                 </p>
               </div>
             ) : (
@@ -380,7 +397,7 @@ export default function CreatePrescriptionView({
                   return (
                     <div
                       key={med.id}
-                      className={`p-3.5 rounded-xl border transition-all ${
+                      className={`p-3.5 rounded-md border transition-all ${
                         isBeingEdited
                           ? "border-blue-500 bg-blue-50/30 ring-1 ring-blue-300"
                           : "border-gray-200 bg-white hover:border-blue-200 hover:shadow-2xs"
@@ -388,7 +405,7 @@ export default function CreatePrescriptionView({
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-start gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5">
+                          <div className="w-9 h-9 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5">
                             <Pill size={16} />
                           </div>
 
@@ -412,7 +429,7 @@ export default function CreatePrescriptionView({
                           <button
                             type="button"
                             onClick={() => handleStartEdit(med)}
-                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors cursor-pointer"
                             title="Edit Medication"
                           >
                             <Pencil size={14} />
@@ -420,7 +437,7 @@ export default function CreatePrescriptionView({
                           <button
                             type="button"
                             onClick={() => onDeleteMedication(med.id)}
-                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors cursor-pointer"
                             title="Delete Medication"
                           >
                             <Trash2 size={14} />
@@ -439,7 +456,8 @@ export default function CreatePrescriptionView({
             <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
               <span>Total Prescribed:</span>
               <span className="font-bold text-gray-900">
-                {medications.length} {medications.length === 1 ? "medicine" : "medicines"}
+                {medications.length}{" "}
+                {medications.length === 1 ? "medicine" : "medicines"}
               </span>
             </div>
           )}
@@ -447,19 +465,20 @@ export default function CreatePrescriptionView({
       </div>
 
       {/* Additional Instructions & Recommendations Card */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs">
+      <div className="bg-white border border-gray-200 rounded-md p-6 shadow-xs">
         <label className="block text-xs font-bold text-gray-900 mb-1.5">
           Additional Instructions, Recommendations & Follow-Up
         </label>
         <p className="text-xs text-gray-500 mb-3">
-          Notes written here will appear directly on the patient's formal printed prescription document.
+          Notes written here will appear directly on the patient's formal
+          printed prescription document.
         </p>
         <textarea
           rows={3}
           value={additionalNotes}
           onChange={(e) => onChangeAdditionalNotes(e.target.value)}
           placeholder="e.g. Take medication regularly and complete the full course. Drink plenty of water. Return for follow-up consultation in 7 days if symptoms persist."
-          className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white"
+          className="w-full px-3.5 py-2.5 border border-gray-200 rounded-md text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white"
         />
       </div>
 
@@ -468,7 +487,7 @@ export default function CreatePrescriptionView({
         <button
           type="button"
           onClick={onCancel}
-          className="px-5 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+          className="px-5 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-semibold rounded-md transition-colors cursor-pointer"
         >
           Cancel
         </button>
@@ -477,7 +496,7 @@ export default function CreatePrescriptionView({
           type="button"
           disabled={medications.length === 0}
           onClick={onProceedToPreview}
-          className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-2"
+          className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-md shadow-xs transition-colors cursor-pointer flex items-center gap-2"
         >
           <span>Proceed to Preview</span>
         </button>

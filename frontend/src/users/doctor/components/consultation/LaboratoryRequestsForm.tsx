@@ -1,7 +1,9 @@
 import FieldError from "../../../../components/FieldError";
 import EmptyState from "../../../../components/EmptyState";
 import ErrorMessage from "../../../../components/ErrorMessage";
-import LoadingScreen, { LoadingSpinner } from "../../../../components/LoadingScreen";
+import LoadingScreen, {
+  LoadingSpinner,
+} from "../../../../components/LoadingScreen";
 import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, CheckCircle2, Check, Search, X } from "lucide-react";
 import calculateAge from "../../../../utils/calculateAge.ts";
@@ -36,9 +38,13 @@ const peso = (v: string | number) =>
   `₱${Number(v).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const selectBase =
-  "w-full text-xs text-gray-700 bg-white border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-sky-400";
+  "w-full text-xs text-gray-700 bg-white border border-gray-200 rounded-md px-3 py-2 outline-none focus:border-sky-400";
 
-export default function LaboratoryRequestForm({ patient, consultationRecordId, onChangePatient }: Props) {
+export default function LaboratoryRequestForm({
+  patient,
+  consultationRecordId,
+  onChangePatient,
+}: Props) {
   const [services, setServices] = useState<LaboratoryService[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -56,8 +62,10 @@ export default function LaboratoryRequestForm({ patient, consultationRecordId, o
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [serverErrors, setServerErrors] = useState<FieldErrors>({});
-  const [success, setSuccess] = useState<{ requestId: string; count: number } | null>(null);
-
+  const [success, setSuccess] = useState<{
+    requestId: string;
+    count: number;
+  } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -66,7 +74,10 @@ export default function LaboratoryRequestForm({ patient, consultationRecordId, o
         if (!cancelled) setServices(list);
       })
       .catch((e) => {
-        if (!cancelled) setLoadError(toApiFailure(e, "Couldn't load laboratory services.").message);
+        if (!cancelled)
+          setLoadError(
+            toApiFailure(e, "Couldn't load laboratory services.").message,
+          );
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -77,7 +88,10 @@ export default function LaboratoryRequestForm({ patient, consultationRecordId, o
   }, []);
 
   const categories = useMemo(
-    () => ["All", ...Array.from(new Set(services.map((s) => s.service_type))).sort()],
+    () => [
+      "All",
+      ...Array.from(new Set(services.map((s) => s.service_type))).sort(),
+    ],
     [services],
   );
 
@@ -86,7 +100,9 @@ export default function LaboratoryRequestForm({ patient, consultationRecordId, o
     const list = services.filter(
       (s) =>
         (category === "All" || s.service_type === category) &&
-        (!q || s.service_name.toLowerCase().includes(q) || s.service_type.toLowerCase().includes(q)),
+        (!q ||
+          s.service_name.toLowerCase().includes(q) ||
+          s.service_type.toLowerCase().includes(q)),
     );
     return [...list].sort((a, b) =>
       sort === "price"
@@ -98,7 +114,10 @@ export default function LaboratoryRequestForm({ patient, consultationRecordId, o
   }, [services, query, category, sort]);
 
   const selected = useMemo(
-    () => serviceIds.map((id) => services.find((s) => s.service_id === id)).filter((s): s is LaboratoryService => !!s),
+    () =>
+      serviceIds
+        .map((id) => services.find((s) => s.service_id === id))
+        .filter((s): s is LaboratoryService => !!s),
     [serviceIds, services],
   );
   const total = selected.reduce((sum, s) => sum + Number(s.price), 0);
@@ -115,7 +134,11 @@ export default function LaboratoryRequestForm({ patient, consultationRecordId, o
     setSuccess(null);
     setServerErrors({});
     setServiceIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : prev.length >= LIMITS.maxLabServices ? prev : [...prev, id],
+      prev.includes(id)
+        ? prev.filter((x) => x !== id)
+        : prev.length >= LIMITS.maxLabServices
+          ? prev
+          : [...prev, id],
     );
   };
 
@@ -135,14 +158,20 @@ export default function LaboratoryRequestForm({ patient, consultationRecordId, o
         requestDate,
         estimatedReleaseDate,
       });
-      setSuccess({ requestId: result.request[0].request_id, count: result.items.length });
+      setSuccess({
+        requestId: result.request[0].request_id,
+        count: result.items.length,
+      });
       setServiceIds([]);
       setSubmitted(false);
       setPriority("No");
       setEstimatedReleaseDate("");
       setRequestDate(todayKey());
     } catch (e) {
-      const failure = toApiFailure(e, "Couldn't submit the laboratory request. Please try again.");
+      const failure = toApiFailure(
+        e,
+        "Couldn't submit the laboratory request. Please try again.",
+      );
       setSubmitError(failure.message);
       setServerErrors(failure.fieldErrors);
     } finally {
@@ -150,32 +179,46 @@ export default function LaboratoryRequestForm({ patient, consultationRecordId, o
     }
   }
 
-  const fullName = [patient.first_name, patient.middle_name, patient.last_name, patient.suffix].filter(Boolean).join(" ");
+  const fullName = [
+    patient.first_name,
+    patient.middle_name,
+    patient.last_name,
+    patient.suffix,
+  ]
+    .filter(Boolean)
+    .join(" ");
   const age = calculateAge(patient.birthdate);
 
   return (
     <div className="flex flex-col gap-4">
       {success && (
-        <div role="status" className="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2.5">
+        <div
+          role="status"
+          className="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-4 py-2.5"
+        >
           <CheckCircle2 size={14} />
           <span>
-            Request <span className="font-mono font-semibold">{success.requestId}</span> submitted with {success.count}{" "}
-            test{success.count === 1 ? "" : "s"}.
+            Request{" "}
+            <span className="font-mono font-semibold">{success.requestId}</span>{" "}
+            submitted with {success.count} test{success.count === 1 ? "" : "s"}.
           </span>
         </div>
       )}
-      {submitError && (
-        <ErrorMessage>{submitError}</ErrorMessage>
-      )}
+      {submitError && <ErrorMessage>{submitError}</ErrorMessage>}
 
       {/* ---------------- Test selection + selected list ---------------- */}
-      <section className="bg-white border border-gray-200 rounded-2xl shadow-xs grid grid-cols-1 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] overflow-hidden">
+      <section className="bg-white border border-gray-200 rounded-md shadow-xs grid grid-cols-1 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] overflow-hidden">
         <div className="p-5 lg:border-r border-gray-200">
-          <h3 className="text-sm font-bold text-gray-900 mb-3">Select Laboratory Service</h3>
+          <h3 className="text-sm font-bold text-gray-900 mb-3">
+            Select Laboratory Service
+          </h3>
 
           <div className="flex flex-col sm:flex-row gap-2 mb-4">
             <div className="relative flex-1">
-              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Search
+                size={13}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              />
               <input
                 type="text"
                 value={query}
@@ -185,29 +228,45 @@ export default function LaboratoryRequestForm({ patient, consultationRecordId, o
                 className={`${selectBase} pl-8`}
               />
             </div>
-            <select value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Category" className={`${selectBase} sm:w-40`}>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              aria-label="Category"
+              className={`${selectBase} sm:w-40`}
+            >
               {categories.map((c) => (
                 <option key={c} value={c}>
                   Category: {c}
                 </option>
               ))}
             </select>
-            <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)} aria-label="Sort" className={`${selectBase} sm:w-36`}>
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortKey)}
+              aria-label="Sort"
+              className={`${selectBase} sm:w-36`}
+            >
               <option value="az">Sort: A-Z</option>
               <option value="za">Sort: Z-A</option>
               <option value="price">Sort: Price</option>
             </select>
           </div>
 
-          <h4 className="text-xs font-bold text-gray-900 mb-2">{query.trim() ? "Search Results" : "Common Tests"}</h4>
+          <h4 className="text-xs font-bold text-gray-900 mb-2">
+            {query.trim() ? "Search Results" : "Common Tests"}
+          </h4>
 
-          {loadError && (
-            <ErrorMessage>{loadError}</ErrorMessage>
-          )}
+          {loadError && <ErrorMessage>{loadError}</ErrorMessage>}
           {loading && services.length === 0 ? (
             <LoadingScreen message="Loading tests..." />
-          ) : ((visible.length === 0 ? (
-            <EmptyState message={services.length === 0 ? "No laboratory tests are available yet." : "No tests match your search."} />
+          ) : visible.length === 0 ? (
+            <EmptyState
+              message={
+                services.length === 0
+                  ? "No laboratory tests are available yet."
+                  : "No tests match your search."
+              }
+            />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               {visible.map((s) => {
@@ -219,20 +278,26 @@ export default function LaboratoryRequestForm({ patient, consultationRecordId, o
                     role="checkbox"
                     aria-checked={checked}
                     onClick={() => toggle(s.service_id)}
-                    className={`flex items-center gap-3 text-left border rounded-lg px-3 py-2 transition-colors cursor-pointer ${
-                      checked ? "border-sky-400 bg-sky-50" : "border-gray-200 bg-white hover:border-gray-300"
+                    className={`flex items-center gap-3 text-left border rounded-md px-3 py-2 transition-colors cursor-pointer ${
+                      checked
+                        ? "border-sky-400 bg-sky-50"
+                        : "border-gray-200 bg-white hover:border-gray-300"
                     }`}
                   >
                     <span className="w-8 h-8 rounded bg-sky-100 shrink-0" />
                     <span className="flex-1 min-w-0">
-                      <span className="block text-[11px] font-semibold text-gray-800 truncate">{s.service_name}</span>
+                      <span className="block text-[11px] font-semibold text-gray-800 truncate">
+                        {s.service_name}
+                      </span>
                       <span className="block text-[10px] text-gray-400 truncate">
                         {s.service_type} • {peso(s.price)}
                       </span>
                     </span>
                     <span
                       className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
-                        checked ? "bg-sky-500 border-sky-500 text-white" : "border-gray-300 bg-white"
+                        checked
+                          ? "bg-sky-500 border-sky-500 text-white"
+                          : "border-gray-300 bg-white"
                       }`}
                     >
                       {checked && <Check size={11} strokeWidth={3} />}
@@ -241,14 +306,20 @@ export default function LaboratoryRequestForm({ patient, consultationRecordId, o
                 );
               })}
             </div>
-          )))}
+          )}
         </div>
 
         <div className="p-5 flex flex-col min-h-64 border-t lg:border-t-0 border-gray-200">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-gray-900">Selected Laboratory Request ({serviceIds.length})</h3>
+            <h3 className="text-sm font-bold text-gray-900">
+              Selected Laboratory Request ({serviceIds.length})
+            </h3>
             {serviceIds.length > 0 && (
-              <button type="button" onClick={() => setServiceIds([])} className="text-[11px] text-sky-500 hover:underline cursor-pointer">
+              <button
+                type="button"
+                onClick={() => setServiceIds([])}
+                className="text-[11px] text-sky-500 hover:underline cursor-pointer"
+              >
                 Clear All
               </button>
             )}
@@ -256,17 +327,29 @@ export default function LaboratoryRequestForm({ patient, consultationRecordId, o
 
           {selected.length === 0 ? (
             <div>
-              <EmptyState message="No tests selected." description="Select laboratory tests to add them to this request." />
-              {submitted && errors.services && <FieldError>{errors.services}</FieldError>}
+              <EmptyState
+                message="No tests selected."
+                description="Select laboratory tests to add them to this request."
+              />
+              {submitted && errors.services && (
+                <FieldError>{errors.services}</FieldError>
+              )}
             </div>
           ) : (
             <>
               <ul className="mt-3 flex flex-col gap-2 flex-1">
                 {selected.map((s) => (
-                  <li key={s.service_id} className="flex items-center justify-between gap-2 border border-gray-200 rounded-lg px-3 py-2">
+                  <li
+                    key={s.service_id}
+                    className="flex items-center justify-between gap-2 border border-gray-200 rounded-md px-3 py-2"
+                  >
                     <span className="min-w-0">
-                      <span className="block text-[11px] font-semibold text-gray-800 truncate">{s.service_name}</span>
-                      <span className="block text-[10px] text-gray-400">{peso(s.price)}</span>
+                      <span className="block text-[11px] font-semibold text-gray-800 truncate">
+                        {s.service_name}
+                      </span>
+                      <span className="block text-[10px] text-gray-400">
+                        {peso(s.price)}
+                      </span>
                     </span>
                     <button
                       type="button"
@@ -283,26 +366,45 @@ export default function LaboratoryRequestForm({ patient, consultationRecordId, o
                 <span className="text-gray-500">Estimated total</span>
                 <span className="font-bold text-gray-900">{peso(total)}</span>
               </div>
-              {submitted && errors.services && <FieldError className="mt-2">{errors.services}</FieldError>}
+              {submitted && errors.services && (
+                <FieldError className="mt-2">{errors.services}</FieldError>
+              )}
             </>
           )}
         </div>
       </section>
 
       {/* ------------------- Request details + patient ------------------ */}
-      <section className="bg-white border border-gray-200 rounded-2xl shadow-xs p-5 grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <section className="bg-white border border-gray-200 rounded-md shadow-xs p-5 grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
-          <h3 className="text-sm font-bold text-gray-900 mb-3">Request Details</h3>
+          <h3 className="text-sm font-bold text-gray-900 mb-3">
+            Request Details
+          </h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label htmlFor="lab-priority" className="block text-[11px] text-gray-500 mb-1">Priority</label>
-              <select id="lab-priority" value={priority} onChange={(e) => setPriority(e.target.value as LabPriority)} className={selectBase}>
+              <label
+                htmlFor="lab-priority"
+                className="block text-[11px] text-gray-500 mb-1"
+              >
+                Priority
+              </label>
+              <select
+                id="lab-priority"
+                value={priority}
+                onChange={(e) => setPriority(e.target.value as LabPriority)}
+                className={selectBase}
+              >
                 <option value="No">No</option>
                 <option value="Yes">Yes</option>
               </select>
             </div>
             <div>
-              <label htmlFor="lab-request-date" className="block text-[11px] text-gray-500 mb-1">Request Date</label>
+              <label
+                htmlFor="lab-request-date"
+                className="block text-[11px] text-gray-500 mb-1"
+              >
+                Request Date
+              </label>
               <div className="relative">
                 <input
                   id="lab-request-date"
@@ -312,12 +414,24 @@ export default function LaboratoryRequestForm({ patient, consultationRecordId, o
                   aria-invalid={!!errors.request_date}
                   className={`${selectBase} ${errors.request_date ? "border-red-300" : ""}`}
                 />
-                <CalendarDays size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <CalendarDays
+                  size={13}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                />
               </div>
-              {errors.request_date && <FieldError className="mt-0.5">{errors.request_date}</FieldError>}
+              {errors.request_date && (
+                <FieldError className="mt-0.5">
+                  {errors.request_date}
+                </FieldError>
+              )}
             </div>
             <div>
-              <label htmlFor="lab-release-date" className="block text-[11px] text-gray-500 mb-1">Estimate Release Date</label>
+              <label
+                htmlFor="lab-release-date"
+                className="block text-[11px] text-gray-500 mb-1"
+              >
+                Estimate Release Date
+              </label>
               <div className="relative">
                 <input
                   id="lab-release-date"
@@ -328,30 +442,41 @@ export default function LaboratoryRequestForm({ patient, consultationRecordId, o
                   aria-invalid={!!errors.estimated_release_date}
                   className={`${selectBase} ${errors.estimated_release_date ? "border-red-300" : ""}`}
                 />
-                <CalendarDays size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <CalendarDays
+                  size={13}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                />
               </div>
-              {errors.estimated_release_date && <FieldError className="mt-0.5">{errors.estimated_release_date}</FieldError>}
+              {errors.estimated_release_date && (
+                <FieldError className="mt-0.5">
+                  {errors.estimated_release_date}
+                </FieldError>
+              )}
             </div>
           </div>
         </div>
 
         <div>
           <h3 className="text-sm font-bold text-gray-900 mb-3">Patient</h3>
-          <div className="flex items-center gap-3 bg-gray-100 rounded-xl px-4 py-3">
+          <div className="flex items-center gap-3 bg-gray-100 rounded-md px-4 py-3">
             <div className="w-9 h-9 rounded-full bg-sky-100 text-sky-600 text-xs font-semibold flex items-center justify-center shrink-0">
               {patient.first_name.charAt(0)}
               {patient.last_name.charAt(0)}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-gray-900 truncate">{fullName}</p>
+              <p className="text-xs font-bold text-gray-900 truncate">
+                {fullName}
+              </p>
               <p className="text-[10px] text-gray-500 truncate">
-                {patient.patient_id} • {patient.sex.toUpperCase()} • {Number.isNaN(age) ? "—" : age} YEARS OLD • {patient.contact_number}
+                {patient.patient_id} • {patient.sex.toUpperCase()} •{" "}
+                {Number.isNaN(age) ? "—" : age} YEARS OLD •{" "}
+                {patient.contact_number}
               </p>
             </div>
             <button
               type="button"
               onClick={onChangePatient}
-              className="px-4 py-1.5 bg-white border border-sky-400 text-sky-500 hover:bg-sky-50 text-[11px] font-semibold rounded-lg cursor-pointer"
+              className="px-4 py-1.5 bg-white border border-sky-400 text-sky-500 hover:bg-sky-50 text-[11px] font-semibold rounded-md cursor-pointer"
             >
               Change
             </button>
@@ -364,7 +489,7 @@ export default function LaboratoryRequestForm({ patient, consultationRecordId, o
           type="button"
           onClick={handleSubmit}
           disabled={submitting}
-          className="flex items-center gap-2 px-6 py-2 bg-sky-500 hover:bg-sky-600 disabled:bg-sky-300 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer disabled:cursor-wait"
+          className="flex items-center gap-2 px-6 py-2 bg-sky-500 hover:bg-sky-600 disabled:bg-sky-300 text-white text-xs font-semibold rounded-md transition-colors cursor-pointer disabled:cursor-wait"
         >
           {submitting && <LoadingSpinner size={13} />}
           {submitting ? "Submitting..." : "Submit Request"}

@@ -59,7 +59,7 @@ const COUNT_COLORS = [
 ];
 const PAGE_SIZE = 10;
 const filterClass =
-  "flex h-9 min-w-0 max-w-full items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-400 focus-within:border-sky-400 focus-within:ring-1 focus-within:ring-sky-100 [&>svg]:shrink-0";
+  "flex h-9 min-w-0 max-w-full items-center gap-2 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-400 focus-within:border-sky-400 focus-within:ring-1 focus-within:ring-sky-100 [&>svg]:shrink-0";
 
 type AnalysisListProps = {
   requests: AnalysisRequest[];
@@ -175,7 +175,7 @@ export default function AnalysisList({
       aria-labelledby="analysis-heading"
       className="min-w-0 bg-white font-sans text-sm text-gray-900"
     >
-      <div className="mb-6 flex flex-wrap items-center gap-4 rounded-2xl border border-gray-300 px-5 py-4">
+      <div className="mb-6 flex flex-wrap items-center gap-4 rounded-md border border-gray-300 px-5 py-4">
         <FlaskBadge />
         <div className="min-w-0 flex-1 basis-60">
           <h2
@@ -197,7 +197,7 @@ export default function AnalysisList({
           {roomName}
         </span>
       </div>
-      <div className="overflow-hidden rounded-2xl border border-gray-300">
+      <div className="overflow-hidden rounded-md border border-gray-300">
         <div
           className="flex flex-wrap items-center gap-3 border-b border-gray-300 p-4 sm:px-5"
           aria-label="Filter laboratory requests"
@@ -480,7 +480,7 @@ export default function AnalysisList({
               aria-label="Previous page"
               disabled={currentPage <= 1 || loading}
               onClick={() => setPage(currentPage - 1)}
-              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-gray-200 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
             >
               &lt;
             </button>
@@ -493,7 +493,7 @@ export default function AnalysisList({
                 aria-current={p === currentPage ? "page" : undefined}
                 disabled={loading}
                 onClick={() => setPage(p)}
-                className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg disabled:cursor-not-allowed ${
+                className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-md disabled:cursor-not-allowed ${
                   p === currentPage
                     ? "bg-sky-500 font-bold text-white shadow-xs"
                     : "border border-gray-200 hover:bg-gray-100"
@@ -508,7 +508,7 @@ export default function AnalysisList({
               aria-label="Next page"
               disabled={currentPage >= pageCount || loading}
               onClick={() => setPage(currentPage + 1)}
-              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-gray-200 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
             >
               &gt;
             </button>

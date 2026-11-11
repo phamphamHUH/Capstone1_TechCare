@@ -88,7 +88,7 @@ export default function InvoicePreview({
   return (
     <section
       aria-label="Invoice preview"
-      className="mt-5 overflow-hidden rounded-xl border border-gray-300"
+      className="mt-5 overflow-hidden rounded-md border border-gray-300"
     >
       <div className="flex flex-wrap items-center justify-between gap-2 bg-white px-4 py-3">
         <h2
@@ -103,11 +103,7 @@ export default function InvoicePreview({
           Long bond · Portrait · Top half only
         </p>
       </div>
-      {error && (
-        <ErrorMessage>
-          {error}
-        </ErrorMessage>
-      )}
+      {error && <ErrorMessage>{error}</ErrorMessage>}
       <div
         ref={containerRef}
         className="max-h-[70vh] overflow-auto border-t border-gray-200 bg-gray-100 p-4"

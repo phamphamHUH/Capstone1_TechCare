@@ -5,14 +5,13 @@ type Props = {
 };
 
 function getFullName(patient: PatientSessionUser) {
-  return [
-    patient.first_name,
-    patient.middle_name,
-    patient.last_name,
-    patient.suffix,
-  ]
-    .filter(Boolean)
-    .join(" ") || patient.username || "Patient";
+  return (
+    [patient.first_name, patient.middle_name, patient.last_name, patient.suffix]
+      .filter(Boolean)
+      .join(" ") ||
+    patient.username ||
+    "Patient"
+  );
 }
 
 function getInitials(patient: PatientSessionUser) {
@@ -31,7 +30,8 @@ function getAge(birthdate?: string | null) {
   let age = today.getFullYear() - birth.getFullYear();
   const birthdayPassed =
     today.getMonth() > birth.getMonth() ||
-    (today.getMonth() === birth.getMonth() && today.getDate() >= birth.getDate());
+    (today.getMonth() === birth.getMonth() &&
+      today.getDate() >= birth.getDate());
 
   if (!birthdayPassed) age -= 1;
   return age;
@@ -43,7 +43,7 @@ function PatientSummaryCard({ patient }: Props) {
   const patientId = patient.patient_id ?? patient.user_id ?? "—";
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+    <section className="rounded-md border border-slate-200 bg-white px-5 py-4 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-4">
           {patient.image_url || patient.profile_photo ? (
@@ -60,8 +60,12 @@ function PatientSummaryCard({ patient }: Props) {
 
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="truncate text-base font-bold text-slate-950">{fullName}</h1>
-              <span className="text-[11px] text-slate-400">ID: {patientId}</span>
+              <h1 className="truncate text-base font-bold text-slate-950">
+                {fullName}
+              </h1>
+              <span className="text-[11px] text-slate-400">
+                ID: {patientId}
+              </span>
             </div>
 
             <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
@@ -69,7 +73,8 @@ function PatientSummaryCard({ patient }: Props) {
               {age !== null && <span>{age} Years Old</span>}
               {patient.birthdate && (
                 <span>
-                  DOB: {new Date(patient.birthdate).toLocaleDateString("en-US", {
+                  DOB:{" "}
+                  {new Date(patient.birthdate).toLocaleDateString("en-US", {
                     month: "short",
                     day: "2-digit",
                     year: "numeric",

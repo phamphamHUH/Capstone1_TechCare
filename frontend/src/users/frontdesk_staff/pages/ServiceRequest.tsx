@@ -181,7 +181,7 @@ function ServiceRequest({
           const Icon = card.icon;
           return (
             <div
-              className={`flex flex-1 min-w-0 items-center justify-center gap-3 border px-3 py-3 rounded-lg cursor-pointer shadow-md
+              className={`flex flex-1 min-w-0 items-center justify-center gap-3 border px-3 py-3 rounded-md cursor-pointer shadow-md
                 hover:text-sky-600 hover:border-sky-200 hover:scale-101 active:scale-100 active:text-sky-600
                 ${activeTab === card.service_type ? "text-sky-400" : "border-gray-200"}`}
               key={index}

@@ -71,7 +71,7 @@ export default function DigitalDocumentsTab({
                 Read-only view of uploaded files and related service records.
               </p>
             </div>
-            <span className="shrink-0 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-500">
+            <span className="shrink-0 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-500">
               {attachments.length} {attachments.length === 1 ? "file" : "files"}
             </span>
           </div>
@@ -79,7 +79,7 @@ export default function DigitalDocumentsTab({
           {attachments.length === 0 ? (
             <EmptyState message="No patient attachments available" />
           ) : (
-            <div className="overflow-x-auto rounded-lg border border-gray-200">
+            <div className="overflow-x-auto rounded-md border border-gray-200">
               <table className="w-full min-w-[700px] table-fixed text-left text-sm text-gray-600">
                 <caption className="sr-only">
                   Patient attachments and related visits
@@ -140,7 +140,7 @@ export default function DigitalDocumentsTab({
                           aria-controls="selected-document-panel"
                           aria-pressed={selectedDocument?.id === item.id}
                           onClick={() => setSelectedId(item.id)}
-                          className="cursor-pointer rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-medium text-sky-500 transition-colors hover:border-sky-300 hover:bg-sky-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
+                          className="cursor-pointer rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-medium text-sky-500 transition-colors hover:border-sky-300 hover:bg-sky-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
                         >
                           View
                         </button>
@@ -199,13 +199,13 @@ export default function DigitalDocumentsTab({
                     </div>
                   ))}
                 </dl>
-                <p className="mt-4 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-600">
+                <p className="mt-4 rounded-md border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-600">
                   No preview available for this document.
                 </p>
                 <h3 className="mb-2 mt-4 text-sm font-bold text-gray-900">
                   Document Notes
                 </h3>
-                <p className="whitespace-pre-wrap break-words rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-600">
+                <p className="whitespace-pre-wrap break-words rounded-md border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-600">
                   {selectedDocument.notes ||
                     "Linked clinic document. Preview unavailable; this view is read-only."}
                 </p>
@@ -228,7 +228,7 @@ export default function DigitalDocumentsTab({
         <button
           type="button"
           onClick={onReturn}
-          className="cursor-pointer rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
+          className="cursor-pointer rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
         >
           Return to Consultation
         </button>

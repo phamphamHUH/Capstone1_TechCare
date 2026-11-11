@@ -14,10 +14,16 @@ type QueueingMonitorProps = {
 };
 
 // Label + color of the badge for each connection status.
-const STATUS_BADGE: Record<QueueStreamStatus, { label: string; style: string }> = {
+const STATUS_BADGE: Record<
+  QueueStreamStatus,
+  { label: string; style: string }
+> = {
   connecting: { label: "Connecting…", style: "bg-amber-100 text-amber-700" },
   live: { label: "Live", style: "bg-emerald-100 text-emerald-700" },
-  reconnecting: { label: "Reconnecting…", style: "bg-amber-100 text-amber-700" },
+  reconnecting: {
+    label: "Reconnecting…",
+    style: "bg-amber-100 text-amber-700",
+  },
   unauthorized: {
     label: "Session expired — log in again",
     style: "bg-red-100 text-red-700",
@@ -84,7 +90,7 @@ function QueueingMonitor(_props: QueueingMonitorProps) {
   return (
     <div
       ref={screenRef}
-      className="mx-6 flex min-h-[80vh] flex-col rounded-2xl bg-slate-100 p-3 text-slate-900"
+      className="mx-6 flex min-h-[80vh] flex-col rounded-md bg-slate-100 p-3 text-slate-900"
     >
       {/* HEADER: title, connection badge, clock, fullscreen */}
       <header className="mb-3 flex flex-wrap items-center justify-between gap-3 px-1">
@@ -108,7 +114,7 @@ function QueueingMonitor(_props: QueueingMonitorProps) {
           </span>
           <button
             onClick={handleFullscreen}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm hover:bg-slate-50"
+            className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm hover:bg-slate-50"
           >
             Fullscreen
           </button>
@@ -117,14 +123,20 @@ function QueueingMonitor(_props: QueueingMonitorProps) {
 
       {/* BOARD: one column per service type */}
       {error && <ErrorMessage className="mb-3">{error}</ErrorMessage>}
-      <div className={`grid flex-1 gap-3 lg:grid-cols-2 ${isLive ? "" : "opacity-50"}`}>
+      <div
+        className={`grid flex-1 gap-3 lg:grid-cols-2 ${isLive ? "" : "opacity-50"}`}
+      >
         <QueueColumn
           title="Consultation"
-          entries={queueEntries.filter((entry) => entry.service_type === "consultation")}
+          entries={queueEntries.filter(
+            (entry) => entry.service_type === "consultation",
+          )}
         />
         <QueueColumn
           title="Laboratory"
-          entries={queueEntries.filter((entry) => entry.service_type === "laboratory")}
+          entries={queueEntries.filter(
+            (entry) => entry.service_type === "laboratory",
+          )}
         />
       </div>
 

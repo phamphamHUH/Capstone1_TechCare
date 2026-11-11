@@ -64,8 +64,8 @@ function InformationCard({ onClose, queueIdCard, room }: InformationCardProps) {
       {/* shadow/backdrop behind the card */}
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
-      <main className="relative rounded-lg shadow-lg w-full">
-        <div className="fixed flex flex-col h-full max-h-4/5 w-full max-w-3/4 rounded-lg border bg-gray-300 shadow-xl top-1/2 right-1/2 z-50 translate-x-1/2 -translate-y-1/2 overflow-hidden">
+      <main className="relative rounded-md shadow-lg w-full">
+        <div className="fixed flex flex-col h-full max-h-4/5 w-full max-w-3/4 rounded-md border bg-gray-300 shadow-xl top-1/2 right-1/2 z-50 translate-x-1/2 -translate-y-1/2 overflow-hidden">
           <div className="flex justify-between items-center w-full px-8 py-6 bg-white shadow-xs">
             <div className="flex items-center gap-5">
               <h1 className="text-2xl font-semibold">
@@ -76,7 +76,7 @@ function InformationCard({ onClose, queueIdCard, room }: InformationCardProps) {
               {requestDetail && (
                 <>
                   <div
-                    className={`border rounded-xl px-3 py-1 text-sm ${
+                    className={`border rounded-md px-3 py-1 text-sm ${
                       status === "serving"
                         ? "text-green-600 bg-green-100 border-green-600"
                         : status === "completed"
@@ -87,7 +87,7 @@ function InformationCard({ onClose, queueIdCard, room }: InformationCardProps) {
                     {requestDetail.request.status}
                   </div>
                   <div
-                    className={`border rounded-xl px-3 py-1 text-sm ${
+                    className={`border rounded-md px-3 py-1 text-sm ${
                       requestDetail.request.is_priority
                         ? "text-red-600 bg-red-100 border-red-600"
                         : "text-blue-600 bg-blue-100 border-blue-600"
@@ -115,7 +115,7 @@ function InformationCard({ onClose, queueIdCard, room }: InformationCardProps) {
             ) : requestDetail ? (
               <div className="flex w-full h-full gap-6">
                 {/* PATIENT INFORMATION */}
-                <div className="w-full h-full max-w-3/7 rounded-lg shadow-sm bg-white">
+                <div className="w-full h-full max-w-3/7 rounded-md shadow-sm bg-white">
                   <div className="flex items-center shadow-xs px-3 py-2 gap-2">
                     <UserRound size={20} />
                     <h1 className="text-xl font-semibold">
@@ -242,7 +242,7 @@ function InformationCard({ onClose, queueIdCard, room }: InformationCardProps) {
                 </div>
 
                 {/* REQUEST INFORMATION */}
-                <div className="w-full h-full max-w-4/7 rounded-lg flex flex-col gap-3">
+                <div className="w-full h-full max-w-4/7 rounded-md flex flex-col gap-3">
                   <div className="shadow-sm bg-white">
                     <div className="flex items-center shadow-xs px-3 py-2 gap-2">
                       <FileText size={20} />

@@ -9,11 +9,14 @@ type RoomSummaryPanelProps = {
 };
 
 // One card: the room on the left, a button to its services on the right.
-function RoomSummaryPanel({ roomLabel, onViewServices }: RoomSummaryPanelProps) {
+function RoomSummaryPanel({
+  roomLabel,
+  onViewServices,
+}: RoomSummaryPanelProps) {
   const active = true;
 
   return (
-    <section className="flex w-full flex-wrap items-center justify-between gap-3 rounded-2xl border border-gray-300 bg-white px-4 py-3">
+    <section className="flex w-full flex-wrap items-center justify-between gap-3 rounded-md border border-gray-300 bg-white px-4 py-3">
       <div className="flex items-center gap-3">
         <img
           src="/assets/images/reyna-g-logo.png"
@@ -46,10 +49,16 @@ function RoomSummaryPanel({ roomLabel, onViewServices }: RoomSummaryPanelProps) 
         type="button"
         onClick={() => onViewServices("all")}
         aria-haspopup="dialog"
-        className="group flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm cursor-pointer transition-colors hover:border-sky-300 hover:bg-sky-50 active:bg-sky-100"
+        className="group flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm cursor-pointer transition-colors hover:border-sky-300 hover:bg-sky-50 active:bg-sky-100"
       >
-        <Layers size={16} strokeWidth={1.75} className="text-gray-500 group-hover:text-sky-700" />
-        <span className="font-medium group-hover:text-sky-700">Services Offered in this Room</span>
+        <Layers
+          size={16}
+          strokeWidth={1.75}
+          className="text-gray-500 group-hover:text-sky-700"
+        />
+        <span className="font-medium group-hover:text-sky-700">
+          Services Offered in this Room
+        </span>
         <ChevronRight
           size={16}
           className="text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-sky-700"

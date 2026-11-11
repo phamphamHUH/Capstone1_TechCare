@@ -153,7 +153,7 @@ function EditService({ service, services, onClose, loadData }: Props) {
   }
 
   const inputClass =
-    "w-full rounded-lg border border-gray-300 py-2 px-3 text-xs focus:border-gray-900 focus:outline-none";
+    "w-full rounded-md border border-gray-300 py-2 px-3 text-xs focus:border-gray-900 focus:outline-none";
 
   if (saved) {
     return (
@@ -170,7 +170,7 @@ function EditService({ service, services, onClose, loadData }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-4/11 bg-white py-4 px-6 shadow-xl rounded-lg">
+      <div className="w-4/11 bg-white py-4 px-6 shadow-xl rounded-md">
         <div className="mb-5 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-semibold">
@@ -312,11 +312,11 @@ function EditService({ service, services, onClose, loadData }: Props) {
                   value={searchFilter}
                   onChange={(e) => setSearchFilter(e.target.value)}
                   placeholder="Search existing services..."
-                  className="h-9 w-full rounded-lg border border-gray-300 bg-white pl-9 pr-3 text-xs outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-100"
+                  className="h-9 w-full rounded-md border border-gray-300 bg-white pl-9 pr-3 text-xs outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-100"
                 />
 
                 {searchFilter.trim() !== "" && (
-                  <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-48 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg">
+                  <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-48 overflow-y-auto rounded-md border border-gray-200 bg-white shadow-lg">
                     {filteredServices.length > 0 ? (
                       filteredServices.map((s) => (
                         <button
@@ -339,7 +339,7 @@ function EditService({ service, services, onClose, loadData }: Props) {
                 )}
               </div>
 
-              <div className="w-full max-h-60 overflow-auto rounded-lg border border-gray-200 mt-5">
+              <div className="w-full max-h-60 overflow-auto rounded-md border border-gray-200 mt-5">
                 <table className="w-full text-left text-xs">
                   <thead className="sticky top-0 bg-gray-50 text-gray-600">
                     <tr>

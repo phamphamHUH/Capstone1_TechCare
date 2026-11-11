@@ -412,7 +412,7 @@ export default function ResultEntry({
           className="min-w-0 bg-white font-sans text-sm text-gray-900"
           aria-labelledby="result-entry-heading"
         >
-          <div className="flex items-center gap-4 rounded-2xl border border-gray-300 px-5 py-4">
+          <div className="flex items-center gap-4 rounded-md border border-gray-300 px-5 py-4">
             <FlaskBadge small />
             <div>
               <h1
@@ -463,7 +463,7 @@ export default function ResultEntry({
             </button>
           </nav>
           <div className="grid min-h-[620px] grid-cols-1 items-start gap-6 py-4 xl:grid-cols-[minmax(270px,32%)_minmax(0,1fr)]">
-            <aside className="min-w-0 overflow-hidden rounded-2xl border border-gray-300 bg-white">
+            <aside className="min-w-0 overflow-hidden rounded-md border border-gray-300 bg-white">
               <h2 className="border-b border-gray-200 bg-gray-50 px-4 py-3 text-base font-semibold">
                 Patient & Request Information
               </h2>
@@ -511,7 +511,7 @@ export default function ResultEntry({
                     <dd>{formatLabDate(request.requestedAt)}</dd>
                   </div>
                 </dl>
-                <details className="rounded-lg bg-gray-50 p-3">
+                <details className="rounded-md bg-gray-50 p-3">
                   <summary className="flex cursor-pointer list-none items-center gap-2 [&::-webkit-details-marker]:hidden">
                     <TestTubeDiagonal
                       className="shrink-0 text-sky-600"
@@ -554,7 +554,7 @@ export default function ResultEntry({
             </aside>
             {step === 1 || !template ? (
               <section
-                className="min-w-0 overflow-hidden rounded-2xl border border-gray-300 bg-white"
+                className="min-w-0 overflow-hidden rounded-md border border-gray-300 bg-white"
                 aria-labelledby="report-template-heading"
               >
                 <h2
@@ -564,7 +564,7 @@ export default function ResultEntry({
                   Report Template
                 </h2>
                 <div className="p-3">
-                  <label className="mb-3 flex h-9 items-center gap-2 rounded-lg border border-gray-300 px-3 text-gray-400 focus-within:border-sky-400">
+                  <label className="mb-3 flex h-9 items-center gap-2 rounded-md border border-gray-300 px-3 text-gray-400 focus-within:border-sky-400">
                     <Search size={14} />
                     <input
                       className="w-full min-w-0 border-0 bg-transparent text-sm outline-none placeholder:text-gray-400"
@@ -585,7 +585,7 @@ export default function ResultEntry({
                       {visibleTemplates.map((item) => (
                         <label
                           key={item.form_id}
-                          className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border px-3 py-3 ${templateId === item.form_id ? "border-sky-400 bg-sky-50 text-sky-700" : "border-gray-300 hover:border-sky-300"}`}
+                          className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-md border px-3 py-3 ${templateId === item.form_id ? "border-sky-400 bg-sky-50 text-sky-700" : "border-gray-300 hover:border-sky-300"}`}
                         >
                           <input
                             className="size-3 shrink-0 accent-sky-500"
@@ -656,7 +656,7 @@ export default function ResultEntry({
             ) : (
               <form
                 ref={formRef}
-                className="min-w-0 overflow-hidden rounded-2xl border border-gray-300 bg-white"
+                className="min-w-0 overflow-hidden rounded-md border border-gray-300 bg-white"
                 onSubmit={save}
                 noValidate
                 aria-label={`${template.form_name} results`}
@@ -705,7 +705,7 @@ export default function ResultEntry({
                       Notes / Observations
                     </label>
                     <textarea
-                      className="min-h-20 w-full resize-y rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none placeholder:text-gray-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-50 aria-invalid:border-rose-400"
+                      className="min-h-20 w-full resize-y rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none placeholder:text-gray-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-50 aria-invalid:border-rose-400"
                       id="laboratory-notes"
                       rows={3}
                       value={remarks}

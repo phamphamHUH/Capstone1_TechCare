@@ -115,7 +115,7 @@ function HistoryTimeline({
                 </div>
 
                 <div
-                  className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${
+                  className={`flex size-10 shrink-0 items-center justify-center rounded-md ${
                     isLab
                       ? "bg-gray-100 text-gray-600"
                       : "bg-indigo-50 text-indigo-500"

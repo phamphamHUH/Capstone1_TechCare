@@ -38,7 +38,10 @@ function PatientInformation() {
   if (!patient || !patientId) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
-        <ErrorMessage className="max-w-md">Patient account not found. Please sign in again to access your records.</ErrorMessage>
+        <ErrorMessage className="max-w-md">
+          Patient account not found. Please sign in again to access your
+          records.
+        </ErrorMessage>
       </div>
     );
   }
@@ -46,13 +49,19 @@ function PatientInformation() {
   return (
     <div className="min-h-screen bg-[#f7f9fb] text-slate-900">
       <header className="fixed left-0 right-0 top-0 z-30 flex h-[70px] items-center border-b border-slate-200 bg-white">
-        <div className={`flex h-full items-center border-r border-slate-200 px-4 transition-all ${sidebarOpen ? "w-[160px]" : "w-[72px]"}`}>
+        <div
+          className={`flex h-full items-center border-r border-slate-200 px-4 transition-all ${sidebarOpen ? "w-[160px]" : "w-[72px]"}`}
+        >
           <img
             src="/assets/images/reyna-g-logo.png"
             alt="Reyna G"
             className="h-11 w-11 object-contain"
           />
-          {sidebarOpen && <span className="ml-2 text-lg font-extrabold text-black">Reyna G</span>}
+          {sidebarOpen && (
+            <span className="ml-2 text-lg font-extrabold text-black">
+              Reyna G
+            </span>
+          )}
         </div>
 
         <div className="flex flex-1 items-center justify-between px-4">
@@ -66,7 +75,9 @@ function PatientInformation() {
               <Menu size={18} />
             </button>
             <h1 className="text-sm font-bold">
-              {activePage === "consultations" ? "Consultation" : "Prescriptions"}
+              {activePage === "consultations"
+                ? "Consultation"
+                : "Prescriptions"}
             </h1>
           </div>
 
@@ -76,7 +87,7 @@ function PatientInformation() {
             <button
               type="button"
               onClick={logout}
-              className="flex items-center gap-2 rounded-lg border border-red-300 px-3 py-2 text-xs font-semibold text-red-500 hover:bg-red-50"
+              className="flex items-center gap-2 rounded-md border border-red-300 px-3 py-2 text-xs font-semibold text-red-500 hover:bg-red-50"
             >
               <LogOut size={14} />
               Logout
@@ -94,7 +105,7 @@ function PatientInformation() {
           <button
             type="button"
             onClick={() => setActivePage("consultations")}
-            className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-xs font-semibold transition ${
+            className={`flex w-full items-center gap-3 rounded-md px-3 py-3 text-left text-xs font-semibold transition ${
               activePage === "consultations"
                 ? "bg-[#be0000] text-white"
                 : "text-slate-700 hover:bg-slate-100"
@@ -107,7 +118,7 @@ function PatientInformation() {
           <button
             type="button"
             onClick={() => setActivePage("prescriptions")}
-            className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-xs font-semibold transition ${
+            className={`flex w-full items-center gap-3 rounded-md px-3 py-3 text-left text-xs font-semibold transition ${
               activePage === "prescriptions"
                 ? "bg-[#be0000] text-white"
                 : "text-slate-700 hover:bg-slate-100"

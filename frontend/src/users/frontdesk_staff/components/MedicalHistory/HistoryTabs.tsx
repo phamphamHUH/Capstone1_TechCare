@@ -20,7 +20,7 @@ const TABS: { key: HistoryTab; label: string }[] = [
 
 function HistoryTabs({ activeTab, onChange }: Props) {
   return (
-    <div className="flex gap-2 border rounded-xl px-3 py-1 bg-white shadow-lg border-gray-200 mt-5 mx-6">
+    <div className="flex gap-2 border rounded-md px-3 py-1 bg-white shadow-lg border-gray-200 mt-5 mx-6">
       {TABS.map((tab) => {
         const isActive = tab.key === activeTab;
 
@@ -28,7 +28,7 @@ function HistoryTabs({ activeTab, onChange }: Props) {
           <button
             key={tab.key}
             onClick={() => onChange(tab.key)}
-            className={`py-2 px-3 text-sm border-b-2 -mb-px rounded-xl transition-all cursor-pointer ${
+            className={`py-2 px-3 text-sm border-b-2 -mb-px rounded-md transition-all cursor-pointer ${
               isActive
                 ? "bg-sky-500 text-white"
                 : "border-transparent text-gray-500 hover:text-gray-800"

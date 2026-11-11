@@ -17,7 +17,7 @@ type TemplateFieldsProps = {
 const limit = (value: string | number | undefined) =>
   value === "" || value === undefined ? undefined : Number(value);
 const inputClass =
-  "h-9 w-full min-w-0 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 outline-none placeholder:text-gray-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-50 aria-invalid:border-rose-400 aria-invalid:bg-rose-50 disabled:opacity-50";
+  "h-9 w-full min-w-0 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 outline-none placeholder:text-gray-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-50 aria-invalid:border-rose-400 aria-invalid:bg-rose-50 disabled:opacity-50";
 
 type FieldInputProps = {
   component: BuilderComponent;
@@ -237,7 +237,7 @@ export default function TemplateFields({
         <section key={group.key} className="mb-5" aria-label={group.title}>
           <h3 className="mb-3 text-base font-semibold">{group.title}</h3>
           <div
-            className="hidden grid-cols-[1.15fr_1.6fr_1.1fr_.42fr] gap-3 rounded-lg bg-gray-50 px-2 py-2 text-xs font-medium text-gray-600 sm:grid"
+            className="hidden grid-cols-[1.15fr_1.6fr_1.1fr_.42fr] gap-3 rounded-md bg-gray-50 px-2 py-2 text-xs font-medium text-gray-600 sm:grid"
             aria-hidden="true"
           >
             <span>Parameter</span>
@@ -378,9 +378,7 @@ export default function TemplateFields({
                     )}
                   </fieldset>
                   {error && (
-                    <FieldError id={`result-${key}-error`}>
-                      {error}
-                    </FieldError>
+                    <FieldError id={`result-${key}-error`}>{error}</FieldError>
                   )}
                 </div>
               );
@@ -407,9 +405,7 @@ export default function TemplateFields({
                     disabled={disabled}
                   />
                   {error && (
-                    <FieldError id={`result-${key}-error`}>
-                      {error}
-                    </FieldError>
+                    <FieldError id={`result-${key}-error`}>{error}</FieldError>
                   )}
                   {flag && !error && (
                     <span

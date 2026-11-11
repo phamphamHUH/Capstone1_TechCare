@@ -3,7 +3,16 @@ import api from "#lib/axios";
 import { useState } from "react";
 import type { User } from "../../../../interface/User";
 import { ConfirmationModal } from "./UserProfile/ConfirmationModal";
-import { X, Mail, Phone, MapPin, Calendar, Clock, Pencil, KeyRound } from "lucide-react";
+import {
+  X,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  Clock,
+  Pencil,
+  KeyRound,
+} from "lucide-react";
 import ResetPasswordModal from "../../../../components/ResetPasswordModal";
 import { DOCTOR_FIELDS } from "./doctorField";
 import UniversalModal from "../../../../components/UniversalModal";
@@ -43,9 +52,12 @@ function UserProfile({
   // =========================
   async function resetPassword(password: string) {
     try {
-      const response = await api.patch(`api/admin/users/${user.user_id}/password`, {
-        password,
-      });
+      const response = await api.patch(
+        `api/admin/users/${user.user_id}/password`,
+        {
+          password,
+        },
+      );
       setShowResetPassword(false);
       setNotice({
         type: "success",
@@ -115,7 +127,8 @@ function UserProfile({
               };
             };
           }
-        ).response?.data?.message || "Unable to complete this action. Please try again.",
+        ).response?.data?.message ||
+          "Unable to complete this action. Please try again.",
       );
     } finally {
       setUpdating(false);
@@ -131,7 +144,7 @@ function UserProfile({
       />
 
       {/* Modal */}
-      <div className="fixed left-1/2 top-1/2 z-50 w-[94%] max-w-5xl -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl bg-gray-50 shadow-2xl">
+      <div className="fixed left-1/2 top-1/2 z-50 w-[94%] max-w-5xl -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-md bg-gray-50 shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-100 bg-white px-6 py-5">
           <div>
@@ -154,9 +167,11 @@ function UserProfile({
 
         {/* Content */}
         <div className="max-h-[82vh] overflow-y-auto p-6">
-          {formError && <ErrorMessage className="mb-4">{formError}</ErrorMessage>}
+          {formError && (
+            <ErrorMessage className="mb-4">{formError}</ErrorMessage>
+          )}
           {/* Profile Hero */}
-          <div className="overflow-hidden rounded-3xl bg-white shadow-sm">
+          <div className="overflow-hidden rounded-md bg-white shadow-sm">
             <div className="h-36 bg-linear-to-r from-gray-100 via-gray-50 to-gray-100" />
 
             <div className="px-8 pb-8">
@@ -167,10 +182,10 @@ function UserProfile({
                     <img
                       src={user.profile_photo}
                       alt={fullName}
-                      className="h-32 w-32 rounded-3xl border-4 border-white object-cover shadow-lg"
+                      className="h-32 w-32 rounded-md border-4 border-white object-cover shadow-lg"
                     />
                   ) : (
-                    <div className="flex h-32 w-32 items-center justify-center rounded-3xl border-4 border-white bg-gray-200 text-4xl font-bold text-gray-500 shadow-lg">
+                    <div className="flex h-32 w-32 items-center justify-center rounded-md border-4 border-white bg-gray-200 text-4xl font-bold text-gray-500 shadow-lg">
                       {initials}
                     </div>
                   )}
@@ -198,7 +213,7 @@ function UserProfile({
                   {/* Edit */}
                   <button
                     onClick={handleEdit}
-                    className="flex items-center gap-2 rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800"
+                    className="flex items-center gap-2 rounded-md bg-gray-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800"
                   >
                     <Pencil size={16} />
                     Edit
@@ -207,7 +222,7 @@ function UserProfile({
                   {/* Reset Password */}
                   <button
                     onClick={() => setShowResetPassword(true)}
-                    className="flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-800 transition hover:bg-gray-50"
+                    className="flex items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-800 transition hover:bg-gray-50"
                   >
                     <KeyRound size={16} />
                     Reset password
@@ -216,7 +231,7 @@ function UserProfile({
                   <button
                     onClick={() => setIsModalOpen(true)}
                     disabled={updating}
-                    className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white transition disabled:opacity-50 ${
+                    className={`flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium text-white transition disabled:opacity-50 ${
                       user.account_status
                         ? "bg-red-600 hover:bg-red-700"
                         : "bg-green-600 hover:bg-green-700"
@@ -274,14 +289,14 @@ function UserProfile({
           {/* Information */}
           <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
             {/* Contact */}
-            <div className="rounded-3xl bg-white p-6 shadow-sm">
+            <div className="rounded-md bg-white p-6 shadow-sm">
               <h2 className="mb-6 text-base font-semibold text-gray-900">
                 Contact Information
               </h2>
 
               <div className="space-y-5">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-gray-100">
                     <Mail size={18} className="text-gray-600" />
                   </div>
 
@@ -295,7 +310,7 @@ function UserProfile({
                 </div>
 
                 <div className="flex items-center gap-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-gray-100">
                     <Phone size={18} className="text-gray-600" />
                   </div>
 
@@ -309,7 +324,7 @@ function UserProfile({
                 </div>
 
                 <div className="flex items-start gap-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-gray-100">
                     <MapPin size={18} className="text-gray-600" />
                   </div>
 
@@ -325,7 +340,7 @@ function UserProfile({
             </div>
 
             {/* Employment */}
-            <div className="rounded-3xl bg-white p-6 shadow-sm">
+            <div className="rounded-md bg-white p-6 shadow-sm">
               <h2 className="mb-6 text-base font-semibold text-gray-900">
                 Employment Information
               </h2>
@@ -397,7 +412,7 @@ function UserProfile({
             </div>
 
             {/* Personal */}
-            <div className="rounded-3xl bg-white p-6 shadow-sm lg:col-span-2">
+            <div className="rounded-md bg-white p-6 shadow-sm lg:col-span-2">
               <h2 className="mb-6 text-base font-semibold text-gray-900">
                 Personal Information
               </h2>
@@ -455,7 +470,7 @@ function UserProfile({
 
             {/* Doctor */}
             {user.role === "doctor" && (
-              <div className="rounded-3xl bg-white p-6 shadow-sm lg:col-span-2">
+              <div className="rounded-md bg-white p-6 shadow-sm lg:col-span-2">
                 <h2 className="mb-6 text-base font-semibold text-gray-900">
                   Doctor Information
                 </h2>
@@ -475,7 +490,7 @@ function UserProfile({
             )}
 
             {/* Emergency */}
-            <div className="rounded-3xl bg-white p-6 shadow-sm lg:col-span-2">
+            <div className="rounded-md bg-white p-6 shadow-sm lg:col-span-2">
               <h2 className="mb-6 text-base font-semibold text-gray-900">
                 Emergency Contact
               </h2>

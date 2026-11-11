@@ -16,7 +16,9 @@ type Props = {
   patientId: string;
 };
 
-function parseItems(value: PrescriptionRecord["prescription_items"]): PrescriptionItem[] {
+function parseItems(
+  value: PrescriptionRecord["prescription_items"],
+): PrescriptionItem[] {
   if (Array.isArray(value)) return value;
   if (typeof value !== "string" || !value.trim()) return [];
 
@@ -29,13 +31,23 @@ function parseItems(value: PrescriptionRecord["prescription_items"]): Prescripti
 }
 
 function itemName(item: PrescriptionItem) {
-  return item.medication_name ?? item.medicine_name ?? item.medication ?? item.name ?? "Medication";
+  return (
+    item.medication_name ??
+    item.medicine_name ??
+    item.medication ??
+    item.name ??
+    "Medication"
+  );
 }
 
 function patientName(patient: PatientSessionUser) {
-  return [patient.first_name, patient.middle_name, patient.last_name, patient.suffix]
-    .filter(Boolean)
-    .join(" ") || patient.username || "Patient";
+  return (
+    [patient.first_name, patient.middle_name, patient.last_name, patient.suffix]
+      .filter(Boolean)
+      .join(" ") ||
+    patient.username ||
+    "Patient"
+  );
 }
 
 function PrescriptionsView({ patient, patientId }: Props) {
@@ -57,7 +69,8 @@ function PrescriptionsView({ patient, patientId }: Props) {
 
         setPrescriptions(rows);
         setSelectedId((current) => {
-          if (current && rows.some((item) => item.prescription_id === current)) return current;
+          if (current && rows.some((item) => item.prescription_id === current))
+            return current;
           return rows[0]?.prescription_id ?? null;
         });
       } catch (requestError) {
@@ -88,7 +101,10 @@ function PrescriptionsView({ patient, patientId }: Props) {
   }, [prescriptions, search, status]);
 
   const selected = useMemo(
-    () => filtered.find((item) => item.prescription_id === selectedId) ?? filtered[0] ?? null,
+    () =>
+      filtered.find((item) => item.prescription_id === selectedId) ??
+      filtered[0] ??
+      null,
     [filtered, selectedId],
   );
 
@@ -99,10 +115,14 @@ function PrescriptionsView({ patient, patientId }: Props) {
       <PatientSummaryCard patient={patient} />
 
       <div className="grid min-h-[540px] grid-cols-1 gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
-        <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
+        <section className="rounded-md border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-100 p-4">
-            <h2 className="text-sm font-bold text-slate-900">Prescription History</h2>
-            <p className="mt-0.5 text-[10px] text-slate-400">View your current prescriptions.</p>
+            <h2 className="text-sm font-bold text-slate-900">
+              Prescription History
+            </h2>
+            <p className="mt-0.5 text-[10px] text-slate-400">
+              View your current prescriptions.
+            </p>
 
             <label className="mt-4 flex items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-xs text-slate-500">
               <Search size={14} />
@@ -127,24 +147,31 @@ function PrescriptionsView({ patient, patientId }: Props) {
           </div>
 
           <div className="max-h-[430px] overflow-y-auto p-2">
-            {error && (
-              <ErrorMessage>{error}</ErrorMessage>
-            )}
+            {error && <ErrorMessage>{error}</ErrorMessage>}
             {loading && prescriptions.length === 0 ? (
               <LoadingScreen message="Loading prescriptions..." />
-            ) : ((filtered.length === 0 ? (
-              <EmptyState message={error ? "Prescriptions are unavailable." : "No prescriptions found."} />
+            ) : filtered.length === 0 ? (
+              <EmptyState
+                message={
+                  error
+                    ? "Prescriptions are unavailable."
+                    : "No prescriptions found."
+                }
+              />
             ) : (
               filtered.map((prescription) => {
-                const active = selected?.prescription_id === prescription.prescription_id;
-                const count = parseItems(prescription.prescription_items).length;
+                const active =
+                  selected?.prescription_id === prescription.prescription_id;
+                const count = parseItems(
+                  prescription.prescription_items,
+                ).length;
 
                 return (
                   <button
                     type="button"
                     key={prescription.prescription_id}
                     onClick={() => setSelectedId(prescription.prescription_id)}
-                    className={`mb-1 w-full rounded-lg p-3 text-left transition ${
+                    className={`mb-1 w-full rounded-md p-3 text-left transition ${
                       active ? "bg-sky-50" : "hover:bg-slate-50"
                     }`}
                   >
@@ -158,7 +185,9 @@ function PrescriptionsView({ patient, patientId }: Props) {
                             {prescription.prescription_id}
                           </p>
                           <p className="mt-1 text-[9px] text-slate-400">
-                            {new Date(prescription.prescribed_at).toLocaleDateString("en-US", {
+                            {new Date(
+                              prescription.prescribed_at,
+                            ).toLocaleDateString("en-US", {
                               month: "short",
                               day: "2-digit",
                               year: "numeric",
@@ -177,36 +206,51 @@ function PrescriptionsView({ patient, patientId }: Props) {
                   </button>
                 );
               })
-            )))}
+            )}
           </div>
         </section>
 
-        <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
           {!selected ? (
             <EmptyState message="Select a prescription to preview it." />
           ) : (
-            <div className="mx-auto max-w-4xl rounded-xl border border-slate-200 bg-white p-6">
+            <div className="mx-auto max-w-4xl rounded-md border border-slate-200 bg-white p-6">
               <header className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-300 pb-4">
                 <div className="flex items-center gap-3">
-                  <img src="/assets/images/reyna-g-logo.png" alt="Reyna G" className="h-10 w-10 object-contain" />
+                  <img
+                    src="/assets/images/reyna-g-logo.png"
+                    alt="Reyna G"
+                    className="h-10 w-10 object-contain"
+                  />
                   <div>
                     <h2 className="text-xs font-extrabold text-slate-900">
                       REYNA G DIAGNOSTIC MEDICAL CLINIC
                     </h2>
-                    <p className="mt-1 text-[9px] text-slate-500">Manila, Philippines</p>
+                    <p className="mt-1 text-[9px] text-slate-500">
+                      Manila, Philippines
+                    </p>
                   </div>
                 </div>
 
                 <div className="text-right text-[9px] leading-5 text-slate-500">
                   <p>
-                    Date: <strong className="text-slate-700">{new Date(selected.prescribed_at).toLocaleDateString()}</strong>
+                    Date:{" "}
+                    <strong className="text-slate-700">
+                      {new Date(selected.prescribed_at).toLocaleDateString()}
+                    </strong>
                   </p>
                   <p>
-                    Prescription ID: <strong className="text-slate-700">{selected.prescription_id}</strong>
+                    Prescription ID:{" "}
+                    <strong className="text-slate-700">
+                      {selected.prescription_id}
+                    </strong>
                   </p>
                   {selected.consultation_record_id && (
                     <p>
-                      Consultation ID: <strong className="text-slate-700">{selected.consultation_record_id}</strong>
+                      Consultation ID:{" "}
+                      <strong className="text-slate-700">
+                        {selected.consultation_record_id}
+                      </strong>
                     </p>
                   )}
                 </div>
@@ -219,10 +263,12 @@ function PrescriptionsView({ patient, patientId }: Props) {
                 </h1>
               </div>
 
-              <div className="grid gap-3 rounded-lg bg-slate-50 p-4 text-[10px] sm:grid-cols-2">
+              <div className="grid gap-3 rounded-md bg-slate-50 p-4 text-[10px] sm:grid-cols-2">
                 <div>
                   <span className="text-slate-400">Patient Name:</span>{" "}
-                  <strong className="text-slate-700">{patientName(patient)}</strong>
+                  <strong className="text-slate-700">
+                    {patientName(patient)}
+                  </strong>
                 </div>
                 <div>
                   <span className="text-slate-400">Patient ID:</span>{" "}
@@ -230,7 +276,7 @@ function PrescriptionsView({ patient, patientId }: Props) {
                 </div>
               </div>
 
-              <div className="mt-5 overflow-hidden rounded-lg border border-slate-200">
+              <div className="mt-5 overflow-hidden rounded-md border border-slate-200">
                 <div className="grid grid-cols-[42px_1.4fr_.8fr_.8fr_.8fr_1.2fr] bg-slate-100 px-3 py-2 text-[9px] font-bold text-slate-600">
                   <span>#</span>
                   <span>Medication</span>
@@ -245,11 +291,15 @@ function PrescriptionsView({ patient, patientId }: Props) {
                 ) : (
                   items.map((item, index) => (
                     <div
-                      key={String(item.id ?? `${selected.prescription_id}-${index}`)}
+                      key={String(
+                        item.id ?? `${selected.prescription_id}-${index}`,
+                      )}
                       className="grid grid-cols-[42px_1.4fr_.8fr_.8fr_.8fr_1.2fr] border-t border-slate-100 px-3 py-3 text-[9px] text-slate-600"
                     >
                       <span>{index + 1}</span>
-                      <span className="font-semibold text-slate-800">{itemName(item)}</span>
+                      <span className="font-semibold text-slate-800">
+                        {itemName(item)}
+                      </span>
                       <span>{item.dosage ?? item.dose ?? "—"}</span>
                       <span>{item.frequency ?? "—"}</span>
                       <span>{item.duration ?? "—"}</span>
@@ -259,8 +309,10 @@ function PrescriptionsView({ patient, patientId }: Props) {
                 )}
               </div>
 
-              <div className="mt-5 rounded-lg bg-slate-50 p-4">
-                <p className="text-[9px] font-bold text-slate-700">Additional Notes:</p>
+              <div className="mt-5 rounded-md bg-slate-50 p-4">
+                <p className="text-[9px] font-bold text-slate-700">
+                  Additional Notes:
+                </p>
                 <p className="mt-2 text-[10px] italic leading-5 text-slate-500">
                   {selected.notes || "No additional notes."}
                 </p>
@@ -268,7 +320,8 @@ function PrescriptionsView({ patient, patientId }: Props) {
 
               {selected.valid_until && (
                 <p className="mt-4 text-right text-[9px] text-slate-400">
-                  Valid until {new Date(selected.valid_until).toLocaleDateString()}
+                  Valid until{" "}
+                  {new Date(selected.valid_until).toLocaleDateString()}
                 </p>
               )}
             </div>

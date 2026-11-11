@@ -52,7 +52,8 @@ function UserManagement({
   const [search, setSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState<User>(users[0]);
   const [viewMode, setViewMode] = useState<ViewMode>(readViewMode);
-  const [filters, setFilters] = useState<UserFilterValues>(DEFAULT_USER_FILTERS);
+  const [filters, setFilters] =
+    useState<UserFilterValues>(DEFAULT_USER_FILTERS);
 
   const changeViewMode = (mode: ViewMode) => {
     setViewMode(mode);
@@ -67,7 +68,9 @@ function UserManagement({
     loadData();
   }, [loadData]);
 
-  const roleOptions = [...new Set(users.map((u) => u.role).filter(Boolean))].sort();
+  const roleOptions = [
+    ...new Set(users.map((u) => u.role).filter(Boolean)),
+  ].sort();
   const departmentOptions = [
     ...new Set(users.map((u) => u.department).filter((d): d is string => !!d)),
   ].sort();
@@ -105,12 +108,12 @@ function UserManagement({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search users..."
-            className="w-full border border-gray-300 rounded-lg pl-10 pr-4 py-2.5 outline-none focus:border-gray-500"
+            className="w-full border border-gray-300 rounded-md pl-10 pr-4 py-2.5 outline-none focus:border-gray-500"
           />
         </div>
 
         {/* View toggle */}
-        <div className="flex shrink-0 overflow-hidden rounded-lg border border-gray-300">
+        <div className="flex shrink-0 overflow-hidden rounded-md border border-gray-300">
           {(
             [
               { mode: "grid", label: "Grid view", Icon: LayoutGrid },
@@ -138,7 +141,7 @@ function UserManagement({
         {/* Add User */}
         <button
           onClick={() => setShowAddUser(true)}
-          className="flex items-center justify-center gap-2 shrink-0 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+          className="flex items-center justify-center gap-2 shrink-0 px-4 py-2.5 border border-gray-300 rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
         >
           <UserPlus size={18} strokeWidth={1.5} />
           Add User

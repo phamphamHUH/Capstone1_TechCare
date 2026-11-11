@@ -208,7 +208,7 @@ export default function ConsultationWorkspace({
   /* ---------------------- No patient selected yet ---------------------- */
   if (!patientId || (!patient && !patientLoading)) {
     return (
-      <div className="bg-white border border-gray-200 rounded-2xl shadow-xs p-8 max-w-xl mx-auto text-center">
+      <div className="bg-white border border-gray-200 rounded-md shadow-xs p-8 max-w-xl mx-auto text-center">
         <h2 className="text-base font-bold text-gray-900">Select a patient</h2>
         <EmptyState message="Enter a patient ID to start recording findings or a laboratory request." />
         <form
@@ -230,13 +230,13 @@ export default function ConsultationWorkspace({
               onChange={(e) => setLookupInput(e.target.value)}
               placeholder="Patient ID, e.g. P-26-0929-0001"
               aria-label="Patient ID"
-              className="w-full pl-8 pr-3 py-2 text-xs border border-gray-200 rounded-lg outline-none focus:border-sky-400"
+              className="w-full pl-8 pr-3 py-2 text-xs border border-gray-200 rounded-md outline-none focus:border-sky-400"
             />
           </div>
           <button
             type="submit"
             disabled={!lookupInput.trim()}
-            className="px-5 py-2 bg-sky-500 hover:bg-sky-600 disabled:bg-gray-200 disabled:text-gray-400 text-white text-xs font-semibold rounded-lg cursor-pointer disabled:cursor-not-allowed"
+            className="px-5 py-2 bg-sky-500 hover:bg-sky-600 disabled:bg-gray-200 disabled:text-gray-400 text-white text-xs font-semibold rounded-md cursor-pointer disabled:cursor-not-allowed"
           >
             Open
           </button>
@@ -249,9 +249,7 @@ export default function ConsultationWorkspace({
   }
 
   if (patientLoading || !patient) {
-    return (
-      <LoadingScreen message="Loading patient..." />
-    );
+    return <LoadingScreen message="Loading patient..." />;
   }
 
   /* --------------------------- Prescription step ------------------------ */
@@ -300,7 +298,7 @@ export default function ConsultationWorkspace({
       )}
 
       {tab === "medical-history" && (
-        <div className="bg-white border border-gray-200 rounded-2xl shadow-xs p-8 text-center">
+        <div className="bg-white border border-gray-200 rounded-md shadow-xs p-8 text-center">
           <p className="text-xs text-gray-500 mb-4">
             View this patient's full history on the Medical History page.
           </p>
@@ -312,7 +310,7 @@ export default function ConsultationWorkspace({
                 patient_id: patient.patient_id,
               })
             }
-            className="px-5 py-2 bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold rounded-lg cursor-pointer"
+            className="px-5 py-2 bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold rounded-md cursor-pointer"
           >
             Open Medical History
           </button>
@@ -320,7 +318,7 @@ export default function ConsultationWorkspace({
       )}
 
       {(tab === "laboratory-results" || tab === "attachments") && (
-        <div className="bg-white border border-gray-200 rounded-2xl shadow-xs p-8 text-center text-xs text-gray-400">
+        <div className="bg-white border border-gray-200 rounded-md shadow-xs p-8 text-center text-xs text-gray-400">
           This section isn't available yet.
         </div>
       )}
