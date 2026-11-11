@@ -51,6 +51,7 @@ export async function getPortalHistory(req: Request, res: Response) {
       add("LOWER(status) = LOWER(?)", status);
     if (start_date) add("occurred_at >= ?::date", start_date);
     if (end_date) add("occurred_at < (?::date + INTERVAL '1 day')", end_date);
+    // Item status tracks processing; publication is recorded on test_results.
     const history = `WITH history AS (
       SELECT 'consultation'::text AS record_type, cr.consultation_record_id AS record_id,
         s.service_name, s.room, 'Consultation'::text AS service_category, cr.status,
@@ -59,7 +60,10 @@ export async function getPortalHistory(req: Request, res: Response) {
       WHERE cr.patient_id = $1
       UNION ALL
       SELECT 'laboratory'::text, li.item_id, s.service_name, s.room,
-        'Laboratory'::text, li.status, lr.requested_at
+        'Laboratory'::text,
+        CASE WHEN EXISTS (
+          SELECT 1 FROM test_results r WHERE r.item_id = li.item_id AND r.status = 'Released'
+        ) THEN 'Released' ELSE li.status END, lr.requested_at
       FROM test_request_items li
       JOIN test_requests lr ON lr.request_id = li.request_id
       JOIN services s ON s.service_id = li.service_id WHERE lr.patient_id = $1
@@ -113,7 +117,11 @@ export async function getPortalRecord(req: Request, res: Response) {
     }
     if (record_type === "laboratory") {
       const [record] = await sql`
-        SELECT li.item_id AS lab_item_id, li.status, lr.requested_at AS occurred_at, s.service_name, s.room,
+        SELECT li.item_id AS lab_item_id,
+          CASE WHEN EXISTS (
+            SELECT 1 FROM test_results r WHERE r.item_id = li.item_id AND r.status = 'Released'
+          ) THEN 'Released' ELSE li.status END AS status,
+          lr.requested_at AS occurred_at, s.service_name, s.room,
           CONCAT_WS(' ', ru.first_name, ru.last_name) AS requested_by, ru.role AS requested_by_role,
           CONCAT_WS(' ', pu.first_name, pu.last_name) AS processed_by, pu.role AS processed_by_role
         FROM test_request_items li
@@ -156,11 +164,17 @@ type QueueRow = {
 export async function getPortalReleasedResult(req: Request, res: Response) {
   try {
     const results = await sql`
-      SELECT r.result_id, r.item_id AS lab_item_id, r.results, r.remarks, r.image_url,
-        r.verified_by, r.verified_at, r.created_at, r.updated_at
+      SELECT r.result_id, r.item_id, r.item_id AS lab_item_id, r.results, r.remarks, r.image_url,
+        r.status, r.released_at, r.verified_by, r.verified_at, r.created_at, r.updated_at,
+        lr.request_id, lr.patient_id, lr.requested_at, lr.is_priority,
+        li.service_id, li.queue_id, s.service_name, s.room,
+        CONCAT_WS(' ', p.first_name, p.middle_name, p.last_name, p.suffix) AS patient_name,
+        p.birthdate, p.sex
       FROM test_results r
       JOIN test_request_items li ON li.item_id = r.item_id
       JOIN test_requests lr ON lr.request_id = li.request_id
+      JOIN services s ON s.service_id = li.service_id
+      JOIN patients p ON p.patient_id = lr.patient_id
       WHERE r.result_id = ${req.params.result_id} AND r.status = 'Released'
         AND lr.patient_id = ${res.locals.patientId}
     `;
@@ -263,6 +277,9 @@ export async function getPortalQueues(_req: Request, res: Response) {
       SELECT COUNT(*) AS awaiting_results FROM test_request_items li
       JOIN test_requests lr ON lr.request_id = li.request_id
       WHERE lr.patient_id = ${res.locals.patientId} AND li.status = 'Completed'
+        AND NOT EXISTS (
+          SELECT 1 FROM test_results r WHERE r.item_id = li.item_id AND r.status = 'Released'
+        )
     `;
     return res.json({
       queues,

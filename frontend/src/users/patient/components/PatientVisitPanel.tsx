@@ -7,6 +7,7 @@ import LoadingScreen from "../../../components/LoadingScreen";
 import { fetchPatientVisit } from "../patientApi";
 import type { HistoryRecord, PatientVisitDetails } from "../types";
 import PortalStatus from "./PortalStatus";
+import PatientLaboratoryPrint from "./PatientLaboratoryPrint";
 
 function ClinicalValue({ value }: { value: unknown }) {
   if (value == null || value === "" || (Array.isArray(value) && !value.length))
@@ -172,7 +173,7 @@ export default function PatientVisitPanel({
     error?: string;
   } | null>(null);
   const recordKey = record
-    ? `${record.record_type}:${record.record_id}:${refreshKey}`
+    ? `${record.record_type}:${record.record_id}:${record.status}:${refreshKey}`
     : "";
   const recordType = record?.record_type;
   const recordId = record?.record_id;
@@ -198,7 +199,9 @@ export default function PatientVisitPanel({
     <aside className="min-w-0 rounded-lg border border-gray-200 bg-white p-5 lg:col-span-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-bold">Visit Details</h2>
-        {record && <PortalStatus status={record.status} />}
+        {record && (
+          <PortalStatus status={details?.status ?? record.status} />
+        )}
       </div>
       {!record ? (
         <div className="flex flex-col items-center gap-2 py-16 text-gray-400">
@@ -261,7 +264,7 @@ export default function PatientVisitPanel({
                     {!details.results?.length ? (
                       <EmptyState
                         compact
-                        message="Results have not been released yet."
+                        message="No released result was returned for this record."
                       />
                     ) : (
                       details.results.map((result) => (
@@ -275,6 +278,7 @@ export default function PatientVisitPanel({
                               {result.remarks}
                             </p>
                           )}
+                          <PatientLaboratoryPrint resultId={result.result_id} />
                         </div>
                       ))
                     )}

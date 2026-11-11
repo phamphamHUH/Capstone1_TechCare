@@ -504,10 +504,11 @@ export async function releaseLaboratoryResult(
       UPDATE test_results
       SET
         status = 'Released',
+        released_at = NOW(),
         updated_at = NOW()
       WHERE result_id = ${result_id}
         AND status = 'Pending'
-      RETURNING result_id, item_id, status, updated_at;
+      RETURNING result_id, item_id, status, released_at, updated_at;
     `;
 
     if (!result) {
@@ -530,7 +531,7 @@ export async function releaseLaboratoryResult(
     }
 
     // Tell the patient (information only, not awaited).
-    void notifyPatientResultReleased(String(result.lab_item_id));
+    void notifyPatientResultReleased(String(result.item_id));
 
     return res.status(200).json({
       message: "Laboratory result released successfully.",
@@ -550,10 +551,10 @@ async function notifyPatientResultReleased(labItemId: string) {
   try {
     const [item] = await sql`
       SELECT lr.patient_id, s.service_name
-      FROM laboratory_request_items lri
-      JOIN laboratory_requests lr ON lr.request_id = lri.request_id
+      FROM test_request_items lri
+      JOIN test_requests lr ON lr.request_id = lri.request_id
       JOIN services s ON s.service_id = lri.service_id
-      WHERE lri.lab_item_id = ${labItemId}
+      WHERE lri.item_id = ${labItemId}
     `;
     if (!item) return;
 

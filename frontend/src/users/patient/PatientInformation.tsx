@@ -1,5 +1,5 @@
 import ErrorMessage from "../../components/ErrorMessage";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   FileClock,
   FlaskConical,
@@ -41,6 +41,23 @@ function PatientInformation() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [loading, setLoading] = useState(false);
   const [consultationId, setConsultationId] = useState<string | undefined>();
+
+  useEffect(() => {
+    const refreshWhenVisible = () => {
+      if (
+        document.visibilityState === "visible" &&
+        !document.querySelector('[role="dialog"]')
+      ) {
+        setRefreshKey((current) => current + 1);
+      }
+    };
+    window.addEventListener("focus", refreshWhenVisible);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      window.removeEventListener("focus", refreshWhenVisible);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, []);
 
   const patient = useMemo(() => readLoggedInPatient(), []);
   const patientId = patient?.patient_id ?? patient?.user_id ?? "";

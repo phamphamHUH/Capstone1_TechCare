@@ -33,7 +33,7 @@ export function ResultSuccessContent({
         <Dialog.Title className="mt-3 text-lg font-semibold text-gray-900">
           {title}
         </Dialog.Title>
-        <Dialog.Description className="sr-only">
+        <Dialog.Description className="mt-2 max-w-xs text-sm leading-relaxed text-gray-500">
           {description}
         </Dialog.Description>
       </div>
