@@ -53,3 +53,19 @@ export namespace login {
     error?: string;
   }
 }
+
+export namespace refresh {
+  export interface body {
+    refreshToken: string;
+  }
+
+  export interface response {
+    message: string;
+    token: string;
+    refreshToken: string;
+  }
+
+  export interface error {
+    message: string;
+  }
+}

@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import type { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { ENV } from "../../config/env.js";
-import type { login } from "./dto/post.dto.js";
+import type { login, refresh } from "./dto/post.dto.js";
 
 export async function login(
   req: Request,
@@ -138,42 +138,13 @@ export async function login(
     }
 
     // =========================
-    // GENERATE ACCESS TOKEN
+    // GENERATE TOKENS
     // =========================
-    // Creates a short-lived JWT containing the authenticated account's ID.
-    // The token is used to authenticate requests to protected endpoints.
-    // The account_type claim distinguishes employees from patients.
+    // Access token for API requests + refresh token for /api/auth/refresh.
     const accountId =
       accountType === "user" ? account.user_id : account.patient_id;
 
-    const token = jwt.sign(
-      {
-        user_id: accountId,
-        account_type: accountType,
-      },
-      ENV.JWT_SECRET,
-      {
-        expiresIn: ENV.JWT_EXPIRES_IN,
-      },
-    );
-
-    // =========================
-    // GENERATE REFRESH TOKEN
-    // =========================
-    // Creates a longer-lived JWT containing the authenticated account's ID.
-    // The refresh token can be used to obtain a new access token
-    // after the access token expires.
-    // The account_type claim identifies the account's table.
-    const refreshToken = jwt.sign(
-      {
-        user_id: accountId,
-        account_type: accountType,
-      },
-      ENV.JWT_REFRESH_TOKEN,
-      {
-        expiresIn: ENV.JWT_REFRESH_EXPIRES_IN,
-      },
-    );
+    const { token, refreshToken } = issueTokens(accountId, accountType);
 
     // =========================
     // REMOVE SENSITIVE DATA
@@ -199,5 +170,83 @@ export async function login(
     return res.status(500).json({
       error: "Internal Server Error",
     } as login.error);
+  }
+}
+
+// =========================
+// ISSUE TOKENS
+// =========================
+// Access token (short-lived, sent on every request) + refresh token
+// (longer-lived, only sent to /api/auth/refresh). Both carry the account ID
+// and account_type ("user" or "patient") so refresh knows which table to check.
+function issueTokens(accountId: string, accountType: login.accountType) {
+  const claims = { user_id: accountId, account_type: accountType };
+  return {
+    token: jwt.sign(claims, ENV.JWT_SECRET, { expiresIn: ENV.JWT_EXPIRES_IN }),
+    refreshToken: jwt.sign(claims, ENV.JWT_REFRESH_TOKEN, {
+      expiresIn: ENV.JWT_REFRESH_EXPIRES_IN,
+    }),
+  };
+}
+
+// POST /api/auth/refresh
+// Trades a valid refresh token for a new access token and a new refresh token.
+// Refused (401) when the refresh token is invalid/expired, the account is gone
+// or deactivated, or a staff member has logged out since (users.active = FALSE).
+export async function refresh(
+  req: Request,
+  res: Response<refresh.response | refresh.error>,
+) {
+  const { refreshToken } = (req.body ?? {}) as Partial<refresh.body>;
+  if (!refreshToken || typeof refreshToken !== "string") {
+    return res.status(400).json({ message: "Refresh token is required." });
+  }
+
+  let claims: jwt.JwtPayload | string;
+  try {
+    claims = jwt.verify(refreshToken, ENV.JWT_REFRESH_TOKEN);
+  } catch {
+    return res
+      .status(401)
+      .json({ message: "Session expired. Please log in again." });
+  }
+
+  const accountId = typeof claims === "string" ? null : claims.user_id;
+  const accountType = typeof claims === "string" ? null : claims.account_type;
+  if (
+    typeof accountId !== "string" ||
+    (accountType !== "user" && accountType !== "patient")
+  ) {
+    return res.status(401).json({ message: "Invalid refresh token." });
+  }
+
+  try {
+    const [account] =
+      accountType === "user"
+        ? await sql`
+            SELECT user_id FROM users
+            WHERE user_id = ${accountId}
+              AND account_status IS NOT FALSE
+              AND active = TRUE
+          `
+        : await sql`
+            SELECT patient_id FROM patients
+            WHERE patient_id = ${accountId}
+              AND account_status IS NOT FALSE
+          `;
+
+    if (!account) {
+      return res
+        .status(401)
+        .json({ message: "Session expired. Please log in again." });
+    }
+
+    return res.status(200).json({
+      message: "Token refreshed",
+      ...issueTokens(accountId, accountType),
+    });
+  } catch (error) {
+    console.error("Unable to refresh token:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
 }
