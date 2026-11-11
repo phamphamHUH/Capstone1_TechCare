@@ -5,8 +5,6 @@ import LoadingRegion from "../../../../components/LoadingRegion";
 import { useMemo, useState } from "react";
 import {
   CalendarDays,
-  ChevronLeft,
-  ChevronRight,
   Eye,
   Flag,
   Search,
@@ -18,31 +16,7 @@ import type {
 } from "../../../../interface/LaboratoryAnalysis";
 import { collectionDay } from "./laboratoryAnalysis";
 import { AnalysisButton, FlaskBadge } from "./AnalysisUi";
-
-export function formatLabDate(value: string) {
-  if (!value || !Number.isFinite(new Date(value).getTime())) {
-    return "Not recorded";
-  }
-
-  const date = new Date(
-    /(Z|[+-]\d{2}:?\d{2})$/i.test(value)
-      ? value
-      : `${value.replace(" ", "T")}+08:00`,
-  );
-
-  if (!Number.isFinite(date.getTime())) {
-    return "Not recorded";
-  }
-
-  return date.toLocaleString("en-US", {
-    timeZone: "Asia/Manila",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+import { formatLabDate } from "../../../../utils/formats";
 
 type CategoryBadgeProps = {
   request: AnalysisRequest;
@@ -63,7 +37,7 @@ export function CategoryBadge({
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs whitespace-nowrap ${compact ? "" : "min-w-[105px]"} ${colors[request.category]}`}
+      className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs whitespace-nowrap ${compact ? "" : "min-w-26.25"} ${colors[request.category]}`}
     >
       {request.category !== "Normal" && (
         <i className="size-1.5 shrink-0 rounded-full bg-current" />
@@ -83,9 +57,9 @@ const COUNT_COLORS = [
   "bg-orange-100 text-orange-700",
   "bg-green-100 text-green-700",
 ];
-const PAGE_SIZE = 9;
+const PAGE_SIZE = 10;
 const filterClass =
-  "flex h-9 min-w-0 max-w-full items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-400 focus-within:border-sky-400 focus-within:ring-1 focus-within:ring-sky-100 [&>svg]:shrink-0";
+  "flex h-9 min-w-0 max-w-full items-center gap-2 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-400 focus-within:border-sky-400 focus-within:ring-1 focus-within:ring-sky-100 [&>svg]:shrink-0";
 
 type AnalysisListProps = {
   requests: AnalysisRequest[];
@@ -172,6 +146,15 @@ export default function AnalysisList({
     currentPage * PAGE_SIZE,
   );
 
+  const total = rows.length;
+  const from = total === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+  const to = Math.min(currentPage * PAGE_SIZE, total);
+
+  // up to 5 page buttons, centered on the current page
+  const start = Math.max(1, Math.min(currentPage - 2, pageCount - 4));
+  const end = Math.min(pageCount, start + 4);
+  const pages = Array.from({ length: end - start + 1 }, (_, i) => start + i);
+
   const changeFilter = (setter: (value: string) => void, value: string) => {
     setter(value);
     setPage(1);
@@ -192,7 +175,7 @@ export default function AnalysisList({
       aria-labelledby="analysis-heading"
       className="min-w-0 bg-white font-sans text-sm text-gray-900"
     >
-      <div className="mb-6 flex flex-wrap items-center gap-4 rounded-2xl border border-gray-300 px-5 py-4">
+      <div className="mb-6 flex flex-wrap items-center gap-4 rounded-md border border-gray-300 px-5 py-4">
         <FlaskBadge />
         <div className="min-w-0 flex-1 basis-60">
           <h2
@@ -214,7 +197,7 @@ export default function AnalysisList({
           {roomName}
         </span>
       </div>
-      <div className="overflow-hidden rounded-2xl border border-gray-300">
+      <div className="overflow-hidden rounded-md border border-gray-300">
         <div
           className="flex flex-wrap items-center gap-3 border-b border-gray-300 p-4 sm:px-5"
           aria-label="Filter laboratory requests"
@@ -232,7 +215,7 @@ export default function AnalysisList({
           <label className={filterClass}>
             <TestTubeDiagonal size={15} />
             <select
-              className="h-full min-w-0 max-w-[190px] border-0 bg-transparent pr-2 text-gray-700 outline-none"
+              className="h-full min-w-0 max-w-47.5 border-0 bg-transparent pr-2 text-gray-700 outline-none"
               aria-label="Test type"
               value={test}
               onChange={(event) => changeFilter(setTest, event.target.value)}
@@ -315,8 +298,10 @@ export default function AnalysisList({
                 event.preventDefault();
                 setTab(TABS[next]);
                 setPage(1);
-                const tabs = event.currentTarget.parentElement
-                  ?.querySelectorAll<HTMLButtonElement>('[role="tab"]');
+                const tabs =
+                  event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>(
+                    '[role="tab"]',
+                  );
                 tabs?.[next]?.focus();
               }}
             >
@@ -341,7 +326,7 @@ export default function AnalysisList({
             message="Refreshing laboratory requests..."
           >
             <div className="w-full overflow-x-auto">
-              <table className="w-full min-w-[1020px] border-collapse text-left text-sm">
+              <table className="w-full min-w-255 border-collapse text-left text-sm">
                 <thead>
                   <tr>
                     {[
@@ -413,7 +398,7 @@ export default function AnalysisList({
                         <td className="py-3.5 pr-3 pl-4 whitespace-nowrap">
                           {request.requestId}
                         </td>
-                        <td className="min-w-[135px] px-3 py-3.5 font-semibold">
+                        <td className="min-w-33.75 px-3 py-3.5 font-semibold">
                           {request.patientName || "Name not provided"}
                         </td>
                         <td className="px-3 py-3.5 whitespace-nowrap">
@@ -427,7 +412,7 @@ export default function AnalysisList({
                             : "—"}
                         </td>
                         <td className="px-3 py-3.5">
-                          <span className="block min-w-[130px] max-w-[230px]">
+                          <span className="block min-w-32.5 max-w-57.5">
                             {request.tests
                               .map((item) => item.name)
                               .join(", ") || "Test not specified"}
@@ -482,37 +467,51 @@ export default function AnalysisList({
             </div>
           </LoadingRegion>
         </div>
-        <footer className="flex flex-wrap items-center justify-between gap-4 px-4 py-4 text-sm text-gray-500 sm:px-5">
+        <footer className="flex flex-wrap items-center justify-between gap-4 px-4 py-4 text-xs text-gray-500 sm:px-5">
           <span aria-live="polite">
             {loading
               ? "Loading results..."
-              : `Showing ${rows.length ? (currentPage - 1) * PAGE_SIZE + 1 : 0}${rows.length ? `–${Math.min(currentPage * PAGE_SIZE, rows.length)}` : ""} of ${rows.length} results for ${roomName}`}
+              : `Showing ${from} - ${to} of ${total} results`}
           </span>
-          <nav className="flex items-center gap-1" aria-label="Request pages">
-            <AnalysisButton
-              compact
-              variant="secondary"
-              disabled={currentPage === 1 || loading}
+
+          <nav className="flex items-center gap-1.5" aria-label="Request pages">
+            <button
+              type="button"
+              aria-label="Previous page"
+              disabled={currentPage <= 1 || loading}
               onClick={() => setPage(currentPage - 1)}
+              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-gray-200 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              <ChevronLeft size={13} />
-              Previous
-            </AnalysisButton>
-            <span
-              className="flex min-h-8 min-w-8 items-center justify-center rounded-md bg-sky-500 px-2.5 py-1.5 text-white"
-              aria-current="page"
-            >
-              {currentPage}
-            </span>
-            <AnalysisButton
-              compact
-              variant="secondary"
+              &lt;
+            </button>
+
+            {pages.map((p) => (
+              <button
+                key={p}
+                type="button"
+                aria-label={`Page ${p}`}
+                aria-current={p === currentPage ? "page" : undefined}
+                disabled={loading}
+                onClick={() => setPage(p)}
+                className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-md disabled:cursor-not-allowed ${
+                  p === currentPage
+                    ? "bg-sky-500 font-bold text-white shadow-xs"
+                    : "border border-gray-200 hover:bg-gray-100"
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+
+            <button
+              type="button"
+              aria-label="Next page"
               disabled={currentPage >= pageCount || loading}
               onClick={() => setPage(currentPage + 1)}
+              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-gray-200 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              Next
-              <ChevronRight size={13} />
-            </AnalysisButton>
+              &gt;
+            </button>
           </nav>
         </footer>
       </div>

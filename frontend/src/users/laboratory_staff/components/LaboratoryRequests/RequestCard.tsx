@@ -46,15 +46,15 @@ function RequestCard({ onClose, queueIdCard }: InformationCardProps) {
 
   return (
     <div className="absolute z-50 flex items-center justify-center">
-      <main className="rounded-lg shadow-lg w-full max-w-lg">
-        <div className=" flex flex-col h-full max-h-4/5 w-full max-w-6xl rounded-lg border bg-gray-300 shadow-xl  overflow-hidden">
+      <main className="rounded-md shadow-lg w-full max-w-lg">
+        <div className=" flex flex-col h-full max-h-4/5 w-full max-w-6xl rounded-md border bg-gray-300 shadow-xl  overflow-hidden">
           <div className="flex justify-between items-center w-full px-8 py-6 bg-white shadow-xs">
             <div className="flex items-center gap-5">
               <h1 className="text-2xl font-semibold">
                 {`Laboratory Request - ${requestDetail?.request.request_id}`}
               </h1>
               <div
-                className={`border rounded-xl px-3 py-1 text-sm ${
+                className={`border rounded-md px-3 py-1 text-sm ${
                   requestDetail?.request.status === "Serving"
                     ? "text-green-600 bg-green-100 border-green-600"
                     : requestDetail?.request.status === "Completed"
@@ -65,7 +65,7 @@ function RequestCard({ onClose, queueIdCard }: InformationCardProps) {
                 {requestDetail?.request.status}
               </div>
               <div
-                className={`border rounded-xl px-3 py-1 text-sm ${requestDetail?.request.is_priority ? "text-red-600 bg-red-100 border-red-600" : "text-blue-600 bg-blue-100 border-blue-600"}`}
+                className={`border rounded-md px-3 py-1 text-sm ${requestDetail?.request.is_priority ? "text-red-600 bg-red-100 border-red-600" : "text-blue-600 bg-blue-100 border-blue-600"}`}
               >
                 {requestDetail?.request.is_priority
                   ? "Priority"
@@ -81,7 +81,7 @@ function RequestCard({ onClose, queueIdCard }: InformationCardProps) {
               <LoadingScreen message="Loading laboratory requests..." />
             ) : requestDetail ? (
               <div className="flex w-full-h-full gap-6">
-                <div className="w-full h-full max-w-1/3 rounded-lg shadow-sm bg-white ">
+                <div className="w-full h-full max-w-1/3 rounded-md shadow-sm bg-white ">
                   <div className="flex items-center shadow-xs px-3 py-2">
                     <UserRound size={20} />
                     <h1 className="text-lg font-semibold">
@@ -121,7 +121,7 @@ function RequestCard({ onClose, queueIdCard }: InformationCardProps) {
                     </div>
                   </div>
                 </div>
-                {/* <div className="w-2/3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                {/* <div className="w-2/3 rounded-md border border-slate-200 bg-slate-50 p-4">
                   <h1 className="text-lg font-semibold mb-3">
                     Laboratory Request Information
                   </h1>

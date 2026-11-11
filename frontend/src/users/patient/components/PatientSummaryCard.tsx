@@ -5,14 +5,13 @@ type Props = {
 };
 
 function getFullName(patient: PatientSessionUser) {
-  return [
-    patient.first_name,
-    patient.middle_name,
-    patient.last_name,
-    patient.suffix,
-  ]
-    .filter(Boolean)
-    .join(" ") || patient.username || "Patient";
+  return (
+    [patient.first_name, patient.middle_name, patient.last_name, patient.suffix]
+      .filter(Boolean)
+      .join(" ") ||
+    patient.username ||
+    "Patient"
+  );
 }
 
 function getInitials(patient: PatientSessionUser) {
@@ -31,7 +30,8 @@ function getAge(birthdate?: string | null) {
   let age = today.getFullYear() - birth.getFullYear();
   const birthdayPassed =
     today.getMonth() > birth.getMonth() ||
-    (today.getMonth() === birth.getMonth() && today.getDate() >= birth.getDate());
+    (today.getMonth() === birth.getMonth() &&
+      today.getDate() >= birth.getDate());
 
   if (!birthdayPassed) age -= 1;
   return age;
@@ -43,33 +43,36 @@ function PatientSummaryCard({ patient }: Props) {
   const patientId = patient.patient_id ?? patient.user_id ?? "—";
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+    <section className="rounded-md border border-gray-200 bg-white p-4">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex min-w-0 items-center gap-4">
+        <div className="flex min-w-0 items-center gap-5">
           {patient.image_url || patient.profile_photo ? (
             <img
               src={patient.image_url ?? patient.profile_photo ?? ""}
               alt={fullName}
-              className="h-12 w-12 rounded-full object-cover"
+              className="h-15 w-15 shrink-0 rounded-full object-cover"
             />
           ) : (
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-sky-50 text-sm font-bold text-sky-500">
+            <div className="flex h-15 w-15 shrink-0 items-center justify-center rounded-full bg-sky-50 text-2xl font-semibold text-gray-500">
               {getInitials(patient)}
             </div>
           )}
 
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="truncate text-base font-bold text-slate-950">{fullName}</h1>
-              <span className="text-[11px] text-slate-400">ID: {patientId}</span>
+              <h2 className="break-words text-xl font-semibold text-gray-950">
+                {fullName}
+              </h2>
+              <span className="text-xs text-gray-500">ID: {patientId}</span>
             </div>
 
-            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-600">
               {patient.sex && <span>{patient.sex}</span>}
               {age !== null && <span>{age} Years Old</span>}
               {patient.birthdate && (
                 <span>
-                  DOB: {new Date(patient.birthdate).toLocaleDateString("en-US", {
+                  DOB:{" "}
+                  {new Date(patient.birthdate).toLocaleDateString("en-US", {
                     month: "short",
                     day: "2-digit",
                     year: "numeric",
@@ -83,11 +86,11 @@ function PatientSummaryCard({ patient }: Props) {
 
         <div className="flex flex-wrap gap-2">
           {patient.blood_type && (
-            <span className="rounded-full bg-rose-50 px-3 py-1 text-[10px] font-semibold text-rose-500">
+            <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-medium text-rose-600">
               Blood Type {patient.blood_type}
             </span>
           )}
-          <span className="rounded-full bg-sky-50 px-3 py-1 text-[10px] font-semibold text-sky-500">
+          <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-medium text-sky-600">
             Patient
           </span>
         </div>

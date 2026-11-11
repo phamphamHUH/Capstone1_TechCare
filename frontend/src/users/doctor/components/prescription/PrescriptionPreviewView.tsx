@@ -1,10 +1,5 @@
 import React, { useState } from "react";
-import {
-  Printer,
-  Download,
-  ArrowLeft,
-  CheckCircle2,
-} from "lucide-react";
+import { Printer, Download, ArrowLeft, CheckCircle2 } from "lucide-react";
 import type { Prescription, PrintOptions } from "./types";
 import { CLINIC_INFO } from "../../../../lib/clinicInfo";
 
@@ -51,7 +46,7 @@ export default function PrescriptionPreviewView({
       {/* Main Two-Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left / Main Column: Digital Prescription Document Card (8 cols) */}
-        <div className="lg:col-span-8 bg-white border border-gray-200 rounded-3xl p-8 sm:p-10 shadow-sm print:shadow-none print:border-none print:p-0 print:m-0 print:w-full">
+        <div className="lg:col-span-8 bg-white border border-gray-200 rounded-md p-8 sm:p-10 shadow-sm print:shadow-none print:border-none print:p-0 print:m-0 print:w-full">
           {/* Document Top Header */}
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b-2 border-gray-900 pb-5">
             {/* Clinic Info */}
@@ -86,7 +81,9 @@ export default function PrescriptionPreviewView({
             <div className="text-right flex flex-col text-xs text-gray-600 shrink-0">
               <div className="flex items-center justify-between sm:justify-end gap-3">
                 <span className="text-gray-400 font-medium">Date:</span>
-                <span className="font-bold text-gray-900">{prescription.date}</span>
+                <span className="font-bold text-gray-900">
+                  {prescription.date}
+                </span>
               </div>
               <div className="flex items-center justify-between sm:justify-end gap-3 mt-0.5">
                 <span className="text-gray-400 font-medium">PR No:</span>
@@ -96,7 +93,9 @@ export default function PrescriptionPreviewView({
               </div>
               {prescription.consultationId && (
                 <div className="flex items-center justify-between sm:justify-end gap-3 mt-0.5">
-                  <span className="text-gray-400 font-medium">Consultation ID:</span>
+                  <span className="text-gray-400 font-medium">
+                    Consultation ID:
+                  </span>
                   <span className="font-mono font-semibold text-gray-700">
                     {prescription.consultationId}
                   </span>
@@ -119,7 +118,7 @@ export default function PrescriptionPreviewView({
           </div>
 
           {/* Patient Information Section */}
-          <div className="bg-gray-50/80 border border-gray-200 rounded-xl p-4 mb-6 text-xs text-gray-700">
+          <div className="bg-gray-50/80 border border-gray-200 rounded-md p-4 mb-6 text-xs text-gray-700">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-6">
               <div className="flex items-baseline gap-2">
                 <span className="text-gray-400 font-semibold w-24 shrink-0">
@@ -160,7 +159,7 @@ export default function PrescriptionPreviewView({
           </div>
 
           {/* Medications Table */}
-          <div className="overflow-x-auto border border-gray-200 rounded-xl mb-6">
+          <div className="overflow-x-auto border border-gray-200 rounded-md mb-6">
             <table className="w-full text-left text-xs border-collapse">
               <thead className="bg-gray-100 text-gray-800 font-bold border-b border-gray-200">
                 <tr>
@@ -195,7 +194,7 @@ export default function PrescriptionPreviewView({
 
           {/* Additional Notes */}
           {printOptions.includeNotes && prescription.additionalNotes && (
-            <div className="mb-8 p-3.5 bg-gray-50 rounded-xl border border-gray-100 text-xs">
+            <div className="mb-8 p-3.5 bg-gray-50 rounded-md border border-gray-100 text-xs">
               <span className="font-bold text-gray-800 block mb-1">
                 Additional Notes:
               </span>
@@ -248,7 +247,7 @@ export default function PrescriptionPreviewView({
 
         {/* Right Column: Print Options & Actions (4 cols) */}
         <div className="lg:col-span-4 flex flex-col gap-6 print:hidden">
-          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs">
+          <div className="bg-white border border-gray-200 rounded-md p-6 shadow-xs">
             <h3 className="text-sm font-bold text-gray-900 border-b border-gray-100 pb-3 mb-4">
               Print Options
             </h3>
@@ -266,7 +265,7 @@ export default function PrescriptionPreviewView({
                     paperSize: e.target.value as PrintOptions["paperSize"],
                   })
                 }
-                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
+                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-md text-xs text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
               >
                 <option value="A4">A4 (Recommended)</option>
                 <option value="Letter">Letter (8.5 x 11 in)</option>
@@ -342,7 +341,7 @@ export default function PrescriptionPreviewView({
               <button
                 type="button"
                 onClick={handlePrint}
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-semibold rounded-md shadow-xs transition-colors cursor-pointer"
               >
                 <Printer size={15} />
                 <span>Print Prescription</span>
@@ -351,7 +350,7 @@ export default function PrescriptionPreviewView({
               <button
                 type="button"
                 onClick={handleDownloadPDF}
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-semibold rounded-md transition-colors cursor-pointer"
               >
                 <Download size={15} />
                 <span>Download PDF</span>
@@ -366,7 +365,7 @@ export default function PrescriptionPreviewView({
         <button
           type="button"
           onClick={onBack}
-          className="flex items-center gap-1.5 px-5 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 px-5 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-semibold rounded-md transition-colors cursor-pointer"
         >
           <ArrowLeft size={14} />
           <span>Back to Edit</span>
@@ -375,7 +374,7 @@ export default function PrescriptionPreviewView({
         <button
           type="button"
           onClick={onSaveToRecord}
-          className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer"
+          className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-semibold rounded-md shadow-xs transition-colors cursor-pointer"
         >
           <CheckCircle2 size={16} />
           <span>Save to Record</span>

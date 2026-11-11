@@ -27,7 +27,7 @@ type Props = {
 };
 
 const inputBase =
-  "w-full text-xs text-gray-800 bg-white border rounded-lg px-3 py-2 outline-none transition-colors placeholder:text-gray-300 disabled:bg-gray-50 disabled:text-gray-500";
+  "w-full text-xs text-gray-800 bg-white border rounded-md px-3 py-2 outline-none transition-colors placeholder:text-gray-300 disabled:bg-gray-50 disabled:text-gray-500";
 const okBorder = "border-gray-200 focus:border-sky-400";
 const errBorder = "border-red-300 focus:border-red-400";
 
@@ -57,7 +57,9 @@ export default function ConsultationFindingsForm({
   const setRow = (key: string, patch: Partial<DiagnosisRow>) =>
     onChange({
       ...value,
-      diagnosis: value.diagnosis.map((r) => (r.key === key ? { ...r, ...patch } : r)),
+      diagnosis: value.diagnosis.map((r) =>
+        r.key === key ? { ...r, ...patch } : r,
+      ),
     });
 
   const addRow = () => {
@@ -69,7 +71,10 @@ export default function ConsultationFindingsForm({
   };
 
   const removeRow = (key: string) =>
-    onChange({ ...value, diagnosis: value.diagnosis.filter((r) => r.key !== key) });
+    onChange({
+      ...value,
+      diagnosis: value.diagnosis.filter((r) => r.key !== key),
+    });
 
   async function handleNext() {
     setSubmitted(true);
@@ -89,23 +94,26 @@ export default function ConsultationFindingsForm({
   return (
     <div ref={topRef} className="flex flex-col gap-4">
       {savedConsultationId && (
-        <div className="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2.5">
+        <div className="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-4 py-2.5">
           <CheckCircle2 size={14} />
           <span>
-            Findings saved as <span className="font-mono font-semibold">{savedConsultationId}</span>. They
-            can't be edited here; continue to the prescription.
+            Findings saved as{" "}
+            <span className="font-mono font-semibold">
+              {savedConsultationId}
+            </span>
+            . They can't be edited here; continue to the prescription.
           </span>
         </div>
       )}
-      {submitError && (
-        <ErrorMessage>{submitError}</ErrorMessage>
-      )}
+      {submitError && <ErrorMessage>{submitError}</ErrorMessage>}
 
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] gap-4 items-start">
         {/* ------------------------- Left column ------------------------- */}
         <div className="flex flex-col gap-4">
-          <section className="bg-white border border-gray-200 rounded-2xl shadow-xs p-5">
-            <h3 className="text-sm font-bold text-gray-900 mb-3">History of Present Illness (HPI)</h3>
+          <section className="bg-white border border-gray-200 rounded-md shadow-xs p-5">
+            <h3 className="text-sm font-bold text-gray-900 mb-3">
+              History of Present Illness (HPI)
+            </h3>
             <textarea
               rows={4}
               maxLength={LIMITS.hpiMax + 200}
@@ -125,21 +133,25 @@ export default function ConsultationFindingsForm({
             </div>
           </section>
 
-          <section className="bg-white border border-gray-200 rounded-2xl shadow-xs p-5">
+          <section className="bg-white border border-gray-200 rounded-md shadow-xs p-5">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-gray-900">Assessment / Diagnosis</h3>
+              <h3 className="text-sm font-bold text-gray-900">
+                Assessment / Diagnosis
+              </h3>
               <button
                 type="button"
                 onClick={addRow}
-                disabled={locked || value.diagnosis.length >= LIMITS.maxDiagnoses}
-                className="flex items-center gap-1 px-4 py-1.5 bg-sky-500 hover:bg-sky-600 disabled:bg-gray-200 disabled:text-gray-400 text-white text-[11px] font-semibold rounded-lg transition-colors cursor-pointer disabled:cursor-not-allowed"
+                disabled={
+                  locked || value.diagnosis.length >= LIMITS.maxDiagnoses
+                }
+                className="flex items-center gap-1 px-4 py-1.5 bg-sky-500 hover:bg-sky-600 disabled:bg-gray-200 disabled:text-gray-400 text-white text-[11px] font-semibold rounded-md transition-colors cursor-pointer disabled:cursor-not-allowed"
               >
                 <Plus size={12} />
                 Add
               </button>
             </div>
 
-            <div className="border border-gray-200 rounded-xl overflow-hidden">
+            <div className="border border-gray-200 rounded-md overflow-hidden">
               <div className="grid grid-cols-[minmax(0,1fr)_88px_96px_36px] gap-2 bg-gray-50 px-3 py-2 text-[11px] font-semibold text-gray-600">
                 <span>Diagnosis</span>
                 <span>ICD-10</span>
@@ -148,7 +160,11 @@ export default function ConsultationFindingsForm({
               </div>
 
               {value.diagnosis.length === 0 ? (
-                <EmptyState compact message="No diagnoses added." description="Use Add to include a diagnosis." />
+                <EmptyState
+                  compact
+                  message="No diagnoses added."
+                  description="Use Add to include a diagnosis."
+                />
               ) : (
                 value.diagnosis.map((row, i) => {
                   const nameKey = `diagnosis.${i}.diagnosis`;
@@ -163,21 +179,31 @@ export default function ConsultationFindingsForm({
                           type="text"
                           value={row.diagnosis}
                           disabled={locked}
-                          onChange={(e) => setRow(row.key, { diagnosis: e.target.value })}
+                          onChange={(e) =>
+                            setRow(row.key, { diagnosis: e.target.value })
+                          }
                           onBlur={() => touch(nameKey)}
                           placeholder="e.g. Acute Upper Respiratory Infection"
                           aria-label={`Diagnosis ${i + 1}`}
                           aria-invalid={!!show(nameKey)}
                           className={`${inputBase} ${show(nameKey) ? errBorder : okBorder}`}
                         />
-                        {show(nameKey) && <FieldError className="mt-0.5">{show(nameKey)}</FieldError>}
+                        {show(nameKey) && (
+                          <FieldError className="mt-0.5">
+                            {show(nameKey)}
+                          </FieldError>
+                        )}
                       </div>
                       <div>
                         <input
                           type="text"
                           value={row.icd10}
                           disabled={locked}
-                          onChange={(e) => setRow(row.key, { icd10: e.target.value.toUpperCase() })}
+                          onChange={(e) =>
+                            setRow(row.key, {
+                              icd10: e.target.value.toUpperCase(),
+                            })
+                          }
                           onBlur={() => touch(codeKey)}
                           placeholder="J06.9"
                           maxLength={8}
@@ -185,15 +211,25 @@ export default function ConsultationFindingsForm({
                           aria-invalid={!!show(codeKey)}
                           className={`${inputBase} font-mono ${show(codeKey) ? errBorder : okBorder}`}
                         />
-                        {show(codeKey) && <FieldError className="mt-0.5">{show(codeKey)}</FieldError>}
+                        {show(codeKey) && (
+                          <FieldError className="mt-0.5">
+                            {show(codeKey)}
+                          </FieldError>
+                        )}
                       </div>
                       <select
                         value={row.type}
                         disabled={locked}
-                        onChange={(e) => setRow(row.key, { type: e.target.value as DiagnosisType })}
+                        onChange={(e) =>
+                          setRow(row.key, {
+                            type: e.target.value as DiagnosisType,
+                          })
+                        }
                         aria-label={`Diagnosis type ${i + 1}`}
                         className={`text-[11px] font-semibold rounded-full px-2 py-1.5 border-0 outline-none cursor-pointer disabled:cursor-default ${
-                          row.type === "Primary" ? "bg-sky-100 text-sky-600" : "bg-amber-100 text-amber-600"
+                          row.type === "Primary"
+                            ? "bg-sky-100 text-sky-600"
+                            : "bg-amber-100 text-amber-600"
                         }`}
                       >
                         <option value="Primary">Primary</option>
@@ -204,7 +240,7 @@ export default function ConsultationFindingsForm({
                         onClick={() => removeRow(row.key)}
                         disabled={locked}
                         aria-label={`Remove diagnosis ${i + 1}`}
-                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                        className="p-2 text-red-500 hover:bg-red-50 rounded-md disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -220,14 +256,19 @@ export default function ConsultationFindingsForm({
         </div>
 
         {/* ------------------------- Right column ------------------------ */}
-        <section className="bg-white border border-gray-200 rounded-2xl shadow-xs p-5">
-          <h3 className="text-sm font-bold text-gray-900 mb-3">Physical Examination</h3>
+        <section className="bg-white border border-gray-200 rounded-md shadow-xs p-5">
+          <h3 className="text-sm font-bold text-gray-900 mb-3">
+            Physical Examination
+          </h3>
           <div className="flex flex-col gap-3">
             {PHYSICAL_EXAM_FIELDS.map(({ key, label }) => {
               const errKey = `physical_examination.${key}`;
               return (
                 <div key={key}>
-                  <label htmlFor={`exam-${key}`} className="block text-[11px] text-gray-400 mb-1">
+                  <label
+                    htmlFor={`exam-${key}`}
+                    className="block text-[11px] text-gray-400 mb-1"
+                  >
                     {label}
                   </label>
                   <textarea
@@ -235,18 +276,27 @@ export default function ConsultationFindingsForm({
                     rows={2}
                     value={value.exam[key]}
                     disabled={locked}
-                    onChange={(e) => onChange({ ...value, exam: { ...value.exam, [key]: e.target.value } })}
+                    onChange={(e) =>
+                      onChange({
+                        ...value,
+                        exam: { ...value.exam, [key]: e.target.value },
+                      })
+                    }
                     onBlur={() => touch(errKey)}
                     aria-invalid={!!show(errKey)}
                     className={`${inputBase} resize-none ${show(errKey) ? errBorder : okBorder}`}
                   />
-                  {show(errKey) && <FieldError className="mt-0.5">{show(errKey)}</FieldError>}
+                  {show(errKey) && (
+                    <FieldError className="mt-0.5">{show(errKey)}</FieldError>
+                  )}
                 </div>
               );
             })}
           </div>
           {submitted && !locked && errors.physical_examination && (
-            <FieldError className="mt-3">{errors.physical_examination}</FieldError>
+            <FieldError className="mt-3">
+              {errors.physical_examination}
+            </FieldError>
           )}
         </section>
       </div>
@@ -256,7 +306,7 @@ export default function ConsultationFindingsForm({
           type="button"
           onClick={onBack}
           disabled={saving}
-          className="px-6 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-600 text-xs font-semibold rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+          className="px-6 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-600 text-xs font-semibold rounded-md transition-colors cursor-pointer disabled:opacity-50"
         >
           Back
         </button>
@@ -264,7 +314,7 @@ export default function ConsultationFindingsForm({
           type="button"
           onClick={handleNext}
           disabled={saving}
-          className="flex items-center gap-2 px-6 py-2 bg-sky-500 hover:bg-sky-600 disabled:bg-sky-300 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer disabled:cursor-wait"
+          className="flex items-center gap-2 px-6 py-2 bg-sky-500 hover:bg-sky-600 disabled:bg-sky-300 text-white text-xs font-semibold rounded-md transition-colors cursor-pointer disabled:cursor-wait"
         >
           {saving && <LoadingSpinner size={13} />}
           {saving ? "Saving..." : "Next: Prescription →"}

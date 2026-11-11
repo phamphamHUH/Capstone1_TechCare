@@ -99,7 +99,7 @@ function InformationCard({ onClose, queueIdCard }: InformationCardProps) {
       onClick={onClose}
     >
       <div
-        className="flex h-8/9 w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
+        className="flex h-8/9 w-full max-w-4xl flex-col overflow-hidden rounded-md bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -154,9 +154,9 @@ function InformationCard({ onClose, queueIdCard }: InformationCardProps) {
           ) : detail ? (
             <div className="grid grid-cols-2 gap-6">
               {/* PATIENT CARD */}
-              <div className="rounded-xl border border-gray-200 bg-white px-6 py-3">
+              <div className="rounded-md border border-gray-200 bg-white px-6 py-3">
                 <div className="flex items-center gap-3 border-b border-gray-200 pb-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-sky-100 text-sm font-bold text-sky-600">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-md bg-sky-100 text-sm font-bold text-sky-600">
                     {patientInitials}
                   </div>
                   <div>
@@ -165,7 +165,7 @@ function InformationCard({ onClose, queueIdCard }: InformationCardProps) {
                   </div>
                 </div>
 
-                <div className="mt-3 grid grid-cols-3 gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm">
+                <div className="mt-3 grid grid-cols-3 gap-3 rounded-md border border-gray-200 bg-gray-50 px-4 py-3 text-sm">
                   <div>
                     <p className="text-[10px] font-semibold uppercase text-gray-500">
                       Age
@@ -240,7 +240,7 @@ function InformationCard({ onClose, queueIdCard }: InformationCardProps) {
               </div>
 
               {/* QUEUE & REQUEST CARD */}
-              <div className="h-fit rounded-xl border border-gray-200 bg-white px-6 py-3">
+              <div className="h-fit rounded-md border border-gray-200 bg-white px-6 py-3">
                 <div className="flex items-center gap-2 border-b border-gray-200 pb-4">
                   <FileText size={16} className="text-sky-500" />
                   <h2 className="font-bold">Queue & Request Details</h2>
@@ -310,7 +310,7 @@ function InformationCard({ onClose, queueIdCard }: InformationCardProps) {
                   </div>
                 </div>
 
-                <div className="mt-5 flex items-start gap-2 rounded-lg bg-sky-50 px-4 py-3 text-xs text-sky-700">
+                <div className="mt-5 flex items-start gap-2 rounded-md bg-sky-50 px-4 py-3 text-xs text-sky-700">
                   <Info size={14} className="mt-0.5 shrink-0" />
                   <p>{noteText}</p>
                 </div>
@@ -326,7 +326,7 @@ function InformationCard({ onClose, queueIdCard }: InformationCardProps) {
           <button
             type="button"
             onClick={onClose}
-            className="cursor-pointer rounded-lg bg-sky-500 px-6 py-2.5 text-sm font-semibold text-white hover:bg-sky-600"
+            className="cursor-pointer rounded-md bg-sky-500 px-6 py-2.5 text-sm font-semibold text-white hover:bg-sky-600"
           >
             Close
           </button>

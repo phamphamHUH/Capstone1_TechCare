@@ -33,7 +33,7 @@ function QueueFilters({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search..."
-          className="h-9 w-full rounded-lg border border-gray-300 bg-white pl-9 pr-3 text-sm text-gray-700 outline-none transition focus:border-sky-400 focus:ring-1 focus:ring-sky-100"
+          className="h-9 w-full rounded-md border border-gray-300 bg-white pl-9 pr-3 text-sm text-gray-700 outline-none transition focus:border-sky-400 focus:ring-1 focus:ring-sky-100"
         />
       </div>
 
@@ -41,7 +41,7 @@ function QueueFilters({
         <select
           value={serviceFilter}
           onChange={(e) => setServiceFilter(e.target.value)}
-          className="h-9 min-w-27.5 appearance-none rounded-lg border border-gray-300 bg-white px-3 pr-8 text-sm text-gray-600 outline-none focus:border-sky-400"
+          className="h-9 min-w-27.5 appearance-none rounded-md border border-gray-300 bg-white px-3 pr-8 text-sm text-gray-600 outline-none focus:border-sky-400"
         >
           <option value="all">Services</option>
           {serviceOptions.map((name) => (
@@ -60,7 +60,7 @@ function QueueFilters({
         <select
           value={priority}
           onChange={(e) => setPriority(e.target.value as PriorityFilter)}
-          className="h-9 min-w-25.5 appearance-none rounded-lg border border-gray-300 bg-white px-3 pr-8 text-sm text-gray-600 outline-none focus:border-sky-400"
+          className="h-9 min-w-25.5 appearance-none rounded-md border border-gray-300 bg-white px-3 pr-8 text-sm text-gray-600 outline-none focus:border-sky-400"
         >
           <option value="all">Priority: All</option>
           <option value="yes">Priority: Yes</option>

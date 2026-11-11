@@ -24,7 +24,7 @@ function ActivityTable({
   };
 
   return (
-    <div className="h-105 overflow-auto rounded-xl border border-gray-200 bg-white">
+    <div className="h-105 overflow-auto rounded-md border border-gray-200 bg-white">
       <table className="min-w-245 w-full text-sm">
         <thead className="sticky top-0 z-10 bg-white text-gray-500">
           <tr className="border-b border-gray-100">
@@ -73,15 +73,14 @@ function ActivityTable({
                   <td className="px-4 py-3 align-top">
                     <div className="flex items-center gap-2">
                       <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sky-200 text-xs font-semibold text-sky-700">
-                        {String(activity.user_id).charAt(0).toUpperCase() || "U"}
+                        {String(activity.user_id).charAt(0).toUpperCase() ||
+                          "U"}
                       </span>
                       <div>
                         <div className="font-medium text-gray-700">
                           {activity.user_id}
                         </div>
-                        <div className="text-[10px] text-gray-400">
-                          User ID
-                        </div>
+                        <div className="text-[10px] text-gray-400">User ID</div>
                       </div>
                     </div>
                   </td>
@@ -123,7 +122,16 @@ function ActivityTable({
             })
           ) : (
             <tr>
-              <td colSpan={6} className="p-4"><EmptyState compact message={error ? "Activity logs are unavailable." : "No activities found."} /></td>
+              <td colSpan={6} className="p-4">
+                <EmptyState
+                  compact
+                  message={
+                    error
+                      ? "Activity logs are unavailable."
+                      : "No activities found."
+                  }
+                />
+              </td>
             </tr>
           )}
         </tbody>

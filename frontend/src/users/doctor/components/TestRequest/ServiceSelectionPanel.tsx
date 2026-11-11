@@ -71,7 +71,7 @@ function ServiceSelectionPanel({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search..."
-              className="h-9 w-full rounded-lg border border-gray-300 bg-white pl-9 pr-3 text-sm text-gray-700 outline-none transition focus:border-sky-400 focus:ring-1 focus:ring-sky-100"
+              className="h-9 w-full rounded-md border border-gray-300 bg-white pl-9 pr-3 text-sm text-gray-700 outline-none transition focus:border-sky-400 focus:ring-1 focus:ring-sky-100"
             />
           </div>
 
@@ -79,7 +79,7 @@ function ServiceSelectionPanel({
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as SortOrder)}
-              className="h-9 min-w-25 appearance-none rounded-lg border border-gray-300 bg-white px-3 pr-8 text-sm text-gray-600 outline-none focus:border-sky-400"
+              className="h-9 min-w-25 appearance-none rounded-md border border-gray-300 bg-white px-3 pr-8 text-sm text-gray-600 outline-none focus:border-sky-400"
             >
               <option value="a-z">Sort: A-Z</option>
               <option value="z-a">Sort: Z-A</option>
@@ -96,7 +96,7 @@ function ServiceSelectionPanel({
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="h-9 min-w-27.5 appearance-none rounded-lg border border-gray-300 bg-white px-3 pr-8 text-sm text-gray-600 outline-none focus:border-sky-400"
+              className="h-9 min-w-27.5 appearance-none rounded-md border border-gray-300 bg-white px-3 pr-8 text-sm text-gray-600 outline-none focus:border-sky-400"
             >
               <option value="all">Category: All</option>
               {categoryOptions.map((name) => (
@@ -123,12 +123,12 @@ function ServiceSelectionPanel({
               <label
                 key={service.id}
                 htmlFor={service.service_id}
-                className="flex items-center justify-between border border-gray-200 px-4 py-2 rounded-2xl cursor-pointer transition-all
+                className="flex items-center justify-between border border-gray-200 px-4 py-2 rounded-md cursor-pointer transition-all
                 hover:border-blue-300 hover:scale-101 active:scale-100 active:bg-gray-50
                has-checked:border-sky-500 has-checked:bg-sky-50 has-checked:text-blue-500"
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-sky-100 rounded-xl">
+                  <div className="p-2 bg-sky-100 rounded-md">
                     <Syringe size={20} />
                   </div>
                   <div className="text-xs">
@@ -165,7 +165,7 @@ function ServiceSelectionPanel({
             type="button"
             disabled={page <= 1}
             onClick={() => onPageChange(page - 1)}
-            className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center
+            className="w-7 h-7 rounded-md border border-gray-200 flex items-center justify-center
                        hover:bg-gray-100 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
           >
             &lt;
@@ -176,7 +176,7 @@ function ServiceSelectionPanel({
               key={p}
               type="button"
               onClick={() => onPageChange(p)}
-              className={`w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer ${
+              className={`w-7 h-7 rounded-md flex items-center justify-center cursor-pointer ${
                 p === page
                   ? "bg-sky-500 text-white font-bold shadow-xs"
                   : "border border-gray-200 hover:bg-gray-100"
@@ -190,7 +190,7 @@ function ServiceSelectionPanel({
             type="button"
             disabled={page >= total_pages}
             onClick={() => onPageChange(page + 1)}
-            className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center
+            className="w-7 h-7 rounded-md border border-gray-200 flex items-center justify-center
                        hover:bg-gray-100 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
           >
             &gt;

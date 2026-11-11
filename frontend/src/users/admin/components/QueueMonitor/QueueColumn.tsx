@@ -49,7 +49,8 @@ const THEMES = {
 } as const;
 
 function QueueColumn({ title, entries }: QueueColumnProps) {
-  const theme = title.toLowerCase() === "laboratory" ? THEMES.green : THEMES.blue;
+  const theme =
+    title.toLowerCase() === "laboratory" ? THEMES.green : THEMES.blue;
   const { Icon } = theme;
 
   // Split the entries by status. The backend already sends them in queue order.
@@ -72,7 +73,7 @@ function QueueColumn({ title, entries }: QueueColumnProps) {
 
   return (
     <section
-      className={`flex flex-col overflow-hidden rounded-lg border ${theme.card}`}
+      className={`flex flex-col overflow-hidden rounded-md border ${theme.card}`}
     >
       {/* Title */}
       <div className={`flex items-center gap-3 px-4 py-3 ${theme.header}`}>
@@ -128,7 +129,9 @@ function QueueColumn({ title, entries }: QueueColumnProps) {
           <tbody>
             {waiting.length === 0 ? (
               <tr>
-                <td colSpan={4} className="p-4"><EmptyState compact message="Queue is empty." /></td>
+                <td colSpan={4} className="p-4">
+                  <EmptyState compact message="Queue is empty." />
+                </td>
               </tr>
             ) : (
               waiting.slice(0, NEXT_IN_LINE_LIMIT).map((entry, index) => (
@@ -182,10 +185,13 @@ function QueueColumn({ title, entries }: QueueColumnProps) {
       </div>
 
       {/* Footer counters */}
-      <div className={`flex items-center gap-2 px-4 py-2.5 text-xs ${theme.footer}`}>
+      <div
+        className={`flex items-center gap-2 px-4 py-2.5 text-xs ${theme.footer}`}
+      >
         <RefreshCw className={`h-3.5 w-3.5 ${theme.footerIcon}`} />
         <span>
-          {waiting.length} {waiting.length === 1 ? "patient" : "patients"} waiting
+          {waiting.length} {waiting.length === 1 ? "patient" : "patients"}{" "}
+          waiting
           {servingRooms ? ` • ${servingRooms} in service` : ""}
           {` • ${completedCount} done today`}
         </span>

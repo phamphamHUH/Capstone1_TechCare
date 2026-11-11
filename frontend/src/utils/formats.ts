@@ -66,3 +66,28 @@ export const formatDateTime = (value: string | null) => {
     }),
   };
 };
+
+export function formatLabDate(value: string) {
+  if (!value || !Number.isFinite(new Date(value).getTime())) {
+    return "Not recorded";
+  }
+
+  const date = new Date(
+    /(Z|[+-]\d{2}:?\d{2})$/i.test(value)
+      ? value
+      : `${value.replace(" ", "T")}+08:00`,
+  );
+
+  if (!Number.isFinite(date.getTime())) {
+    return "Not recorded";
+  }
+
+  return date.toLocaleString("en-US", {
+    timeZone: "Asia/Manila",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}

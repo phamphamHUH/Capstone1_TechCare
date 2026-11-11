@@ -152,7 +152,7 @@ export default function UniversalModal({
             finalFocus={finalFocus}
             aria-busy={blocked}
             className={cn(
-              "relative max-h-[calc(100dvh-2rem)] w-full max-w-[440px] overflow-y-auto rounded-xl border border-[#d7e2ef] bg-white px-5 py-6 font-sans shadow-xl outline-none sm:px-6",
+              "relative max-h-[calc(100dvh-2rem)] w-full max-w-[440px] overflow-y-auto rounded-md border border-[#d7e2ef] bg-white px-5 py-6 font-sans shadow-xl outline-none sm:px-6",
               className,
             )}
           >

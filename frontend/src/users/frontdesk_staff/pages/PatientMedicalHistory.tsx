@@ -3,7 +3,12 @@ import ErrorMessage from "../../../components/ErrorMessage";
 import LoadingScreen from "../../../components/LoadingScreen";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
-import { ArrowLeft, ClipboardList, FlaskConical, ReceiptText } from "lucide-react";
+import {
+  ArrowLeft,
+  ClipboardList,
+  FlaskConical,
+  ReceiptText,
+} from "lucide-react";
 import type { Patient } from "../../../interface/Patient";
 import type { Bill } from "../../../interface/Billing";
 import api from "../../../lib/axios";
@@ -65,8 +70,6 @@ function PatientMedicalHistory({
   const [activeTab, setActiveTab] = useState<
     "overview" | "visits" | "labs" | "billing"
   >("overview");
-
-
 
   async function fetchPatientHistory() {
     const failed: string[] = [];
@@ -158,7 +161,16 @@ function PatientMedicalHistory({
           page="Patient Medical History"
         />
         <div className="flex items-center justify-center h-96">
-          {pageLoading ? <LoadingScreen message="Loading patient data..." /> : historyError ? <ErrorMessage>{historyError}</ErrorMessage> : <EmptyState message="Patient not found." description="Select a patient from Patient Records to view their history." />}
+          {pageLoading ? (
+            <LoadingScreen message="Loading patient data..." />
+          ) : historyError ? (
+            <ErrorMessage>{historyError}</ErrorMessage>
+          ) : (
+            <EmptyState
+              message="Patient not found."
+              description="Select a patient from Patient Records to view their history."
+            />
+          )}
         </div>
       </main>
     );
@@ -196,8 +208,14 @@ function PatientMedicalHistory({
         loadData={fetchPatientHistory}
         page="Patient Medical History"
       />
-      {!pageLoading && historyError && <ErrorMessage className="mx-6 mb-4">{historyError}</ErrorMessage>}
-      {!pageLoading && failedSections.length > 0 && <ErrorMessage className="mx-6 mb-4">Unable to load {failedSections.join(", ")}. Please try again.</ErrorMessage>}
+      {!pageLoading && historyError && (
+        <ErrorMessage className="mx-6 mb-4">{historyError}</ErrorMessage>
+      )}
+      {!pageLoading && failedSections.length > 0 && (
+        <ErrorMessage className="mx-6 mb-4">
+          Unable to load {failedSections.join(", ")}. Please try again.
+        </ErrorMessage>
+      )}
 
       {/* Go Back Button */}
       <div className="px-6 py-4 border-b border-gray-200">
@@ -338,7 +356,7 @@ function PatientMedicalHistory({
       <div className="px-6 py-8">
         {/* Overview Tab */}
         {activeTab === "overview" && (
-          <section className="overflow-hidden rounded-2xl border border-gray-300 bg-gray-300">
+          <section className="overflow-hidden rounded-md border border-gray-300 bg-gray-300">
             <div className="grid grid-cols-1 gap-px md:grid-cols-3">
               {[
                 {
@@ -387,7 +405,7 @@ function PatientMedicalHistory({
                   .map((queue) => (
                     <div
                       key={queue.queue_id}
-                      className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
+                      className="p-4 border border-gray-200 rounded-md hover:bg-gray-50"
                     >
                       <div className="flex justify-between items-start">
                         <div>
@@ -437,7 +455,13 @@ function PatientMedicalHistory({
               </div>
             ) : (
               <div className="text-center py-12">
-                {failedSections.includes("visit history") ? <ErrorMessage>Unable to load visit history. Please try again.</ErrorMessage> : <EmptyState message="No visit history found." />}
+                {failedSections.includes("visit history") ? (
+                  <ErrorMessage>
+                    Unable to load visit history. Please try again.
+                  </ErrorMessage>
+                ) : (
+                  <EmptyState message="No visit history found." />
+                )}
               </div>
             )}
           </div>
@@ -457,7 +481,7 @@ function PatientMedicalHistory({
                   .map((lab) => (
                     <div
                       key={lab.id}
-                      className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
+                      className="p-4 border border-gray-200 rounded-md hover:bg-gray-50"
                     >
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
@@ -508,7 +532,13 @@ function PatientMedicalHistory({
               </div>
             ) : (
               <div className="text-center py-12">
-                {failedSections.includes("laboratory requests") ? <ErrorMessage>Unable to load laboratory requests. Please try again.</ErrorMessage> : <EmptyState message="No laboratory requests found." />}
+                {failedSections.includes("laboratory requests") ? (
+                  <ErrorMessage>
+                    Unable to load laboratory requests. Please try again.
+                  </ErrorMessage>
+                ) : (
+                  <EmptyState message="No laboratory requests found." />
+                )}
               </div>
             )}
           </div>
@@ -528,7 +558,7 @@ function PatientMedicalHistory({
                   .map((bill) => (
                     <div
                       key={bill.id}
-                      className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
+                      className="p-4 border border-gray-200 rounded-md hover:bg-gray-50"
                     >
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
@@ -572,7 +602,13 @@ function PatientMedicalHistory({
               </div>
             ) : (
               <div className="text-center py-12">
-                {failedSections.includes("billing records") ? <ErrorMessage>Unable to load billing records. Please try again.</ErrorMessage> : <EmptyState message="No billing records found." />}
+                {failedSections.includes("billing records") ? (
+                  <ErrorMessage>
+                    Unable to load billing records. Please try again.
+                  </ErrorMessage>
+                ) : (
+                  <EmptyState message="No billing records found." />
+                )}
               </div>
             )}
           </div>

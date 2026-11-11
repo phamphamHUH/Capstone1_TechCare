@@ -13,11 +13,11 @@ const inputClass =
 
 function LoginPage() {
   const [identifier, setIdentifier] = useState(
-    () => localStorage.getItem("remembered_user") ?? ""
+    () => localStorage.getItem("remembered_user") ?? "",
   );
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(
-    () => localStorage.getItem("remembered_user") !== null
+    () => localStorage.getItem("remembered_user") !== null,
   );
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -67,18 +67,18 @@ function LoginPage() {
       if (axios.isAxiosError(error)) {
         setErrorMessage(
           error.response?.data?.message ||
-          error.response?.data?.error ||
-          "Failed to log in. Please check your connection or credentials."
+            error.response?.data?.error ||
+            "Failed to log in. Please check your connection or credentials.",
         );
       } else {
         setErrorMessage(
-          "Failed to log in. Please check your connection or credentials."
+          "Failed to log in. Please check your connection or credentials.",
         );
       }
     } finally {
       setLoading(false);
     }
-  };
+  }
   /// This is just to wake up the backend since we are using free tier hosting that sleeps on inactivity.
   useEffect(() => {
     async function wakeUpBackend() {
@@ -96,13 +96,11 @@ function LoginPage() {
     <div className="relative min-h-screen w-full bg-gray-100 flex items-center justify-center p-4 sm:p-6 lg:p-10">
       <ClinicSlideshow />
 
-      <div className="relative z-10 w-full max-w-6xl bg-white/45 backdrop-blur-sm rounded-lg border border-gray-200 p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-
+      <div className="relative z-10 w-full max-w-6xl bg-white/45 backdrop-blur-sm rounded-md border border-gray-200 p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
         <LoginVideo />
 
         <div className="w-full flex items-center justify-center px-4 sm:px-8 lg:px-12">
           <div className="w-full max-w-md">
-
             <div className="flex items-center justify-between gap-4 mb-6">
               <div>
                 <h1 className="text-2xl font-semibold text-gray-900">
@@ -124,13 +122,10 @@ function LoginPage() {
             </div>
 
             {errorMessage && (
-              <ErrorMessage className="mb-5">
-                {errorMessage}
-              </ErrorMessage>
+              <ErrorMessage className="mb-5">{errorMessage}</ErrorMessage>
             )}
 
             <form onSubmit={handleLogin} className="space-y-5">
-
               <div>
                 <label
                   htmlFor="login-identifier"
@@ -211,11 +206,11 @@ function LoginPage() {
               </button>
             </form>
 
-            <p className="mt-5 text-center text-sm text-gray-800">No account? Visit the front desk for registration.</p>
-
+            <p className="mt-5 text-center text-sm text-gray-800">
+              No account? Visit the front desk for registration.
+            </p>
           </div>
         </div>
-
       </div>
     </div>
   );

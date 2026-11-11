@@ -99,11 +99,11 @@ function ServiceModal({
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative z-10 flex max-h-[90vh] w-full max-w-5/11 flex-col overflow-hidden rounded-2xl bg-white shadow-xl">
+      <div className="relative z-10 flex max-h-[90vh] w-full max-w-5/11 flex-col overflow-hidden rounded-md bg-white shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-100 px-6 py-5">
           <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-sky-100 p-3 mt-1">
+            <div className="rounded-md bg-sky-100 p-3 mt-1">
               <FlaskConical
                 size={25}
                 strokeWidth={1.5}
@@ -129,14 +129,18 @@ function ServiceModal({
         </div>
 
         {/* Room information and statistics */}
-        <div className="mx-6 mt-5 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-sky-100 bg-sky-50 px-5 py-4">
+        <div className="mx-6 mt-5 flex flex-wrap items-center justify-between gap-4 rounded-md border border-sky-100 bg-sky-50 px-5 py-4">
           <div>
             <p className="mb-1 text-xs text-gray-500">Room</p>
             <h2 className="text-lg font-bold ">{room}</h2>
           </div>
 
           {/* The counts are the status filter: click one to show only those services. */}
-          <div className="flex flex-wrap items-center gap-1" role="group" aria-label="Filter by status">
+          <div
+            className="flex flex-wrap items-center gap-1"
+            role="group"
+            aria-label="Filter by status"
+          >
             {serviceStats.map((stat) => {
               const Icon = stat.icon;
               const selected = serviceFilter === stat.filter;
@@ -147,7 +151,7 @@ function ServiceModal({
                   type="button"
                   onClick={() => changeServiceFilter(stat.filter)}
                   aria-pressed={selected}
-                  className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-left cursor-pointer transition-colors ${
+                  className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-left cursor-pointer transition-colors ${
                     selected
                       ? "bg-white shadow-sm ring-1 ring-sky-300"
                       : "hover:bg-white/70"
@@ -184,13 +188,13 @@ function ServiceModal({
               value={search}
               onChange={(e) => changeSearch(e.target.value)}
               placeholder="Search service name or service ID..."
-              className="h-10 w-full rounded-lg border border-gray-200 bg-white pl-9 pr-3 text-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+              className="h-10 w-full rounded-md border border-gray-200 bg-white pl-9 pr-3 text-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
             />
           </div>
         </div>
 
         {/* Services table */}
-        <div className="mx-6 mt-5 min-h-0 overflow-auto rounded-lg">
+        <div className="mx-6 mt-5 min-h-0 overflow-auto rounded-md">
           <table className="w-full table-fixed text-sm">
             <colgroup>
               <col className="w-[20%]" />
@@ -250,10 +254,9 @@ function ServiceModal({
 
               {pageServices.length === 0 && (
                 <tr>
-                  <td
-                    colSpan={5}
-                    className="p-4"
-                  ><EmptyState compact message="No services found." /></td>
+                  <td colSpan={5} className="p-4">
+                    <EmptyState compact message="No services found." />
+                  </td>
                 </tr>
               )}
             </tbody>
@@ -273,7 +276,7 @@ function ServiceModal({
                   type="button"
                   disabled={currentPage <= 1}
                   onClick={() => setPage(currentPage - 1)}
-                  className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-gray-200 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   &lt;
                 </button>
@@ -283,7 +286,7 @@ function ServiceModal({
                     key={p}
                     type="button"
                     onClick={() => setPage(p)}
-                    className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg ${
+                    className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-md ${
                       p === currentPage
                         ? "bg-sky-500 font-bold text-white shadow-xs"
                         : "border border-gray-200 hover:bg-gray-100"
@@ -297,7 +300,7 @@ function ServiceModal({
                   type="button"
                   disabled={currentPage >= totalPages}
                   onClick={() => setPage(currentPage + 1)}
-                  className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-gray-200 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   &gt;
                 </button>

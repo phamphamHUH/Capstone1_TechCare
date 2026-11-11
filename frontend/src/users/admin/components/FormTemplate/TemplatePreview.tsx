@@ -29,12 +29,12 @@ export default function TemplatePreview({
   };
 
   const previewableComponents = (components ?? []).filter(
-  (c) => c.settings?.showInPreview !== false
+    (c) => c.settings?.showInPreview !== false,
   );
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col my-8">
+      <div className="bg-white w-full max-w-4xl rounded-md shadow-2xl border border-gray-200 overflow-hidden flex flex-col my-8">
         {/* Modal Top Bar */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
           <div>
@@ -49,7 +49,7 @@ export default function TemplatePreview({
             <button
               type="button"
               onClick={() => window.print()}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-xs font-semibold transition-colors cursor-pointer"
             >
               <Printer size={14} />
               <span>Print Preview</span>
@@ -57,7 +57,7 @@ export default function TemplatePreview({
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg transition-colors cursor-pointer"
+              className="p-1.5 text-gray-400 hover:text-gray-700 rounded-md transition-colors cursor-pointer"
             >
               <X size={20} />
             </button>
@@ -102,7 +102,7 @@ export default function TemplatePreview({
           </div>
 
           {/* Patient Details Header */}
-          <div className="bg-sky-50 border border-sky-200 rounded-xl p-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+          <div className="bg-sky-50 border border-sky-200 rounded-md p-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
             <div>
               <span className="text-gray-400 block text-[10px] uppercase">
                 Patient Name:
@@ -140,9 +140,7 @@ export default function TemplatePreview({
               return (
                 <div
                   key={comp.id}
-                  className={`${getWidthClass(
-                    settings.width
-                  )} text-${align}`}
+                  className={`${getWidthClass(settings.width)} text-${align}`}
                 >
                   {comp.type === "section_header" && (
                     <div className="w-full bg-sky-100 text-sky-900 font-bold text-xs uppercase px-3 py-1.5 rounded-md tracking-wider border-l-4 border-sky-500 my-1">
@@ -209,14 +207,14 @@ export default function TemplatePreview({
                               <span className="w-3.5 h-3.5 border border-gray-400 rounded-sm inline-block" />
                               {opt}
                             </span>
-                          )
+                          ),
                         )}
                       </div>
                     </div>
                   )}
 
                   {comp.type === "table" && (
-                    <div className="w-full my-2 border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="w-full my-2 border border-gray-200 rounded-md overflow-hidden">
                       <table className="w-full text-xs text-left">
                         <thead className="bg-sky-50 text-sky-900 font-bold border-b border-gray-200">
                           <tr>
@@ -234,13 +232,11 @@ export default function TemplatePreview({
                         </thead>
                         <tbody>
                           <tr className="border-b border-gray-100 text-gray-700">
-                            {(settings.tableColumns || [1, 2]).map(
-                              (_, idx) => (
-                                <td key={idx} className="p-2">
-                                  {idx === 0 ? "Sample Test 1" : "Normal"}
-                                </td>
-                              )
-                            )}
+                            {(settings.tableColumns || [1, 2]).map((_, idx) => (
+                              <td key={idx} className="p-2">
+                                {idx === 0 ? "Sample Test 1" : "Normal"}
+                              </td>
+                            ))}
                           </tr>
                         </tbody>
                       </table>
@@ -286,4 +282,3 @@ export default function TemplatePreview({
     </div>
   );
 }
-

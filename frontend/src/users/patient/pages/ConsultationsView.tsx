@@ -1,275 +1,340 @@
-import EmptyState from "../../../components/EmptyState";
-import ErrorMessage from "../../../components/ErrorMessage";
-import LoadingScreen from "../../../components/LoadingScreen";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import axios from "axios";
 import {
-  CalendarDays,
   ChevronLeft,
   ChevronRight,
+  FlaskConical,
   Search,
   Stethoscope,
 } from "lucide-react";
-import PatientSummaryCard from "../components/PatientSummaryCard";
+import EmptyState from "../../../components/EmptyState";
+import ErrorMessage from "../../../components/ErrorMessage";
+import LoadingScreen from "../../../components/LoadingScreen";
 import { fetchPatientMedicalHistory } from "../patientApi";
-import type {
-  HistoryRecord,
-  Pagination,
-  PatientSessionUser,
-} from "../types";
+import type { HistoryRecord, Pagination } from "../types";
+import PatientVisitPanel from "../components/PatientVisitPanel";
+import PortalStatus from "../components/PortalStatus";
 
 type Props = {
-  patient: PatientSessionUser;
   patientId: string;
+  refreshKey?: number;
+  onLoadingChange?: (loading: boolean) => void;
+  onPrescriptions: (consultationId?: string) => void;
+  laboratoryOnly?: boolean;
 };
+const fieldClass =
+  "h-9 min-w-0 rounded-md border border-gray-200 bg-gray-50 px-3 text-sm text-gray-600 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-400/20";
+const recordKey = (record: HistoryRecord) =>
+  record.record_type + ":" + record.record_id;
 
-const EMPTY_PAGINATION: Pagination = {
-  page: 1,
-  limit: 6,
-  total: 0,
-  total_pages: 1,
-};
-
-function formatDateTime(value: string) {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return { date: "—", time: "—" };
-  }
-
-  return {
-    date: date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "2-digit",
-      year: "numeric",
-    }),
-    time: date.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-    }),
-  };
-}
-
-function ConsultationsView({ patient, patientId }: Props) {
+export default function ConsultationsView({
+  patientId,
+  refreshKey = 0,
+  onLoadingChange,
+  onPrescriptions,
+  laboratoryOnly = false,
+}: Props) {
   const [records, setRecords] = useState<HistoryRecord[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [service, setService] = useState("");
   const [status, setStatus] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [page, setPage] = useState(1);
-  const [pagination, setPagination] = useState<Pagination>(EMPTY_PAGINATION);
+  const [pagination, setPagination] = useState<Pagination>({
+    page: 1,
+    limit: 6,
+    total: 0,
+    total_pages: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
   useEffect(() => {
+    const controller = new AbortController();
     const timer = window.setTimeout(async () => {
+      setLoading(true);
+      onLoadingChange?.(true);
+      setError("");
       try {
-        setLoading(true);
-        setError("");
-
-        const result = await fetchPatientMedicalHistory(patientId, {
-          search: search.trim() || undefined,
-          service_category: "Consultation",
-          status: status || undefined,
-          page,
-          limit: 6,
-        });
-
-        const consultationRecords = (result.records ?? []).filter(
-          (record) => record.record_type === "consultation",
+        const response = await fetchPatientMedicalHistory(
+          patientId,
+          {
+            search: search.trim() || undefined,
+            service_category: laboratoryOnly
+              ? "Laboratory"
+              : service || undefined,
+            status: laboratoryOnly ? "Released" : status || undefined,
+            start_date: startDate || undefined,
+            end_date: endDate || undefined,
+            page,
+            limit: 6,
+          },
+          controller.signal,
         );
-
-        setRecords(consultationRecords);
-        setPagination(result.pagination ?? EMPTY_PAGINATION);
-
-        setSelectedId((current) => {
-          if (current && consultationRecords.some((item) => item.record_id === current)) {
-            return current;
-          }
-          return consultationRecords[0]?.record_id ?? null;
-        });
-      } catch (requestError) {
-        console.error("Unable to load patient consultation history:", requestError);
-        setError("Unable to load consultation history.");
+        if (controller.signal.aborted) return;
+        setRecords(response.records);
+        setPagination(response.pagination);
+        setSelectedId((current) =>
+          response.records.some((item) => recordKey(item) === current)
+            ? current
+            : response.records[0]
+              ? recordKey(response.records[0])
+              : null,
+        );
+      } catch (err) {
+        if (axios.isCancel(err) || controller.signal.aborted) return;
+        setError("Medical history could not be loaded. Please try refreshing.");
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+          onLoadingChange?.(false);
+        }
       }
     }, 250);
-
-    return () => window.clearTimeout(timer);
-  }, [patientId, search, status, page]);
-
-  useEffect(() => {
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [
+    patientId,
+    search,
+    service,
+    status,
+    startDate,
+    endDate,
+    page,
+    refreshKey,
+    laboratoryOnly,
+    onLoadingChange,
+  ]);
+  const selected =
+    records.find((record) => recordKey(record) === selectedId) ?? null;
+  const first = pagination.total
+    ? (pagination.page - 1) * pagination.limit + 1
+    : 0;
+  const changeFilter = (setter: (value: string) => void) => (value: string) => {
+    setLoading(true);
+    setter(value);
     setPage(1);
-  }, [search, status]);
-
-  const selected = useMemo(
-    () => records.find((record) => record.record_id === selectedId) ?? null,
-    [records, selectedId],
-  );
-
-  const selectedDate = selected ? formatDateTime(selected.occurred_at) : null;
-
+  };
   return (
-    <div className="space-y-4">
-      <PatientSummaryCard patient={patient} />
-
-      <div className="grid min-h-[520px] grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
-        <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-100 p-4">
-            <h2 className="text-sm font-bold text-slate-900">Medical History</h2>
-            <p className="mt-0.5 text-[10px] text-slate-400">
-              View your consultation visits and records.
-            </p>
-
-            <div className="mt-4 flex flex-wrap gap-2">
-              <label className="flex min-w-[220px] flex-1 items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-xs text-slate-500">
-                <Search size={14} />
-                <input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search by service..."
-                  className="w-full bg-transparent outline-none"
-                />
-              </label>
-
+    <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-7">
+      <section className="flex min-w-0 flex-col rounded-md border border-gray-200 bg-white p-5 lg:col-span-5 lg:min-h-[calc(100vh-160px)]">
+        <h2 className="font-bold">
+          {laboratoryOnly ? "Laboratory Results" : "Medical History"}
+        </h2>
+        <p className="mt-1 text-sm text-gray-500">
+          {laboratoryOnly
+            ? "View laboratory results released by the clinic."
+            : "View your past visits, services, and records."}
+        </p>
+        <div className="mb-5 mt-5 flex flex-wrap items-center gap-2">
+          <label className="flex min-w-0 flex-1 basis-44 items-center gap-2 rounded-md border border-gray-200 bg-gray-50 px-3 text-gray-400 focus-within:border-sky-400 focus-within:ring-4 focus-within:ring-sky-400/20">
+            <Search size={16} className="shrink-0" aria-hidden="true" />
+            <input
+              aria-label="Search medical history"
+              placeholder="Search by service..."
+              value={search}
+              onChange={(event) => changeFilter(setSearch)(event.target.value)}
+              className="h-9 w-full min-w-0 bg-transparent text-sm text-gray-700 outline-none"
+            />
+          </label>
+          {!laboratoryOnly && (
+            <>
               <select
+                aria-label="Filter by service"
+                value={service}
+                onChange={(event) =>
+                  changeFilter(setService)(event.target.value)
+                }
+                className={fieldClass + " w-32"}
+              >
+                <option value="">All Services</option>
+                <option value="Consultation">Consultation</option>
+                <option value="Laboratory">Laboratory</option>
+              </select>
+              <select
+                aria-label="Filter by status"
                 value={status}
-                onChange={(event) => setStatus(event.target.value)}
-                className="rounded-md border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 outline-none"
+                onChange={(event) =>
+                  changeFilter(setStatus)(event.target.value)
+                }
+                className={fieldClass + " w-32"}
               >
                 <option value="">All Status</option>
-                <option value="Completed">Completed</option>
-                <option value="Released">Released</option>
+                {[
+                  "Created",
+                  "Requested",
+                  "In Queue",
+                  "In Consultation",
+                  "In Progress",
+                  "Completed",
+                  "Released",
+                  "Cancelled",
+                ].map((value) => (
+                  <option key={value}>{value}</option>
+                ))}
               </select>
-            </div>
-          </div>
-
-          <div className="min-h-[380px] p-3">
-            {error && (
-              <ErrorMessage>
-                {error}
-              </ErrorMessage>
-            )}
-            {loading && records.length === 0 ? (
-              <LoadingScreen message="Loading consultation history..." />
-            ) : ((records.length === 0 ? (
-              <EmptyState message={error ? "Consultation records are unavailable." : "No consultation records found."} />
-            ) : (
-              <div className="divide-y divide-slate-100">
-                {records.map((record) => {
-                  const dateTime = formatDateTime(record.occurred_at);
-                  const active = selectedId === record.record_id;
-
-                  return (
-                    <button
-                      type="button"
-                      key={record.record_id}
-                      onClick={() => setSelectedId(record.record_id)}
-                      className={`grid w-full grid-cols-[92px_1fr_auto] items-center gap-3 rounded-lg px-3 py-3 text-left transition ${
-                        active ? "bg-sky-50" : "hover:bg-slate-50"
-                      }`}
-                    >
-                      <div>
-                        <p className="text-[10px] font-semibold text-slate-600">{dateTime.date}</p>
-                        <p className="mt-0.5 text-[9px] text-slate-400">{dateTime.time}</p>
-                      </div>
-
-                      <div className="flex min-w-0 items-center gap-3">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-sky-50 text-sky-500">
-                          <Stethoscope size={15} />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="truncate text-xs font-semibold text-slate-800">
-                            {record.service_name}
-                          </p>
-                          <p className="mt-0.5 text-[9px] text-slate-400">
-                            {record.service_category}
-                          </p>
-                        </div>
-                      </div>
-
-                      <span className="rounded-full bg-sky-100 px-2 py-1 text-[9px] font-semibold text-sky-600">
-                        {record.status}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            )))}
-          </div>
-
-          <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3 text-[10px] text-slate-400">
-            <span>
-              Showing {records.length} of {pagination.total} records
-            </span>
-
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setPage((current) => Math.max(1, current - 1))}
-                disabled={page <= 1}
-                className="rounded border border-slate-200 p-1.5 disabled:opacity-40"
-              >
-                <ChevronLeft size={12} />
-              </button>
-              <span className="rounded bg-sky-500 px-2 py-1.5 font-semibold text-white">{page}</span>
-              <button
-                type="button"
-                onClick={() => setPage((current) => Math.min(pagination.total_pages || 1, current + 1))}
-                disabled={page >= (pagination.total_pages || 1)}
-                className="rounded border border-slate-200 p-1.5 disabled:opacity-40"
-              >
-                <ChevronRight size={12} />
-              </button>
-            </div>
-          </div>
-        </section>
-
-        <aside className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="text-sm font-bold text-slate-900">Visit Details</h2>
-
-          {!selected ? (
-            <EmptyState message="Select a consultation to view its details." />
-          ) : (
-            <div className="mt-4 space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-sky-50 text-sky-500">
-                  <Stethoscope size={15} />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-slate-800">{selected.service_name}</p>
-                  <p className="text-[10px] text-slate-400">{selected.service_category}</p>
-                </div>
-              </div>
-
-              <div className="space-y-3 border-t border-slate-100 pt-4">
-                <div>
-                  <p className="text-[9px] uppercase tracking-wide text-slate-400">Record ID</p>
-                  <p className="mt-1 break-all text-xs font-medium text-slate-700">{selected.record_id}</p>
-                </div>
-                <div>
-                  <p className="text-[9px] uppercase tracking-wide text-slate-400">Date & Time</p>
-                  <p className="mt-1 flex items-center gap-2 text-xs font-medium text-slate-700">
-                    <CalendarDays size={13} />
-                    {selectedDate?.date} {selectedDate?.time}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[9px] uppercase tracking-wide text-slate-400">Status</p>
-                  <span className="mt-1 inline-block rounded-full bg-emerald-50 px-2 py-1 text-[9px] font-semibold text-emerald-600">
-                    {selected.status}
-                  </span>
-                </div>
-              </div>
-
-              <div className="rounded-lg bg-slate-50 p-3 text-[10px] leading-5 text-slate-500">
-                This panel uses only the fields already returned by the consultation list endpoint. If your existing endpoint also returns diagnosis, doctor, room, vitals, or notes, those fields can be displayed here without any backend change.
-              </div>
-            </div>
+            </>
           )}
-        </aside>
-      </div>
+          <input
+            aria-label="Start date"
+            type="date"
+            value={startDate}
+            max={endDate || undefined}
+            onChange={(event) => changeFilter(setStartDate)(event.target.value)}
+            className={fieldClass + " w-36"}
+          />
+          <input
+            aria-label="End date"
+            type="date"
+            value={endDate}
+            min={startDate || undefined}
+            onChange={(event) => changeFilter(setEndDate)(event.target.value)}
+            className={fieldClass + " w-36"}
+          />
+        </div>
+        {error && <ErrorMessage className="mb-4">{error}</ErrorMessage>}
+        {loading && !records.length ? (
+          <LoadingScreen message="Loading medical history..." />
+        ) : !records.length ? (
+          <EmptyState
+            message={
+              error
+                ? "Medical history is unavailable."
+                : laboratoryOnly
+                  ? "No released laboratory results found."
+                  : "No medical records found."
+            }
+          />
+        ) : (
+          <ul
+            aria-label="Medical history records"
+            aria-busy={loading}
+            className={loading ? "opacity-60" : ""}
+          >
+            {records.map((record, index) => {
+              const Icon =
+                record.record_type === "laboratory"
+                  ? FlaskConical
+                  : Stethoscope;
+              const date = new Date(record.occurred_at);
+              return (
+                <li key={recordKey(record)} className="relative">
+                  <span
+                    aria-hidden="true"
+                    className={[
+                      "absolute left-1.5 w-px bg-sky-200",
+                      index === 0 ? "top-1/2" : "top-0",
+                      index === records.length - 1 ? "bottom-1/2" : "bottom-0",
+                    ].join(" ")}
+                  />
+                  <span
+                    aria-hidden="true"
+                    className="absolute left-0.5 top-1/2 size-2.5 -translate-y-1/2 rounded-full bg-sky-400"
+                  />
+                  <button
+                    type="button"
+                    aria-pressed={recordKey(record) === selectedId}
+                    onClick={() => setSelectedId(recordKey(record))}
+                    className={[
+                      "ml-6 grid w-[calc(100%-1.5rem)] cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-gray-100 px-2 py-4 text-left focus-visible:outline-2 focus-visible:outline-sky-500 sm:grid-cols-[112px_minmax(0,1fr)_auto]",
+                      recordKey(record) === selectedId
+                        ? "bg-sky-50/60"
+                        : "hover:bg-gray-50",
+                    ].join(" ")}
+                  >
+                    <div className="col-span-2 sm:col-span-1">
+                      <p className="text-xs font-semibold text-gray-700">
+                        {date.toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                          timeZone: "Asia/Manila",
+                        })}
+                      </p>
+                      <p className="mt-1 text-xs text-gray-400">
+                        {date.toLocaleTimeString("en-US", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          timeZone: "Asia/Manila",
+                        })}
+                      </p>
+                    </div>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div
+                        className={[
+                          "flex size-10 shrink-0 items-center justify-center rounded-md",
+                          record.record_type === "laboratory"
+                            ? "bg-gray-100 text-gray-500"
+                            : "bg-sky-50 text-sky-500",
+                        ].join(" ")}
+                      >
+                        <Icon size={20} strokeWidth={1.75} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="break-words text-sm font-semibold text-gray-900">
+                          {record.service_name}
+                        </p>
+                        <p className="mt-1 text-xs text-gray-500">
+                          {record.service_category}
+                          {record.room && " · " + record.room}
+                        </p>
+                      </div>
+                    </div>
+                    <PortalStatus status={record.status} />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-8 text-xs text-gray-500">
+          <p>
+            Showing {first}–
+            {Math.min(
+              (pagination.page - 1) * pagination.limit + records.length,
+              pagination.total,
+            )}{" "}
+            of {pagination.total} records
+          </p>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              aria-label="Previous page"
+              disabled={loading || page <= 1}
+              onClick={() => {
+                setLoading(true);
+                setPage((current) => current - 1);
+              }}
+              className="cursor-pointer rounded-md border border-gray-200 p-2 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <span className="rounded-md bg-sky-500 px-3 py-2 font-semibold text-white">
+              {pagination.page}
+            </span>
+            <button
+              type="button"
+              aria-label="Next page"
+              disabled={loading || page >= Math.max(1, pagination.total_pages)}
+              onClick={() => {
+                setLoading(true);
+                setPage((current) => current + 1);
+              }}
+              className="cursor-pointer rounded-md border border-gray-200 p-2 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+      </section>
+      <PatientVisitPanel
+        record={selected}
+        refreshKey={refreshKey}
+        onPrescriptions={onPrescriptions}
+      />
     </div>
   );
 }
-
-export default ConsultationsView;

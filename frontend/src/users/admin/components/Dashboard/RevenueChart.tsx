@@ -18,7 +18,9 @@ type RevenueChartProps = {
 function niceMax(value: number) {
   if (value <= 0) return 1000;
   const power = 10 ** Math.floor(Math.log10(value / 4));
-  const step = [1, 2, 2.5, 5, 10].map((m) => m * power).find((s) => s * 4 >= value) ?? power * 10;
+  const step =
+    [1, 2, 2.5, 5, 10].map((m) => m * power).find((s) => s * 4 >= value) ??
+    power * 10;
   return step * 4;
 }
 
@@ -39,7 +41,8 @@ function RevenueChart({ timeline, bucket }: RevenueChartProps) {
   const isEmpty = timeline.every((point) => point.revenue === 0);
   const active = hovered === null ? null : timeline[hovered];
 
-  if (isEmpty) return <EmptyState message="No paid bills found for this period." />;
+  if (isEmpty)
+    return <EmptyState message="No paid bills found for this period." />;
 
   return (
     <div>
@@ -85,7 +88,10 @@ function RevenueChart({ timeline, bucket }: RevenueChartProps) {
                 <div
                   className="w-full rounded-t transition-opacity"
                   style={{
-                    height: point.revenue > 0 ? `max(${(point.revenue / max) * 100}%, 2px)` : 0,
+                    height:
+                      point.revenue > 0
+                        ? `max(${(point.revenue / max) * 100}%, 2px)`
+                        : 0,
                     backgroundColor: REVENUE_COLOR,
                     opacity: hovered === null || hovered === index ? 1 : 0.45,
                   }}
@@ -93,17 +99,17 @@ function RevenueChart({ timeline, bucket }: RevenueChartProps) {
               </div>
             ))}
 
-
-
             {/* Tooltip */}
             {active && hovered !== null && (
               <div
-                className="pointer-events-none absolute -top-2 z-10 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs shadow-md"
+                className="pointer-events-none absolute -top-2 z-10 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-md border border-gray-200 bg-white px-3 py-2 text-xs shadow-md"
                 style={{
                   left: `clamp(70px, ${((hovered + 0.5) / timeline.length) * 100}%, calc(100% - 70px))`,
                 }}
               >
-                <p className="font-medium text-gray-700">{formatBucketLong(active.bucket, bucket)}</p>
+                <p className="font-medium text-gray-700">
+                  {formatBucketLong(active.bucket, bucket)}
+                </p>
                 <p className="mt-1 text-sm font-semibold text-gray-900 tabular-nums">
                   {formatPeso(active.revenue)}
                 </p>
@@ -117,8 +123,13 @@ function RevenueChart({ timeline, bucket }: RevenueChartProps) {
           {/* X axis labels */}
           <div className="mt-2 flex gap-0.5 text-xs text-gray-400">
             {timeline.map((point, index) => (
-              <span key={point.bucket} className="min-w-0 flex-1 overflow-visible whitespace-nowrap text-center">
-                {index % every === 0 ? formatBucketShort(point.bucket, bucket) : ""}
+              <span
+                key={point.bucket}
+                className="min-w-0 flex-1 overflow-visible whitespace-nowrap text-center"
+              >
+                {index % every === 0
+                  ? formatBucketShort(point.bucket, bucket)
+                  : ""}
               </span>
             ))}
           </div>

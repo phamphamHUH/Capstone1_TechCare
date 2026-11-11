@@ -105,14 +105,14 @@ function MedicalHistoryTab({ patientId }: MedicalHistoryTabProps) {
               value={search}
               onChange={(e) => withReset(setSearch)(e.target.value)}
               placeholder="Search..."
-              className="h-9 w-full rounded-lg border border-gray-200 bg-gray-50 pl-9 pr-3 text-sm text-gray-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-400/20"
+              className="h-9 w-full rounded-md border border-gray-200 bg-gray-50 pl-9 pr-3 text-sm text-gray-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-400/20"
             />
           </div>
           <label className="relative shrink-0">
             <select
               value={statusFilter}
               onChange={(e) => withReset(setStatusFilter)(e.target.value)}
-              className="h-9 min-w-25 appearance-none rounded-lg border border-gray-200 bg-gray-50 px-3 pr-8 text-sm text-gray-600 outline-none transition hover:border-gray-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-400/20"
+              className="h-9 min-w-25 appearance-none rounded-md border border-gray-200 bg-gray-50 px-3 pr-8 text-sm text-gray-600 outline-none transition hover:border-gray-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-400/20"
             >
               <option value="all">All Status</option>
               <option value="requested">Requested</option>
@@ -132,7 +132,7 @@ function MedicalHistoryTab({ patientId }: MedicalHistoryTabProps) {
             <select
               value={serviceFilter}
               onChange={(e) => withReset(setServiceFilter)(e.target.value)}
-              className="h-9 min-w-27.5 appearance-none rounded-lg border border-gray-200 bg-gray-50 px-3 pr-8 text-sm text-gray-600 outline-none transition hover:border-gray-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-400/20"
+              className="h-9 min-w-27.5 appearance-none rounded-md border border-gray-200 bg-gray-50 px-3 pr-8 text-sm text-gray-600 outline-none transition hover:border-gray-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-400/20"
             >
               <option value="all">Service: All</option>
               <option value="consultation">Consultation</option>
@@ -149,7 +149,7 @@ function MedicalHistoryTab({ patientId }: MedicalHistoryTabProps) {
               type="date"
               name="start-date"
               id="start-date"
-              className="h-9 w-37.5 appearance-none rounded-lg border border-gray-200 bg-gray-50 px-3 pr-9 text-sm text-gray-600 outline-none transition hover:border-gray-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-400/20
+              className="h-9 w-37.5 appearance-none rounded-md border border-gray-200 bg-gray-50 px-3 pr-9 text-sm text-gray-600 outline-none transition hover:border-gray-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-400/20
           [&::-webkit-calendar-picker-indicator]:absolute
           [&::-webkit-calendar-picker-indicator]:inset-0
           [&::-webkit-calendar-picker-indicator]:h-full
@@ -170,7 +170,7 @@ function MedicalHistoryTab({ patientId }: MedicalHistoryTabProps) {
               type="date"
               name="end-date"
               id="end-date"
-              className="h-9 w-37.5 appearance-none rounded-lg border border-gray-200 bg-gray-50 px-3 pr-9 text-sm text-gray-600 outline-none transition hover:border-gray-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-400/20
+              className="h-9 w-37.5 appearance-none rounded-md border border-gray-200 bg-gray-50 px-3 pr-9 text-sm text-gray-600 outline-none transition hover:border-gray-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-400/20
           [&::-webkit-calendar-picker-indicator]:absolute
           [&::-webkit-calendar-picker-indicator]:inset-0
           [&::-webkit-calendar-picker-indicator]:h-full

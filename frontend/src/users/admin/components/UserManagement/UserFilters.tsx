@@ -16,7 +16,7 @@ type Props = {
 };
 
 const selectClass =
-  "h-9 appearance-none rounded-lg border border-gray-300 bg-white px-3 pr-8 text-sm text-gray-600 outline-none focus:border-gray-500 cursor-pointer";
+  "h-9 appearance-none rounded-md border border-gray-300 bg-white px-3 pr-8 text-sm text-gray-600 outline-none focus:border-gray-500 cursor-pointer";
 
 function FilterSelect({
   value,
@@ -100,7 +100,7 @@ function UserFilters({
         <button
           type="button"
           onClick={() => setFilters(DEFAULT_USER_FILTERS)}
-          className="flex h-9 items-center gap-1 rounded-lg px-2 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-800 cursor-pointer"
+          className="flex h-9 items-center gap-1 rounded-md px-2 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-800 cursor-pointer"
         >
           <X size={14} />
           Clear filters

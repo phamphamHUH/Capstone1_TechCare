@@ -44,7 +44,7 @@ const chevronClass =
   "pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400";
 
 const tabClass = (selected: boolean) =>
-  `flex items-center gap-2 border px-3 py-1 rounded-xl cursor-pointer ${
+  `flex items-center gap-2 border px-3 py-1 rounded-md cursor-pointer ${
     selected
       ? "border-sky-500 bg-sky-500 text-white"
       : "border-gray-300 hover:bg-gray-50 text-gray-500"
@@ -208,7 +208,7 @@ function ServicePricing({
         loading={loading && services.length > 0}
         message="Refreshing services and packages..."
       >
-        <div className="mx-6 border py-4 rounded-2xl border-gray-300">
+        <div className="mx-6 border py-4 rounded-md border-gray-300">
           {/* TABS */}
           <div className="flex gap-2 px-2 mb-4 text-sm">
             <button
@@ -251,7 +251,7 @@ function ServicePricing({
                 value={search}
                 onChange={(e) => changeSearch(e.target.value)}
                 placeholder="Search by service name or ID..."
-                className="h-9 w-full rounded-lg border border-gray-300 bg-white pl-9 pr-3 text-sm text-gray-700 outline-none transition focus:border-sky-400 focus:ring-1 focus:ring-sky-100"
+                className="h-9 w-full rounded-md border border-gray-300 bg-white pl-9 pr-3 text-sm text-gray-700 outline-none transition focus:border-sky-400 focus:ring-1 focus:ring-sky-100"
               />
             </div>
 
@@ -394,7 +394,7 @@ function ServicePricing({
                   type="button"
                   disabled={currentPage <= 1}
                   onClick={() => setPage(currentPage - 1)}
-                  className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-gray-200 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   &lt;
                 </button>
@@ -404,7 +404,7 @@ function ServicePricing({
                     key={p}
                     type="button"
                     onClick={() => setPage(p)}
-                    className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg ${
+                    className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-md ${
                       p === currentPage
                         ? "bg-sky-500 font-bold text-white shadow-xs"
                         : "border border-gray-200 hover:bg-gray-100"
@@ -418,7 +418,7 @@ function ServicePricing({
                   type="button"
                   disabled={currentPage >= totalPages}
                   onClick={() => setPage(currentPage + 1)}
-                  className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-gray-200 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   &gt;
                 </button>

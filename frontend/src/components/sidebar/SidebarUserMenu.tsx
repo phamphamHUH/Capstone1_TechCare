@@ -32,7 +32,7 @@ function SidebarUserMenu() {
     try {
       setLogoutStatus("Logging out...");
 
-      if (user?.user_id) {
+      if (user?.user_id && user.role !== "patient") {
         await api.patch("/api/auth/logout", {
           user_id: user.user_id,
         });
@@ -63,7 +63,7 @@ function SidebarUserMenu() {
     <div ref={menuRef} className="relative">
       {/* Dropdown menu (opens upward) */}
       {menuOpen && (
-        <div className="absolute bottom-full left-0 right-0 mb-2 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
+        <div className="absolute bottom-full left-0 right-0 mb-2 overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg">
           <button
             type="button"
             onClick={handleLogout}
@@ -81,13 +81,13 @@ function SidebarUserMenu() {
         onClick={() => setMenuOpen((previous) => !previous)}
         aria-haspopup="menu"
         aria-expanded={menuOpen}
-        className={`flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left cursor-pointer transition-colors hover:bg-gray-100 ${
+        className={`flex w-full items-center gap-3 rounded-md px-2 py-2 text-left cursor-pointer transition-colors hover:bg-gray-100 ${
           menuOpen ? "bg-gray-100" : ""
         }`}
       >
-        {user.profile_photo ? (
+        {user.profile_photo || user.image_url ? (
           <img
-            src={user.profile_photo}
+            src={user.profile_photo || user.image_url}
             alt="profile"
             className="w-10 h-10 shrink-0 rounded-full border object-cover"
           />

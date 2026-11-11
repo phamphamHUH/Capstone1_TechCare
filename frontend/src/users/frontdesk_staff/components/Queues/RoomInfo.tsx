@@ -23,7 +23,7 @@ export default function RoomInfo({
           ),
         );
         return (
-          <section key={type} className="rounded-xl border border-gray-200 p-4">
+          <section key={type} className="rounded-md border border-gray-200 p-4">
             <h2 className="mb-3 font-semibold">{type} Rooms</h2>
             {names.length ? (
               names.map((room) => {
@@ -40,7 +40,7 @@ export default function RoomInfo({
                 return (
                   <div
                     key={room}
-                    className={`mb-2 flex items-center justify-between gap-3 rounded-lg border p-3 text-xs ${serving ? "border-amber-200 bg-amber-50 text-amber-800" : "border-blue-100 bg-blue-50 text-blue-800"}`}
+                    className={`mb-2 flex items-center justify-between gap-3 rounded-md border p-3 text-xs ${serving ? "border-amber-200 bg-amber-50 text-amber-800" : "border-blue-100 bg-blue-50 text-blue-800"}`}
                   >
                     <span className="flex items-center gap-2">
                       <Icon size={16} />

@@ -62,7 +62,7 @@ function QueueStats({ stats, activeFilter, onFilterChange }: QueueProps) {
   ];
 
   return (
-    <section className="mt-5 mb-6 overflow-hidden rounded-2xl border border-gray-300 bg-gray-300">
+    <section className="mt-5 mb-6 overflow-hidden rounded-md border border-gray-300 bg-gray-300">
       <div className="grid grid-cols-1 gap-px sm:grid-cols-2 lg:grid-cols-5">
         {cards.map((card) => {
           const Icon = card.icon;
@@ -75,7 +75,11 @@ function QueueStats({ stats, activeFilter, onFilterChange }: QueueProps) {
               // Clicking the selected card again clears the filter.
               onClick={() => onFilterChange(selected ? "all" : card.filter)}
               aria-pressed={selected}
-              title={selected ? "Click to show all" : `Show ${card.label.toLowerCase()}`}
+              title={
+                selected
+                  ? "Click to show all"
+                  : `Show ${card.label.toLowerCase()}`
+              }
               className={`p-6 text-left cursor-pointer transition-colors sm:last:col-span-2 lg:last:col-span-1 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-sky-500 ${
                 selected
                   ? "bg-sky-50 shadow-[inset_0_-3px_0_0_var(--color-sky-500)]"
@@ -89,12 +93,16 @@ function QueueStats({ stats, activeFilter, onFilterChange }: QueueProps) {
                   className={`shrink-0 ${selected ? "text-sky-600" : ""}`}
                 />
 
-                <p className={`text-sm ${selected ? "font-medium text-sky-700" : "text-gray-500"}`}>
+                <p
+                  className={`text-sm ${selected ? "font-medium text-sky-700" : "text-gray-500"}`}
+                >
                   {card.label}
                 </p>
               </div>
 
-              <p className={`text-3xl font-semibold ${selected ? "text-sky-700" : ""}`}>
+              <p
+                className={`text-3xl font-semibold ${selected ? "text-sky-700" : ""}`}
+              >
                 {card.value}
               </p>
 

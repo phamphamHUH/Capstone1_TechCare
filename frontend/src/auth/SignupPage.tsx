@@ -49,7 +49,7 @@ function SignupPage() {
 
       {/* RIGHT SIDE */}
       <div className="w-full md:w-1/2 flex items-center justify-center bg-gray-100">
-        <div className="w-105 bg-white/80 backdrop-blur-xl shadow-2xl rounded-3xl p-8 border border-white/40">
+        <div className="w-105 bg-white/80 backdrop-blur-xl shadow-2xl rounded-md p-8 border border-white/40">
           <div className="text-center mb-6">
             <h2 className="text-3xl font-bold text-gray-800">Create Account</h2>
 
@@ -62,7 +62,7 @@ function SignupPage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Username"
-              className="w-full px-4 py-3 rounded-xl border border-gray-200
+              className="w-full px-4 py-3 rounded-md border border-gray-200
                          focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200
                          outline-none transition"
             />
@@ -72,7 +72,7 @@ function SignupPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Password"
-              className="w-full px-4 py-3 rounded-xl border border-gray-200
+              className="w-full px-4 py-3 rounded-md border border-gray-200
                          focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200
                          outline-none transition"
             />
@@ -87,7 +87,7 @@ function SignupPage() {
             <select
               value={role}
               onChange={(e) => setRole(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200
+              className="w-full px-4 py-3 rounded-md border border-gray-200
                          focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200
                          outline-none transition bg-white"
             >

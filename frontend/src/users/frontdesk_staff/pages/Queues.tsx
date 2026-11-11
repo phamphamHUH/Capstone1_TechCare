@@ -137,7 +137,7 @@ function Queues({
           <h3 className="text-sm">View Queue Status and Rooms in Real-Time</h3>
         </div>
         <button
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white"
+          className="rounded-md bg-blue-600 px-4 py-2 text-sm text-white"
           onClick={() => setSearchParams({ page: "service-request" })}
         >
           New Service Request
@@ -161,7 +161,7 @@ function Queues({
         {queueRequests.some(
           (request) => request.record_type === "laboratory",
         ) && (
-          <p className="my-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          <p className="my-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
             Some paid requests still need laboratory forwarding.{" "}
             <button
               className="underline"

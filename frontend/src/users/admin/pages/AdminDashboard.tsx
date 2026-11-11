@@ -94,7 +94,7 @@ function AdminDashboard({
           <div
             role="group"
             aria-label="Date range"
-            className="inline-flex rounded-lg border border-gray-300 bg-white p-0.5"
+            className="inline-flex rounded-md border border-gray-300 bg-white p-0.5"
           >
             {RANGE_OPTIONS.map((option) => (
               <button
@@ -129,7 +129,7 @@ function AdminDashboard({
             {error && !sales && <UnavailableAnalytics />}
             {summary && sales && (
               <>
-                <section className="bg-white border border-gray-300 rounded-2xl overflow-hidden">
+                <section className="bg-white border border-gray-300 rounded-md overflow-hidden">
                   <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-gray-300">
                     <StatTile
                       icon={<Banknote {...iconProps} />}
@@ -222,7 +222,7 @@ function AdminDashboard({
             {error && !services && <UnavailableAnalytics inventory />}
             {catalog && services && (
               <>
-                <section className="bg-white border border-gray-300 rounded-2xl overflow-hidden">
+                <section className="bg-white border border-gray-300 rounded-md overflow-hidden">
                   <div className="px-6 py-5 border-b border-gray-300">
                     <div className="flex items-center gap-3">
                       <Package {...iconProps} />
@@ -332,7 +332,7 @@ function UnavailableAnalytics({ inventory = false }: { inventory?: boolean }) {
       ];
   return (
     <>
-      <section className="overflow-hidden rounded-2xl border border-gray-300 bg-white">
+      <section className="overflow-hidden rounded-md border border-gray-300 bg-white">
         {inventory && (
           <h2 className="border-b border-gray-300 px-6 py-5 text-lg font-semibold">
             Service Inventory
@@ -408,7 +408,7 @@ function Panel({
 }: PanelProps) {
   return (
     <section
-      className={`bg-white border border-gray-300 rounded-2xl overflow-hidden min-w-0 ${className}`}
+      className={`bg-white border border-gray-300 rounded-md overflow-hidden min-w-0 ${className}`}
     >
       <div className="px-6 py-5 border-b border-gray-300">
         <div className="flex items-center gap-3">

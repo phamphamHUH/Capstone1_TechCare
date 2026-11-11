@@ -1,22 +1,26 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { loadEnv } from "vite";
 
-const target =
-  !process.env.NODE_ENV
-    ? "https://techcare-hui6.onrender.com"
-    : "http://localhost:5000";
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), "");
+  const target = env.VITE_API_PROXY_TARGET || "http://localhost:5000";
 
-export default defineConfig({
-  plugins: [react(), tailwindcss()],
-  server: {
-    proxy: {
-      "/api": {
-        target,
-        changeOrigin: true,
+  return {
+    plugins: [react(), tailwindcss()],
+    server: {
+      proxy: {
+        "/api": {
+          target,
+          changeOrigin: true,
+          // Keep SSE notification and queue streams open for their full lifetime.
+          timeout: 0,
+          proxyTimeout: 0,
+        },
       },
     },
-  },
+  };
 });
 
 // React code

@@ -19,7 +19,9 @@ import type {
   ServiceAnalytics,
 } from "../../../../interface/Analytics";
 import SalesDetails, { type SalesDetailKind } from "./DetailModal/SalesDetails";
-import InventoryDetails, { type InventoryDetailKind } from "./DetailModal/InventoryDetails";
+import InventoryDetails, {
+  type InventoryDetailKind,
+} from "./DetailModal/InventoryDetails";
 
 // Which dashboard tile's details are shown.
 export type OpenDetail =
@@ -28,12 +30,24 @@ export type OpenDetail =
 
 const iconProps = { size: 20, strokeWidth: 1.5 };
 
-const DETAIL_INFO: Record<SalesDetailKind | InventoryDetailKind, { title: string; icon: ReactNode }> = {
+const DETAIL_INFO: Record<
+  SalesDetailKind | InventoryDetailKind,
+  { title: string; icon: ReactNode }
+> = {
   revenue: { title: "Revenue", icon: <Banknote {...iconProps} /> },
   "paid-bills": { title: "Paid Bills", icon: <Receipt {...iconProps} /> },
-  "average-bill": { title: "Average Bill", icon: <Calculator {...iconProps} /> },
-  discounts: { title: "Discounts Given", icon: <BadgePercent {...iconProps} /> },
-  outstanding: { title: "Outstanding Bills", icon: <Hourglass {...iconProps} /> },
+  "average-bill": {
+    title: "Average Bill",
+    icon: <Calculator {...iconProps} />,
+  },
+  discounts: {
+    title: "Discounts Given",
+    icon: <BadgePercent {...iconProps} />,
+  },
+  outstanding: {
+    title: "Outstanding Bills",
+    icon: <Hourglass {...iconProps} />,
+  },
   active: { title: "Active Services", icon: <PackageCheck {...iconProps} /> },
   inactive: { title: "Inactive Services", icon: <PackageX {...iconProps} /> },
   "average-price": { title: "Average Price", icon: <Tag {...iconProps} /> },
@@ -80,7 +94,8 @@ function DetailModal({
 
   const { title, icon } = DETAIL_INFO[detail.kind];
   // Outstanding is "unpaid right now", not limited to the selected range.
-  const subtitle = detail.kind === "outstanding" ? "Unpaid right now" : periodLabel;
+  const subtitle =
+    detail.kind === "outstanding" ? "Unpaid right now" : periodLabel;
 
   return (
     <div
@@ -93,7 +108,7 @@ function DetailModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="detail-modal-title"
-        className="flex max-h-[85vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
+        className="flex max-h-[85vh] w-full max-w-4xl flex-col overflow-hidden rounded-md bg-white shadow-xl"
       >
         <div className="flex items-start justify-between gap-4 border-b border-gray-200 px-6 py-5">
           <div className="flex items-center gap-3">
