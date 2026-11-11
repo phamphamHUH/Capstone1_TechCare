@@ -29,13 +29,14 @@ function Header({ page, loading, open, setOpen, loadData }: HeaderProps) {
         ? "/api/notifications"
         : null;
 
-  // Sidebar collapsed: its nav moves into the header.
+  // Sidebar collapsed: its nav moves into the header (desktop only; on
+  // phones the ☰ button opens the sidebar drawer instead).
   const nav = useSidebarNav();
   const showNav = !open && nav !== null;
 
   return (
-    <header className="flex items-center justify-between h-24 gap-4 mb-6 px-6 border-b border-gray-300">
-      <div className="flex items-center gap-5 min-w-0 shrink-0">
+    <header className="flex items-center justify-between h-16 sm:h-24 gap-3 sm:gap-4 mb-4 sm:mb-6 px-4 sm:px-6 border-b border-gray-300">
+      <div className="flex items-center gap-3 sm:gap-5 min-w-0 lg:shrink-0">
         <button
           type="button"
           onClick={() => setOpen((previous) => !previous)}
@@ -47,15 +48,15 @@ function Header({ page, loading, open, setOpen, loadData }: HeaderProps) {
         </button>
 
         <div className="flex flex-col min-w-0">
-          <h1 className="text-lg font-semibold truncate">{page}</h1>
-          <h2 className="text-sm text-gray-500 capitalize">{role}</h2>
+          <h1 className="text-base sm:text-lg font-semibold truncate">{page}</h1>
+          <h2 className="text-xs sm:text-sm text-gray-500 capitalize truncate">{role}</h2>
         </div>
       </div>
 
       {showNav && (
         <nav
           aria-label="Main"
-          className="flex flex-1 min-w-0 items-center gap-1 overflow-x-auto"
+          className="hidden lg:flex flex-1 min-w-0 items-center gap-1 overflow-x-auto"
         >
           {nav.navItems.map((item) => {
             const active = nav.page === item.page;

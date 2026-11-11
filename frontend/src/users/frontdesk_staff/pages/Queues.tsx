@@ -131,7 +131,7 @@ function Queues({
 
   return (
     <main className="flex-1 min-w-0 ">
-      <div className="flex  items-center  justify-between px-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-80">Queue Management</h1>
           <h3 className="text-sm">View Queue Status and Rooms in Real-Time</h3>
@@ -144,7 +144,7 @@ function Queues({
         </button>
       </div>
 
-      <div className="px-6">
+      <div className="px-4 sm:px-6">
         {error && <ErrorMessage className="mt-5">{error}</ErrorMessage>}
         <QueueStats
           stats={stats}

@@ -351,7 +351,7 @@ function VisitDetails({
               return (
                 <div key={res.result_id} className="mb-3 last:mb-0">
                   <div className="overflow-x-auto rounded-md border border-gray-200">
-                    <table className="w-full text-left text-xs">
+                    <table className="min-w-[420px] w-full text-left text-xs">
                       <thead>
                         <tr className="border-b border-gray-200 bg-gray-50 text-gray-600">
                           <th className="px-3 py-2 font-semibold">Test</th>
@@ -445,7 +445,7 @@ function VisitDetails({
                     className="rounded-md border border-gray-200 p-3 text-sm"
                   >
                     <div className="overflow-x-auto border-b border-gray-200">
-                      <table className="w-full text-left text-xs">
+                      <table className="min-w-[420px] w-full text-left text-xs">
                         <thead>
                           <tr className="border-b border-gray-200 text-gray-500">
                             <th className="py-2 pr-4 font-medium">Name</th>

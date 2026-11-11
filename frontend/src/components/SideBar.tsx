@@ -21,12 +21,17 @@ function readSavedWidth() {
 
 type SideBarProps = {
   open: boolean;
+  setOpen: (open: boolean) => void;
   page: string;
   setPage: (page: string) => void;
   navItems: NavItem[];
 };
 
-function SideBar({ open, page, setPage, navItems }: SideBarProps) {
+// Below lg (1024px) the sidebar is a drawer over the page; at lg and up it
+// sits beside the page.
+const isMobile = () => window.innerWidth < 1024;
+
+function SideBar({ open, setOpen, page, setPage, navItems }: SideBarProps) {
   const [width, setWidth] = useState(readSavedWidth);
   const [resizing, setResizing] = useState(false);
   const aside = useRef<HTMLElement>(null);
@@ -71,13 +76,37 @@ function SideBar({ open, page, setPage, navItems }: SideBarProps) {
     event.preventDefault();
   }
 
+  // Phone drawer: Escape closes it.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && isMobile()) setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, setOpen]);
+
   return (
+    <>
+    {/* Phone: dim the page behind the open drawer; tap it to close. */}
+    {open && (
+      <button
+        type="button"
+        aria-label="Close navigation"
+        onClick={() => setOpen(false)}
+        className="fixed inset-0 z-40 bg-black/30 lg:hidden"
+      />
+    )}
     <aside
       ref={aside}
       style={{ "--sidebar-width": `${width}px` } as CSSProperties}
-      className={`select-none sticky top-0 flex h-screen shrink-0 flex-col bg-white border-r border-gray-300 text-black ${
+      className={`select-none fixed inset-y-0 left-0 z-50 flex h-dvh shrink-0 flex-col overflow-y-auto bg-white text-black lg:overflow-visible lg:sticky lg:top-0 lg:z-auto lg:h-screen ${
         resizing ? "" : "transition-all duration-300"
-      } ${open ? "w-64 lg:w-(--sidebar-width)" : "w-0 p-0"}`}
+      } ${
+        open
+          ? "w-64 max-w-[85vw] border-r border-gray-300 lg:w-(--sidebar-width) lg:max-w-none"
+          : "w-0 p-0"
+      }`}
     >
       {open && (
         <>
@@ -102,7 +131,10 @@ function SideBar({ open, page, setPage, navItems }: SideBarProps) {
                 className={`hover:scale-101 active:scale-100 active:bg-sky-200 active:text-sky-700 rounded-md py-2 px-3 transition-all cursor-pointer ${
                   page === item.page ? "bg-sky-100 text-sky-600 " : ""
                 }`}
-                onClick={() => setPage(item.page)}
+                onClick={() => {
+                  setPage(item.page);
+                  if (isMobile()) setOpen(false);
+                }}
               >
                 <div className="flex items-center gap-3">
                   <span className="shrink-0">{item.icon}</span>
@@ -146,6 +178,7 @@ function SideBar({ open, page, setPage, navItems }: SideBarProps) {
         </>
       )}
     </aside>
+    </>
   );
 }
 

@@ -20,7 +20,7 @@ function RoomActivity({ queues }: { queues: QueueEntry[] }) {
 
   return (
     <section className="bg-white border border-gray-300 rounded-md overflow-hidden">
-      <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-300">
+      <div className="flex items-center gap-3 px-4 sm:px-6 py-5 border-b border-gray-300">
         <Activity size={20} strokeWidth={1.5} />
         <div>
           <h2 className="text-lg font-semibold">Current Activity</h2>
@@ -31,11 +31,11 @@ function RoomActivity({ queues }: { queues: QueueEntry[] }) {
       </div>
 
       {rooms.size === 0 ? (
-        <p className="px-6 py-10 text-center text-sm text-gray-500">
+        <p className="px-4 sm:px-6 py-10 text-center text-sm text-gray-500">
           No patients in any room right now.
         </p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 p-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 p-4 sm:p-6">
           {[...rooms]
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([room, list]) => {

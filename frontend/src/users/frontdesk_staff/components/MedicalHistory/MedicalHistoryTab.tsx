@@ -86,8 +86,8 @@ function MedicalHistoryTab({ patientId }: MedicalHistoryTabProps) {
   const error = result && !loading ? result.error : null;
 
   return (
-    <div className="grid grid-cols-7 gap-5 px-6 mt-5 mb-5 items-start">
-      <main className="col-span-5 border shadow-lg rounded-md px-5 py-6 border-gray-200">
+    <div className="grid grid-cols-1 lg:grid-cols-7 gap-5 px-4 sm:px-6 mt-5 mb-5 items-start">
+      <main className="min-w-0 lg:col-span-5 border shadow-lg rounded-md px-4 sm:px-5 py-6 border-gray-200">
         <div>
           <h1 className="font-bold">Medical History</h1>
           <span className="text-gray-500 text-sm">
@@ -200,7 +200,7 @@ function MedicalHistoryTab({ patientId }: MedicalHistoryTabProps) {
           setSelectedRecord={setSelectedRecord}
         />
       </main>
-      <aside className="col-span-2 border shadow-lg rounded-md px-5 py-6 border-gray-200 sticky top-5">
+      <aside className="min-w-0 lg:col-span-2 border shadow-lg rounded-md px-4 sm:px-5 py-6 border-gray-200 lg:sticky lg:top-5">
         <VisitDetails selectedRecord={selectedRecord} />
       </aside>
     </div>

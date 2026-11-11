@@ -209,16 +209,16 @@ function PatientMedicalHistory({
         page="Patient Medical History"
       />
       {!pageLoading && historyError && (
-        <ErrorMessage className="mx-6 mb-4">{historyError}</ErrorMessage>
+        <ErrorMessage className="mx-4 sm:mx-6 mb-4">{historyError}</ErrorMessage>
       )}
       {!pageLoading && failedSections.length > 0 && (
-        <ErrorMessage className="mx-6 mb-4">
+        <ErrorMessage className="mx-4 sm:mx-6 mb-4">
           Unable to load {failedSections.join(", ")}. Please try again.
         </ErrorMessage>
       )}
 
       {/* Go Back Button */}
-      <div className="px-6 py-4 border-b border-gray-200">
+      <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
         <button
           onClick={handleGoBack}
           className="flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium"
@@ -229,8 +229,8 @@ function PatientMedicalHistory({
       </div>
 
       {/* Patient Header Card */}
-      <div className="px-6 py-8 bg-gradient-to-r from-blue-50 to-indigo-50">
-        <div className="flex gap-6">
+      <div className="px-4 sm:px-6 py-6 sm:py-8 bg-gradient-to-r from-blue-50 to-indigo-50">
+        <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
           {/* Patient Image */}
           <div className="flex-shrink-0">
             <div className="w-24 h-24 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center text-4xl font-semibold text-gray-500">
@@ -254,7 +254,7 @@ function PatientMedicalHistory({
               <span className="font-semibold">{patient.patient_id}</span>
             </p>
 
-            <div className="mt-4 grid grid-cols-2 gap-4">
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-500">Age</p>
                 <p className="text-lg font-semibold text-gray-900">
@@ -281,7 +281,7 @@ function PatientMedicalHistory({
               </div>
             </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-4">
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-500">Email</p>
                 <p className="text-sm font-medium text-gray-900 break-all">
@@ -307,11 +307,11 @@ function PatientMedicalHistory({
       </div>
 
       {/* Tabs */}
-      <div className="px-6 mt-8">
-        <div className="flex gap-4 border-b border-gray-200">
+      <div className="px-4 sm:px-6 mt-8">
+        <div className="flex gap-4 overflow-x-auto overflow-y-hidden border-b border-gray-200">
           <button
             onClick={() => setActiveTab("overview")}
-            className={`pb-4 px-2 font-medium border-b-2 transition-colors ${
+            className={`shrink-0 whitespace-nowrap pb-4 px-2 font-medium border-b-2 transition-colors ${
               activeTab === "overview"
                 ? "text-blue-600 border-blue-600"
                 : "text-gray-600 border-transparent hover:text-gray-900"
@@ -321,7 +321,7 @@ function PatientMedicalHistory({
           </button>
           <button
             onClick={() => setActiveTab("visits")}
-            className={`pb-4 px-2 font-medium border-b-2 transition-colors ${
+            className={`shrink-0 whitespace-nowrap pb-4 px-2 font-medium border-b-2 transition-colors ${
               activeTab === "visits"
                 ? "text-blue-600 border-blue-600"
                 : "text-gray-600 border-transparent hover:text-gray-900"
@@ -331,7 +331,7 @@ function PatientMedicalHistory({
           </button>
           <button
             onClick={() => setActiveTab("labs")}
-            className={`pb-4 px-2 font-medium border-b-2 transition-colors ${
+            className={`shrink-0 whitespace-nowrap pb-4 px-2 font-medium border-b-2 transition-colors ${
               activeTab === "labs"
                 ? "text-blue-600 border-blue-600"
                 : "text-gray-600 border-transparent hover:text-gray-900"
@@ -341,7 +341,7 @@ function PatientMedicalHistory({
           </button>
           <button
             onClick={() => setActiveTab("billing")}
-            className={`pb-4 px-2 font-medium border-b-2 transition-colors ${
+            className={`shrink-0 whitespace-nowrap pb-4 px-2 font-medium border-b-2 transition-colors ${
               activeTab === "billing"
                 ? "text-blue-600 border-blue-600"
                 : "text-gray-600 border-transparent hover:text-gray-900"
@@ -353,7 +353,7 @@ function PatientMedicalHistory({
       </div>
 
       {/* Tab Content */}
-      <div className="px-6 py-8">
+      <div className="px-4 sm:px-6 py-8">
         {/* Overview Tab */}
         {activeTab === "overview" && (
           <section className="overflow-hidden rounded-md border border-gray-300 bg-gray-300">
@@ -378,7 +378,7 @@ function PatientMedicalHistory({
                   icon: ReceiptText,
                 },
               ].map(({ label, subLabel, value, icon: Icon }) => (
-                <div key={label} className="bg-white p-6">
+                <div key={label} className="bg-white p-4 sm:p-6">
                   <div className="mb-4 flex items-center gap-3">
                     <Icon size={20} strokeWidth={1.5} className="shrink-0" />
                     <p className="text-sm text-gray-500">{label}</p>
@@ -407,7 +407,7 @@ function PatientMedicalHistory({
                       key={queue.queue_id}
                       className="p-4 border border-gray-200 rounded-md hover:bg-gray-50"
                     >
-                      <div className="flex justify-between items-start">
+                      <div className="flex flex-wrap justify-between items-start gap-2">
                         <div>
                           <p className="font-semibold text-gray-900">
                             Queue ID: {queue.queue_id}
@@ -483,7 +483,7 @@ function PatientMedicalHistory({
                       key={lab.id}
                       className="p-4 border border-gray-200 rounded-md hover:bg-gray-50"
                     >
-                      <div className="flex justify-between items-start">
+                      <div className="flex flex-wrap justify-between items-start gap-2">
                         <div className="flex-1">
                           <p className="font-semibold text-gray-900">
                             {lab.test_name}
@@ -560,7 +560,7 @@ function PatientMedicalHistory({
                       key={bill.id}
                       className="p-4 border border-gray-200 rounded-md hover:bg-gray-50"
                     >
-                      <div className="flex justify-between items-start">
+                      <div className="flex flex-wrap justify-between items-start gap-2">
                         <div className="flex-1">
                           <p className="font-semibold text-gray-900">
                             {bill.description}

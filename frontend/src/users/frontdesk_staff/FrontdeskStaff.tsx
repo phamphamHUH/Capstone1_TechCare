@@ -183,7 +183,7 @@ function FrontdeskStaff() {
   return (
     <SidebarNavContext.Provider value={{ navItems, page, setPage }}>
       <div className="flex min-h-screen">
-        <SideBar open={open} page={page} setPage={setPage} navItems={navItems} />
+        <SideBar open={open} setOpen={setOpen} page={page} setPage={setPage} navItems={navItems} />
         <div className="flex-1 min-w-0">
           <Header
             page={currentPage}

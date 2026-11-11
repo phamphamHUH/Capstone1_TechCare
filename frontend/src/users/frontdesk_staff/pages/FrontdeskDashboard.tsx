@@ -35,7 +35,7 @@ function StatCard({ label, value, caption, icon, onClick }: StatCardProps) {
     <button
       type="button"
       onClick={onClick}
-      className="group p-6 text-left cursor-pointer transition-colors hover:bg-sky-50 active:bg-sky-100 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-sky-500"
+      className="group p-4 sm:p-6 text-left cursor-pointer transition-colors hover:bg-sky-50 active:bg-sky-100 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-sky-500"
     >
       <div className="flex items-center gap-3">
         {icon}
@@ -117,7 +117,7 @@ function FrontdeskDashboard({
         }
         message="Refreshing dashboard..."
       >
-        <div className="space-y-6 px-6">
+        <div className="space-y-6 px-4 sm:px-6">
           {error && <ErrorMessage>{error}</ErrorMessage>}
           <RoomActivity queues={queues} />
           {/* =========================
@@ -160,7 +160,7 @@ function FrontdeskDashboard({
                     QUEUE STATUS OVERVIEW
                 ========================== */}
           <section className="bg-white border border-gray-300 rounded-md overflow-hidden">
-            <div className="px-6 py-5 border-b border-gray-300">
+            <div className="px-4 sm:px-6 py-5 border-b border-gray-300">
               <div className="flex items-center gap-3">
                 <List size={20} strokeWidth={1.5} />
 
