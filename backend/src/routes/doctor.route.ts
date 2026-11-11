@@ -12,7 +12,7 @@ import {
 import { getReleasedLaboratoryResults } from "../controllers/labstaff/getRequests.controller.js";
 import {
   addLaboratoryRequest,
-  addPrescriptions,
+  addPrescription,
 } from "../controllers/doctor/postRequests.controller.js";
 import {
   getConsultationQueueDetails,
@@ -33,7 +33,7 @@ if (ENV.IS_PRODUCTION) {
 }
 // POST requests
 router.post("/laboratory-requests", addLaboratoryRequest);
-router.post("/prescriptions/:consultation_record_id", addPrescriptions);
+router.post("/prescriptions", addPrescription);
 // GET requests
 router.get("/laboratory-results/:result_id", getReleasedLaboratoryResults);
 router.get("/services/:room", getRoomSpecificServices);

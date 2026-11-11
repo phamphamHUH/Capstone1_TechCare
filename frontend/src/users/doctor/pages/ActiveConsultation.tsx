@@ -3,17 +3,19 @@ import type { QueueEntry } from "../../../interface/Queue";
 import { formatAge, formatDateTime } from "../../../utils/formats";
 import calculateAge from "../../../utils/calculateAge";
 import MedicalHistoryTab from "../components/ActiveConsultation/MedicalHistoryTab";
-import DigitalDocumentsTab from "../components/ActiveConsultation/DigitalDocumentsTab";
 import Overview from "../components/ActiveConsultation/Overview";
 import LoadingScreen from "../../../components/LoadingScreen";
 import LoadingRegion from "../../../components/LoadingRegion";
 import ErrorMessage from "../../../components/ErrorMessage";
+import Prescription from "../components/ActiveConsultation/Prescription";
+import Preview from "../components/ActiveConsultation/Preview";
 
 type ActiveConsultationProps = {
   selectedQueue: QueueEntry | null;
   room: string;
   loading?: boolean;
   error?: string | null;
+  onCompleted?: () => void | Promise<void>;
 };
 
 export type ConsultationTabs =
@@ -28,8 +30,21 @@ function ActiveConsultation({
   room,
   loading,
   error,
+  onCompleted,
 }: ActiveConsultationProps) {
   const [activeTab, setActiveTab] = useState<ConsultationTabs>("overview");
+  const [findingsSaved, setFindingsSaved] = useState(false);
+  const [overviewStep, setOverviewStep] = useState<
+    "findings" | "prescription" | "preview"
+  >("findings");
+  const [prevRecordId, setPrevRecordId] = useState(
+    selectedQueue?.consultation_record_id,
+  );
+  if (selectedQueue?.consultation_record_id !== prevRecordId) {
+    setPrevRecordId(selectedQueue?.consultation_record_id);
+    setOverviewStep("findings");
+    setFindingsSaved(false);
+  }
 
   const initials = (selectedQueue?.patient_name ?? "")
     .trim()
@@ -46,7 +61,6 @@ function ActiveConsultation({
   }[] = [
     { id: "overview", label: "Overview" },
     { id: "medical-history", label: "Medical History" },
-    { id: "digital-documents", label: "Digital Documents" },
   ];
 
   if (loading && !selectedQueue) {
@@ -60,9 +74,8 @@ function ActiveConsultation({
       loading={Boolean(loading && selectedQueue)}
       message="Refreshing active consultation..."
     >
-      <div className="px-6 overflow-x-auto flex flex-col space-y-6 z-0">
+      <div className="px-6 overflow-x-clip flex flex-col space-y-6 z-0">
         {error && <ErrorMessage>{error}</ErrorMessage>}
-
         {selectedQueue ? (
           <>
             {/* HEADER */}
@@ -144,57 +157,56 @@ function ActiveConsultation({
                 <span>•</span>
                 <p>In Consultation</p>
               </div>
+              {/* CONSULTATION TABS */}
+              <div className="mt-6">
+                <nav className="flex gap-6">
+                  {consultationTabs.map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`pb-3 text-sm font-medium transition-colors cursor-pointer border-b-2 ${
+                        activeTab === tab.id
+                          ? "border-sky-600 text-sky-600"
+                          : "border-transparent text-gray-500 hover:text-gray-800"
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </nav>
+              </div>
             </section>
-
-            {/* CONSULTATION TABS */}
-            <div className="mt-6">
-              <nav className="flex gap-6">
-                {consultationTabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`pb-3 text-sm font-medium transition-colors cursor-pointer border-b-2 ${
-                      activeTab === tab.id
-                        ? "border-sky-600 text-sky-600"
-                        : "border-transparent text-gray-500 hover:text-gray-800"
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </nav>
-            </div>
 
             {/* TAB CONTENT */}
             <section>
-              {activeTab === "overview" && (
-                <Overview
-                  key={selectedQueue.consultation_record_id}
-                  selectedQueue={selectedQueue}
-                  onProceed={() => setActiveTab("prescription")}
-                />
-              )}
-
+              {activeTab === "overview" &&
+                (overviewStep === "findings" ? (
+                  <Overview
+                    key={selectedQueue.consultation_record_id}
+                    selectedQueue={selectedQueue}
+                    findingsSaved={findingsSaved}
+                    onFindingsSaved={() => setFindingsSaved(true)}
+                    onProceed={() => setOverviewStep("prescription")}
+                    onCompleted={onCompleted}
+                  />
+                ) : overviewStep === "prescription" ? (
+                  <Prescription
+                    selectedQueue={selectedQueue}
+                    onBack={() => setOverviewStep("findings")}
+                    hasSavedFindings={findingsSaved}
+                    onCompleted={onCompleted}
+                  />
+                ) : (
+                  <Preview />
+                ))}
               {activeTab === "medical-history" && (
                 <MedicalHistoryTab
                   key={selectedQueue.patient_id}
                   patientId={selectedQueue.patient_id}
-                />
-              )}
-
-              {activeTab === "laboratory-results" && <div>lab</div>}
-
-              {activeTab === "digital-documents" && (
-                <DigitalDocumentsTab
-                  key={`${selectedQueue.patient_id}:${selectedQueue.consultation_record_id}`}
-                  patientId={selectedQueue.patient_id}
-                  consultationRecordId={selectedQueue.consultation_record_id}
                   onReturn={() => setActiveTab("overview")}
                 />
               )}
-
-              {activeTab === "prescription" && <div>prescription</div>}
             </section>
           </>
         ) : (

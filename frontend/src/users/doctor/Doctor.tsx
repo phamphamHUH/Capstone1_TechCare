@@ -44,11 +44,6 @@ function Doctor() {
       icon: <LayoutGrid size={20} />,
     },
     {
-      page: "consultation",
-      label: "Consultation",
-      icon: <Stethoscope size={20} />,
-    },
-    {
       page: "consultation-queue",
       label: "Consultation Queue",
       icon: <ListOrdered size={20} />,
@@ -59,8 +54,8 @@ function Doctor() {
       icon: <Stethoscope size={20} />,
     },
     {
-      page: "laboratory-request",
-      label: "Laboratory Request",
+      page: "test-request",
+      label: "Test Request",
       icon: <FileText size={20} />,
     },
   ];
@@ -140,7 +135,7 @@ function Doctor() {
   }, [loadData]);
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen ">
       <SideBar open={open} page={page} setPage={setPage} navItems={navItems} />
 
       <div className="flex-1 min-w-0">
@@ -154,15 +149,6 @@ function Doctor() {
 
         <div className="pb-6">
           {page === "dashboard" && <DoctorDashboard />}
-
-          {(page === "consultation" || page === "prescription") && (
-            <Consultation
-              loading={loading}
-              open={open}
-              setOpen={setOpen}
-              loadData={loadData}
-            />
-          )}
 
           {page === "consultation-queue" && (
             <ConsultationQueue
@@ -201,7 +187,7 @@ function Doctor() {
             />
           )}
 
-          {page === "laboratory-request" && (
+          {page === "test-request" && (
             <TestRequest
               services={services}
               open={open}

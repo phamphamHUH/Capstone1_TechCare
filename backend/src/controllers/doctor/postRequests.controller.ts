@@ -10,6 +10,7 @@ import { resolveDoctorId } from "../../utils/resolveDoctorId.js";
 import { getOrCreateOpenBill } from "../../utils/getOrCreateBill.js";
 import { recomputeBillTotals } from "../../utils/recomputeBills.js";
 import type { addLaboratoryRequest, addPrescriptions } from "./dto/post.dto.js";
+import { ENV } from "../../config/env.js";
 
 type PrescriptionItem = {
   medication: string;
@@ -191,127 +192,114 @@ export async function addLaboratoryRequest(
   }
 }
 
-export async function addPrescriptions(
+export async function addPrescription(
   req: Request,
   res: Response<addPrescriptions.response | addPrescriptions.error>,
 ) {
-  const { consultation_record_id } = req.params;
+  // POST /api/doctor/prescriptions
   const {
-    items,
-    valid_until = null,
-    notes = null,
+    consultation_record_id,
+    prescription_items,
+    notes,
+    valid_until,
+    prescriber_id: bodyPrescriberId,
   } = req.body as addPrescriptions.body;
-  const user_id = req.user?.user_id;
 
-  if (!consultation_record_id) {
+  // Production: always the logged-in user. Otherwise: what the frontend sends.
+  const prescriber_id = ENV.IS_PRODUCTION
+    ? req.user?.user_id
+    : (bodyPrescriberId ?? req.user?.user_id);
+
+  const text = (v: unknown) => typeof v === "string" && v.trim().length > 0;
+
+  if (!text(prescriber_id) || !text(consultation_record_id)) {
     return res.status(400).json({
-      message: "Consultation record ID is required.",
+      message: "Consultation record and prescriber are required.",
     } as addPrescriptions.error);
   }
-  if (!Array.isArray(items) || items.length === 0) {
+  if (
+    !Array.isArray(prescription_items) ||
+    prescription_items.length === 0 ||
+    prescription_items.some(
+      (i) =>
+        !text(i?.name) ||
+        !text(i?.dosage) ||
+        !text(i?.frequency) ||
+        !text(i?.duration),
+    )
+  ) {
     return res.status(400).json({
-      message: "At least one medication is required.",
+      message:
+        "Add at least one medication with a name, dosage, frequency and duration.",
     } as addPrescriptions.error);
   }
-
-  const cleanItems: PrescriptionItem[] = [];
-  for (const item of items) {
-    const medication = item?.medication?.trim();
-    const dosage = item?.dosage?.trim();
-    const frequency = item?.frequency?.trim();
-    const duration = item?.duration?.trim();
-    const instructions = item?.instructions?.trim();
-
-    if (!medication || !dosage || !frequency) {
-      return res.status(400).json({
-        message: "Each medication needs a name, dosage, and frequency.",
-      } as addPrescriptions.error);
-    }
-    cleanItems.push({
-      medication,
-      dosage,
-      frequency,
-      duration,
-      instructions,
-    });
-  }
-
   if (valid_until && !/^\d{4}-\d{2}-\d{2}$/.test(valid_until)) {
     return res.status(400).json({
-      message: "valid_until must be YYYY-MM-DD.",
+      message: "valid_until must be a YYYY-MM-DD date.",
     } as addPrescriptions.error);
   }
 
-  const client = await pool.connect();
+  // Store only the known fields, trimmed.
+  const cleanItems = prescription_items.map((i) => ({
+    name: i.name.trim(),
+    dosage: i.dosage.trim(),
+    frequency: i.frequency.trim(),
+    duration: i.duration.trim(),
+    instructions: (i.instructions ?? "").trim(),
+  }));
+
+  const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
+  const seen = new Set<string>();
+  const duplicates = new Set<string>();
+
+  for (const item of cleanItems) {
+    const key = normalize(item.name);
+    if (seen.has(key)) duplicates.add(item.name);
+    seen.add(key);
+  }
+
+  if (duplicates.size > 0) {
+    return res.status(400).json({
+      message: `Duplicate medication: ${[...duplicates].join(", ")}. Each medication can only be listed once.`,
+    } as addPrescriptions.error);
+  }
+
   try {
-    await client.query("BEGIN");
-
-    const { rows: consultation } = await client.query(
-      `SELECT patient_id, consulted_by
-       FROM consultation_records
-       WHERE consultation_record_id = $1`,
-      [consultation_record_id],
-    );
-
-    if (consultation.length === 0) {
-      await client.query("ROLLBACK");
-      return res.status(404).json({
-        message: "Consultation record not found.",
-      } as addPrescriptions.error);
-    }
-
-    if (
-      consultation[0].consulted_by &&
-      consultation[0].consulted_by !== user_id
-    ) {
-      await client.query("ROLLBACK");
-      return res.status(403).json({
-        message: "You can only prescribe for your own consultations.",
-      } as addPrescriptions.error);
-    }
-
-    await client.query(
-      "SELECT pg_advisory_xact_lock(hashtext('prescription_ids'))",
-    );
     const prescription_id = await generatePrescriptionId();
 
-    const { rows } = await client.query(
-      `INSERT INTO prescription_records
-         (prescription_id, consultation_record_id, patient_id, prescriber_id,
-          valid_until, prescription_items, notes)
-       VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7)
-       RETURNING *`,
-      [
-        prescription_id,
-        consultation_record_id,
-        consultation[0].patient_id,
-        user_id,
-        valid_until,
-        JSON.stringify(cleanItems),
-        notes,
-      ],
-    );
+    const rows = await sql`
+      INSERT INTO prescription_records
+        (prescription_id, consultation_record_id, patient_id, prescriber_id,
+         valid_until, prescription_items, notes)
+      SELECT ${prescription_id}, cr.consultation_record_id, cr.patient_id,
+             ${prescriber_id}, ${valid_until ?? null},
+             ${JSON.stringify(cleanItems)}::jsonb, ${notes?.trim() || null}
+      FROM consultation_records cr
+      WHERE cr.consultation_record_id = ${consultation_record_id}
+      RETURNING *
+    `;
 
-    await client.query("COMMIT");
+    const prescription = rows[0];
+    if (!prescription) {
+      return res
+        .status(404)
+        .json({ message: "Consultation not found." } as addPrescriptions.error);
+    }
 
     return res.status(201).json({
-      message: "Prescription added successfully.",
-      prescription: rows[0],
+      message: "Prescription saved successfully.",
+      prescription,
     } as addPrescriptions.response);
-  } catch (error) {
-    await client.query("ROLLBACK").catch(console.error);
-    console.error("Error adding prescription:", error);
-
-    if ((error as { code?: string }).code === "23503") {
+  } catch (error: any) {
+    console.error("Unable to save prescription:", error);
+    if (error.code === "23503") {
       return res.status(400).json({
-        message: "Invalid consultation, patient, or user.",
+        message: "Invalid patient or prescriber ID.",
       } as addPrescriptions.error);
     }
     return res
       .status(500)
       .json({ message: "Internal server error." } as addPrescriptions.error);
-  } finally {
-    client.release();
   }
 }
 

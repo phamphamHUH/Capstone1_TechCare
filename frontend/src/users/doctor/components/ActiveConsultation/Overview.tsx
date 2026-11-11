@@ -1,6 +1,13 @@
 import axios from "axios";
-import { CalendarDays } from "lucide-react";
-import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
+import {
+  CalendarDays,
+  CheckCircle2,
+  CircleAlert,
+  TriangleAlert,
+} from "lucide-react";
+import ConfirmDialog from "../../../../components/ConfirmDialog";
+import UniversalModal from "#components/UniversalModal";
+import { useState } from "react";
 import { flushSync } from "react-dom";
 import type { QueueEntry } from "../../../../interface/Queue";
 import { formatDateTime } from "../../../../utils/formats";
@@ -27,10 +34,14 @@ import {
   type VitalKey,
 } from "../../../../interface/Overview";
 import api from "#lib/axios";
+import { usePersistentState } from "../../../../utils/persistentState";
 
 type OverviewProps = {
   selectedQueue: QueueEntry | null;
+  findingsSaved: boolean;
+  onFindingsSaved: () => void;
   onProceed: () => void;
+  onCompleted?: () => void | Promise<void>;
 };
 
 const fieldClass =
@@ -42,30 +53,13 @@ const INLINE_ERROR_KEYS =
 
 const snake = (k: string) => k.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
 
-function usePersistentState<T>(key: string | null, initial: T) {
-  const [value, setValue] = useState<T>(() => {
-    if (!key) return initial;
-    try {
-      const stored = sessionStorage.getItem(key);
-      return stored ? (JSON.parse(stored) as T) : initial;
-    } catch {
-      return initial;
-    }
-  });
-
-  useEffect(() => {
-    if (!key) return;
-    try {
-      sessionStorage.setItem(key, JSON.stringify(value));
-    } catch {
-      /* storage full or unavailable */
-    }
-  }, [key, value]);
-
-  return [value, setValue] as const;
-}
-
-function Overview({ selectedQueue, onProceed }: OverviewProps) {
+function Overview({
+  selectedQueue,
+  findingsSaved,
+  onFindingsSaved,
+  onProceed,
+  onCompleted,
+}: OverviewProps) {
   const [user] = useState(() => {
     try {
       const stored = sessionStorage.getItem("user");
@@ -79,6 +73,10 @@ function Overview({ selectedQueue, onProceed }: OverviewProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [submitError, setErrorMessage] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [confirmingProceed, setConfirmingProceed] = useState(false);
+  const [confirmingSkip, setConfirmingSkip] = useState(false);
+  const [confirmingEnd, setConfirmingEnd] = useState(false);
   const draftKey = selectedQueue
     ? `consultation-draft:${selectedQueue.consultation_record_id}`
     : null;
@@ -147,7 +145,7 @@ function Overview({ selectedQueue, onProceed }: OverviewProps) {
     setFieldErrors({});
 
     try {
-      const response = await api.patch(
+      await api.patch(
         `/api/doctor/consultation-records/${encodeURIComponent(
           selectedQueue.consultation_record_id,
         )}/findings`,
@@ -175,8 +173,8 @@ function Overview({ selectedQueue, onProceed }: OverviewProps) {
           notes: notes.doctorNotes.trim(),
         },
       );
-      onProceed();
-      console.log(response.data.message);
+      setShowSuccess(true);
+      onFindingsSaved();
     } catch (error: unknown) {
       console.error("Submit consultation error:", error);
 
@@ -210,6 +208,36 @@ function Overview({ selectedQueue, onProceed }: OverviewProps) {
       }
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  const hasRequiredData =
+    notes.hpi.trim() !== "" &&
+    diagnoses.length > 0 &&
+    Object.values(exam).some((value) => value.trim() !== "");
+
+  async function handleEndConsultation() {
+    if (!selectedQueue) return;
+    try {
+      setErrorMessage(null);
+      await api.patch(
+        `/api/doctor/consultation-queues/${encodeURIComponent(selectedQueue.queue_id)}/complete`,
+        { room: selectedQueue.room, action: "complete" },
+      );
+
+      // the consultation is over, so drop its drafts
+      for (const name of ["type", "vitals", "notes", "exam", "dx"]) {
+        sessionStorage.removeItem(`${draftKey}:${name}`);
+      }
+
+      await onCompleted?.();
+    } catch (err) {
+      setErrorMessage(
+        (err as { response?: { data?: { message?: string } } }).response?.data
+          ?.message || "Failed to end the consultation.",
+      );
+    } finally {
+      setConfirmingEnd(false);
     }
   }
 
@@ -375,7 +403,7 @@ function Overview({ selectedQueue, onProceed }: OverviewProps) {
             </div>
           </Section>
 
-          <Section title="Physical Examination" gap="space-y-4">
+          <Section title="Physical Examination *" gap="space-y-4">
             {fieldErrors.physical_examination && (
               <p data-field-error className="text-[10px] text-red-500">
                 {fieldErrors.physical_examination}
@@ -426,21 +454,102 @@ function Overview({ selectedQueue, onProceed }: OverviewProps) {
       {/* Actions */}
       {submitError && <p className="text-xs text-red-500">{submitError}</p>}
       <div className="flex justify-between">
-        <button
-          type="button"
-          className="rounded-md border cursor-pointer border-gray-300 px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
-        >
-          End Consultation
-        </button>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={() => setConfirmingEnd(true)}
+            disabled={isSaving || !findingsSaved}
+            className="rounded-md border cursor-pointer border-gray-300 px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-white"
+          >
+            End Consultation
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              findingsSaved ? onProceed() : setConfirmingSkip(true)
+            }
+            disabled={isSaving}
+            className="rounded-md border cursor-pointer border-gray-300 px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Proceed to Prescription
+          </button>
+        </div>
         <button
           type="button"
           onClick={handleSubmit}
-          disabled={isSaving}
+          disabled={isSaving || !hasRequiredData}
           className="rounded-md bg-blue-600 cursor-pointer px-4 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
         >
-          {isSaving ? "Saving..." : "Proceed to Prescription"}
+          {isSaving ? "Saving..." : "Save Findings"}
         </button>
       </div>
+      {showSuccess && (
+        <UniversalModal
+          isOpen
+          type="success"
+          title="Findings Saved"
+          description="The consultation findings were saved successfully."
+          icon={<CheckCircle2 size={36} />}
+          onClose={() => {
+            setShowSuccess(false);
+            setConfirmingProceed(true);
+          }}
+          actions={[
+            {
+              label: "Continue",
+              onClick: () => {
+                setShowSuccess(false);
+                setConfirmingProceed(true);
+              },
+            },
+          ]}
+        />
+      )}
+
+      {confirmingProceed && (
+        <ConfirmDialog
+          tone="info"
+          icon={CheckCircle2}
+          title="Proceed to Prescription?"
+          confirmLabel="Proceed"
+          cancelLabel="Stay"
+          description="Your findings are saved. Do you want to continue to the prescription now, or stay on this page?"
+          onCancel={() => setConfirmingProceed(false)}
+          onConfirm={() => {
+            setConfirmingProceed(false);
+            onProceed();
+          }}
+        />
+      )}
+
+      {confirmingSkip && (
+        <ConfirmDialog
+          tone="warning"
+          icon={TriangleAlert}
+          title="Findings Not Saved"
+          confirmLabel="Proceed Anyway"
+          cancelLabel="Go Back"
+          description="You haven't saved your findings yet. They're kept as a draft here, but they won't be recorded until you save them. Continue to the prescription anyway?"
+          onCancel={() => setConfirmingSkip(false)}
+          onConfirm={() => {
+            setConfirmingSkip(false);
+            onProceed();
+          }}
+        />
+      )}
+
+      {confirmingEnd && (
+        <ConfirmDialog
+          tone="warning"
+          icon={CircleAlert}
+          title="End Consultation?"
+          confirmLabel="End Consultation"
+          cancelLabel="Keep Working"
+          description="This completes the consultation and removes the patient from your active queue. Unsaved findings will be discarded."
+          onCancel={() => setConfirmingEnd(false)}
+          onConfirm={handleEndConsultation}
+        />
+      )}
     </div>
   );
 }
