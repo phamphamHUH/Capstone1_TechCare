@@ -14,7 +14,7 @@ import {
   INVOICE_PRINT_HEIGHT,
   INVOICE_PRINT_WIDTH,
   waitForInvoiceAssets,
-} from "./invoicePrint";
+} from "./utils/invoicePrint";
 
 export default function InvoicePreview({
   bill,

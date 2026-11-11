@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import api from "../../lib/axios";
 import SideBar from "../../components/SideBar";
-import { SidebarNavContext } from "../../components/sidebar/sidebarNav";
+import { SidebarNavContext } from "../../components/sidebar/utils/sidebarNav";
 import Billing from "./pages/Billing";
 import FrontdeskDashboard from "./pages/FrontdeskDashboard";
 import PatientRecords from "./pages/PatientRecords";
