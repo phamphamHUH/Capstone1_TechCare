@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { FileText, FlaskConical, LayoutGrid, UserRound } from "lucide-react";
+import { FlaskConical, LayoutGrid, ScanLine, UserRound } from "lucide-react";
 import ErrorMessage from "../../../components/ErrorMessage";
 import LoadingScreen from "../../../components/LoadingScreen";
 import { fetchPatientQueues } from "../components/utils/patientApi";
@@ -25,10 +25,11 @@ const groups: QueueGroup[] = [
     Icon: FlaskConical,
   },
   {
-    id: "release",
-    title: "Laboratory Release Queue",
-    description: "Check the collection status of your laboratory results.",
-    Icon: FileText,
+    id: "imaging",
+    title: "Imaging Queue",
+    description:
+      "Your queue status and the number being served for your imaging requests.",
+    Icon: ScanLine,
   },
 ];
 
@@ -140,14 +141,12 @@ export default function QueueTracking({
                       key={queue.queue_id}
                       group={group}
                       queue={queue}
-                      awaitingResults={data.awaiting_results}
                     />
                   ))
                   : [
                     <QueueCard
                       key={group.id}
                       group={group}
-                      awaitingResults={data.awaiting_results}
                     />,
                   ];
               })}

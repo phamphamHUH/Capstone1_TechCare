@@ -345,7 +345,7 @@ export async function getSavedLaboratoryResults(
       .json({ message: "room is required" } as getSavedLaboratoryResults.error);
   try {
     const results = await sql`
-      SELECT r.* FROM test_results r
+      SELECT r.*, s.service_category FROM test_results r
       JOIN test_request_items ri ON ri.item_id = r.item_id
       JOIN services s ON s.service_id = ri.service_id
       WHERE s.room = ${room} AND r.status IN ('Pending', 'Released')

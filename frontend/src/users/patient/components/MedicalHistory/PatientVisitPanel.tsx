@@ -8,6 +8,7 @@ import { fetchPatientVisit } from "../utils/patientApi";
 import type { HistoryRecord, PatientVisitDetails } from "../../../../interface/PatientPortal";
 import PortalStatus from "../PortalStatus";
 import PatientLaboratoryPrint from "./PatientVisitPanel/PatientLaboratoryPrint";
+import { reportComponents, toReportTemplate } from "../../../laboratory_staff/components/LaboratoryResults/utils/reportTemplates";
 
 function ClinicalValue({ value }: { value: unknown }) {
   if (value == null || value === "" || (Array.isArray(value) && !value.length))
@@ -62,7 +63,7 @@ function ClinicalValue({ value }: { value: unknown }) {
   return <span>{String(value)}</span>;
 }
 
-function LaboratoryReportValue({ value }: { value: unknown }) {
+export function LaboratoryReportValue({ value }: { value: unknown }) {
   if (!Array.isArray(value))
     return <p className="text-gray-500">No test values recorded.</p>;
   const tests = value.filter(
@@ -71,6 +72,18 @@ function LaboratoryReportValue({ value }: { value: unknown }) {
   );
   if (!tests.length)
     return <p className="text-gray-500">No test values recorded.</p>;
+  let labels = new Map<string, string>();
+  const snapshot = tests.find((test) => test.template_snapshot)?.template_snapshot;
+  if (snapshot) {
+    try {
+      const template = toReportTemplate(snapshot, []);
+      labels = new Map(
+        reportComponents(template).map((component) => [component.fieldKey, component.label]),
+      );
+    } catch {
+      // Older results without a readable snapshot retain their stored names.
+    }
+  }
   return (
     <div className="overflow-x-auto rounded-md border border-gray-200">
       <table className="w-full min-w-[440px] table-fixed border-collapse text-left text-sm">
@@ -104,6 +117,7 @@ function LaboratoryReportValue({ value }: { value: unknown }) {
                 className="border-b border-gray-100 px-3 py-2 font-medium text-gray-800"
               >
                 {String(
+                  (typeof test.field_key === "string" ? labels.get(test.field_key) : undefined) ||
                   test.name || test.test || test.parameter || "Test " + (i + 1),
                 )}
               </th>

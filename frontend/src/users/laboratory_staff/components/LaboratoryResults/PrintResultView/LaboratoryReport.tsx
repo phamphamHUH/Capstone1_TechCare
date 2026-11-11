@@ -5,6 +5,7 @@ import { formatLabDate } from "../../../../../utils/formats";
 import { resultFlag } from "../utils/laboratoryValidation";
 import { REPORT_LOGO, reportText, safeReportImage } from "../utils/laboratoryPrint";
 import { CLINIC_INFO } from "../../../../../lib/clinicInfo";
+import { isReportParameter as isParameter, reportComponents } from "../utils/reportTemplates";
 
 function referenceRange(component: BuilderComponent) {
   if (component.settings.referenceRange) {
@@ -114,14 +115,8 @@ function ParameterTable({ fields, report }: ParameterTableProps) {
 type TemplateContentProps = { report: LaboratoryReportData };
 
 function TemplateContent({ report }: TemplateContentProps) {
-  const components = [...report.template.components]
-    .filter((component) => component.settings.showInPreview !== false)
-    .sort((a, b) => a.order - b.order);
+  const components = reportComponents(report.template);
   const groups: BuilderComponent[][] = [];
-  const isParameter = (field: BuilderComponent) =>
-    ["text_field", "number_field", "date_field", "checkbox"].includes(
-      field.type,
-    );
 
   for (const component of components) {
     const last = groups.at(-1);
@@ -304,6 +299,9 @@ type LaboratoryReportProps = {
 
 export default function LaboratoryReport({ report }: LaboratoryReportProps) {
   const { request, template } = report;
+  const reportTitle = request.tests.find(
+    (test) => test.serviceId === template.service_id,
+  )?.name.trim() || template.form_name;
 
   return (
     <article
@@ -356,7 +354,10 @@ export default function LaboratoryReport({ report }: LaboratoryReportProps) {
         </div>
       </dl>
       <div className="report-body">
-        <h2 className="report-title">{template.form_name}</h2>
+        <h2 className="report-title">{reportTitle}</h2>
+        {template.category?.trim() && (
+          <p className="report-category">{template.category.trim()}</p>
+        )}
         <TemplateContent report={report} />
       </div>
       <section className="notes">

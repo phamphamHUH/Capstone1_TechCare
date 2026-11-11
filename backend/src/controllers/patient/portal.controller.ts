@@ -167,7 +167,7 @@ export async function getPortalReleasedResult(req: Request, res: Response) {
       SELECT r.result_id, r.item_id, r.item_id AS lab_item_id, r.results, r.remarks, r.image_url,
         r.status, r.released_at, r.verified_by, r.verified_at, r.created_at, r.updated_at,
         lr.request_id, lr.patient_id, lr.requested_at, lr.is_priority,
-        li.service_id, li.queue_id, s.service_name, s.room,
+        li.service_id, li.queue_id, s.service_name, s.service_category, s.room,
         CONCAT_WS(' ', p.first_name, p.middle_name, p.last_name, p.suffix) AS patient_name,
         p.birthdate, p.sex
       FROM test_results r
