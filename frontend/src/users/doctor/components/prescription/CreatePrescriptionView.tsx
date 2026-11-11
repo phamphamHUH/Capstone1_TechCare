@@ -11,7 +11,7 @@ import {
   X,
 } from "lucide-react";
 import type { Medication, PatientInfo } from "./types";
-import { COMMON_MEDICATIONS } from "./mockData";
+import { COMMON_MEDICATIONS } from "./utils/mockData";
 import PatientPrescriptionCard from "./PatientPrescriptionCard";
 
 interface CreatePrescriptionViewProps {

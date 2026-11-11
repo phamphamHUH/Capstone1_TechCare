@@ -1,5 +1,5 @@
 import { isAxiosError } from "axios";
-import api from "../../../../lib/axios";
+import api from "../../../../../lib/axios";
 import type {
   ConsultationPatient,
   DiagnosisRow,
@@ -7,7 +7,7 @@ import type {
   FindingsFormState,
   LabPriority,
   LaboratoryService,
-} from "./types";
+} from "../types";
 
 export type ApiFailure = { message: string; fieldErrors: FieldErrors };
 

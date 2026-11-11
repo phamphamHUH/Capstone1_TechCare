@@ -4,8 +4,8 @@ import type {
   FieldErrors,
   FindingsFormState,
   LabRequestFormState,
-} from "./types";
-import { PHYSICAL_EXAM_FIELDS } from "./types";
+} from "../types";
+import { PHYSICAL_EXAM_FIELDS } from "../types";
 
 export const LIMITS = {
   hpiMin: 10,

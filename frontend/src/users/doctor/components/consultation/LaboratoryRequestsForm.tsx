@@ -11,14 +11,14 @@ import {
   fetchLaboratoryServices,
   submitLaboratoryRequest,
   toApiFailure,
-} from "./consultationsApi.ts";
+} from "./utils/consultationsApi.ts";
 import type {
   ConsultationPatient,
   FieldErrors,
   LabPriority,
   LaboratoryService,
 } from "./types.ts";
-import { LIMITS, validateLabRequestForm } from "./validation.ts";
+import { LIMITS, validateLabRequestForm } from "./utils/validation.ts";
 
 type Props = {
   patient: ConsultationPatient;

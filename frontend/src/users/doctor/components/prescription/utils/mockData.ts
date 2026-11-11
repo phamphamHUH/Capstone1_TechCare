@@ -1,4 +1,4 @@
-import type { PatientInfo, DoctorInfo, Medication } from "./types";
+import type { PatientInfo, DoctorInfo, Medication } from "../types";
 
 export const SAMPLE_PATIENTS: PatientInfo[] = [
   {

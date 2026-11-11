@@ -14,7 +14,7 @@ import {
   fetchConsultationPatient,
   saveConsultationFindings,
   toApiFailure,
-} from "../consultation/consultationsApi.ts";
+} from "../consultation/utils/consultationsApi.ts";
 import type {
   ConsultationPatient,
   FieldErrors,

@@ -1,5 +1,5 @@
 import SideBar from "#components/SideBar";
-import { SidebarNavContext } from "../../components/sidebar/sidebarNav";
+import { SidebarNavContext } from "../../components/sidebar/utils/sidebarNav";
 import Header from "#components/Header";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LayoutGrid, ListOrdered, FileText, Stethoscope } from "lucide-react";
