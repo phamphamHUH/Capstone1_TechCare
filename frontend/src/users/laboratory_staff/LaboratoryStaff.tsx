@@ -4,7 +4,7 @@ import api from "../../lib/axios";
 import LaboratoryRequests from "./pages/LaboratoryRequests";
 import SideBar from "../../components/SideBar";
 import ConfirmDialog from "../../components/ConfirmDialog";
-import { SidebarNavContext } from "../../components/sidebar/sidebarNav";
+import { SidebarNavContext } from "../../components/sidebar/utils/sidebarNav";
 import { useSearchParams } from "react-router";
 import LabstaffDashboard from "./pages/LabstaffDashboard";
 import LaboratoryResults from "./pages/LaboratoryResults";

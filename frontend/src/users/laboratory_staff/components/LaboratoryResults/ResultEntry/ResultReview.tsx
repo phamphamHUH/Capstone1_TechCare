@@ -1,7 +1,7 @@
 import type { BuilderComponent } from "../../../../../interface/FormTemplate";
 import type { ResultValues } from "../../../../../interface/LaboratoryAnalysis";
-import { reportText } from "../laboratoryPrint";
-import { inputTypes, resultFlag } from "../laboratoryValidation";
+import { reportText } from "../utils/laboratoryPrint";
+import { inputTypes, resultFlag } from "../utils/laboratoryValidation";
 
 type ResultReviewProps = {
   components: BuilderComponent[];

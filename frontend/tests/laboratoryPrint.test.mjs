@@ -10,8 +10,8 @@ const base = "/src/users/laboratory_staff/components/LaboratoryResults/";
 const { default: LaboratoryReport } = await server.ssrLoadModule(`${base}LaboratoryReport.tsx`);
 const { default: ResultEntry } = await server.ssrLoadModule(`${base}ResultEntry.tsx`);
 const { default: PrintResultView } = await server.ssrLoadModule(`${base}PrintResultView.tsx`);
-const { REPORT_FRAME_HTML, safeReportImage, waitForReportAssets } = await server.ssrLoadModule(`${base}laboratoryPrint.ts`);
-const { fetchPrintableResults, resultPrintApi } = await server.ssrLoadModule(`${base}laboratoryResultsApi.ts`);
+const { REPORT_FRAME_HTML, safeReportImage, waitForReportAssets } = await server.ssrLoadModule(`${base}utils/laboratoryPrint.ts`);
+const { fetchPrintableResults, resultPrintApi } = await server.ssrLoadModule(`${base}utils/laboratoryResultsApi.ts`);
 
 const field = (id, type, order, settings = {}, validation = {}) => ({ id, type, order, label: id, fieldKey: id, settings, validation });
 const request = { requestId: "TEST-REQUEST", patientId: "TEST-PATIENT", patientName: "Test <Patient>", age: 30, sex: "F", room: "LAB-1", requestedAt: "2026-10-16T08:00:00+08:00", collectedAt: "2026-10-16T08:15:00+08:00", tests: [{ id: "ITEM-1", serviceId: "SERVICE-1", name: "Test service", description: "" }], accepted: true, sampleCollected: true, category: "Normal", status: "Completed" };

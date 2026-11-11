@@ -12,7 +12,7 @@ import {
   apiMessage,
   releaseLaboratoryResult,
   resultReleaseApi,
-} from "./laboratoryResultsApi";
+} from "./utils/laboratoryResultsApi";
 import ResultSuccessOverlay from "./ResultSuccessOverlay";
 
 type ReleaseConfirmationContentProps = {

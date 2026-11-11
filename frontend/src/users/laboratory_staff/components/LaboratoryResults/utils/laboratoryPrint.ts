@@ -1,4 +1,4 @@
-import { CLINIC_INFO } from "../../../../lib/clinicInfo";
+import { CLINIC_INFO } from "../../../../../lib/clinicInfo";
 
 // Full portrait long bond sheet; the report occupies only its top half.
 export const REPORT_WIDTH = 816;

@@ -2,12 +2,12 @@ import {
   dbComponentToBuilderComponent,
   type BuilderComponent,
   type FormTemplate,
-} from "../../../../interface/FormTemplate";
+} from "../../../../../interface/FormTemplate";
 import type {
   AnalysisRequest,
   ReportTemplate,
-} from "../../../../interface/LaboratoryAnalysis";
-import type { Service } from "../../../../interface/Service";
+} from "../../../../../interface/LaboratoryAnalysis";
+import type { Service } from "../../../../../interface/Service";
 const record = (value: unknown): Record<string, unknown> =>
   value !== null && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)

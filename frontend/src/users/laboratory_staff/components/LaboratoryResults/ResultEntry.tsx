@@ -23,15 +23,15 @@ import type {
   ResultValues,
   ResultReleaseResponse,
 } from "../../../../interface/LaboratoryAnalysis";
-import { inputTypes, validateResults } from "./laboratoryValidation";
+import { inputTypes, validateResults } from "./utils/laboratoryValidation";
 import {
   apiMessage,
   resultEntryApi,
   submitResultEntry,
-} from "./laboratoryResultsApi";
+} from "./utils/laboratoryResultsApi";
 import { formatLabDate } from "../../../../utils/formats";
 import { CategoryBadge } from "./AnalysisList";
-import { matchingTest } from "./reportTemplates";
+import { matchingTest } from "./utils/reportTemplates";
 import { AnalysisButton, AnalysisNotice, FlaskBadge } from "./AnalysisUi";
 import TemplateFields from "./TemplateFields";
 import ResultSuccessOverlay from "./ResultSuccessOverlay";
@@ -43,7 +43,7 @@ import {
   draftKey,
   readDraft,
   writeDraft,
-} from "./ResultEntry/resultDrafts";
+} from "./ResultEntry/utils/resultDrafts";
 
 type ResultEntryProps = {
   request: AnalysisRequest;

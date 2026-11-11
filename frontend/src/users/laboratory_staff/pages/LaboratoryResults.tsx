@@ -10,12 +10,12 @@ import PrintResultView from "../components/LaboratoryResults/PrintResultView";
 import {
   apiMessage,
   fetchAnalysisRequests,
-} from "../components/LaboratoryResults/laboratoryResultsApi";
+} from "../components/LaboratoryResults/utils/laboratoryResultsApi";
 import { AnalysisNotice } from "../components/LaboratoryResults/AnalysisUi";
 import {
   fetchSavedResults,
   startAnalysis,
-} from "../components/LaboratoryResults/laboratoryResultAdapters";
+} from "../components/LaboratoryResults/utils/laboratoryResultAdapters";
 
 type LaboratoryResultsProps = {
   open: boolean;

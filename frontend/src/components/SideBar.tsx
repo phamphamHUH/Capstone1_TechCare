@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import SidebarUserMenu from "./sidebar/SidebarUserMenu";
-import type { NavItem } from "./sidebar/sidebarNav";
+import type { NavItem } from "./sidebar/utils/sidebarNav";
 
 const DEFAULT_WIDTH = 256;
 const MIN_WIDTH = 224;

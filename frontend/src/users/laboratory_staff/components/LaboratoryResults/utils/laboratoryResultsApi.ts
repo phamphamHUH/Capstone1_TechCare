@@ -1,4 +1,4 @@
-import api from "../../../../lib/axios";
+import api from "../../../../../lib/axios";
 import type {
   AnalysisRequest,
   LaboratoryReportData,
@@ -6,8 +6,8 @@ import type {
   ResultEntryPayload,
   ResultReleasePayload,
   ResultReleaseResponse,
-} from "../../../../interface/LaboratoryAnalysis";
-import type { Service } from "../../../../interface/Service";
+} from "../../../../../interface/LaboratoryAnalysis";
+import type { Service } from "../../../../../interface/Service";
 import { matchingTest, toReportTemplate } from "./reportTemplates";
 import { normalizeAnalysisRequests } from "./laboratoryAnalysis";
 import { retryLaboratoryRead } from "./laboratoryNetwork";

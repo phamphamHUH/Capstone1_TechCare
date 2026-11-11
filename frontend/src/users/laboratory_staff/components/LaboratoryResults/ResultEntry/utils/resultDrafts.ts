@@ -1,7 +1,7 @@
 import type {
   AnalysisRequest,
   ResultValues,
-} from "../../../../../interface/LaboratoryAnalysis";
+} from "../../../../../../interface/LaboratoryAnalysis";
 
 // Unsaved result entries are kept on this computer so a misclick, page change
 // or closed tab doesn't lose them. Removed once the result is saved.

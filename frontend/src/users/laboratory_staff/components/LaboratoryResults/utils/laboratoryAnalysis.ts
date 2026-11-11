@@ -3,7 +3,7 @@ import type {
   AnalysisStatus,
   AnalysisTest,
   PatientCategory,
-} from "../../../../interface/LaboratoryAnalysis";
+} from "../../../../../interface/LaboratoryAnalysis";
 type Row = Record<string, unknown>;
 const record = (value: unknown): Row =>
   value && typeof value === "object" && !Array.isArray(value)

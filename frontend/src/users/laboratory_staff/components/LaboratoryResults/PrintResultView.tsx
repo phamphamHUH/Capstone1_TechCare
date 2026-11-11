@@ -19,7 +19,7 @@ import type {
   ResultReleaseResponse,
 } from "../../../../interface/LaboratoryAnalysis";
 import { AnalysisButton, AnalysisNotice } from "./AnalysisUi";
-import { apiMessage, fetchPrintableResults } from "./laboratoryResultsApi";
+import { apiMessage, fetchPrintableResults } from "./utils/laboratoryResultsApi";
 import LaboratoryReport from "./LaboratoryReport";
 import ResultReleaseControl from "./ResultReleaseControl";
 import {
@@ -28,7 +28,7 @@ import {
   REPORT_PAPER_LABEL,
   REPORT_WIDTH,
   waitForReportAssets,
-} from "./laboratoryPrint";
+} from "./utils/laboratoryPrint";
 
 type ReportLoadState = {
   request: AnalysisRequest;

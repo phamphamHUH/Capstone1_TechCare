@@ -1,7 +1,7 @@
 import type {
   ComponentSettings,
   ValidationRules,
-} from "../../../../interface/FormTemplate";
+} from "../../../../../interface/FormTemplate";
 
 export interface ValidationComponent {
   type: string;

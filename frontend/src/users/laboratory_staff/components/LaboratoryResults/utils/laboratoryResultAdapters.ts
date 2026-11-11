@@ -1,11 +1,11 @@
-import api from "../../../../lib/axios";
+import api from "../../../../../lib/axios";
 import type {
   AnalysisRequest,
   LaboratoryReportData,
   ResultEntryPayload,
   ResultReleasePayload,
   ResultReleaseResponse,
-} from "../../../../interface/LaboratoryAnalysis";
+} from "../../../../../interface/LaboratoryAnalysis";
 import { inputTypes } from "./laboratoryValidation";
 import { matchingTest, toReportTemplate } from "./reportTemplates";
 import { retryLaboratoryRead } from "./laboratoryNetwork";
