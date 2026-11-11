@@ -7,7 +7,7 @@ import type {
   ResultReleaseResponse,
 } from "../../../../interface/LaboratoryAnalysis";
 import { AnalysisButton, AnalysisNotice } from "./AnalysisUi";
-import { formatLabDate } from "./AnalysisList";
+import { formatLabDate } from "../../../../utils/formats";
 import {
   apiMessage,
   releaseLaboratoryResult,
@@ -56,7 +56,7 @@ export function ReleaseConfirmationContent({
         </Dialog.Close>
       </header>
       <div className="p-5">
-        <dl className="grid grid-cols-2 gap-4 rounded-lg border border-gray-300 bg-gray-50 p-3 text-sm [&_dt]:mb-1 [&_dt]:text-xs [&_dt]:text-gray-500 [&_dd]:wrap-anywhere">
+        <dl className="grid grid-cols-2 gap-4 rounded-md border border-gray-300 bg-gray-50 p-3 text-sm [&_dt]:mb-1 [&_dt]:text-xs [&_dt]:text-gray-500 [&_dd]:wrap-anywhere">
           <div>
             <dt>Patient</dt>
             <dd className="font-semibold">
@@ -96,11 +96,7 @@ export function ReleaseConfirmationContent({
           disabled={pending || Boolean(unavailableReason)}
           onClick={onConfirm}
         >
-          {pending ? (
-            <LoadingSpinner size={14} />
-          ) : (
-            <Send size={14} />
-          )}
+          {pending ? <LoadingSpinner size={14} /> : <Send size={14} />}
           {pending ? "Releasing..." : "Confirm Release"}
         </AnalysisButton>
       </footer>
@@ -193,7 +189,7 @@ export default function ResultReleaseControl({
     <>
       <section
         aria-label="Result release and online availability"
-        className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-gray-300 bg-gray-50 p-4"
+        className="mt-4 flex flex-wrap items-center gap-3 rounded-md border border-gray-300 bg-gray-50 p-4"
       >
         <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-sky-50 text-sky-600">
           <Globe size={18} />
@@ -246,7 +242,7 @@ export default function ResultReleaseControl({
             <Dialog.Popup
               initialFocus={cancelRef}
               finalFocus={triggerRef}
-              className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl border border-gray-300 bg-white shadow-xl outline-none"
+              className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-md border border-gray-300 bg-white shadow-xl outline-none"
             >
               <ReleaseConfirmationContent
                 report={report}

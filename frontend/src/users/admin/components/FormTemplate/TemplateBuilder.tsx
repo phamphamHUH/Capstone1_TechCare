@@ -265,11 +265,17 @@ export default function TemplateBuilder({
   return (
     <div className="flex flex-col gap-5 w-full">
       {/* Notice Banner */}
-      {noticeMessage && (noticeIsError ? (
-        <ErrorMessage>{noticeMessage}</ErrorMessage>
-      ) : (
-        <p role="status" className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-700">{noticeMessage}</p>
-      ))}
+      {noticeMessage &&
+        (noticeIsError ? (
+          <ErrorMessage>{noticeMessage}</ErrorMessage>
+        ) : (
+          <p
+            role="status"
+            className="rounded-md border border-green-200 bg-green-50 p-4 text-sm text-green-700"
+          >
+            {noticeMessage}
+          </p>
+        ))}
 
       {/* Breadcrumbs & Preview Bar */}
       <div className="flex items-center justify-between">
@@ -292,7 +298,7 @@ export default function TemplateBuilder({
         <button
           type="button"
           onClick={() => setShowPreview(true)}
-          className="flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 hover:border-gray-300 text-gray-700 rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 hover:border-gray-300 text-gray-700 rounded-md text-xs font-semibold shadow-xs transition-colors cursor-pointer"
         >
           <Eye size={14} />
           <span>Preview</span>
@@ -300,10 +306,10 @@ export default function TemplateBuilder({
       </div>
 
       {/* Top Header Card */}
-      <div className="bg-white border border-gray-200 rounded-3xl p-5 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+      <div className="bg-white border border-gray-200 rounded-md p-5 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         <div className="flex items-center gap-4 flex-1 min-w-0">
           {/* Blue placeholder square */}
-          <div className="w-12 h-12 rounded-2xl bg-sky-400 flex-shrink-0" />
+          <div className="w-12 h-12 rounded-md bg-sky-400 flex-shrink-0" />
 
           <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
@@ -315,7 +321,7 @@ export default function TemplateBuilder({
                 value={templateName}
                 onChange={(e) => setTemplateName(e.target.value)}
                 placeholder="e.g. Complete Blood Count"
-                className="w-full px-4 py-2 border border-gray-300 rounded-xl text-xs font-medium text-gray-900 focus:outline-none focus:ring-1 focus:ring-sky-400"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md text-xs font-medium text-gray-900 focus:outline-none focus:ring-1 focus:ring-sky-400"
               />
             </div>
             <div>
@@ -327,7 +333,7 @@ export default function TemplateBuilder({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Optional short description"
-                className="w-full px-4 py-2 border border-gray-300 rounded-xl text-xs font-medium text-gray-900 focus:outline-none focus:ring-1 focus:ring-sky-400"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md text-xs font-medium text-gray-900 focus:outline-none focus:ring-1 focus:ring-sky-400"
               />
             </div>
           </div>
@@ -341,7 +347,7 @@ export default function TemplateBuilder({
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-xl text-xs font-medium text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-sky-400"
+              className="px-3 py-2 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-sky-400"
             >
               {services.length === 0 && (
                 <option value="">No services available</option>
@@ -358,7 +364,7 @@ export default function TemplateBuilder({
             <label className="block text-[11px] font-semibold text-gray-400 uppercase mb-1">
               Status
             </label>
-            <span className="inline-block px-3 py-1.5 bg-gray-100 text-gray-600 rounded-xl text-xs font-bold uppercase tracking-wider">
+            <span className="inline-block px-3 py-1.5 bg-gray-100 text-gray-600 rounded-md text-xs font-bold uppercase tracking-wider">
               {initialTemplate?.status || "Draft"}
             </span>
           </div>
@@ -371,7 +377,7 @@ export default function TemplateBuilder({
               type="text"
               disabled
               value={initialTemplate?.form_id || "Generated after saving"}
-              className="w-44 px-3 py-2 border border-gray-200 bg-gray-50 text-gray-400 rounded-xl text-xs font-mono select-none"
+              className="w-44 px-3 py-2 border border-gray-200 bg-gray-50 text-gray-400 rounded-md text-xs font-mono select-none"
             />
           </div>
         </div>
@@ -403,7 +409,7 @@ export default function TemplateBuilder({
       </div>
 
       {/* BOTTOM ACTION BAR */}
-      <div className="bg-white border border-gray-200 rounded-3xl px-6 py-4 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="bg-white border border-gray-200 rounded-md px-6 py-4 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
           <CheckCircle2 size={16} className="text-emerald-500" />
           <span>Save a draft or publish to save your changes.</span>
@@ -413,7 +419,7 @@ export default function TemplateBuilder({
           <button
             type="button"
             onClick={onBackToLibrary}
-            className="px-5 py-2.5 rounded-xl border border-gray-200 hover:border-gray-300 text-gray-700 text-xs font-semibold transition-colors cursor-pointer"
+            className="px-5 py-2.5 rounded-md border border-gray-200 hover:border-gray-300 text-gray-700 text-xs font-semibold transition-colors cursor-pointer"
           >
             Cancel
           </button>
@@ -421,7 +427,7 @@ export default function TemplateBuilder({
             type="button"
             onClick={() => handleSave("Draft")}
             disabled={isSaving}
-            className="px-5 py-2.5 rounded-xl border border-sky-300 hover:bg-sky-50 text-sky-700 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-5 py-2.5 rounded-md border border-sky-300 hover:bg-sky-50 text-sky-700 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSaving ? "Saving..." : "Save Draft"}
           </button>
@@ -429,7 +435,7 @@ export default function TemplateBuilder({
             type="button"
             onClick={() => handleSave("Published")}
             disabled={isSaving}
-            className="px-5 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 active:bg-sky-700 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-5 py-2.5 rounded-md bg-sky-500 hover:bg-sky-600 active:bg-sky-700 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSaving ? "Saving..." : "Publish Template"}
           </button>

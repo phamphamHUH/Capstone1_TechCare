@@ -80,7 +80,11 @@ function LaboratoryResults({ open, setOpen, room }: LaboratoryResultsProps) {
   }, [room]);
 
   useEffect(() => {
-    void loadRequests();
+    const initialize = async () => {
+      await loadRequests();
+    };
+
+    void initialize();
     return () => pendingRequest.current?.abort();
   }, [loadRequests]);
 
@@ -189,7 +193,11 @@ function LaboratoryResults({ open, setOpen, room }: LaboratoryResultsProps) {
         )}
 
         {printRequest && (
-          <PrintResultView request={printRequest} refreshKey={printRefresh} onBack={returnToList} />
+          <PrintResultView
+            request={printRequest}
+            refreshKey={printRefresh}
+            onBack={returnToList}
+          />
         )}
       </div>
     </main>

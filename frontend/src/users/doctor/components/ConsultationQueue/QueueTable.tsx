@@ -320,7 +320,7 @@ function QueueTable({
               type="button"
               disabled={currentPage <= 1}
               onClick={() => setPage(currentPage - 1)}
-              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-gray-200 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
             >
               &lt;
             </button>
@@ -330,7 +330,7 @@ function QueueTable({
                 key={p}
                 type="button"
                 onClick={() => setPage(p)}
-                className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg ${
+                className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-md ${
                   p === currentPage
                     ? "bg-sky-500 font-bold text-white shadow-xs"
                     : "border border-gray-200 hover:bg-gray-100"
@@ -344,7 +344,7 @@ function QueueTable({
               type="button"
               disabled={currentPage >= totalPages}
               onClick={() => setPage(currentPage + 1)}
-              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-gray-200 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
             >
               &gt;
             </button>

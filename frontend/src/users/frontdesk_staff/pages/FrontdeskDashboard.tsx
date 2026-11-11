@@ -123,7 +123,7 @@ function FrontdeskDashboard({
           {/* =========================
                     FRONTDESK SUMMARY
                 ========================== */}
-          <section className="bg-white border border-gray-300 rounded-2xl overflow-hidden">
+          <section className="bg-white border border-gray-300 rounded-md overflow-hidden">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-gray-300">
               <StatCard
                 icon={<Clock size={20} strokeWidth={1.5} />}
@@ -159,7 +159,7 @@ function FrontdeskDashboard({
           {/* =========================
                     QUEUE STATUS OVERVIEW
                 ========================== */}
-          <section className="bg-white border border-gray-300 rounded-2xl overflow-hidden">
+          <section className="bg-white border border-gray-300 rounded-md overflow-hidden">
             <div className="px-6 py-5 border-b border-gray-300">
               <div className="flex items-center gap-3">
                 <List size={20} strokeWidth={1.5} />

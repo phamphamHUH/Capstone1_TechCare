@@ -92,13 +92,13 @@ export default function ComponentPalette({
   const handleDragStart = (e: React.DragEvent, type: ComponentType) => {
     e.dataTransfer.setData(
       "application/json",
-      JSON.stringify({ fromPalette: true, type })
+      JSON.stringify({ fromPalette: true, type }),
     );
     e.dataTransfer.effectAllowed = "copy";
   };
 
   return (
-    <aside className="w-72 flex-shrink-0 bg-white border border-gray-200 rounded-2xl p-4 flex flex-col gap-4 shadow-sm">
+    <aside className="w-72 flex-shrink-0 bg-white border border-gray-200 rounded-md p-4 flex flex-col gap-4 shadow-sm">
       <div>
         <h3 className="font-semibold text-gray-900 text-sm">Add Components</h3>
         <p className="text-xs text-gray-500 mt-0.5">
@@ -106,11 +106,11 @@ export default function ComponentPalette({
         </p>
       </div>
 
-      <div className="grid grid-cols-2 p-1 bg-gray-100 rounded-xl">
+      <div className="grid grid-cols-2 p-1 bg-gray-100 rounded-md">
         <button
           type="button"
           onClick={() => setActiveTab("fields")}
-          className={`py-1.5 text-xs font-semibold rounded-lg transition-all ${
+          className={`py-1.5 text-xs font-semibold rounded-md transition-all ${
             activeTab === "fields"
               ? "bg-white text-sky-600 shadow-sm"
               : "text-gray-500 hover:text-gray-800"
@@ -121,7 +121,7 @@ export default function ComponentPalette({
         <button
           type="button"
           onClick={() => setActiveTab("layout")}
-          className={`py-1.5 text-xs font-semibold rounded-lg transition-all ${
+          className={`py-1.5 text-xs font-semibold rounded-md transition-all ${
             activeTab === "layout"
               ? "bg-white text-sky-600 shadow-sm"
               : "text-gray-500 hover:text-gray-800"
@@ -138,18 +138,16 @@ export default function ComponentPalette({
             draggable
             onDragStart={(e) => handleDragStart(e, item.type)}
             onClick={() => onAddComponent(item.type)}
-            className="flex items-center gap-3.5 p-3 rounded-xl border border-gray-200 bg-white hover:border-sky-400 hover:shadow-sm cursor-grab active:cursor-grabbing transition-all select-none group"
+            className="flex items-center gap-3.5 p-3 rounded-md border border-gray-200 bg-white hover:border-sky-400 hover:shadow-sm cursor-grab active:cursor-grabbing transition-all select-none group"
           >
-            <div className="w-10 h-10 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center group-hover:bg-sky-50 group-hover:border-sky-200 transition-colors">
+            <div className="w-10 h-10 rounded-md bg-gray-50 border border-gray-100 flex items-center justify-center group-hover:bg-sky-50 group-hover:border-sky-200 transition-colors">
               {item.icon}
             </div>
             <div className="flex flex-col text-left">
               <span className="text-xs font-bold text-gray-800 group-hover:text-sky-600">
                 {item.title}
               </span>
-              <span className="text-[11px] text-gray-400">
-                {item.subtitle}
-              </span>
+              <span className="text-[11px] text-gray-400">{item.subtitle}</span>
             </div>
           </div>
         ))}

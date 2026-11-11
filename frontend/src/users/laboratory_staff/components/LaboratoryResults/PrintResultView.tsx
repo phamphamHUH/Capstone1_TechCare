@@ -222,7 +222,7 @@ function ReportPreview({ report }: ReportPreviewProps) {
           </AnalysisButton>
         </>
       )}
-      <div className="mt-1 overflow-hidden rounded-2xl border border-gray-300">
+      <div className="mt-1 overflow-hidden rounded-md border border-gray-300">
         <div className="flex flex-wrap items-center gap-2 border-b border-gray-300 bg-white px-4 py-3 text-sm">
           <Eye size={15} className="text-sky-600" />
           <h2 className="font-semibold">Print Preview</h2>

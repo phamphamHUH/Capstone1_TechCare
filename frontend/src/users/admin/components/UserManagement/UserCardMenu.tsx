@@ -49,7 +49,7 @@ function UserCardMenu({ onViewProfile, onEditDetails }: Props) {
       </button>
 
       {menuOpen && (
-        <div className="absolute right-0 top-7 z-10 w-36 overflow-hidden rounded-lg border border-gray-200 bg-white text-xs shadow-lg">
+        <div className="absolute right-0 top-7 z-10 w-36 overflow-hidden rounded-md border border-gray-200 bg-white text-xs shadow-lg">
           {item("View Profile", onViewProfile)}
           {item("Edit Details", onEditDetails)}
         </div>

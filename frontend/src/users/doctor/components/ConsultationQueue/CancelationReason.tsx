@@ -81,7 +81,7 @@ function CancelationReason({
         {REASONS.map((reason) => (
           <label
             key={reason}
-            className={`flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 text-sm ${
+            className={`flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2 text-sm ${
               choice === reason
                 ? "border-red-300 bg-red-50 text-[#0b4278]"
                 : "border-[#dce8f6] text-[#0b4278] hover:bg-sky-50"
@@ -114,7 +114,7 @@ function CancelationReason({
               maxLength={MAX_LENGTH}
               rows={3}
               placeholder="Describe the reason"
-              className="mt-1 w-full resize-none rounded-lg border border-[#dce8f6] p-2 text-sm outline-none focus:border-sky-400"
+              className="mt-1 w-full resize-none rounded-md border border-[#dce8f6] p-2 text-sm outline-none focus:border-sky-400"
             />
             <p className="text-right text-[11px] text-gray-400">
               {otherText.length}/{MAX_LENGTH}

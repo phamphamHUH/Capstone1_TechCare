@@ -22,7 +22,7 @@ export default function PatientHistoryModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-gray-100 flex flex-col max-h-[85vh]">
+      <div className="bg-white rounded-md max-w-xl w-full p-6 shadow-2xl border border-gray-100 flex flex-col max-h-[85vh]">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-100 pb-4 mb-4">
           <div className="flex items-center gap-3">
@@ -42,7 +42,7 @@ export default function PatientHistoryModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg transition-colors cursor-pointer"
+            className="p-1.5 text-gray-400 hover:text-gray-700 rounded-md transition-colors cursor-pointer"
           >
             <X size={18} />
           </button>
@@ -62,7 +62,7 @@ export default function PatientHistoryModal({
             prescriptions.map((p) => (
               <div
                 key={p.id}
-                className="p-4 rounded-2xl border border-gray-200 bg-white hover:border-blue-300 hover:shadow-xs transition-all flex flex-col gap-2"
+                className="p-4 rounded-md border border-gray-200 bg-white hover:border-blue-300 hover:shadow-xs transition-all flex flex-col gap-2"
               >
                 <div className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2">
@@ -87,7 +87,7 @@ export default function PatientHistoryModal({
                   {p.medications.map((m) => (
                     <span
                       key={m.id}
-                      className="inline-flex items-center gap-1 text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-lg"
+                      className="inline-flex items-center gap-1 text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-md"
                     >
                       <Pill size={11} />
                       <span>

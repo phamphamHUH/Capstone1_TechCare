@@ -11,11 +11,7 @@ import {
 } from "lucide-react";
 import PatientSummaryCard from "../components/PatientSummaryCard";
 import { fetchPatientMedicalHistory } from "../patientApi";
-import type {
-  HistoryRecord,
-  Pagination,
-  PatientSessionUser,
-} from "../types";
+import type { HistoryRecord, Pagination, PatientSessionUser } from "../types";
 
 type Props = {
   patient: PatientSessionUser;
@@ -81,13 +77,19 @@ function ConsultationsView({ patient, patientId }: Props) {
         setPagination(result.pagination ?? EMPTY_PAGINATION);
 
         setSelectedId((current) => {
-          if (current && consultationRecords.some((item) => item.record_id === current)) {
+          if (
+            current &&
+            consultationRecords.some((item) => item.record_id === current)
+          ) {
             return current;
           }
           return consultationRecords[0]?.record_id ?? null;
         });
       } catch (requestError) {
-        console.error("Unable to load patient consultation history:", requestError);
+        console.error(
+          "Unable to load patient consultation history:",
+          requestError,
+        );
         setError("Unable to load consultation history.");
       } finally {
         setLoading(false);
@@ -113,9 +115,11 @@ function ConsultationsView({ patient, patientId }: Props) {
       <PatientSummaryCard patient={patient} />
 
       <div className="grid min-h-[520px] grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
-        <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
+        <section className="rounded-md border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-100 p-4">
-            <h2 className="text-sm font-bold text-slate-900">Medical History</h2>
+            <h2 className="text-sm font-bold text-slate-900">
+              Medical History
+            </h2>
             <p className="mt-0.5 text-[10px] text-slate-400">
               View your consultation visits and records.
             </p>
@@ -144,15 +148,17 @@ function ConsultationsView({ patient, patientId }: Props) {
           </div>
 
           <div className="min-h-[380px] p-3">
-            {error && (
-              <ErrorMessage>
-                {error}
-              </ErrorMessage>
-            )}
+            {error && <ErrorMessage>{error}</ErrorMessage>}
             {loading && records.length === 0 ? (
               <LoadingScreen message="Loading consultation history..." />
-            ) : ((records.length === 0 ? (
-              <EmptyState message={error ? "Consultation records are unavailable." : "No consultation records found."} />
+            ) : records.length === 0 ? (
+              <EmptyState
+                message={
+                  error
+                    ? "Consultation records are unavailable."
+                    : "No consultation records found."
+                }
+              />
             ) : (
               <div className="divide-y divide-slate-100">
                 {records.map((record) => {
@@ -164,13 +170,17 @@ function ConsultationsView({ patient, patientId }: Props) {
                       type="button"
                       key={record.record_id}
                       onClick={() => setSelectedId(record.record_id)}
-                      className={`grid w-full grid-cols-[92px_1fr_auto] items-center gap-3 rounded-lg px-3 py-3 text-left transition ${
+                      className={`grid w-full grid-cols-[92px_1fr_auto] items-center gap-3 rounded-md px-3 py-3 text-left transition ${
                         active ? "bg-sky-50" : "hover:bg-slate-50"
                       }`}
                     >
                       <div>
-                        <p className="text-[10px] font-semibold text-slate-600">{dateTime.date}</p>
-                        <p className="mt-0.5 text-[9px] text-slate-400">{dateTime.time}</p>
+                        <p className="text-[10px] font-semibold text-slate-600">
+                          {dateTime.date}
+                        </p>
+                        <p className="mt-0.5 text-[9px] text-slate-400">
+                          {dateTime.time}
+                        </p>
                       </div>
 
                       <div className="flex min-w-0 items-center gap-3">
@@ -194,7 +204,7 @@ function ConsultationsView({ patient, patientId }: Props) {
                   );
                 })}
               </div>
-            )))}
+            )}
           </div>
 
           <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3 text-[10px] text-slate-400">
@@ -211,10 +221,16 @@ function ConsultationsView({ patient, patientId }: Props) {
               >
                 <ChevronLeft size={12} />
               </button>
-              <span className="rounded bg-sky-500 px-2 py-1.5 font-semibold text-white">{page}</span>
+              <span className="rounded bg-sky-500 px-2 py-1.5 font-semibold text-white">
+                {page}
+              </span>
               <button
                 type="button"
-                onClick={() => setPage((current) => Math.min(pagination.total_pages || 1, current + 1))}
+                onClick={() =>
+                  setPage((current) =>
+                    Math.min(pagination.total_pages || 1, current + 1),
+                  )
+                }
                 disabled={page >= (pagination.total_pages || 1)}
                 className="rounded border border-slate-200 p-1.5 disabled:opacity-40"
               >
@@ -224,7 +240,7 @@ function ConsultationsView({ patient, patientId }: Props) {
           </div>
         </section>
 
-        <aside className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <aside className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="text-sm font-bold text-slate-900">Visit Details</h2>
 
           {!selected ? (
@@ -236,33 +252,48 @@ function ConsultationsView({ patient, patientId }: Props) {
                   <Stethoscope size={15} />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-slate-800">{selected.service_name}</p>
-                  <p className="text-[10px] text-slate-400">{selected.service_category}</p>
+                  <p className="text-xs font-semibold text-slate-800">
+                    {selected.service_name}
+                  </p>
+                  <p className="text-[10px] text-slate-400">
+                    {selected.service_category}
+                  </p>
                 </div>
               </div>
 
               <div className="space-y-3 border-t border-slate-100 pt-4">
                 <div>
-                  <p className="text-[9px] uppercase tracking-wide text-slate-400">Record ID</p>
-                  <p className="mt-1 break-all text-xs font-medium text-slate-700">{selected.record_id}</p>
+                  <p className="text-[9px] uppercase tracking-wide text-slate-400">
+                    Record ID
+                  </p>
+                  <p className="mt-1 break-all text-xs font-medium text-slate-700">
+                    {selected.record_id}
+                  </p>
                 </div>
                 <div>
-                  <p className="text-[9px] uppercase tracking-wide text-slate-400">Date & Time</p>
+                  <p className="text-[9px] uppercase tracking-wide text-slate-400">
+                    Date & Time
+                  </p>
                   <p className="mt-1 flex items-center gap-2 text-xs font-medium text-slate-700">
                     <CalendarDays size={13} />
                     {selectedDate?.date} {selectedDate?.time}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[9px] uppercase tracking-wide text-slate-400">Status</p>
+                  <p className="text-[9px] uppercase tracking-wide text-slate-400">
+                    Status
+                  </p>
                   <span className="mt-1 inline-block rounded-full bg-emerald-50 px-2 py-1 text-[9px] font-semibold text-emerald-600">
                     {selected.status}
                   </span>
                 </div>
               </div>
 
-              <div className="rounded-lg bg-slate-50 p-3 text-[10px] leading-5 text-slate-500">
-                This panel uses only the fields already returned by the consultation list endpoint. If your existing endpoint also returns diagnosis, doctor, room, vitals, or notes, those fields can be displayed here without any backend change.
+              <div className="rounded-md bg-slate-50 p-3 text-[10px] leading-5 text-slate-500">
+                This panel uses only the fields already returned by the
+                consultation list endpoint. If your existing endpoint also
+                returns diagnosis, doctor, room, vitals, or notes, those fields
+                can be displayed here without any backend change.
               </div>
             </div>
           )}

@@ -17,7 +17,7 @@ export default function ErrorMessage({
       {...props}
       role="alert"
       className={cn(
-        "min-w-0 rounded-lg border border-red-200 bg-red-50 p-4 font-sans text-sm font-normal leading-relaxed text-red-700 [overflow-wrap:anywhere]",
+        "min-w-0 rounded-md border border-red-200 bg-red-50 p-4 font-sans text-sm font-normal leading-relaxed text-red-700 [overflow-wrap:anywhere]",
         className,
       )}
     >

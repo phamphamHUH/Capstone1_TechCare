@@ -42,7 +42,7 @@ export function AnalysisNotice({
   return (
     <div
       role="status"
-      className={`mb-3 rounded-lg border px-3 py-2.5 text-sm leading-relaxed border-sky-200 bg-sky-50 text-sky-800`}
+      className={`mb-3 rounded-md border px-3 py-2.5 text-sm leading-relaxed border-sky-200 bg-sky-50 text-sky-800`}
     >
       {children}
     </div>

@@ -34,8 +34,8 @@ type OverviewProps = {
 };
 
 const fieldClass =
-  "w-full rounded-lg border border-gray-200 px-3 py-2.5 text-xs text-gray-800 outline-none";
-const tileClass = "rounded-lg border border-gray-200 px-2.5 py-2.5 space-y-1";
+  "w-full rounded-md border border-gray-200 px-3 py-2.5 text-xs text-gray-800 outline-none";
+const tileClass = "rounded-md border border-gray-200 px-2.5 py-2.5 space-y-1";
 
 const INLINE_ERROR_KEYS =
   /^(presenting_complaint|diagnosis|physical_examination)/;
@@ -404,7 +404,7 @@ function Overview({ selectedQueue, onProceed }: OverviewProps) {
                         clearErrors("physical_examination");
                       }}
                       placeholder={f.placeholder}
-                      className={`w-full resize-none rounded-lg border border-gray-200 p-2.5 text-xs text-gray-700 outline-none placeholder:text-gray-300 focus:border-sky-400 ${
+                      className={`w-full resize-none rounded-md border border-gray-200 p-2.5 text-xs text-gray-700 outline-none placeholder:text-gray-300 focus:border-sky-400 ${
                         err ? "ring-1 ring-red-400" : ""
                       }`}
                     />
@@ -428,7 +428,7 @@ function Overview({ selectedQueue, onProceed }: OverviewProps) {
       <div className="flex justify-between">
         <button
           type="button"
-          className="rounded-lg border cursor-pointer border-gray-300 px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
+          className="rounded-md border cursor-pointer border-gray-300 px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
         >
           End Consultation
         </button>
@@ -436,7 +436,7 @@ function Overview({ selectedQueue, onProceed }: OverviewProps) {
           type="button"
           onClick={handleSubmit}
           disabled={isSaving}
-          className="rounded-lg bg-blue-600 cursor-pointer px-4 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+          className="rounded-md bg-blue-600 cursor-pointer px-4 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
         >
           {isSaving ? "Saving..." : "Proceed to Prescription"}
         </button>

@@ -2,10 +2,10 @@ import type { ReactNode } from "react";
 import type { NoteField } from "../../../../../interface/Overview";
 
 const fieldClass =
-  "w-full rounded-lg border border-gray-200 px-3 py-2.5 text-xs text-gray-800 outline-none";
+  "w-full rounded-md border border-gray-200 px-3 py-2.5 text-xs text-gray-800 outline-none";
 const textareaClass =
-  "w-full resize-none rounded-lg border border-gray-200 p-3 text-xs text-gray-700 outline-none placeholder:text-gray-400 focus:border-sky-400";
-const tileClass = "rounded-lg border border-gray-200 px-2.5 py-2.5 space-y-1";
+  "w-full resize-none rounded-md border border-gray-200 p-3 text-xs text-gray-700 outline-none placeholder:text-gray-400 focus:border-sky-400";
+const tileClass = "rounded-md border border-gray-200 px-2.5 py-2.5 space-y-1";
 
 export function Section({
   title,

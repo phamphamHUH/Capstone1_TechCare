@@ -1,5 +1,11 @@
 import type { ActivityStatistics } from "../../../../interface/Activity.ts";
-import { Activity, AlertTriangle, CircleUserRound, UserRoundX, Users } from "lucide-react";
+import {
+  Activity,
+  AlertTriangle,
+  CircleUserRound,
+  UserRoundX,
+  Users,
+} from "lucide-react";
 
 type Props = {
   stats: ActivityStatistics;
@@ -40,7 +46,7 @@ function ActivityStats({ stats }: Props) {
   ];
 
   return (
-    <section className="mb-6 overflow-hidden rounded-2xl border border-gray-300 bg-gray-300">
+    <section className="mb-6 overflow-hidden rounded-md border border-gray-300 bg-gray-300">
       <div className="grid grid-cols-1 gap-px sm:grid-cols-2 lg:grid-cols-5">
         {cards.map((card) => {
           const Icon = card.icon;

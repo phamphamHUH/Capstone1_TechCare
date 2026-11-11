@@ -273,7 +273,7 @@ function Admin() {
           )}
 
           {!navItems.some((item) => item.page === page) && (
-            <div className="mx-6 rounded-xl border border-gray-200 bg-white p-8 text-center">
+            <div className="mx-6 rounded-md border border-gray-200 bg-white p-8 text-center">
               <h2 className="font-semibold text-gray-800">Page not found</h2>
               <button
                 type="button"

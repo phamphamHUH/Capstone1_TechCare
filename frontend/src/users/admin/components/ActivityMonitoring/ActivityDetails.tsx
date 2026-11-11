@@ -1,5 +1,11 @@
 import EmptyState from "../../../../components/EmptyState";
-import { CalendarDays, Clock3, FileText, Folder, UserRound } from "lucide-react";
+import {
+  CalendarDays,
+  Clock3,
+  FileText,
+  Folder,
+  UserRound,
+} from "lucide-react";
 import type { Activity } from "../../../../interface/Activity.ts";
 
 type ActivityDetailsProps = {
@@ -24,9 +30,11 @@ function getMetadataEntries(metadata: Activity["metadata"]) {
 function ActivityDetails({ activity }: ActivityDetailsProps) {
   if (!activity) {
     return (
-      <aside className="flex min-h-105 w-full min-w-0 flex-col rounded-xl border border-gray-200 bg-white lg:w-[300px] xl:w-[320px]">
+      <aside className="flex min-h-105 w-full min-w-0 flex-col rounded-md border border-gray-200 bg-white lg:w-[300px] xl:w-[320px]">
         <div className="border-b border-gray-100 px-4 py-4">
-          <h3 className="text-base font-semibold text-gray-700">Activity Details</h3>
+          <h3 className="text-base font-semibold text-gray-700">
+            Activity Details
+          </h3>
         </div>
         <EmptyState message="No activity selected." />
       </aside>
@@ -38,9 +46,11 @@ function ActivityDetails({ activity }: ActivityDetailsProps) {
   const metadataEntries = getMetadataEntries(activity.metadata);
 
   return (
-    <aside className="flex min-h-105 w-full min-w-0 flex-col rounded-xl border border-gray-200 bg-white lg:w-[300px] xl:w-[320px]">
+    <aside className="flex min-h-105 w-full min-w-0 flex-col rounded-md border border-gray-200 bg-white lg:w-[300px] xl:w-[320px]">
       <div className="border-b border-gray-100 px-4 py-4">
-        <h3 className="text-base font-semibold text-gray-700">Activity Details</h3>
+        <h3 className="text-base font-semibold text-gray-700">
+          Activity Details
+        </h3>
       </div>
 
       <div className="flex-1 space-y-4 overflow-y-auto p-4">
@@ -57,7 +67,9 @@ function ActivityDetails({ activity }: ActivityDetailsProps) {
         </div>
 
         <div>
-          <p className="mb-1 text-xs font-semibold text-gray-500">Date and Time</p>
+          <p className="mb-1 text-xs font-semibold text-gray-500">
+            Date and Time
+          </p>
           <div className="space-y-1 text-xs text-gray-500">
             <p className="flex items-center gap-2">
               <CalendarDays size={14} />
@@ -93,7 +105,9 @@ function ActivityDetails({ activity }: ActivityDetailsProps) {
 
         {activity.target_id && (
           <div>
-            <p className="mb-1 text-xs font-semibold text-gray-500">Target ID</p>
+            <p className="mb-1 text-xs font-semibold text-gray-500">
+              Target ID
+            </p>
             <p className="text-xs text-gray-500">{activity.target_id}</p>
           </div>
         )}
@@ -120,7 +134,13 @@ function ActivityDetails({ activity }: ActivityDetailsProps) {
 
         <div>
           <p className="mb-1 text-xs font-semibold text-gray-500">Severity</p>
-          <p className={isCritical ? "text-xs font-medium text-red-500" : "text-xs font-medium text-green-500"}>
+          <p
+            className={
+              isCritical
+                ? "text-xs font-medium text-red-500"
+                : "text-xs font-medium text-green-500"
+            }
+          >
             {isCritical ? "Critical" : "Low"}
           </p>
         </div>

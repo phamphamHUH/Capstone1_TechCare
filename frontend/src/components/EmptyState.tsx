@@ -22,7 +22,7 @@ export default function EmptyState({
       role="status"
       aria-live="polite"
       className={cn(
-        "flex w-full min-w-0 flex-col items-center justify-center gap-1 rounded-lg border border-gray-200 bg-gray-50 px-4 text-center font-sans text-sm leading-relaxed text-gray-500 [overflow-wrap:anywhere]",
+        "flex w-full min-w-0 flex-col items-center justify-center gap-1 rounded-md border border-gray-200 bg-gray-50 px-4 text-center font-sans text-sm leading-relaxed text-gray-500 [overflow-wrap:anywhere]",
         compact ? "py-4" : "py-8",
         className,
       )}

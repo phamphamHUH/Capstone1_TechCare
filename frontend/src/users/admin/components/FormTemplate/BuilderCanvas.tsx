@@ -6,7 +6,10 @@ import {
   ChevronDown,
   GripVertical,
 } from "lucide-react";
-import type { BuilderComponent, ComponentType } from "../../../../interface/FormTemplate";
+import type {
+  BuilderComponent,
+  ComponentType,
+} from "../../../../interface/FormTemplate";
 
 interface BuilderCanvasProps {
   components: BuilderComponent[];
@@ -73,7 +76,7 @@ export default function BuilderCanvas({
   const handleDragOverComponent = (
     e: React.DragEvent,
     index: number,
-    comp: BuilderComponent
+    comp: BuilderComponent,
   ) => {
     e.preventDefault();
     e.stopPropagation();
@@ -129,7 +132,7 @@ export default function BuilderCanvas({
   };
 
   return (
-    <div className="flex-1 min-w-0 bg-white border border-dashed border-sky-300 rounded-3xl p-6 sm:p-8 flex flex-col gap-6 shadow-sm overflow-y-auto max-h-[calc(100vh-140px)]">
+    <div className="flex-1 min-w-0 bg-white border border-dashed border-sky-300 rounded-md p-6 sm:p-8 flex flex-col gap-6 shadow-sm overflow-y-auto max-h-[calc(100vh-140px)]">
       {/* Clinic Header */}
       <div className="relative border-b border-gray-100 pb-5">
         <div className="flex flex-col items-center text-center">
@@ -158,11 +161,11 @@ export default function BuilderCanvas({
       </div>
 
       {/* Patient Information Placeholder Header */}
-      <div className="bg-sky-100/70 border border-sky-200 text-sky-800 text-xs font-bold px-4 py-2 rounded-lg tracking-wider uppercase select-none">
+      <div className="bg-sky-100/70 border border-sky-200 text-sky-800 text-xs font-bold px-4 py-2 rounded-md tracking-wider uppercase select-none">
         Patient Information
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs text-gray-500 bg-gray-50/70 p-3.5 rounded-xl border border-gray-100 select-none">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs text-gray-500 bg-gray-50/70 p-3.5 rounded-md border border-gray-100 select-none">
         <div>
           <span className="text-gray-400 block text-[10px]">Patient Name:</span>
           <span className="font-medium text-gray-700">Sample Patient</span>
@@ -172,7 +175,9 @@ export default function BuilderCanvas({
           <span className="font-medium text-gray-700">32 / Male</span>
         </div>
         <div>
-          <span className="text-gray-400 block text-[10px]">Date of Birth:</span>
+          <span className="text-gray-400 block text-[10px]">
+            Date of Birth:
+          </span>
           <span className="font-medium text-gray-700">1994-05-12</span>
         </div>
         <div>
@@ -186,8 +191,10 @@ export default function BuilderCanvas({
         onDragOver={handleDragOverCanvas}
         onDragLeave={handleDragLeaveCanvas}
         onDrop={(e) => handleDropOnCanvas(e, components.length)}
-        className={`flex flex-wrap gap-4 w-full p-1 rounded-2xl transition-all ${
-          isPaletteOverCanvas ? "bg-sky-50/40 border-2 border-dashed border-sky-400" : ""
+        className={`flex flex-wrap gap-4 w-full p-1 rounded-md transition-all ${
+          isPaletteOverCanvas
+            ? "bg-sky-50/40 border-2 border-dashed border-sky-400"
+            : ""
         }`}
       >
         {components.map((comp, index) => {
@@ -215,8 +222,8 @@ export default function BuilderCanvas({
                 onSelectComponent(comp.id);
               }}
               className={`${getWidthClass(
-                comp.settings.width
-              )} group relative p-3.5 rounded-xl border transition-all cursor-pointer select-none ${
+                comp.settings.width,
+              )} group relative p-3.5 rounded-md border transition-all cursor-pointer select-none ${
                 isSelected
                   ? "border-sky-500 bg-sky-50/20 ring-2 ring-sky-200 shadow-sm"
                   : "border-gray-200 hover:border-sky-300 bg-white"
@@ -224,8 +231,10 @@ export default function BuilderCanvas({
             >
               {/* Floating Component Action Bar */}
               <div
-                className={`absolute right-2 top-2 z-10 flex items-center gap-1 bg-white/95 border border-gray-200 rounded-lg p-0.5 shadow-sm transition-opacity ${
-                  isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                className={`absolute right-2 top-2 z-10 flex items-center gap-1 bg-white/95 border border-gray-200 rounded-md p-0.5 shadow-sm transition-opacity ${
+                  isSelected
+                    ? "opacity-100"
+                    : "opacity-0 group-hover:opacity-100"
                 }`}
                 onClick={(e) => e.stopPropagation()}
               >
@@ -270,7 +279,7 @@ export default function BuilderCanvas({
 
               {/* COMPONENT RENDER PREVIEW */}
               {comp.type === "section_header" && (
-                <div className="bg-sky-100/70 border border-sky-200 text-sky-800 text-xs font-bold px-3.5 py-1.5 rounded-lg tracking-wider uppercase">
+                <div className="bg-sky-100/70 border border-sky-200 text-sky-800 text-xs font-bold px-3.5 py-1.5 rounded-md tracking-wider uppercase">
                   {comp.settings.sectionHeader || comp.label}
                 </div>
               )}
@@ -287,8 +296,8 @@ export default function BuilderCanvas({
                     comp.settings.dividerStyle === "dashed"
                       ? "border-dashed"
                       : comp.settings.dividerStyle === "dotted"
-                      ? "border-dotted"
-                      : "border-solid"
+                        ? "border-dotted"
+                        : "border-solid"
                   } border-gray-300`}
                 />
               )}
@@ -306,7 +315,7 @@ export default function BuilderCanvas({
                       type="text"
                       disabled
                       placeholder={comp.settings.placeholder || "Enter text"}
-                      className="flex-1 px-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg text-gray-700"
+                      className="flex-1 px-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-md text-gray-700"
                     />
                     {comp.settings.unit && (
                       <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-md">
@@ -335,7 +344,7 @@ export default function BuilderCanvas({
                       type="text"
                       disabled
                       placeholder={comp.settings.placeholder || "0.00"}
-                      className="flex-1 px-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg text-gray-700"
+                      className="flex-1 px-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-md text-gray-700"
                     />
                     {comp.settings.unit && (
                       <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-md">
@@ -357,21 +366,21 @@ export default function BuilderCanvas({
                     {comp.label}
                   </label>
                   <div className="flex flex-wrap gap-2.5">
-                    {(comp.settings.checkboxOptions || ["Option 1", "Option 2"]).map(
-                      (opt, i) => (
-                        <label
-                          key={i}
-                          className="flex items-center gap-1.5 text-xs text-gray-600"
-                        >
-                          <input
-                            type="checkbox"
-                            disabled
-                            className="rounded border-gray-300 text-sky-500"
-                          />
-                          <span>{opt}</span>
-                        </label>
-                      )
-                    )}
+                    {(
+                      comp.settings.checkboxOptions || ["Option 1", "Option 2"]
+                    ).map((opt, i) => (
+                      <label
+                        key={i}
+                        className="flex items-center gap-1.5 text-xs text-gray-600"
+                      >
+                        <input
+                          type="checkbox"
+                          disabled
+                          className="rounded border-gray-300 text-sky-500"
+                        />
+                        <span>{opt}</span>
+                      </label>
+                    ))}
                   </div>
                 </div>
               )}
@@ -384,7 +393,7 @@ export default function BuilderCanvas({
                   <input
                     type="date"
                     disabled
-                    className="w-full px-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg text-gray-500"
+                    className="w-full px-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-md text-gray-500"
                   />
                 </div>
               )}
@@ -394,7 +403,7 @@ export default function BuilderCanvas({
                   <label className="block text-xs font-semibold text-gray-700 mb-1.5">
                     {comp.label}
                   </label>
-                  <div className="overflow-x-auto border border-gray-200 rounded-lg">
+                  <div className="overflow-x-auto border border-gray-200 rounded-md">
                     <table className="w-full text-left text-xs">
                       <thead className="bg-gray-50 border-b border-gray-200 text-gray-600 font-semibold">
                         <tr>
@@ -419,7 +428,7 @@ export default function BuilderCanvas({
                               <td key={i} className="p-2 italic">
                                 Sample entry
                               </td>
-                            )
+                            ),
                           )}
                         </tr>
                       </tbody>
@@ -429,7 +438,7 @@ export default function BuilderCanvas({
               )}
 
               {comp.type === "image" && (
-                <div className="border border-dashed border-gray-300 rounded-lg p-4 flex flex-col items-center justify-center text-center text-gray-400 bg-gray-50">
+                <div className="border border-dashed border-gray-300 rounded-md p-4 flex flex-col items-center justify-center text-center text-gray-400 bg-gray-50">
                   <span className="text-xs font-medium">Image Component</span>
                   <span className="text-[10px] text-gray-400">
                     Placeholder for diagnostic scans or signatures
@@ -446,7 +455,7 @@ export default function BuilderCanvas({
         onDragOver={handleDragOverCanvas}
         onDragLeave={handleDragLeaveCanvas}
         onDrop={(e) => handleDropOnCanvas(e, components.length)}
-        className={`w-full py-4 border-2 border-dashed rounded-2xl flex items-center justify-center text-xs font-bold transition-all select-none cursor-pointer ${
+        className={`w-full py-4 border-2 border-dashed rounded-md flex items-center justify-center text-xs font-bold transition-all select-none cursor-pointer ${
           isPaletteOverCanvas
             ? "border-sky-500 bg-sky-100/70 text-sky-700 scale-[1.01]"
             : "border-sky-300 bg-sky-50/60 hover:bg-sky-50 text-sky-600"
@@ -457,11 +466,11 @@ export default function BuilderCanvas({
 
       {/* Remarks Section */}
       <div className="flex flex-col gap-2 pt-2 transition-all">
-        <div className="bg-sky-100/70 border border-sky-200 text-sky-800 text-xs font-bold px-4 py-2 rounded-lg tracking-wider uppercase select-none">
+        <div className="bg-sky-100/70 border border-sky-200 text-sky-800 text-xs font-bold px-4 py-2 rounded-md tracking-wider uppercase select-none">
           Remarks
         </div>
 
-        <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 select-none">
+        <div className="bg-gray-50 p-3 rounded-md border border-gray-100 select-none">
           <textarea
             disabled
             rows={2}

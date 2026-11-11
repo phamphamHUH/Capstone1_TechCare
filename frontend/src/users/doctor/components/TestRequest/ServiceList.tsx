@@ -120,7 +120,7 @@ function ServiceList({
         <div className="flex flex-col gap-2 h-96 overflow-y-auto">
           {servicesList.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-96 gap-1">
-              <div className="p-3 rounded-2xl bg-blue-50 text-blue-600 mb-2">
+              <div className="p-3 rounded-md bg-blue-50 text-blue-600 mb-2">
                 <Syringe size={20} />
               </div>
               <p className="text-sm font-bold">No services selected yet.</p>
@@ -132,10 +132,10 @@ function ServiceList({
             servicesList.map((service) => (
               <div
                 key={service.service_id}
-                className="flex items-center justify-between border border-gray-200 rounded-2xl px-4 py-2"
+                className="flex items-center justify-between border border-gray-200 rounded-md px-4 py-2"
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-3 rounded-2xl bg-blue-50 text-blue-600">
+                  <div className="p-3 rounded-md bg-blue-50 text-blue-600">
                     <Syringe size={20} />
                   </div>
                   <div className="text-xs">
@@ -179,7 +179,7 @@ function ServiceList({
           type="button"
           onClick={handleSubmit}
           disabled={!canSubmit}
-          className="text-xs font-bold cursor-pointer text-white px-3 py-2 rounded-lg flex items-center justify-center
+          className="text-xs font-bold cursor-pointer text-white px-3 py-2 rounded-md flex items-center justify-center
                      bg-blue-600 gap-1 hover:bg-blue-700
                      disabled:cursor-not-allowed disabled:bg-gray-300 disabled:hover:bg-gray-300"
         >

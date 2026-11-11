@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 export type Option = string | { value: string; label: string };
 
 export const fieldClass =
-  "h-8 rounded-lg border border-gray-200 px-2 text-sm text-gray-800 placeholder:text-gray-300 focus:border-sky-400 focus:outline-none read-only:bg-gray-50 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400";
+  "h-8 rounded-md border border-gray-200 px-2 text-sm text-gray-800 placeholder:text-gray-300 focus:border-sky-400 focus:outline-none read-only:bg-gray-50 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400";
 
 export function Field({
   label,

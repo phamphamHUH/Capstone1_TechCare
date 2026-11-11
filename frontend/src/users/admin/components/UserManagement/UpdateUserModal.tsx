@@ -31,11 +31,7 @@ type Props = {
   loadData: () => void;
 };
 
-function UpdateUserModal({
-  user,
-  onClose,
-  loadData,
-}: Props) {
+function UpdateUserModal({ user, onClose, loadData }: Props) {
   const [formError, setFormError] = useState("");
   const [username, setUsername] = useState(user.username);
   const [password, setPassword] = useState("");
@@ -48,13 +44,11 @@ function UpdateUserModal({
 
   const [sex, setSex] = useState(user.sex);
   const [birthdate, setBirthdate] = useState(
-    user.birthdate?.substring(0, 10) || ""
+    user.birthdate?.substring(0, 10) || "",
   );
 
   const [email, setEmail] = useState(user.email);
-  const [contactNumber, setContactNumber] = useState(
-    user.contact_number || ""
-  );
+  const [contactNumber, setContactNumber] = useState(user.contact_number || "");
   const [address, setAddress] = useState(user.address);
 
   const [role, setRole] = useState(user.role);
@@ -62,14 +56,14 @@ function UpdateUserModal({
   const [department, setDepartment] = useState(
     user.role === LAB_STAFF_ROLE && !isLabRoom(user.department || "")
       ? ""
-      : user.department || ""
+      : user.department || "",
   );
   const [employmentStatus, setEmploymentStatus] = useState(
-    user.employment_status || "active"
+    user.employment_status || "active",
   );
 
   const [dateHired, setDateHired] = useState(
-    user.date_hired?.substring(0, 10) || ""
+    user.date_hired?.substring(0, 10) || "",
   );
 
   const [shiftStart, setShiftStart] = useState(user.shift_start || "");
@@ -208,7 +202,6 @@ function UpdateUserModal({
         message: response.data.message,
         after: onClose,
       });
-
     } catch (error) {
       console.error("UPDATE USER ERROR:", error);
       setFormError(
@@ -221,7 +214,7 @@ function UpdateUserModal({
   };
 
   const inputClass =
-    "w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-100";
+    "w-full rounded-md border border-gray-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-100";
 
   const labelClass = "mb-1.5 block text-xs font-medium text-gray-500";
 
@@ -234,7 +227,7 @@ function UpdateUserModal({
       />
 
       {/* Modal */}
-      <div className="fixed left-1/2 top-1/2 z-50 flex w-[94%] max-w-5xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-3xl bg-gray-50 shadow-2xl">
+      <div className="fixed left-1/2 top-1/2 z-50 flex w-[94%] max-w-5xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-md bg-gray-50 shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-100 bg-white px-6 py-5">
           <div className="flex items-center gap-3">
@@ -273,7 +266,7 @@ function UpdateUserModal({
           )}
 
           {/* Profile Hero */}
-          <div className="overflow-hidden rounded-3xl bg-white shadow-sm">
+          <div className="overflow-hidden rounded-md bg-white shadow-sm">
             <div className="h-36 bg-linear-to-r from-gray-100 via-gray-50 to-gray-100" />
 
             <div className="px-8 pb-8">
@@ -284,10 +277,10 @@ function UpdateUserModal({
                     <img
                       src={profilePhotoPreview}
                       alt={fullName}
-                      className="h-32 w-32 rounded-3xl border-4 border-white object-cover shadow-lg"
+                      className="h-32 w-32 rounded-md border-4 border-white object-cover shadow-lg"
                     />
                   ) : (
-                    <div className="flex h-32 w-32 items-center justify-center rounded-3xl border-4 border-white bg-gray-200 text-4xl font-bold text-gray-500 shadow-lg">
+                    <div className="flex h-32 w-32 items-center justify-center rounded-md border-4 border-white bg-gray-200 text-4xl font-bold text-gray-500 shadow-lg">
                       {initials}
                     </div>
                   )}
@@ -296,7 +289,7 @@ function UpdateUserModal({
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="absolute bottom-1 right-1 flex h-10 w-10 items-center justify-center rounded-xl border-2 border-white bg-gray-900 text-white shadow-lg transition hover:bg-gray-800"
+                    className="absolute bottom-1 right-1 flex h-10 w-10 items-center justify-center rounded-md border-2 border-white bg-gray-900 text-white shadow-lg transition hover:bg-gray-800"
                   >
                     <Camera size={18} />
                   </button>
@@ -347,14 +340,14 @@ function UpdateUserModal({
           {/* Cards */}
           <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
             {/* Contact */}
-            <div className="rounded-3xl bg-white p-6 shadow-sm">
+            <div className="rounded-md bg-white p-6 shadow-sm">
               <h2 className="mb-6 text-base font-semibold text-gray-900">
                 Contact Information
               </h2>
 
               <div className="space-y-5">
                 <div className="flex gap-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-gray-100">
                     <Mail size={18} className="text-gray-600" />
                   </div>
 
@@ -371,7 +364,7 @@ function UpdateUserModal({
                 </div>
 
                 <div className="flex gap-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-gray-100">
                     <Phone size={18} className="text-gray-600" />
                   </div>
 
@@ -388,7 +381,7 @@ function UpdateUserModal({
                 </div>
 
                 <div className="flex gap-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-gray-100">
                     <MapPin size={18} className="text-gray-600" />
                   </div>
 
@@ -407,7 +400,7 @@ function UpdateUserModal({
             </div>
 
             {/* Employment */}
-            <div className="rounded-3xl bg-white p-6 shadow-sm">
+            <div className="rounded-md bg-white p-6 shadow-sm">
               <h2 className="mb-6 text-base font-semibold text-gray-900">
                 Employment Information
               </h2>
@@ -416,7 +409,7 @@ function UpdateUserModal({
                 <div>
                   <label className={labelClass}>Employee ID</label>
 
-                  <div className="rounded-xl bg-gray-50 px-3 py-2.5 text-sm font-semibold text-gray-700">
+                  <div className="rounded-md bg-gray-50 px-3 py-2.5 text-sm font-semibold text-gray-700">
                     {user.user_id}
                   </div>
                 </div>
@@ -546,7 +539,7 @@ function UpdateUserModal({
             </div>
 
             {/* Personal */}
-            <div className="rounded-3xl bg-white p-6 shadow-sm lg:col-span-2">
+            <div className="rounded-md bg-white p-6 shadow-sm lg:col-span-2">
               <h2 className="mb-6 text-base font-semibold text-gray-900">
                 Personal Information
               </h2>
@@ -625,7 +618,7 @@ function UpdateUserModal({
 
             {/* Doctor */}
             {role === "doctor" && (
-              <div className="rounded-3xl bg-white p-6 shadow-sm lg:col-span-2">
+              <div className="rounded-md bg-white p-6 shadow-sm lg:col-span-2">
                 <h2 className="mb-6 text-base font-semibold text-gray-900">
                   Doctor Information
                 </h2>
@@ -651,7 +644,7 @@ function UpdateUserModal({
             )}
 
             {/* Emergency */}
-            <div className="rounded-3xl bg-white p-6 shadow-sm lg:col-span-2">
+            <div className="rounded-md bg-white p-6 shadow-sm lg:col-span-2">
               <h2 className="mb-6 text-base font-semibold text-gray-900">
                 Emergency Contact
               </h2>
@@ -684,7 +677,7 @@ function UpdateUserModal({
             </div>
 
             {/* Password */}
-            <div className="rounded-3xl bg-white p-6 shadow-sm lg:col-span-2">
+            <div className="rounded-md bg-white p-6 shadow-sm lg:col-span-2">
               <h2 className="mb-2 text-base font-semibold text-gray-900">
                 Change Password
               </h2>
@@ -697,7 +690,7 @@ function UpdateUserModal({
                 <div>
                   <label className={labelClass}>New Password</label>
 
-                  <div className="flex overflow-hidden rounded-xl border border-gray-200 bg-white focus-within:border-gray-400 focus-within:ring-2 focus-within:ring-gray-100">
+                  <div className="flex overflow-hidden rounded-md border border-gray-200 bg-white focus-within:border-gray-400 focus-within:ring-2 focus-within:ring-gray-100">
                     <input
                       type={hiddenPassword ? "password" : "text"}
                       value={password}
@@ -711,7 +704,11 @@ function UpdateUserModal({
                       onClick={() => setHiddenPassword(!hiddenPassword)}
                       className="px-3 text-gray-400 transition hover:text-gray-700"
                     >
-                      {hiddenPassword ? <Eye size={18} /> : <EyeOff size={18} />}
+                      {hiddenPassword ? (
+                        <Eye size={18} />
+                      ) : (
+                        <EyeOff size={18} />
+                      )}
                     </button>
                   </div>
                 </div>
@@ -736,7 +733,7 @@ function UpdateUserModal({
             <button
               onClick={onClose}
               disabled={saving}
-              className="flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-100 disabled:opacity-50"
+              className="flex items-center gap-2 rounded-md bg-white px-5 py-3 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-100 disabled:opacity-50"
             >
               <ArrowLeft size={16} />
               Back to Profile
@@ -745,7 +742,7 @@ function UpdateUserModal({
             <button
               onClick={editUser}
               disabled={saving}
-              className="flex items-center gap-2 rounded-xl bg-gray-900 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex items-center gap-2 rounded-md bg-gray-900 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {saving ? <LoadingSpinner size={16} /> : <Save size={16} />}
 
