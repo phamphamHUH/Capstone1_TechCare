@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import api from "../../../lib/axios";
-import { connectNotificationStream } from "../../../services/notification-sse/connectNotificationStream";
-import type { AppNotification, NotificationsResponse } from "../../../interface/Notification";
+import api from "../../../../lib/axios";
+import { connectNotificationStream } from "../../../../services/notification-sse/connectNotificationStream";
+import type { AppNotification, NotificationsResponse } from "../../../../interface/Notification";
 
 const TOAST_MS = 6000;
 

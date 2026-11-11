@@ -1,7 +1,7 @@
 import { LoadingSpinner } from "./LoadingScreen";
 import { RotateCw } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
-import NotificationBell from "./NotificationBell";
+import NotificationBell from "./Header/NotificationBell";
 import { useSidebarNav } from "./sidebar/utils/sidebarNav";
 
 type HeaderProps = {

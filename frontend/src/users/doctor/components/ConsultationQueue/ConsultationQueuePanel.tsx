@@ -1,6 +1,6 @@
 import EmptyState from "../../../../components/EmptyState";
 import { useState, type Dispatch, type SetStateAction } from "react";
-import QueueTable from "./QueueTable";
+import QueueTable from "./ConsultationQueuePanel/QueueTable";
 import type { PriorityFilter, QueueEntry } from "../../../../interface/Queue";
 import type { Service } from "../../../../interface/Service";
 import { ChevronDown, Search } from "lucide-react";

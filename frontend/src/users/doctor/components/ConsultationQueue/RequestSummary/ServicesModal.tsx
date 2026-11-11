@@ -1,4 +1,4 @@
-import EmptyState from "../../../../components/EmptyState";
+import EmptyState from "../../../../../components/EmptyState";
 import {
   X,
   FlaskConical,
@@ -8,7 +8,7 @@ import {
   Search,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import type { Service } from "../../../../interface/Service";
+import type { Service } from "../../../../../interface/Service";
 
 type ServiceModalProps = {
   services: Service[];

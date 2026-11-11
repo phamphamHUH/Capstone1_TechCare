@@ -9,7 +9,7 @@ import {
 import type {
   BuilderComponent,
   ComponentType,
-} from "../../../../interface/FormTemplate";
+} from "../../../../../interface/FormTemplate";
 
 interface BuilderCanvasProps {
   components: BuilderComponent[];

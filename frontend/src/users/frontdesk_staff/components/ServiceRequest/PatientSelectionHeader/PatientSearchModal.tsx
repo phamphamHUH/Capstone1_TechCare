@@ -1,12 +1,12 @@
-import EmptyState from "../../../../components/EmptyState";
-import ErrorMessage from "../../../../components/ErrorMessage";
-import LoadingScreen from "../../../../components/LoadingScreen";
+import EmptyState from "../../../../../components/EmptyState";
+import ErrorMessage from "../../../../../components/ErrorMessage";
+import LoadingScreen from "../../../../../components/LoadingScreen";
 import { useEffect, useMemo, useState } from "react";
 import { Phone, Search, UserPlus, X, Check } from "lucide-react";
 import api from "#lib/axios";
-import type { Patient } from "../../../../interface/Patient";
-import calculateAge from "../../../../utils/calculateAge";
-import { formatAge } from "../../../../utils/formats";
+import type { Patient } from "../../../../../interface/Patient";
+import calculateAge from "../../../../../utils/calculateAge";
+import { formatAge } from "../../../../../utils/formats";
 
 type PatientSearchModalProps = {
   onClose: () => void;

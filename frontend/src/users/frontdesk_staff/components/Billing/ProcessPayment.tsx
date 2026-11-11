@@ -26,8 +26,8 @@ import type {
 import { formatAge, formatDateTime, peso } from "../../../../utils/formats";
 import InvoiceDocument from "./InvoiceDocument";
 import { printInvoice } from "./utils/invoicePrint";
-import BillingModal, { type BillingModalKind } from "./BillingModal";
-import InvoicePreview from "./InvoicePreview";
+import BillingModal, { type BillingModalKind } from "./ProcessPayment/BillingModal";
+import InvoicePreview from "./ProcessPayment/InvoicePreview";
 
 type ProcessPaymentProps = {
   bill: Bill;

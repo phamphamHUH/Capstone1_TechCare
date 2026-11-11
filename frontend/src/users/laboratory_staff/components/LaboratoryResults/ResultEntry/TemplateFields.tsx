@@ -1,10 +1,10 @@
-import FieldError from "../../../../components/FieldError";
-import type { BuilderComponent } from "../../../../interface/FormTemplate";
-import type { ResultValues } from "../../../../interface/LaboratoryAnalysis";
+import FieldError from "../../../../../components/FieldError";
+import type { BuilderComponent } from "../../../../../interface/FormTemplate";
+import type { ResultValues } from "../../../../../interface/LaboratoryAnalysis";
 import { Plus, X } from "lucide-react";
 import { useLayoutEffect, useRef } from "react";
-import { inputTypes, resultFlag } from "./utils/laboratoryValidation";
-import { AnalysisButton } from "./AnalysisUi";
+import { inputTypes, resultFlag } from "../utils/laboratoryValidation";
+import { AnalysisButton } from "../AnalysisUi";
 
 type TemplateFieldsProps = {
   components: BuilderComponent[];

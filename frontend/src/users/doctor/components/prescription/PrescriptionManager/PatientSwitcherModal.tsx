@@ -1,6 +1,6 @@
 import React from "react";
 import { ListOrdered, X } from "lucide-react";
-import type { PatientInfo } from "./types";
+import type { PatientInfo } from "../types";
 
 interface PatientSwitcherModalProps {
   isOpen: boolean;

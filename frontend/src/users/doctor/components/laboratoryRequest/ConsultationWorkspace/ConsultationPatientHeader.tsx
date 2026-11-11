@@ -1,6 +1,6 @@
-import calculateAge from "../../../../utils/calculateAge.ts";
-import type { ConsultationPatient, WorkspaceTab } from "./types.ts";
-import { WORKSPACE_TABS } from "./types.ts";
+import calculateAge from "../../../../../utils/calculateAge.ts";
+import type { ConsultationPatient, WorkspaceTab } from "../../consultation/types.ts";
+import { WORKSPACE_TABS } from "../../consultation/types.ts";
 
 function formatDob(birthdate: string) {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(birthdate);

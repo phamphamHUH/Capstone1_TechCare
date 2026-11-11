@@ -1,7 +1,7 @@
-import EmptyState from "../../../../components/EmptyState";
-import FieldError from "../../../../components/FieldError";
-import ErrorMessage from "../../../../components/ErrorMessage";
-import { LoadingSpinner } from "../../../../components/LoadingScreen";
+import EmptyState from "../../../../../components/EmptyState";
+import FieldError from "../../../../../components/FieldError";
+import ErrorMessage from "../../../../../components/ErrorMessage";
+import { LoadingSpinner } from "../../../../../components/LoadingScreen";
 import { useMemo, useRef, useState } from "react";
 import { CheckCircle2, Plus, Trash2 } from "lucide-react";
 import type {
@@ -9,9 +9,9 @@ import type {
   DiagnosisType,
   FieldErrors,
   FindingsFormState,
-} from "./types.ts";
-import { PHYSICAL_EXAM_FIELDS, newDiagnosisRow } from "./types.ts";
-import { LIMITS, validateFindingsForm } from "./utils/validation.ts";
+} from "../../consultation/types.ts";
+import { PHYSICAL_EXAM_FIELDS, newDiagnosisRow } from "../../consultation/types.ts";
+import { LIMITS, validateFindingsForm } from "../../consultation/utils/validation.ts";
 
 type Props = {
   value: FindingsFormState;

@@ -1,7 +1,7 @@
-import EmptyState from "../../../../components/EmptyState";
+import EmptyState from "../../../../../components/EmptyState";
 import React from "react";
 import { X, Clock, FileText, Pill } from "lucide-react";
-import type { PatientInfo, Prescription } from "./types";
+import type { PatientInfo, Prescription } from "../types";
 
 interface PatientHistoryModalProps {
   isOpen: boolean;

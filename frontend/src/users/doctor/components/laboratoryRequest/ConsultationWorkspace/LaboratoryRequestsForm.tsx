@@ -1,24 +1,24 @@
-import FieldError from "../../../../components/FieldError";
-import EmptyState from "../../../../components/EmptyState";
-import ErrorMessage from "../../../../components/ErrorMessage";
+import FieldError from "../../../../../components/FieldError";
+import EmptyState from "../../../../../components/EmptyState";
+import ErrorMessage from "../../../../../components/ErrorMessage";
 import LoadingScreen, {
   LoadingSpinner,
-} from "../../../../components/LoadingScreen";
+} from "../../../../../components/LoadingScreen";
 import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, CheckCircle2, Check, Search, X } from "lucide-react";
-import calculateAge from "../../../../utils/calculateAge.ts";
+import calculateAge from "../../../../../utils/calculateAge.ts";
 import {
   fetchLaboratoryServices,
   submitLaboratoryRequest,
   toApiFailure,
-} from "./utils/consultationsApi.ts";
+} from "../../consultation/utils/consultationsApi.ts";
 import type {
   ConsultationPatient,
   FieldErrors,
   LabPriority,
   LaboratoryService,
-} from "./types.ts";
-import { LIMITS, validateLabRequestForm } from "./utils/validation.ts";
+} from "../../consultation/types.ts";
+import { LIMITS, validateLabRequestForm } from "../../consultation/utils/validation.ts";
 
 type Props = {
   patient: ConsultationPatient;

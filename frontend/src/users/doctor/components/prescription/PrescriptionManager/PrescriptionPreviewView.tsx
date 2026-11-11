@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Printer, Download, ArrowLeft, CheckCircle2 } from "lucide-react";
-import type { Prescription, PrintOptions } from "./types";
-import { CLINIC_INFO } from "../../../../lib/clinicInfo";
+import type { Prescription, PrintOptions } from "../types";
+import { CLINIC_INFO } from "../../../../../lib/clinicInfo";
 
 interface PrescriptionPreviewViewProps {
   prescription: Prescription;

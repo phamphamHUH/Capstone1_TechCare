@@ -1,5 +1,5 @@
-import FieldError from "../../../../components/FieldError";
-import EmptyState from "../../../../components/EmptyState";
+import FieldError from "../../../../../components/FieldError";
+import EmptyState from "../../../../../components/EmptyState";
 import { useState } from "react";
 import { Trash2, Plus, X } from "lucide-react";
 import type {
@@ -7,7 +7,7 @@ import type {
   ComponentType,
   FieldWidth,
   TextAlignment,
-} from "../../../../interface/FormTemplate";
+} from "../../../../../interface/FormTemplate";
 
 interface ComponentSettingsProps {
   component: BuilderComponent | null;

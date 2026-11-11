@@ -1,12 +1,12 @@
-import EmptyState from "../../../../components/EmptyState";
-import ErrorMessage from "../../../../components/ErrorMessage";
-import ConfirmDialog from "../../../../components/ConfirmDialog";
-import LoadingScreen from "../../../../components/LoadingScreen";
+import EmptyState from "../../../../../components/EmptyState";
+import ErrorMessage from "../../../../../components/ErrorMessage";
+import ConfirmDialog from "../../../../../components/ConfirmDialog";
+import LoadingScreen from "../../../../../components/LoadingScreen";
 
 import { CircleCheck, ChevronDown, ChevronUp } from "lucide-react";
 import React, { useState, type Dispatch, type SetStateAction } from "react";
-import type { LaboratoryItem } from "../../../../interface/LaboratoryItem";
-import type { Queue } from "../../../../interface/Queue";
+import type { LaboratoryItem } from "../../../../../interface/LaboratoryItem";
+import type { Queue } from "../../../../../interface/Queue";
 import api from "#lib/axios";
 
 type QueueTableProps = {

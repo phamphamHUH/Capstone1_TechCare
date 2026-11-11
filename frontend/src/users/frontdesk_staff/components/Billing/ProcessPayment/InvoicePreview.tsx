@@ -1,4 +1,4 @@
-import ErrorMessage from "../../../../components/ErrorMessage";
+import ErrorMessage from "../../../../../components/ErrorMessage";
 import {
   useEffect,
   useLayoutEffect,
@@ -7,14 +7,14 @@ import {
   type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
-import type { Bill, BillItem } from "../../../../interface/Billing";
-import InvoiceDocument from "./InvoiceDocument";
+import type { Bill, BillItem } from "../../../../../interface/Billing";
+import InvoiceDocument from "../InvoiceDocument";
 import {
   INVOICE_FRAME_HTML,
   INVOICE_PRINT_HEIGHT,
   INVOICE_PRINT_WIDTH,
   waitForInvoiceAssets,
-} from "./utils/invoicePrint";
+} from "../utils/invoicePrint";
 
 export default function InvoicePreview({
   bill,

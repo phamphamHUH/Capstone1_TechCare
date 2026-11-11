@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import UniversalModal, {
   type ModalAction,
-} from "../../../../components/UniversalModal";
+} from "../../../../../components/UniversalModal";
 
 export type BillingModalKind =
   | "print"

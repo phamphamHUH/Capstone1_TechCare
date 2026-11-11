@@ -1,16 +1,16 @@
-import ErrorMessage from "../../../../components/ErrorMessage";
-import EmptyState from "../../../../components/EmptyState";
-import LoadingScreen from "../../../../components/LoadingScreen";
-import LoadingRegion from "../../../../components/LoadingRegion";
+import ErrorMessage from "../../../../../components/ErrorMessage";
+import EmptyState from "../../../../../components/EmptyState";
+import LoadingScreen from "../../../../../components/LoadingScreen";
+import LoadingRegion from "../../../../../components/LoadingRegion";
 import React, {
   useRef,
   useState,
   type Dispatch,
   type SetStateAction,
 } from "react";
-import type { QueueEntry } from "../../../../interface/Queue";
+import type { QueueEntry } from "../../../../../interface/Queue";
 import api from "#lib/axios";
-import CancelationReason from "./CancelationReason";
+import CancelationReason from "./QueueTable/CancelationReason";
 
 type QueueTableProps = {
   filterQueues: QueueEntry[];

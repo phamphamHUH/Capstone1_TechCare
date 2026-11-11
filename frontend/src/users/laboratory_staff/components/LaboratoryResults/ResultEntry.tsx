@@ -33,7 +33,7 @@ import { formatLabDate } from "../../../../utils/formats";
 import { CategoryBadge } from "./AnalysisList";
 import { matchingTest } from "./utils/reportTemplates";
 import { AnalysisButton, AnalysisNotice, FlaskBadge } from "./AnalysisUi";
-import TemplateFields from "./TemplateFields";
+import TemplateFields from "./ResultEntry/TemplateFields";
 import ResultSuccessOverlay from "./ResultSuccessOverlay";
 import PrintResultView from "./PrintResultView";
 import ResultReleaseControl from "./ResultReleaseControl";

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import UniversalModal from "../../../../components/UniversalModal";
+import UniversalModal from "../../../../../../components/UniversalModal";
 
 const MAX_LENGTH = 255;
 const SKIP_REASON = "Skipped 3 times without responding";

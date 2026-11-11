@@ -20,7 +20,7 @@ import type {
 } from "../../../../interface/LaboratoryAnalysis";
 import { AnalysisButton, AnalysisNotice } from "./AnalysisUi";
 import { apiMessage, fetchPrintableResults } from "./utils/laboratoryResultsApi";
-import LaboratoryReport from "./LaboratoryReport";
+import LaboratoryReport from "./PrintResultView/LaboratoryReport";
 import ResultReleaseControl from "./ResultReleaseControl";
 import {
   REPORT_FRAME_HTML,

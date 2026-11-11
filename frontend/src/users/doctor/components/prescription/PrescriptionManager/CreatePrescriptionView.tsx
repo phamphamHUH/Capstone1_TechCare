@@ -1,5 +1,5 @@
-import ErrorMessage from "../../../../components/ErrorMessage";
-import EmptyState from "../../../../components/EmptyState";
+import ErrorMessage from "../../../../../components/ErrorMessage";
+import EmptyState from "../../../../../components/EmptyState";
 import React, { useState } from "react";
 import {
   Search,
@@ -10,9 +10,9 @@ import {
   FileCheck2,
   X,
 } from "lucide-react";
-import type { Medication, PatientInfo } from "./types";
-import { COMMON_MEDICATIONS } from "./utils/mockData";
-import PatientPrescriptionCard from "./PatientPrescriptionCard";
+import type { Medication, PatientInfo } from "../types";
+import { COMMON_MEDICATIONS } from "../utils/mockData";
+import PatientPrescriptionCard from "../PatientPrescriptionCard";
 
 interface CreatePrescriptionViewProps {
   patient: PatientInfo;

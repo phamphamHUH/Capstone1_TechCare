@@ -8,7 +8,7 @@ import {
   SelectField,
   Section,
   fieldClass,
-} from "../../../../components/FormFields";
+} from "./AddUserModal/FormFields";
 import { DOCTOR_FIELDS } from "./utils/doctorField";
 import {
   departmentAfterRoleChange,
