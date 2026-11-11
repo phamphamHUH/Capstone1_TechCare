@@ -49,7 +49,7 @@ export async function deleteQueue(
     );
     await client.query("COMMIT");
     publishQueueChange();
-    // LAB-/IMG-... queues belong to the laboratory, CONS-... to the doctors.
+    // LAB-/IMG-... queues belong to the laboratory, CON-/CONS-... to the doctors.
     if (String(entry.status).toLowerCase() === "waiting") {
       const kind = /^(LAB|IMG)-/.test(String(queue_id)) ? "laboratory" : "consultation";
       void notifyCancelled(entry.patient_id, kind, actorId(req), "Cancelled by front desk");

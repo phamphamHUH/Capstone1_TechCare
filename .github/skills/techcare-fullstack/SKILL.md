@@ -166,7 +166,7 @@ separate tables with similar columns (`password_hash`, not `password`).
 | `patients` | `patient_id` (unique), `username` (= patient_id when created by front desk), `password_hash` (default password is the last name), name, `sex`, `email` (unique), `contact_number`, `birthdate`, address as `street/barangay/city/province/zip_code`, `guardian_name/guardian_relationship/guardian_contact`, `is_pwd`, `height_cm`, `weight_kg`, medical history text columns, `smoking_status`, `alcohol_consumption`, `civil_status`, `blood_type`, `image_url`, `role` default `'patient'`, `account_status`, `active`. **No `address`, `emergency_contact_name` or `emergency_contact`.** |
 | `services` | `service_id`, `service_type` (`consultation` / `laboratory`), `service_name` (unique), `price`, `active`, `room` (e.g. `Consultation Room`, `Laboratory Room 1/2`), `service_category`. |
 | `packages` | `package_id` (unique string), `package_name`, `package_price`, `status` (`Active`). No controller uses it yet. |
-| `queue_entries` | `queue_id` (`CONS-####` / `LAB-####`), `patient_id`, `queue_number`, `is_priority`, `skip_count`, `status`. **No `service_id` or `service_type`**: the service is reached through `consultation_records.queue_id` or `laboratory_request_items.queue_id`. |
+| `queue_entries` | `queue_id` (`CON-####` / `LAB-####` / `IMG-####` (older rows: `CONS-####`; match consultation queues with `(queue_id LIKE 'CON-%' OR queue_id LIKE 'CONS-%')`)), `patient_id`, `queue_number`, `is_priority`, `skip_count`, `status`. **No `service_id` or `service_type`**: the service is reached through `consultation_records.queue_id` or `laboratory_request_items.queue_id`. |
 | `consultation_records` | `consultation_record_id`, `patient_id`, `service_id`, `queue_id`, `bill_id` → bills, `status` (default `'Created'`), `cancellation_reason`, `is_paid`, `requested_by` → users, `consulted_by` → users, `consultation_type` (`Initial`), JSONB `diagnosis`, `presenting_complaint`, `vital_signs`, `physical_examination`, `notes`, `requested_at`, `consulted_at`. **There is no `doctor_id`.** |
 | `prescription_records` | `prescription_id` (`RX-…`), `consultation_record_id`, `patient_id`, `prescriber_id`, `valid_until`, `status` (`Active`), `prescription_items` JSONB (`[{medication,dosage,frequency,duration?,instructions?}]`), `notes`. |
 | `laboratory_requests` | `request_id` (`LR-…`), optional `consultation_record_id`, `patient_id`, `requested_by`, `status` (`Requested` → `Paid`), `is_paid`, `is_priority`, `request_date`, `estimated_release_date`, `requested_at`. |
@@ -214,7 +214,7 @@ separate tables with similar columns (`password_hash`, not `password`).
 
 ### Consultation flow
 
-Front desk `POST /api/fdstaff/consultation-requests` `{patient_id, service_id, is_priority}` creates a `CONS-####` queue entry **and** a `consultation_records` row (`In Queue`) in one transaction, then `publishQueueChange()`. The doctor side (findings, prescriptions, queue) is only partly working; see Gotchas 1–4.
+Front desk `POST /api/fdstaff/consultation-requests` `{patient_id, service_id, is_priority}` creates a `CON-####` queue entry **and** a `consultation_records` row (`In Queue`) in one transaction, then `publishQueueChange()`. The doctor side (findings, prescriptions, queue) is only partly working; see Gotchas 1–4.
 
 ## ID generation (`utils/generateId.ts`)
 
@@ -230,11 +230,11 @@ IDs are generated app-side by reading the max existing value for a scope and inc
 | Laboratory item | `LI-YY-MMDD-NNNN` | daily |
 | Consultation record | `CR-YY-MMDD-NNNN` | daily (two generators: `generateConsultationRecordId` in generateId.ts, `generateConsultationRecordID` in generateConsultationId.ts) |
 | Prescription | `RX-YY-MMDD-NNNN` | daily |
-| Consultation queue / Lab queue | `CONS-NNNN` / `LAB-NNNN` | never (monotonic) |
+| Consultation / lab / imaging queue | `CON-NNNN` (older `CONS-NNNN`) / `LAB-NNNN` / `IMG-NNNN` | never (monotonic) |
 | Lab result | `RES-<uuid>` | n/a |
 | Form template / component | `F-<Date.now()>` / `FC-<form_id>-<index>` | n/a |
 
-Queue **numbers** (display order) differ from queue IDs: consultation numbers are `MAX+1` per Manila day across all `CONS-` entries; lab numbers are `MAX+1` per Manila day **per room**.
+Queue **numbers** (display order) differ from queue IDs: consultation numbers are `MAX+1` per Manila day across all `CON-`/`CONS-` entries; lab numbers are `MAX+1` per Manila day **per room**.
 
 ## Authentication
 

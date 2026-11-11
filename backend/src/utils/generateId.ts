@@ -368,11 +368,16 @@ export async function generateBillId(client: PoolClient) {
 // }
 ///=======================================================================================
 
+// Consultation queues are CON-0001, CON-0002, ... Older rows use the previous
+// CONS- prefix; numbering continues after the highest of either, and every
+// consultation query matches both:
+//   (queue_id LIKE 'CON-%' OR queue_id LIKE 'CONS-%')
 export async function generateConsultationQueueId(client: PoolClient) {
   const { rows } = await client.query(
     `SELECT queue_id
      FROM queue_entries
-     WHERE queue_id LIKE 'CONS-%'
+     WHERE (queue_id LIKE 'CON-%' OR queue_id LIKE 'CONS-%')
+       AND SPLIT_PART(queue_id, '-', 2) ~ '^[0-9]+$' -- skips seed IDs like CON-SEED-000001
      ORDER BY SPLIT_PART(queue_id, '-', 2)::int DESC
      LIMIT 1`,
   );
@@ -380,14 +385,14 @@ export async function generateConsultationQueueId(client: PoolClient) {
   const last = rows[0]?.queue_id;
   const nextNumber = last ? Number(last.split("-")[1]) + 1 : 1;
 
-  return `CONS-${String(nextNumber).padStart(4, "0")}`;
+  return `CON-${String(nextNumber).padStart(4, "0")}`;
 }
 
 export async function generateQueueNumberConsultation(client: PoolClient) {
   const { rows } = await client.query(
     `SELECT COALESCE(MAX(queue_number), 0) + 1 AS next
      FROM queue_entries
-     WHERE queue_id LIKE 'CONS-%'
+     WHERE (queue_id LIKE 'CON-%' OR queue_id LIKE 'CONS-%')
        AND (created_at AT TIME ZONE 'Asia/Manila')::date =
            (NOW() AT TIME ZONE 'Asia/Manila')::date`,
   );
