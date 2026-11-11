@@ -123,7 +123,7 @@ function AddMedication({
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <label htmlFor="med-name" className="text-xs font-semibold">
-              Medication Name <span className="text-red-500">*</span>
+              Medication Name *
             </label>
             <input
               id="med-name"
@@ -141,7 +141,7 @@ function AddMedication({
 
           <div className="space-y-1.5">
             <label htmlFor="med-dosage" className="text-xs font-semibold">
-              Dosage <span className="text-red-500">*</span>
+              Dosage *
             </label>
             <input
               id="med-dosage"
@@ -162,7 +162,7 @@ function AddMedication({
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <label htmlFor="med-frequency" className="text-xs font-semibold">
-              Frequency <span className="text-red-500">*</span>
+              Frequency *
             </label>
             <select
               id="med-frequency"
@@ -178,7 +178,7 @@ function AddMedication({
 
           <div className="space-y-1.5">
             <label htmlFor="med-duration" className="text-xs font-semibold">
-              Duration <span className="text-red-500">*</span>
+              Duration *
             </label>
             <select
               id="med-duration"
