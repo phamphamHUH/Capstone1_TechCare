@@ -20,7 +20,7 @@ function StatTile({ icon, label, value, caption, change, changeLabel, onClick }:
 
   const content = (
     <>
-      <div className="flex items-center gap-3 mb-4">
+      <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
         {icon}
         <p className="text-sm text-gray-500">{label}</p>
         {onClick && (
@@ -32,7 +32,7 @@ function StatTile({ icon, label, value, caption, change, changeLabel, onClick }:
         )}
       </div>
 
-      <p className="text-3xl font-semibold tabular-nums truncate">{value}</p>
+      <p className="text-2xl sm:text-3xl font-semibold tabular-nums truncate">{value}</p>
 
       <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
         {showChange && (
@@ -51,14 +51,14 @@ function StatTile({ icon, label, value, caption, change, changeLabel, onClick }:
     </>
   );
 
-  if (!onClick) return <div className="p-6 min-w-0">{content}</div>;
+  if (!onClick) return <div className="bg-white p-4 sm:p-6 min-w-0">{content}</div>;
 
   return (
     <button
       type="button"
       onClick={onClick}
       aria-haspopup="dialog"
-      className="group p-6 min-w-0 text-left cursor-pointer transition-colors hover:bg-sky-50 active:bg-sky-100 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-sky-500"
+      className="group bg-white p-4 sm:p-6 min-w-0 text-left cursor-pointer transition-colors hover:bg-sky-50 active:bg-sky-100 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-sky-500"
     >
       {content}
     </button>

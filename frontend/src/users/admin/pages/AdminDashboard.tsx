@@ -130,7 +130,7 @@ function AdminDashboard({
             {summary && sales && (
               <>
                 <section className="bg-white border border-gray-300 rounded-md overflow-hidden">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-gray-300">
+                  <div className="grid grid-cols-2 xl:grid-cols-5 gap-px bg-gray-300 [&>*:last-child:nth-child(odd)]:col-span-2 xl:[&>*:last-child:nth-child(odd)]:col-span-1">
                     <StatTile
                       icon={<Banknote {...iconProps} />}
                       label="Revenue"
@@ -237,7 +237,7 @@ function AdminDashboard({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-gray-300">
+                  <div className="grid grid-cols-2 xl:grid-cols-5 gap-px bg-gray-300 [&>*:last-child:nth-child(odd)]:col-span-2 xl:[&>*:last-child:nth-child(odd)]:col-span-1">
                     <StatTile
                       icon={<PackageCheck {...iconProps} />}
                       label="Active Services"
@@ -338,7 +338,7 @@ function UnavailableAnalytics({ inventory = false }: { inventory?: boolean }) {
             Service Inventory
           </h2>
         )}
-        <div className="grid grid-cols-1 divide-y divide-gray-300 sm:grid-cols-2 sm:divide-y-0 sm:divide-x xl:grid-cols-5">
+        <div className="grid grid-cols-2 xl:grid-cols-5 gap-px bg-gray-300 [&>*:last-child:nth-child(odd)]:col-span-2 xl:[&>*:last-child:nth-child(odd)]:col-span-1">
           {metrics.map(({ icon: Icon, label }) => (
             <StatTile
               key={label}
