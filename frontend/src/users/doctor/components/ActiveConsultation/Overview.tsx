@@ -38,6 +38,7 @@ import { usePersistentState } from "../../../../utils/persistentState";
 
 type OverviewProps = {
   selectedQueue: QueueEntry | null;
+  setSelectedQueue: React.Dispatch<React.SetStateAction<QueueEntry | null>>;
   findingsSaved: boolean;
   onFindingsSaved: () => void;
   onProceed: () => void;
@@ -454,15 +455,15 @@ function Overview({
       {/* Actions */}
       {submitError && <p className="text-xs text-red-500">{submitError}</p>}
       <div className="flex justify-between">
+        <button
+          type="button"
+          onClick={() => setConfirmingEnd(true)}
+          disabled={isSaving || !findingsSaved}
+          className="rounded-md border cursor-pointer border-gray-300 px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-white"
+        >
+          Complete Consultation
+        </button>
         <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={() => setConfirmingEnd(true)}
-            disabled={isSaving || !findingsSaved}
-            className="rounded-md border cursor-pointer border-gray-300 px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-white"
-          >
-            End Consultation
-          </button>
           <button
             type="button"
             onClick={() =>
@@ -473,15 +474,15 @@ function Overview({
           >
             Proceed to Prescription
           </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isSaving || !hasRequiredData}
+            className="rounded-md bg-blue-600 cursor-pointer px-4 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+          >
+            {isSaving ? "Saving..." : "Save Findings"}
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={isSaving || !hasRequiredData}
-          className="rounded-md bg-blue-600 cursor-pointer px-4 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
-        >
-          {isSaving ? "Saving..." : "Save Findings"}
-        </button>
       </div>
       {showSuccess && (
         <UniversalModal
@@ -505,7 +506,6 @@ function Overview({
           ]}
         />
       )}
-
       {confirmingProceed && (
         <ConfirmDialog
           tone="info"
@@ -521,7 +521,6 @@ function Overview({
           }}
         />
       )}
-
       {confirmingSkip && (
         <ConfirmDialog
           tone="warning"
@@ -537,7 +536,6 @@ function Overview({
           }}
         />
       )}
-
       {confirmingEnd && (
         <ConfirmDialog
           tone="warning"

@@ -19,21 +19,14 @@ import UniversalModal from "#components/UniversalModal";
 type PrescriptionProps = {
   selectedQueue: QueueEntry;
   onBack: () => void;
-  hasSavedFindings: boolean;
-  onCompleted?: () => void | Promise<void>;
+  onPreview: () => void;
 };
 
-// "3x a day (TID)" -> "3x a day"
 const shortFrequency = (f: string) => f.replace(/\s*\(.*\)/, "");
 
 const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
 
-function Prescription({
-  selectedQueue,
-  onBack,
-  hasSavedFindings,
-  onCompleted,
-}: PrescriptionProps) {
+function Prescription({ selectedQueue, onBack, onPreview }: PrescriptionProps) {
   const draftKey = `prescription-draft:${selectedQueue.consultation_record_id}`;
 
   const [prescriptionItems, setPrescriptionItems] = usePersistentState<
@@ -44,7 +37,6 @@ function Prescription({
   const [clearing, setClearing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [confirmingComplete, setConfirmingComplete] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [user] = useState(() => {
@@ -103,31 +95,6 @@ function Prescription({
       );
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleCompleteConsultation = async () => {
-    try {
-      setError(null);
-      await api.patch(
-        `/api/doctor/consultation-queues/${encodeURIComponent(selectedQueue.queue_id)}/complete`,
-        { room: selectedQueue.room, action: "complete" },
-      );
-
-      const consultationKey = selectedQueue.consultation_record_id;
-      sessionStorage.removeItem(
-        `prescription-draft:${consultationKey}:prescriptionItems`,
-      );
-      sessionStorage.removeItem(`prescription-draft:${consultationKey}:notes`);
-
-      await onCompleted?.();
-    } catch (err) {
-      setError(
-        (err as { response?: { data?: { message?: string } } }).response?.data
-          ?.message || "Failed to complete the consultation.",
-      );
-    } finally {
-      setConfirmingComplete(false);
     }
   };
 
@@ -251,33 +218,22 @@ function Prescription({
         <div className="flex gap-3">
           <button
             type="button"
-            onClick={() => setConfirmingComplete(true)}
-            disabled={!hasSavedFindings}
-            title={
-              hasSavedFindings
-                ? "Complete this consultation"
-                : "Save the consultation findings first"
-            }
-            className="rounded-md border cursor-pointer border-gray-300 px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-white"
-          >
-            Complete Consultation
-          </button>
-          <button
-            type="button"
             onClick={onBack}
             className="rounded-md border cursor-pointer border-gray-300 px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
           >
             Return to Findings
           </button>
         </div>
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving || saved || prescriptionItems.length === 0}
-          className="rounded-md bg-blue-600 cursor-pointer px-4 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
-        >
-          {saving ? "Saving..." : "Save Prescription"}
-        </button>
+        <div>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving || saved || prescriptionItems.length === 0}
+            className="rounded-md bg-blue-600 cursor-pointer px-4 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+          >
+            {saving ? "Saving..." : "Save Prescription"}
+          </button>
+        </div>
       </div>
 
       {clearing && (
@@ -300,33 +256,21 @@ function Prescription({
           isOpen
           type="success"
           title="Prescription Saved"
-          description="The prescription was saved successfully."
+          description="The prescription was saved successfully. You can now review and print the prescription."
           icon={<CheckCircle2 size={36} />}
           onClose={() => {
             setShowSuccess(false);
-            setConfirmingComplete(true);
+            onPreview();
           }}
           actions={[
             {
-              label: "Continue",
+              label: "Preview Prescription",
               onClick: () => {
                 setShowSuccess(false);
-                setConfirmingComplete(true);
+                onPreview();
               },
             },
           ]}
-        />
-      )}
-      {confirmingComplete && (
-        <ConfirmDialog
-          tone="info"
-          icon={CheckCircle2}
-          title="Prescription Saved"
-          confirmLabel="Complete Consultation"
-          cancelLabel="Stay"
-          description="Do you want to complete the consultation now, or stay on this page?"
-          onCancel={() => setConfirmingComplete(false)}
-          onConfirm={handleCompleteConsultation}
         />
       )}
     </div>

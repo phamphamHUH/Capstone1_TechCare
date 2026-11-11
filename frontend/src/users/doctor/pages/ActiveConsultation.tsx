@@ -12,9 +12,18 @@ import Preview from "../components/ActiveConsultation/Preview";
 
 type ActiveConsultationProps = {
   selectedQueue: QueueEntry | null;
+  setSelectedQueue: React.Dispatch<React.SetStateAction<QueueEntry | null>>;
   room: string;
   loading?: boolean;
   error?: string | null;
+  findingsSaved: boolean;
+  setFindingsSavedForRecord: React.Dispatch<
+    React.SetStateAction<string | null>
+  >;
+  overviewStep: "findings" | "prescription" | "preview";
+  setOverviewStep: React.Dispatch<
+    React.SetStateAction<"findings" | "prescription" | "preview">
+  >;
   onCompleted?: () => void | Promise<void>;
 };
 
@@ -27,23 +36,23 @@ export type ConsultationTabs =
 
 function ActiveConsultation({
   selectedQueue,
+  setSelectedQueue,
   room,
   loading,
   error,
+  findingsSaved,
+  setFindingsSavedForRecord,
+  overviewStep,
+  setOverviewStep,
   onCompleted,
 }: ActiveConsultationProps) {
   const [activeTab, setActiveTab] = useState<ConsultationTabs>("overview");
-  const [findingsSaved, setFindingsSaved] = useState(false);
-  const [overviewStep, setOverviewStep] = useState<
-    "findings" | "prescription" | "preview"
-  >("findings");
   const [prevRecordId, setPrevRecordId] = useState(
     selectedQueue?.consultation_record_id,
   );
   if (selectedQueue?.consultation_record_id !== prevRecordId) {
     setPrevRecordId(selectedQueue?.consultation_record_id);
     setOverviewStep("findings");
-    setFindingsSaved(false);
   }
 
   const initials = (selectedQueue?.patient_name ?? "")
@@ -185,8 +194,13 @@ function ActiveConsultation({
                   <Overview
                     key={selectedQueue.consultation_record_id}
                     selectedQueue={selectedQueue}
+                    setSelectedQueue={setSelectedQueue}
                     findingsSaved={findingsSaved}
-                    onFindingsSaved={() => setFindingsSaved(true)}
+                    onFindingsSaved={() =>
+                      setFindingsSavedForRecord(
+                        selectedQueue.consultation_record_id,
+                      )
+                    }
                     onProceed={() => setOverviewStep("prescription")}
                     onCompleted={onCompleted}
                   />
@@ -194,11 +208,14 @@ function ActiveConsultation({
                   <Prescription
                     selectedQueue={selectedQueue}
                     onBack={() => setOverviewStep("findings")}
-                    hasSavedFindings={findingsSaved}
-                    onCompleted={onCompleted}
+                    onPreview={() => setOverviewStep("preview")}
                   />
                 ) : (
-                  <Preview />
+                  <Preview
+                    selectedQueue={selectedQueue}
+                    setSelectedQueue={setSelectedQueue}
+                    onCompleted={onCompleted}
+                  />
                 ))}
               {activeTab === "medical-history" && (
                 <MedicalHistoryTab

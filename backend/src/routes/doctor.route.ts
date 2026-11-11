@@ -20,6 +20,7 @@ import {
   getMedicalHistory,
   getMedicalHistoryDetails,
   getMedicalHistoryFull,
+  getPrescriptionPreviewDetails,
   getRoomSpecificServices,
   // getLaboratoryServices,
   // getConsultationPatient,
@@ -53,6 +54,10 @@ router.get(
 router.get(
   "/medical-history/:record_type/:record_id/full",
   getMedicalHistoryFull,
+);
+router.get(
+  "/prescriptions/preview/:consultation_record_id",
+  getPrescriptionPreviewDetails,
 );
 
 router.patch("/consultation-queues/:queue_id/accept", acceptConsultationQueue);

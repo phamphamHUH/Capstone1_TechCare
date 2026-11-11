@@ -265,21 +265,28 @@ export async function addPrescription(
   }
 
   try {
+    // Delete the existing prescription for this consultation.
+    await sql`
+    DELETE FROM prescription_records
+    WHERE consultation_record_id = ${consultation_record_id}
+  `;
+
     const prescription_id = await generatePrescriptionId();
 
     const rows = await sql`
-      INSERT INTO prescription_records
-        (prescription_id, consultation_record_id, patient_id, prescriber_id,
-         valid_until, prescription_items, notes)
-      SELECT ${prescription_id}, cr.consultation_record_id, cr.patient_id,
-             ${prescriber_id}, ${valid_until ?? null},
-             ${JSON.stringify(cleanItems)}::jsonb, ${notes?.trim() || null}
-      FROM consultation_records cr
-      WHERE cr.consultation_record_id = ${consultation_record_id}
-      RETURNING *
-    `;
+    INSERT INTO prescription_records
+      (prescription_id, consultation_record_id, patient_id, prescriber_id,
+       valid_until, prescription_items, notes)
+    SELECT ${prescription_id}, cr.consultation_record_id, cr.patient_id,
+           ${prescriber_id}, ${valid_until ?? null},
+           ${JSON.stringify(cleanItems)}::jsonb, ${notes?.trim() || null}
+    FROM consultation_records cr
+    WHERE cr.consultation_record_id = ${consultation_record_id}
+    RETURNING *
+  `;
 
     const prescription = rows[0];
+
     if (!prescription) {
       return res
         .status(404)
@@ -292,11 +299,13 @@ export async function addPrescription(
     } as addPrescriptions.response);
   } catch (error: any) {
     console.error("Unable to save prescription:", error);
+
     if (error.code === "23503") {
       return res.status(400).json({
         message: "Invalid patient or prescriber ID.",
       } as addPrescriptions.error);
     }
+
     return res
       .status(500)
       .json({ message: "Internal server error." } as addPrescriptions.error);
