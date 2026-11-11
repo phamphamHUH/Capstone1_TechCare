@@ -3,7 +3,7 @@ import { ENV } from "../../config/env.js";
 import { sql } from "../../config/db.js";
 import { pool } from "../../config/db.js";
 import bcrypt from "bcryptjs";
-import { calculateAge } from "../../utils/calculateAge.js";
+import { calculateAge } from "./utils/calculateAge.js";
 import type { Request, Response } from "express";
 import cloudinary from "../../config/cloudinary.js";
 import {

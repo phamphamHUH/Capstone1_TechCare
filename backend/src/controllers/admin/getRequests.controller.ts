@@ -13,9 +13,9 @@ import type {
 } from "./dto/get.dto.js";
 import {
   ANALYTICS_RANGES,
-  isAnalyticsRange,
-  resolveAnalyticsRange,
-} from "../../utils/analyticsRange.js";
+  readAnalyticsRange,
+} from "./utils/analyticsRange.js";
+import { roundMoney, toNumber } from "./utils/numbers.js";
 
 // GET ALL USERS
 export async function getAllUsers(
@@ -256,20 +256,6 @@ export async function getFormTemplateById(
 // =========================
 // ANALYTICS HELPERS
 // =========================
-
-// NUMERIC and COUNT(*) come back from the driver as strings.
-const toNumber = (value: unknown) => {
-  const parsed = Number(value ?? 0);
-  return Number.isFinite(parsed) ? parsed : 0;
-};
-
-const roundMoney = (value: number) => Math.round(value * 100) / 100;
-
-// Reads ?range=, defaulting to 30 days. Returns null when it is not allowed.
-function readAnalyticsRange(rawRange: unknown) {
-  const range = rawRange === undefined || rawRange === "" ? "30d" : rawRange;
-  return isAnalyticsRange(range) ? resolveAnalyticsRange(range) : null;
-}
 
 // GET SALES ANALYTICS
 export async function getSalesAnalytics(

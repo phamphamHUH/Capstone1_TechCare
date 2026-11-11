@@ -9,7 +9,7 @@ import {
   generateQueueNumberLaboratory,
 } from "../../utils/generateId.js";
 import { publishQueueChange } from "../../services/queue-sse/index.js";
-import { calculateAge } from "../../utils/calculateAge.js";
+import { calculateAge } from "./utils/calculateAge.js";
 import type { Request, Response } from "express";
 import type {
   updatePatient,

@@ -1,4 +1,4 @@
-import { sql } from "../config/db.js";
+import { sql } from "../../../config/db.js";
 
 // Register the builder's field types in the same transaction as the template.
 // Existing registry entries and their settings are preserved.

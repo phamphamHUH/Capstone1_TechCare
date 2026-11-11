@@ -5,8 +5,8 @@ import {
   generateLaboratoryItemID,
   generatePrescriptionId,
 } from "../../utils/generateId.js";
-import { validateLabRequest } from "../../utils/consultationValidation.js";
-import { resolveDoctorId } from "../../utils/resolveDoctorId.js";
+import { validateLabRequest } from "./utils/consultationValidation.js";
+import { resolveDoctorId } from "./utils/resolveDoctorId.js";
 import { getOrCreateOpenBill } from "../../utils/getOrCreateBill.js";
 import { recomputeBillTotals } from "../../utils/recomputeBills.js";
 import type { addLaboratoryRequest, addPrescriptions } from "./dto/post.dto.js";

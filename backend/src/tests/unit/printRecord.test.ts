@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPrintablePatientRecord } from "../../controllers/fdstaff/getRequests.controller.js";
+import { buildPrintablePatientRecord } from "../../controllers/fdstaff/utils/buildPrintablePatientRecord.js";
 
 describe("buildPrintablePatientRecord", () => {
   it("creates a summary and list data for printing a patient record", () => {

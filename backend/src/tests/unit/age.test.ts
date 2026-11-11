@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calculateAge } from "../../utils/calculateAge";
+import { calculateAge } from "../../controllers/fdstaff/utils/calculateAge.js";
 
 describe("calculateAge", () => {
   it("accepts birthday and calculates age", () => {

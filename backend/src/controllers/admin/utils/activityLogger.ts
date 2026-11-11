@@ -1,4 +1,4 @@
-import { sql } from "../config/db.js";
+import { sql } from "../../../config/db.js";
 
 export interface LogActivityEntry {
   userId: string;

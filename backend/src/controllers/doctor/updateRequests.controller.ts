@@ -16,8 +16,8 @@ import {
   notifySkipped,
 } from "../../services/notifications/index.js";
 import type { addConsultationFindings } from "./dto/post.dto.js";
-import { validateFindings } from "../../utils/consultationValidation.js";
-import { resolveDoctorId } from "../../utils/resolveDoctorId.js";
+import { validateFindings } from "./utils/consultationValidation.js";
+import { resolveDoctorId } from "./utils/resolveDoctorId.js";
 
 export async function acceptConsultationQueue(
   req: Request,

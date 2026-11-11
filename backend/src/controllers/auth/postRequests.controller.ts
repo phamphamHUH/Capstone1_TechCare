@@ -5,6 +5,7 @@ import type { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { ENV } from "../../config/env.js";
 import type { login, refresh } from "./dto/post.dto.js";
+import { issueTokens } from "./utils/issueTokens.js";
 
 export async function login(
   req: Request,
@@ -171,22 +172,6 @@ export async function login(
       error: "Internal Server Error",
     } as login.error);
   }
-}
-
-// =========================
-// ISSUE TOKENS
-// =========================
-// Access token (short-lived, sent on every request) + refresh token
-// (longer-lived, only sent to /api/auth/refresh). Both carry the account ID
-// and account_type ("user" or "patient") so refresh knows which table to check.
-function issueTokens(accountId: string, accountType: login.accountType) {
-  const claims = { user_id: accountId, account_type: accountType };
-  return {
-    token: jwt.sign(claims, ENV.JWT_SECRET, { expiresIn: ENV.JWT_EXPIRES_IN }),
-    refreshToken: jwt.sign(claims, ENV.JWT_REFRESH_TOKEN, {
-      expiresIn: ENV.JWT_REFRESH_EXPIRES_IN,
-    }),
-  };
 }
 
 // POST /api/auth/refresh

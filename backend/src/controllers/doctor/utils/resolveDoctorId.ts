@@ -1,5 +1,5 @@
 import type { Request } from "express";
-import { ENV } from "../config/env.js";
+import { ENV } from "../../../config/env.js";
 
 // The auth middleware only runs in production, so outside production req.user
 // is absent and we accept doctor_id from the body (dev/testing only).

@@ -88,3 +88,9 @@ export function resolveAnalyticsRange(
     previous_start: toSqlTimestamp(previousStart),
   };
 }
+
+// Reads ?range=, defaulting to 30 days. Returns null when it is not allowed.
+export function readAnalyticsRange(rawRange: unknown) {
+  const range = rawRange === undefined || rawRange === "" ? "30d" : rawRange;
+  return isAnalyticsRange(range) ? resolveAnalyticsRange(range) : null;
+}
