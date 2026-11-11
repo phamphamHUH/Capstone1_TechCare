@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import type { BuilderComponent } from "../../../../interface/FormTemplate";
 import type { LaboratoryReportData } from "../../../../interface/LaboratoryAnalysis";
-import { formatLabDate } from "./AnalysisList";
+import { formatLabDate } from "../../../../utils/formats";
 import { resultFlag } from "./laboratoryValidation";
 import { REPORT_LOGO, reportText, safeReportImage } from "./laboratoryPrint";
 import { CLINIC_INFO } from "../../../../lib/clinicInfo";
@@ -388,9 +388,7 @@ export default function LaboratoryReport({ report }: LaboratoryReportProps) {
         </div>
         <div className="clinic-details">
           <h1 className="clinic">{CLINIC_INFO.laboratoryName.toUpperCase()}</h1>
-          <p className="clinic-address">
-            {CLINIC_INFO.address.toUpperCase()}
-          </p>
+          <p className="clinic-address">{CLINIC_INFO.address.toUpperCase()}</p>
           <p className="clinic-contact">TEL #: {CLINIC_INFO.phone}</p>
           <p className="clinic-contact">
             DOH ACCREDITATION NO.: {CLINIC_INFO.dohAccreditationNo}

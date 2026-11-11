@@ -26,7 +26,8 @@ import {
   resultEntryApi,
   submitResultEntry,
 } from "./laboratoryResultsApi";
-import { CategoryBadge, formatLabDate } from "./AnalysisList";
+import { formatLabDate } from "../../../../utils/formats";
+import { CategoryBadge } from "./AnalysisList";
 import { matchingTest } from "./reportTemplates";
 import { AnalysisButton, AnalysisNotice, FlaskBadge } from "./AnalysisUi";
 import TemplateFields from "./TemplateFields";

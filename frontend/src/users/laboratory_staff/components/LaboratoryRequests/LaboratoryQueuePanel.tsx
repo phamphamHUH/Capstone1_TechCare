@@ -229,7 +229,7 @@ function LaboratoryQueuePanel({
             }
           />
         ) : (
-          <div className="w-full mb-8">
+          <div className="w-full">
             <QueueTable
               filterQueues={filterQueues}
               laboratoryItems={laboratoryItems}

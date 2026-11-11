@@ -7,7 +7,7 @@ import type {
   ResultReleaseResponse,
 } from "../../../../interface/LaboratoryAnalysis";
 import { AnalysisButton, AnalysisNotice } from "./AnalysisUi";
-import { formatLabDate } from "./AnalysisList";
+import { formatLabDate } from "../../../../utils/formats";
 import {
   apiMessage,
   releaseLaboratoryResult,
@@ -96,11 +96,7 @@ export function ReleaseConfirmationContent({
           disabled={pending || Boolean(unavailableReason)}
           onClick={onConfirm}
         >
-          {pending ? (
-            <LoadingSpinner size={14} />
-          ) : (
-            <Send size={14} />
-          )}
+          {pending ? <LoadingSpinner size={14} /> : <Send size={14} />}
           {pending ? "Releasing..." : "Confirm Release"}
         </AnalysisButton>
       </footer>

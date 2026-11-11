@@ -21,6 +21,8 @@ type QueueTableProps = {
   room: string;
 };
 
+const PAGE_SIZE = 10;
+
 function QueueTable({
   filterQueues,
   laboratoryItems,
@@ -35,6 +37,27 @@ function QueueTable({
 }: QueueTableProps) {
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
   const [acceptError, setAcceptError] = useState<string | null>(null);
+
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [prevQueues, setPrevQueues] = useState(filterQueues);
+  if (filterQueues !== prevQueues) {
+    setPrevQueues(filterQueues);
+    setPage(1);
+  }
+
+  const total = filterQueues.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const from = total === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+  const to = Math.min(currentPage * PAGE_SIZE, total);
+  const pageQueues = filterQueues.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE,
+  );
+  const start = Math.max(1, Math.min(currentPage - 2, totalPages - 4));
+  const end = Math.min(totalPages, start + 4);
+  const pages = Array.from({ length: end - start + 1 }, (_, i) => start + i);
 
   const handleToggleAccordion = (queue_id: string) => {
     setOpenQueueAccordion((currentQueueId) =>
@@ -130,7 +153,7 @@ function QueueTable({
         </thead>
 
         <tbody>
-          {filterQueues.map((queue) => (
+          {pageQueues.map((queue) => (
             <React.Fragment key={queue.id}>
               <tr
                 className={`border-b border-gray-300 ${
@@ -161,7 +184,7 @@ function QueueTable({
                   {queue.patient_id}
                 </td>
 
-                <td className="break-words px-1 py-3 text-center text-sm">
+                <td className="wrap-break-word px-1 py-3 text-center text-sm">
                   {queue.patient_name || "Unknown"}
                 </td>
 
@@ -322,6 +345,49 @@ function QueueTable({
           ))}
         </tbody>
       </table>
+
+      {total > 0 && (
+        <div className="flex items-center justify-between px-4 py-3 text-xs text-gray-500">
+          <span>
+            Showing {from} - {to} of {total} queues
+          </span>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              disabled={currentPage <= 1}
+              onClick={() => setPage(currentPage - 1)}
+              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              &lt;
+            </button>
+
+            {pages.map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setPage(p)}
+                className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg ${
+                  p === currentPage
+                    ? "bg-sky-500 font-bold text-white shadow-xs"
+                    : "border border-gray-200 hover:bg-gray-100"
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+
+            <button
+              type="button"
+              disabled={currentPage >= totalPages}
+              onClick={() => setPage(currentPage + 1)}
+              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              &gt;
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }
