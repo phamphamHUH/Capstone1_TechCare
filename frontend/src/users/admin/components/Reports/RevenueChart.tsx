@@ -76,7 +76,7 @@ function RevenueChart({ timeline, bucket }: RevenueChartProps) {
           <div
             className="relative flex h-56 items-end gap-0.5"
             role="img"
-            aria-label="Revenue over the selected period. Values are listed in the table below the chart."
+            aria-label="Amount collected over the selected period. Values are listed in the table below the chart."
             onMouseLeave={() => setHovered(null)}
           >
             {timeline.map((point, index) => (
@@ -138,11 +138,11 @@ function RevenueChart({ timeline, bucket }: RevenueChartProps) {
 
       {/* Table view for screen readers */}
       <table className="sr-only">
-        <caption>Revenue by period</caption>
+        <caption>Amount collected by period</caption>
         <thead>
           <tr>
             <th>Period</th>
-            <th>Revenue</th>
+            <th>Collected</th>
             <th>Paid bills</th>
           </tr>
         </thead>

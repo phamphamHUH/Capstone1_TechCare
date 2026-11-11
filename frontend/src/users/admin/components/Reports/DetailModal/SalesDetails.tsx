@@ -122,9 +122,9 @@ function SalesDetailsContent({ kind, previousLabel, sales, data }: SalesDetailsP
       <>
         <FigureRow
           figures={[
-            { label: "Gross sales", value: formatPeso(summary.gross_sales), note: "Before discounts" },
+            { label: "Total before discounts", value: formatPeso(summary.gross_sales), note: "Before discounts" },
             { label: "Discounts", value: `− ${formatPeso(summary.discounts)}` },
-            { label: "Revenue", value: formatPeso(summary.revenue), note: "Collected" },
+            { label: "Collected", value: formatPeso(summary.revenue), note: "Collected" },
             {
               label: `Vs ${previousLabel}`,
               value: change === null ? "—" : `${change >= 0 ? "+" : "−"}${Math.abs(change).toFixed(1)}%`,
@@ -220,7 +220,7 @@ function SalesDetailsContent({ kind, previousLabel, sales, data }: SalesDetailsP
               label: "Share of gross",
               value: summary.gross_sales > 0 ? `${((summary.discounts / summary.gross_sales) * 100).toFixed(1)}%` : "—",
             },
-            { label: "Gross sales", value: formatPeso(summary.gross_sales) },
+            { label: "Total before discounts", value: formatPeso(summary.gross_sales) },
           ]}
         />
 
@@ -265,7 +265,7 @@ function SalesDetailsContent({ kind, previousLabel, sales, data }: SalesDetailsP
     <>
       <FigureRow
         figures={[
-          { label: "Outstanding", value: formatPeso(summary.pending_amount) },
+          { label: "Unpaid", value: formatPeso(summary.pending_amount) },
           { label: "Unpaid bills", value: formatNumber(pending.length) },
           { label: "Oldest bill", value: oldest ? `${daysSince(oldest.created_at)} days` : "—", note: oldest ? formatDateTime(oldest.created_at) : undefined },
           {

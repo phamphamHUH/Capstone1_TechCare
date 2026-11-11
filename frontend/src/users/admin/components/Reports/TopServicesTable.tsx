@@ -23,7 +23,7 @@ function TopServicesTable({ services }: TopServicesTableProps) {
   const max = Math.max(0, ...services.map((service) => service.revenue));
 
   if (services.length === 0) {
-    return <EmptyState message="No services sold in this period." />;
+    return <EmptyState message="No services requested in this period." />;
   }
 
   return (
@@ -35,8 +35,8 @@ function TopServicesTable({ services }: TopServicesTableProps) {
               <th className={`${headCell} w-10 pl-6 pr-2 text-right`}>#</th>
               <th className={`${headCell} px-3`}>Service</th>
               <th className={`${headCell} px-3 text-right`}>Sold</th>
-              <th className={`${headCell} px-3 text-right`}>Revenue</th>
-              <th className={`${headCell} w-1/3 min-w-36 px-6`}>Share of sales</th>
+              <th className={`${headCell} px-3 text-right`}>Collected</th>
+              <th className={`${headCell} w-1/3 min-w-36 px-6`}>Share of total</th>
             </tr>
           </thead>
           <tbody>

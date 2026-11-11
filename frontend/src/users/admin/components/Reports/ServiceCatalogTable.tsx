@@ -15,7 +15,7 @@ const FILTERS: { value: CatalogFilter; label: string }[] = [
   { value: "all", label: "All" },
   { value: "consultation", label: "Consultation" },
   { value: "laboratory", label: "Laboratory" },
-  { value: "unused", label: "No orders" },
+  { value: "unused", label: "No requests" },
   { value: "inactive", label: "Inactive" },
 ];
 
@@ -75,8 +75,8 @@ function ServiceCatalogTable({ services }: ServiceCatalogTableProps) {
               <th className={`${headCell} px-3`}>Room</th>
               <th className={`${headCell} px-3 text-right`}>Price</th>
               <th className={`${headCell} px-3`}>Status</th>
-              <th className={`${headCell} w-1/4 min-w-36 px-3`}>Orders</th>
-              <th className={`${headCell} px-6`}>Last ordered</th>
+              <th className={`${headCell} w-1/4 min-w-36 px-3`}>Requests</th>
+              <th className={`${headCell} px-6`}>Last requested</th>
             </tr>
           </thead>
           <tbody>

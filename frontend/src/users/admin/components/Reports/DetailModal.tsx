@@ -34,7 +34,7 @@ const DETAIL_INFO: Record<
   SalesDetailKind | InventoryDetailKind,
   { title: string; icon: ReactNode }
 > = {
-  revenue: { title: "Revenue", icon: <Banknote {...iconProps} /> },
+  revenue: { title: "Collected", icon: <Banknote {...iconProps} /> },
   "paid-bills": { title: "Paid Bills", icon: <Receipt {...iconProps} /> },
   "average-bill": {
     title: "Average Bill",
@@ -45,14 +45,14 @@ const DETAIL_INFO: Record<
     icon: <BadgePercent {...iconProps} />,
   },
   outstanding: {
-    title: "Outstanding Bills",
+    title: "Unpaid Bills",
     icon: <Hourglass {...iconProps} />,
   },
   active: { title: "Active Services", icon: <PackageCheck {...iconProps} /> },
   inactive: { title: "Inactive Services", icon: <PackageX {...iconProps} /> },
   "average-price": { title: "Average Price", icon: <Tag {...iconProps} /> },
-  orders: { title: "Orders", icon: <ShoppingCart {...iconProps} /> },
-  "not-ordered": { title: "Not Ordered", icon: <CircleSlash {...iconProps} /> },
+  orders: { title: "Requests", icon: <ShoppingCart {...iconProps} /> },
+  "not-ordered": { title: "Not Requested", icon: <CircleSlash {...iconProps} /> },
 };
 
 type DetailModalProps = {

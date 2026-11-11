@@ -38,8 +38,8 @@ type QueueDashboardProps = {
   onQueueChanged: () => void | Promise<void>;
 };
 
-// How many waiting patients the "Next in line" list shows.
-const NEXT_IN_LINE_LIMIT = 5;
+// How many waiting patients the "Next in line" list shows (it scrolls).
+const NEXT_IN_LINE_LIMIT = 30;
 
 // Today's overview for a staff member's room: queue counts, who is being
 // served, who is next, and shortcuts to the role's pages. Shared by the
@@ -166,7 +166,7 @@ function QueueDashboard({
                 message={firstLoad ? "Loading..." : "No one is being served."}
               />
             ) : (
-              <ul className="space-y-3">
+              <ul className="max-h-80 overflow-y-auto overscroll-contain pr-1 space-y-3">
                 {serving.map((entry) => (
                   <li
                     key={entry.queue_id}
@@ -212,7 +212,7 @@ function QueueDashboard({
                 }
               />
             ) : (
-              <ol className="divide-y divide-gray-100">
+              <ol className="max-h-80 overflow-y-auto overscroll-contain pr-1 divide-y divide-gray-100">
                 {waiting.slice(0, NEXT_IN_LINE_LIMIT).map((entry, index) => (
                   <li
                     key={entry.queue_id}

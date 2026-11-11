@@ -62,13 +62,13 @@ const columns: Record<string, Column<ServiceCatalogItem>> = {
   },
   orders: {
     key: "orders",
-    header: "Orders",
+    header: "Requests",
     align: "right",
     render: (service) => formatNumber(service.orders),
   },
   last: {
     key: "last",
-    header: "Last ordered",
+    header: "Last requested",
     render: (service) => (
       <span className="whitespace-nowrap text-gray-500">
         {formatDateTime(service.last_ordered_at)}
@@ -111,7 +111,7 @@ function InventoryDetails({ kind, analytics }: InventoryDetailsProps) {
             },
             { label: "Laboratory", value: formatNumber(countOf("laboratory")) },
             {
-              label: "Orders in period",
+              label: "Requests in period",
               value: formatNumber(
                 list.reduce((sum, service) => sum + service.orders, 0),
               ),
@@ -212,17 +212,17 @@ function InventoryDetails({ kind, analytics }: InventoryDetailsProps) {
         <FigureRow
           figures={[
             {
-              label: "Orders",
+              label: "Requests",
               value: formatNumber(analytics.summary.total_orders),
               note: "Consultations + lab tests",
             },
             {
-              label: "Services ordered",
+              label: "Services requested",
               value: formatNumber(ordered.length),
               note: `Of ${all.length}`,
             },
             {
-              label: "Most ordered",
+              label: "Most requested",
               value: top ? formatNumber(top.orders) : "—",
               note: top?.service_name,
             },
@@ -283,11 +283,11 @@ function InventoryDetails({ kind, analytics }: InventoryDetailsProps) {
       <FigureRow
         figures={[
           {
-            label: "Not ordered",
+            label: "Not requested",
             value: formatNumber(unused.length),
             note: "Active, no orders in period",
           },
-          { label: "Never ordered", value: formatNumber(neverOrdered) },
+          { label: "Never requested", value: formatNumber(neverOrdered) },
           { label: "Active services", value: formatNumber(active.length) },
           {
             label: "Share unused",

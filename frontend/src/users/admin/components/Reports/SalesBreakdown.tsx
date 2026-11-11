@@ -31,7 +31,7 @@ function SalesBreakdown({ serviceTypes, paymentMethods }: SalesBreakdownProps) {
         <p className="text-xs text-gray-400">Line totals before discounts</p>
 
         {typeTotal === 0 ? (
-          <EmptyState message="No sales in this period." />
+          <EmptyState message="Nothing collected in this period." />
         ) : (
           <>
             <div className="mt-4 flex h-3 gap-0.5 overflow-hidden rounded">
