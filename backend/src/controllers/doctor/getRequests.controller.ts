@@ -72,7 +72,7 @@ export async function getConsultationQueues(
       JOIN consultation_records cr ON cr.queue_id = q.queue_id
       JOIN services s              ON s.service_id = cr.service_id
       JOIN patients p              ON p.patient_id = q.patient_id
-      WHERE q.queue_id ~ '^CONS?-'
+      WHERE (q.queue_id LIKE 'CON-%' OR q.queue_id LIKE 'CONS-%')
         AND s.room = ${room}
         AND q.created_at >= CURRENT_DATE
         AND q.created_at <  CURRENT_DATE + INTERVAL '1 day'

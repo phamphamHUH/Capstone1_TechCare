@@ -94,7 +94,7 @@ Always parameterize. Never interpolate user input into identifiers.
 
 ### Queue and consultation
 
-**`queue_entries`**: `queue_id V(255) UNIQUE NOT NULL` (`CON-####`/`LAB-####`/`IMG-####` (older rows: `CONS-####`; match consultation queues with `queue_id ~ '^CONS?-'`)), `patient_id V(255) NOT NULL → patients`, `queue_number INTEGER NOT NULL`, `is_priority BOOLEAN NOT NULL DEFAULT FALSE`, `skip_count INTEGER NOT NULL DEFAULT 0`, `status V(20) NOT NULL DEFAULT 'waiting'`, `created_at`, `updated_at`. **No `service_id` or `service_type`**: reach the service through `consultation_records.queue_id` or `laboratory_request_items.queue_id`.
+**`queue_entries`**: `queue_id V(255) UNIQUE NOT NULL` (`CON-####`/`LAB-####`/`IMG-####` (older rows: `CONS-####`; match consultation queues with `(queue_id LIKE 'CON-%' OR queue_id LIKE 'CONS-%')`)), `patient_id V(255) NOT NULL → patients`, `queue_number INTEGER NOT NULL`, `is_priority BOOLEAN NOT NULL DEFAULT FALSE`, `skip_count INTEGER NOT NULL DEFAULT 0`, `status V(20) NOT NULL DEFAULT 'waiting'`, `created_at`, `updated_at`. **No `service_id` or `service_type`**: reach the service through `consultation_records.queue_id` or `laboratory_request_items.queue_id`.
 
 **`consultation_records`** (**no `doctor_id`, `created_at` or `updated_at`**)
 | Column | Definition |
