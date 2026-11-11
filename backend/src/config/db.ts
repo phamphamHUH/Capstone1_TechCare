@@ -428,11 +428,31 @@ function generateCreateTableSQL(table: TableDefinition): string {
 // CONNECT TO DATABASE
 // =======================================================================
 
+// The link to Neon (us-east-2) sometimes drops for a few seconds. Retry a few
+// times instead of crashing the server on a single timeout.
+const CONNECT_ATTEMPTS = 5;
+
 export async function connectNeon(): Promise<void> {
-  try {
-    for (const table of TABLES) {
-      await sql.query(generateCreateTableSQL(table));
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await createTables();
+    } catch (error) {
+      if (attempt >= CONNECT_ATTEMPTS) throw error;
+      const delayMs = 1000 * 2 ** (attempt - 1);
+      console.warn(
+        `[db] connection attempt ${attempt}/${CONNECT_ATTEMPTS} failed (${(error as Error).message}); retrying in ${delayMs / 1000}s...`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
+  }
+}
+
+async function createTables(): Promise<void> {
+  try {
+    // One HTTP round trip for every CREATE TABLE instead of one per table.
+    await sql.transaction(
+      TABLES.map((table) => sql.query(generateCreateTableSQL(table))),
+    );
 
     // await ensureLaboratoryResultStatus();
     // await sql`
