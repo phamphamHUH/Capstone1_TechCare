@@ -43,10 +43,12 @@ export default function QueueCard({
             <p className="mt-1 text-xs text-gray-500">{group.description}</p>
           </div>
         </div>
-        <span className="inline-flex items-center gap-1.5 rounded-lg bg-sky-50 px-2.5 py-1.5 text-xs text-sky-600">
-          <Info size={14} />
-          {release ? "Result collection" : "Updates every 15 seconds"}
-        </span>
+        {release && (
+          <span className="inline-flex items-center gap-1.5 rounded-lg bg-sky-50 px-2.5 py-1.5 text-xs text-sky-600">
+            <Info size={14} />
+            Result collection
+          </span>
+        )}
       </div>
       <div className="grid gap-3 md:grid-cols-3">
         <div className="rounded-lg border border-sky-100 bg-sky-50 p-3">

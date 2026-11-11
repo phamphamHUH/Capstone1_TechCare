@@ -70,14 +70,10 @@ export default function QueueTracking({
         }
       }
     }
+    // Plain REST: load when the page opens and whenever refreshKey changes
+    // (the header's reload button, or returning to the tab). No polling.
     void load(true);
-    const timer = window.setInterval(() => {
-      if (document.visibilityState === "visible") void load();
-    }, 15000);
-    return () => {
-      controller.abort();
-      window.clearInterval(timer);
-    };
+    return () => controller.abort();
   }, [refreshKey, onLoadingChange]);
   return (
     <div className="space-y-5">
@@ -140,20 +136,20 @@ export default function QueueTracking({
                 );
                 return entries.length
                   ? entries.map((queue) => (
-                      <QueueCard
-                        key={queue.queue_id}
-                        group={group}
-                        queue={queue}
-                        awaitingResults={data.awaiting_results}
-                      />
-                    ))
+                    <QueueCard
+                      key={queue.queue_id}
+                      group={group}
+                      queue={queue}
+                      awaitingResults={data.awaiting_results}
+                    />
+                  ))
                   : [
-                      <QueueCard
-                        key={group.id}
-                        group={group}
-                        awaitingResults={data.awaiting_results}
-                      />,
-                    ];
+                    <QueueCard
+                      key={group.id}
+                      group={group}
+                      awaitingResults={data.awaiting_results}
+                    />,
+                  ];
               })}
           </div>
         )
