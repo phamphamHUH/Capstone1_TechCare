@@ -1,4 +1,5 @@
 import SideBar from "#components/SideBar";
+import { SidebarNavContext } from "../../components/sidebar/sidebarNav";
 import Header from "#components/Header";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LayoutGrid, ListOrdered, FileText, Stethoscope } from "lucide-react";
@@ -149,78 +150,80 @@ function Doctor() {
   }, [loadData]);
 
   return (
-    <div className="flex min-h-screen ">
-      <SideBar open={open} page={page} setPage={setPage} navItems={navItems} />
+    <SidebarNavContext.Provider value={{ navItems, page, setPage }}>
+      <div className="flex min-h-screen ">
+        <SideBar open={open} page={page} setPage={setPage} navItems={navItems} />
 
-      <div className="flex-1 min-w-0">
-        <Header
-          page={currentPage}
-          loading={loading}
-          open={open}
-          setOpen={setOpen}
-          loadData={loadData}
-        />
+        <div className="flex-1 min-w-0">
+          <Header
+            page={currentPage}
+            loading={loading}
+            open={open}
+            setOpen={setOpen}
+            loadData={loadData}
+          />
 
-        <div className="pb-6">
-          {page === "dashboard" && <DoctorDashboard />}
+          <div className="pb-6">
+            {page === "dashboard" && <DoctorDashboard />}
 
-          {page === "consultation-queue" && (
-            <ConsultationQueue
-              services={roomServices}
-              queues={queues}
-              room={room}
-              loading={loading}
-              error={error}
-              queueLoadFailed={queueLoadFailed}
-              open={open}
-              setOpen={setOpen}
-              loadData={loadData}
-              setSelectedQueue={setSelectedQueue}
-            />
-          )}
+            {page === "consultation-queue" && (
+              <ConsultationQueue
+                services={roomServices}
+                queues={queues}
+                room={room}
+                loading={loading}
+                error={error}
+                queueLoadFailed={queueLoadFailed}
+                open={open}
+                setOpen={setOpen}
+                loadData={loadData}
+                setSelectedQueue={setSelectedQueue}
+              />
+            )}
 
-          {page === "active-consultation" && (
-            <ActiveConsultation
-              selectedQueue={selectedQueue}
-              setSelectedQueue={setSelectedQueue}
-              room={room}
-              loading={loading}
-              error={
-                queueLoadFailed
-                  ? "The active consultation could not be refreshed."
-                  : null
-              }
-              findingsSaved={findingsSaved}
-              setFindingsSavedForRecord={setFindingsSavedForRecord}
-              overviewStep={overviewStep}
-              setOverviewStep={setOverviewStep}
-              onCompleted={handleCompleted}
-            />
-          )}
+            {page === "active-consultation" && (
+              <ActiveConsultation
+                selectedQueue={selectedQueue}
+                setSelectedQueue={setSelectedQueue}
+                room={room}
+                loading={loading}
+                error={
+                  queueLoadFailed
+                    ? "The active consultation could not be refreshed."
+                    : null
+                }
+                findingsSaved={findingsSaved}
+                setFindingsSavedForRecord={setFindingsSavedForRecord}
+                overviewStep={overviewStep}
+                setOverviewStep={setOverviewStep}
+                onCompleted={handleCompleted}
+              />
+            )}
 
-          {page === "medical-history" && (
-            <MedicalHistory
-              loading={loading}
-              open={open}
-              setOpen={setOpen}
-              loadData={loadData}
-            />
-          )}
+            {page === "medical-history" && (
+              <MedicalHistory
+                loading={loading}
+                open={open}
+                setOpen={setOpen}
+                loadData={loadData}
+              />
+            )}
 
-          {page === "test-request" && (
-            <TestRequest
-              services={services}
-              open={open}
-              setOpen={setOpen}
-              loadData={loadData}
-              loading={loading}
-              setPage={setPage}
-              selectedQueue={selectedQueue}
-            />
-          )}
+            {page === "test-request" && (
+              <TestRequest
+                services={services}
+                open={open}
+                setOpen={setOpen}
+                loadData={loadData}
+                loading={loading}
+                setPage={setPage}
+                selectedQueue={selectedQueue}
+              />
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </SidebarNavContext.Provider>
   );
 }
 

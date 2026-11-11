@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import Header from "../../components/Header";
 import SideBar from "../../components/SideBar";
+import { SidebarNavContext } from "../../components/sidebar/sidebarNav";
 import MedicalHistory from "./pages/MedicalHistory";
 import Prescriptions from "./pages/Prescriptions";
 import QueueTracking from "./pages/QueueTracking";
@@ -102,76 +103,78 @@ function Patient() {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50 text-gray-900">
-      {sidebarOpen && (
-        <button
-          type="button"
-          aria-label="Close navigation"
-          onClick={() => setSidebarOpen(false)}
-          className="fixed inset-y-0 left-64 right-0 z-30 bg-black/30 lg:hidden"
-        />
-      )}
-      <div
-        className={`${sidebarOpen ? "" : "hidden lg:block"} fixed inset-y-0 left-0 z-40 lg:sticky lg:top-0 lg:h-screen lg:self-start`}
-      >
-        <SideBar
-          open={sidebarOpen}
-          page={activePage}
-          setPage={setPage}
-          navItems={navItems}
-        />
-      </div>
+    <SidebarNavContext.Provider value={{ navItems, page: activePage, setPage }}>
+      <div className="flex min-h-screen bg-gray-50 text-gray-900">
+        {sidebarOpen && (
+          <button
+            type="button"
+            aria-label="Close navigation"
+            onClick={() => setSidebarOpen(false)}
+            className="fixed inset-y-0 left-64 right-0 z-30 bg-black/30 lg:hidden"
+          />
+        )}
+        <div
+          className={`${sidebarOpen ? "" : "hidden lg:block"} fixed inset-y-0 left-0 z-40 lg:sticky lg:top-0 lg:h-screen lg:self-start`}
+        >
+          <SideBar
+            open={sidebarOpen}
+            page={activePage}
+            setPage={setPage}
+            navItems={navItems}
+          />
+        </div>
 
-      <div className="min-w-0 flex-1">
-        <Header
-          page={
-            navItems.find((item) => item.page === activePage)?.label ||
-            "Dashboard"
-          }
-          loading={loading}
-          open={sidebarOpen}
-          setOpen={setSidebarOpen}
-          loadData={() => setRefreshKey((current) => current + 1)}
-        />
-        <main className="space-y-6 px-4 pb-6 sm:px-6">
-          {activePage === "dashboard" && (
-            <PatientDashboard
-              patient={patient}
-              setPage={setPage}
-            />
-          )}
-          {activePage === "queue-tracking" && (
-            <QueueTracking
-              refreshKey={refreshKey}
-              onLoadingChange={setLoading}
-            />
-          )}
-          {(activePage === "medical-history" ||
-            activePage === "laboratory-results") && (
-            <MedicalHistory
-              key={activePage}
-              patientId={patientId}
-              refreshKey={refreshKey}
-              onLoadingChange={setLoading}
-              laboratoryOnly={activePage === "laboratory-results"}
-              onPrescriptions={(id) => {
-                setPage("prescriptions");
-                setConsultationId(id);
-              }}
-            />
-          )}
-          {activePage === "prescriptions" && (
-            <Prescriptions
-              patient={patient}
-              patientId={patientId}
-              refreshKey={refreshKey}
-              onLoadingChange={setLoading}
-              consultationId={consultationId}
-            />
-          )}
-        </main>
+        <div className="min-w-0 flex-1">
+          <Header
+            page={
+              navItems.find((item) => item.page === activePage)?.label ||
+              "Dashboard"
+            }
+            loading={loading}
+            open={sidebarOpen}
+            setOpen={setSidebarOpen}
+            loadData={() => setRefreshKey((current) => current + 1)}
+          />
+          <main className="space-y-6 px-4 pb-6 sm:px-6">
+            {activePage === "dashboard" && (
+              <PatientDashboard
+                patient={patient}
+                setPage={setPage}
+              />
+            )}
+            {activePage === "queue-tracking" && (
+              <QueueTracking
+                refreshKey={refreshKey}
+                onLoadingChange={setLoading}
+              />
+            )}
+            {(activePage === "medical-history" ||
+              activePage === "laboratory-results") && (
+              <MedicalHistory
+                key={activePage}
+                patientId={patientId}
+                refreshKey={refreshKey}
+                onLoadingChange={setLoading}
+                laboratoryOnly={activePage === "laboratory-results"}
+                onPrescriptions={(id) => {
+                  setPage("prescriptions");
+                  setConsultationId(id);
+                }}
+              />
+            )}
+            {activePage === "prescriptions" && (
+              <Prescriptions
+                patient={patient}
+                patientId={patientId}
+                refreshKey={refreshKey}
+                onLoadingChange={setLoading}
+                consultationId={consultationId}
+              />
+            )}
+          </main>
+        </div>
       </div>
-    </div>
+    </SidebarNavContext.Provider>
   );
 }
 

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import SidebarUserMenu from "./sidebar/SidebarUserMenu";
+import type { NavItem } from "./sidebar/sidebarNav";
 
 const DEFAULT_WIDTH = 256;
 const MIN_WIDTH = 224;
@@ -22,7 +23,7 @@ type SideBarProps = {
   open: boolean;
   page: string;
   setPage: (page: string) => void;
-  navItems: { page: string; label: string; icon: React.ReactNode }[];
+  navItems: NavItem[];
 };
 
 function SideBar({ open, page, setPage, navItems }: SideBarProps) {

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import SideBar from "../../components/SideBar";
+import { SidebarNavContext } from "../../components/sidebar/sidebarNav";
 import Header from "../../components/Header";
 
 import UserManagement from "./pages/UserManagement";
@@ -203,90 +204,92 @@ function Admin() {
   }, [loadData, loadAnalytics, page]);
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <SideBar open={open} page={page} setPage={setPage} navItems={navItems} />
+    <SidebarNavContext.Provider value={{ navItems, page, setPage }}>
+      <div className="flex min-h-screen bg-gray-50">
+        <SideBar open={open} page={page} setPage={setPage} navItems={navItems} />
 
-      <div className="flex-1 min-w-0">
-        <Header
-          page={currentPage}
-          loading={loading || analyticsLoading}
-          open={open}
-          setOpen={setOpen}
-          loadData={reloadAll}
-        />
+        <div className="flex-1 min-w-0">
+          <Header
+            page={currentPage}
+            loading={loading || analyticsLoading}
+            open={open}
+            setOpen={setOpen}
+            loadData={reloadAll}
+          />
 
-        <div className="pb-6">
-          {page === "dashboard" && (
-            <AdminDashboard
-              range={analyticsRange}
-              setRange={setAnalyticsRange}
-              sales={salesAnalytics}
-              services={serviceAnalytics}
-              loading={analyticsLoading}
-              error={analyticsError}
-            />
-          )}
+          <div className="pb-6">
+            {page === "dashboard" && (
+              <AdminDashboard
+                range={analyticsRange}
+                setRange={setAnalyticsRange}
+                sales={salesAnalytics}
+                services={serviceAnalytics}
+                loading={analyticsLoading}
+                error={analyticsError}
+              />
+            )}
 
-          {page === "user-management" && (
-            <UserManagement
-              loading={loading}
-              users={users}
-              error={dataErrors.users}
-              open={open}
-              setOpen={setOpen}
-              loadData={loadData}
-            />
-          )}
+            {page === "user-management" && (
+              <UserManagement
+                loading={loading}
+                users={users}
+                error={dataErrors.users}
+                open={open}
+                setOpen={setOpen}
+                loadData={loadData}
+              />
+            )}
 
-          {page === "service-management" && (
-            <ServicePricingManagement
-              loading={loading}
-              services={services}
-              error={dataErrors.services}
-              open={open}
-              setOpen={setOpen}
-              loadData={loadData}
-            />
-          )}
+            {page === "service-management" && (
+              <ServicePricingManagement
+                loading={loading}
+                services={services}
+                error={dataErrors.services}
+                open={open}
+                setOpen={setOpen}
+                loadData={loadData}
+              />
+            )}
 
-          {page === "activity-monitoring" && (
-            <ActivityMonitoring
-              loading={loading}
-              activities={activities}
-              error={dataErrors.activities}
-              open={open}
-              setOpen={setOpen}
-              loadData={loadData}
-            />
-          )}
-          {page === "queueing-monitor" && (
-            <QueueingMonitor
-              loading={loading}
-              open={open}
-              setOpen={setOpen}
-              loadData={loadData}
-            />
-          )}
+            {page === "activity-monitoring" && (
+              <ActivityMonitoring
+                loading={loading}
+                activities={activities}
+                error={dataErrors.activities}
+                open={open}
+                setOpen={setOpen}
+                loadData={loadData}
+              />
+            )}
+            {page === "queueing-monitor" && (
+              <QueueingMonitor
+                loading={loading}
+                open={open}
+                setOpen={setOpen}
+                loadData={loadData}
+              />
+            )}
 
-          {page === "form-template" && (
-            <FormTemplate refreshKey={templateRefresh} />
-          )}
+            {page === "form-template" && (
+              <FormTemplate refreshKey={templateRefresh} />
+            )}
 
-          {!navItems.some((item) => item.page === page) && (
-            <div className="mx-6 rounded-md border border-gray-200 bg-white p-8 text-center">
-              <h2 className="font-semibold text-gray-800">Page not found</h2>
-              <button
-                type="button"
-                onClick={() => setPage("dashboard")}
-                className="mt-3 text-sm text-sky-600 hover:underline"
-              >
-                Return to Dashboard
-              </button>
-            </div>
-          )}
+            {!navItems.some((item) => item.page === page) && (
+              <div className="mx-6 rounded-md border border-gray-200 bg-white p-8 text-center">
+                <h2 className="font-semibold text-gray-800">Page not found</h2>
+                <button
+                  type="button"
+                  onClick={() => setPage("dashboard")}
+                  className="mt-3 text-sm text-sky-600 hover:underline"
+                >
+                  Return to Dashboard
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </SidebarNavContext.Provider>
   );
 }
 

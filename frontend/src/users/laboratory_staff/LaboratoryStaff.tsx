@@ -3,6 +3,7 @@ import { LayoutGrid, ClipboardList, FileCheck } from "lucide-react";
 import api from "../../lib/axios";
 import LaboratoryRequests from "./pages/LaboratoryRequests";
 import SideBar from "../../components/SideBar";
+import { SidebarNavContext } from "../../components/sidebar/sidebarNav";
 import { useSearchParams } from "react-router";
 import LabstaffDashboard from "./pages/LabstaffDashboard";
 import LaboratoryResults from "./pages/LaboratoryResults";
@@ -93,36 +94,38 @@ function LaboratoryStaff() {
   }, [loadData, page]);
 
   return (
-    <div className="flex min-h-screen cursor-default">
-      <SideBar open={open} page={page} setPage={setPage} navItems={navItems} />
-      {page === "dashboard" && (
-        <LabstaffDashboard
-          error={error}
-          open={open}
-          setOpen={setOpen}
-          loading={loading}
-          loadData={loadData}
-        />
-      )}
+    <SidebarNavContext.Provider value={{ navItems, page, setPage }}>
+      <div className="flex min-h-screen cursor-default">
+        <SideBar open={open} page={page} setPage={setPage} navItems={navItems} />
+        {page === "dashboard" && (
+          <LabstaffDashboard
+            error={error}
+            open={open}
+            setOpen={setOpen}
+            loading={loading}
+            loadData={loadData}
+          />
+        )}
 
-      {page === "laboratory-requests" && (
-        <LaboratoryRequests
-          open={open}
-          setOpen={setOpen}
-          queues={queues}
-          services={services}
-          loading={loading}
-          error={error}
-          loadData={loadData}
-          room={room}
-          queueLoadFailed={queueLoadFailed}
-        />
-      )}
+        {page === "laboratory-requests" && (
+          <LaboratoryRequests
+            open={open}
+            setOpen={setOpen}
+            queues={queues}
+            services={services}
+            loading={loading}
+            error={error}
+            loadData={loadData}
+            room={room}
+            queueLoadFailed={queueLoadFailed}
+          />
+        )}
 
-      {page === "laboratory-results" && (
-        <LaboratoryResults open={open} setOpen={setOpen} room={room} />
-      )}
-    </div>
+        {page === "laboratory-results" && (
+          <LaboratoryResults open={open} setOpen={setOpen} room={room} />
+        )}
+      </div>
+    </SidebarNavContext.Provider>
   );
 }
 
