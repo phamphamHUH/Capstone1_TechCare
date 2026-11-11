@@ -129,6 +129,6 @@ IDs are opaque strings. Display as-is, never parse. `P-26-1105-0001` sorts chron
 - Padding rollover: insert `...-9999`, next is `...-10000` (LENGTH ordering handles it).
 
 ## Gotchas
-- Queue "today" in list queries uses `CURRENT_DATE` (DB tz) while numbering uses Manila: use the `AT TIME ZONE 'Asia/Manila'` expression everywhere.
+- Columns are `TIMESTAMPTZ`, so `(created_at AT TIME ZONE 'Asia/Manila')::date` is the correct Manila date (never the old double form `AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Manila'`). Queue "today" in list queries still uses `CURRENT_DATE` (GMT) and the user/patient ID counters use `DATE(created_at) = CURRENT_DATE` and the server's JS date, so they roll over at 8 AM Manila: use the Manila expression everywhere.
 - `Date.now()` form ids can collide on two creations in the same millisecond: use `F-${Date.now()}-${random4}` or a sequence.
 - Forgetting `client.release()` exhausts the Neon pool and hangs the app.
