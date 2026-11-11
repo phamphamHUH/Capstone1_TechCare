@@ -296,6 +296,10 @@ function Overview({
 
   return (
     <div key={selectedQueue.queue_id} className="space-y-5">
+      <div className="flex gap-3 border px-5 py-3 rounded-md border-gray-200 items-center">
+        <h1>Findings</h1>
+        <p className="text-xs font-extralight">(* indicates required fields)</p>
+      </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Left Column */}
         <div className="space-y-5">

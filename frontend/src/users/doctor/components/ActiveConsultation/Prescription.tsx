@@ -100,6 +100,10 @@ function Prescription({ selectedQueue, onBack, onPreview }: PrescriptionProps) {
 
   return (
     <div>
+      <div className="flex gap-3 border px-5 py-3 mb-5 rounded-md border-gray-200 items-center">
+        <h1 className="text-xl font-semibold">Prescription</h1>
+        <p className="text-xs font-light">(* indicates required fields)</p>
+      </div>
       <div className="grid grid-cols-10 gap-5 mb-5 prescriptionItems-start">
         {/* ADD / EDIT MEDICATION */}
         <AddMedication

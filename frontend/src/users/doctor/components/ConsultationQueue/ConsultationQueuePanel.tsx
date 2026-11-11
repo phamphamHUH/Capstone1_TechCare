@@ -1,7 +1,4 @@
 import EmptyState from "../../../../components/EmptyState";
-import ErrorMessage from "../../../../components/ErrorMessage";
-import LoadingScreen from "../../../../components/LoadingScreen";
-import LoadingRegion from "../../../../components/LoadingRegion";
 import { useState, type Dispatch, type SetStateAction } from "react";
 import QueueTable from "./QueueTable";
 import type { PriorityFilter, QueueEntry } from "../../../../interface/Queue";
@@ -67,7 +64,7 @@ function ConsultationQueuePanel({
     .filter((c): c is string => Boolean(c))
     .sort();
 
-  // If the selected service isn't available on this tab, treat it as "no filter"
+  // If the selected service isn't available on this tab, treat it as no filter.
   const activeServiceFilter = serviceOptions.includes(serviceFilter)
     ? serviceFilter
     : "";
@@ -143,12 +140,10 @@ function ConsultationQueuePanel({
     },
   );
 
-  const loadingLabel = activeMainTab === "all" ? "" : `${activeMainTab} `;
-
   return (
-    <div className="w-full min-h-20 border rounded-md border-gray-300 flex flex-col gap-5 justify-around">
+    <div className="flex min-h-20 w-full flex-col justify-around rounded-md border border-gray-300">
       {/* MAIN FILTERS */}
-      <div className="flex w-full justify-around h-10 items-end border-b border-gray-300">
+      <div className="flex h-10 w-full items-end justify-around border-b mb-5 border-gray-300">
         {mainFilterValues.map((mainFilter) => {
           const isActive = activeMainTab === mainFilter.value;
 
@@ -164,7 +159,7 @@ function ConsultationQueuePanel({
               }}
               className={`px-5 py-1 text-sm ${
                 isActive
-                  ? "text-blue-600 border-b border-blue-600"
+                  ? "border-b border-blue-600 text-blue-600"
                   : "text-gray-900"
               }`}
             >
@@ -173,14 +168,16 @@ function ConsultationQueuePanel({
           );
         })}
       </div>
+
       {/* SEARCH BAR AND ADDITIONAL FILTERS */}
-      <div className="mb-4 flex w-7/12 flex-wrap items-center gap-2 px-6">
+      <div className="mb-5 flex w-7/12 flex-wrap items-center gap-2 px-6">
         <div className="relative min-w-55 flex-1 basis-70">
           <Search
             size={17}
             strokeWidth={1.5}
             className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
           />
+
           <input
             type="text"
             value={searchFilter}
@@ -196,13 +193,14 @@ function ConsultationQueuePanel({
             onChange={(e) => setServiceFilter(e.target.value)}
             className="h-9 min-w-27.5 appearance-none rounded-md border border-gray-300 bg-white px-3 pr-8 text-sm text-gray-600 outline-none focus:border-sky-400"
           >
-            <option value="all">Services</option>
+            <option value="">Services</option>
             {serviceOptions.map((name) => (
               <option key={name} value={name}>
                 {name}
               </option>
             ))}
           </select>
+
           <ChevronDown
             size={14}
             className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400"
@@ -221,6 +219,7 @@ function ConsultationQueuePanel({
             <option value="yes">Priority: Yes</option>
             <option value="none">Priority: None</option>
           </select>
+
           <ChevronDown
             size={15}
             className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400"
@@ -228,36 +227,18 @@ function ConsultationQueuePanel({
         </label>
       </div>
 
-      {error && <ErrorMessage className="mx-4">{error}</ErrorMessage>}
-      <LoadingRegion
-        loading={loading && queues.length > 0}
-        message="Refreshing consultation queues..."
-      >
-        {loading && queues.length === 0 ? (
-          <LoadingScreen
-            message={`Loading ${loadingLabel}consultation queues...`}
-          />
-        ) : filterQueues.length === 0 ? (
-          <EmptyState
-            message={
-              loadFailed
-                ? "Consultation requests are unavailable."
-                : "No consultation requests found."
-            }
-          />
-        ) : (
-          <div className="w-full ">
-            <QueueTable
-              filterQueues={filterQueues}
-              setOpenInformationCard={setOpenInformationCard}
-              setQueueIdCard={setQueueIdCard}
-              room={room}
-              loadData={loadData}
-              setSelectedQueue={setSelectedQueue}
-            />
-          </div>
-        )}
-      </LoadingRegion>
+      {/* QUEUE TABLE */}
+      <QueueTable
+        filterQueues={filterQueues}
+        setOpenInformationCard={setOpenInformationCard}
+        setQueueIdCard={setQueueIdCard}
+        room={room}
+        loadData={loadData}
+        setSelectedQueue={setSelectedQueue}
+        loading={loading}
+        error={error}
+        loadFailed={loadFailed}
+      />
     </div>
   );
 }

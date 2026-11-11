@@ -264,7 +264,7 @@ function Preview({
     `}
       </style>
       {/* PAGE HEADER */}
-      <div className="no-print">
+      <div className="no-print border px-5 py-3 mb-5 rounded-md border-gray-200 items-center">
         <h1 className="text-xl font-bold text-gray-900">
           Prescription Preview
         </h1>
@@ -277,7 +277,7 @@ function Preview({
         {/* PRESCRIPTION DOCUMENT */}
         <div className="xl:col-span-7 min-w-0">
           <article
-            className="prescription-paper relative w-full rounded-2xl border border-gray-200 bg-white p-8 shadow-sm"
+            className="prescription-paper relative w-full rounded-md border border-gray-200 bg-white p-8 shadow-sm"
             style={{
               aspectRatio: `${selectedPaper.width} / ${selectedPaper.height}`,
             }}
@@ -335,7 +335,7 @@ function Preview({
             </div>
 
             {/* PATIENT INFORMATION */}
-            <section className="grid grid-cols-2 gap-x-6 gap-y-3 rounded-lg border border-gray-200 bg-gray-50 p-4 text-[11px]">
+            <section className="grid grid-cols-2 gap-x-6 gap-y-3 rounded-md border border-gray-200 bg-gray-50 p-4 text-[11px]">
               <div className="flex gap-2">
                 <span className="text-gray-400">Patient Name:</span>
                 <strong>{prescription.patient_name}</strong>
@@ -362,7 +362,7 @@ function Preview({
             </section>
 
             {/* MEDICATION TABLE */}
-            <section className="mt-6 w-full overflow-hidden rounded-lg border border-gray-200">
+            <section className="mt-6 w-full overflow-hidden rounded-md border border-gray-200">
               <table className="w-full table-fixed border-collapse text-left text-[10px]">
                 <colgroup>
                   <col className="w-[5%]" />
@@ -408,7 +408,7 @@ function Preview({
 
             {/* ADDITIONAL NOTES */}
             {printOptions.notes && prescription.notes && (
-              <section className="mt-6 rounded-lg bg-gray-50 p-4 text-[10px]">
+              <section className="mt-6 rounded-md bg-gray-50 p-4 text-[10px]">
                 <h3 className="mb-2 font-bold">Additional Notes:</h3>
                 <p className="whitespace-pre-wrap italic leading-relaxed text-gray-600">
                   {prescription.notes}
@@ -439,7 +439,7 @@ function Preview({
 
         {/* PRINT OPTIONS */}
         <aside className="no-print xl:col-span-3">
-          <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <section className="rounded-md border border-gray-200 bg-white p-5 shadow-sm">
             <h2 className="mb-5 text-sm font-bold">Print Options</h2>
 
             <div className="space-y-2">
@@ -454,7 +454,7 @@ function Preview({
                 id="paper-size"
                 value={paperSize}
                 onChange={(e) => setPaperSize(e.target.value as PaperSize)}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs outline-none focus:border-blue-500"
+                className="w-full rounded-md border border-gray-200 px-3 py-2 text-xs outline-none focus:border-blue-500"
               >
                 <option value="Half Long Bond">Half Long Bond</option>
                 <option value="A4">A4 (Recommended)</option>
@@ -486,7 +486,7 @@ function Preview({
             <button
               type="button"
               onClick={handlePrint}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 text-xs font-semibold text-white hover:bg-blue-700"
+              className="flex w-full items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-3 text-xs font-semibold text-white hover:bg-blue-700"
             >
               <Printer size={15} />
               Print Prescription
@@ -495,7 +495,7 @@ function Preview({
             <button
               type="button"
               onClick={handlePrint}
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-3 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-md border border-gray-300 px-4 py-3 text-xs font-semibold text-gray-700 hover:bg-gray-50"
             >
               <Download size={15} />
               Download PDF
@@ -516,7 +516,7 @@ function Preview({
           </button>
         </div>
 
-        <div className="flex items-center gap-2 rounded-lg bg-green-50 px-3 py-2 text-xs font-medium text-green-700">
+        <div className="flex items-center gap-2 rounded-md bg-green-50 px-3 py-2 text-xs font-medium text-green-700">
           <CheckCircle2 size={15} />
           Saved Prescription
         </div>
