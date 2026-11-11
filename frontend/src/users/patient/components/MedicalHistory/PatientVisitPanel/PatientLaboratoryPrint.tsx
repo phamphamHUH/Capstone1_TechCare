@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { Printer } from "lucide-react";
-import UniversalModal from "../../../components/UniversalModal";
-import LoadingScreen from "../../../components/LoadingScreen";
-import ErrorMessage from "../../../components/ErrorMessage";
-import type { LaboratoryReportData } from "../../../interface/LaboratoryAnalysis";
-import { ReportPreview } from "../../laboratory_staff/components/LaboratoryResults/PrintResultView";
+import UniversalModal from "../../../../../components/UniversalModal";
+import LoadingScreen from "../../../../../components/LoadingScreen";
+import ErrorMessage from "../../../../../components/ErrorMessage";
+import type { LaboratoryReportData } from "../../../../../interface/LaboratoryAnalysis";
+import { ReportPreview } from "../../../../laboratory_staff/components/LaboratoryResults/PrintResultView";
 import { fetchPatientLaboratoryReport } from "../patientLaboratoryReport";
 
 function ReleasedReportPreview({ resultId }: { resultId: string }) {

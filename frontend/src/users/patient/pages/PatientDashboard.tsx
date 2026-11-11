@@ -6,7 +6,7 @@ import {
   Pill,
 } from "lucide-react";
 import PatientSummaryCard from "../components/PatientSummaryCard";
-import type { PatientSessionUser } from "../types";
+import type { PatientSessionUser } from "../../../interface/PatientPortal";
 
 const links = [
   {

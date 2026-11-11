@@ -4,12 +4,12 @@ import LoadingScreen from "../../../components/LoadingScreen";
 import { useEffect, useMemo, useState } from "react";
 import { FileText, MousePointerClick, Pill, Search } from "lucide-react";
 import PatientSummaryCard from "../components/PatientSummaryCard";
-import { fetchPatientPrescriptions } from "../patientApi";
+import { fetchPatientPrescriptions } from "../components/patientApi";
 import type {
   PatientSessionUser,
   PrescriptionItem,
   PrescriptionRecord,
-} from "../types";
+} from "../../../interface/PatientPortal";
 
 type Props = {
   patient: PatientSessionUser;
@@ -53,7 +53,7 @@ function patientName(patient: PatientSessionUser) {
   );
 }
 
-function PrescriptionsView({
+function Prescriptions({
   patient,
   patientId,
   refreshKey = 0,
@@ -397,4 +397,4 @@ function PrescriptionsView({
   );
 }
 
-export default PrescriptionsView;
+export default Prescriptions;

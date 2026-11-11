@@ -1,10 +1,10 @@
-import api from "../../lib/axios";
+import api from "../../../lib/axios";
 import type {
   MedicalHistoryResponse,
   PrescriptionsResponse,
   PatientVisitDetails,
   PatientQueueResponse,
-} from "./types";
+} from "../../../interface/PatientPortal";
 
 export type MedicalHistoryParams = {
   search?: string;

@@ -1,4 +1,4 @@
-import type { PatientSessionUser } from "../types.ts";
+import type { PatientSessionUser } from "../../../interface/PatientPortal";
 
 type Props = {
   patient: PatientSessionUser;

@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { FlaskConical, MousePointerClick, Stethoscope } from "lucide-react";
 import axios from "axios";
-import EmptyState from "../../../components/EmptyState";
-import ErrorMessage from "../../../components/ErrorMessage";
-import LoadingScreen from "../../../components/LoadingScreen";
+import EmptyState from "../../../../components/EmptyState";
+import ErrorMessage from "../../../../components/ErrorMessage";
+import LoadingScreen from "../../../../components/LoadingScreen";
 import { fetchPatientVisit } from "../patientApi";
-import type { HistoryRecord, PatientVisitDetails } from "../types";
-import PortalStatus from "./PortalStatus";
-import PatientLaboratoryPrint from "./PatientLaboratoryPrint";
+import type { HistoryRecord, PatientVisitDetails } from "../../../../interface/PatientPortal";
+import PortalStatus from "../PortalStatus";
+import PatientLaboratoryPrint from "./PatientVisitPanel/PatientLaboratoryPrint";
 
 function ClinicalValue({ value }: { value: unknown }) {
   if (value == null || value === "" || (Array.isArray(value) && !value.length))

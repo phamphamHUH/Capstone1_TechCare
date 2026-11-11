@@ -9,11 +9,11 @@ import {
 } from "lucide-react";
 import Header from "../../components/Header";
 import SideBar from "../../components/SideBar";
-import ConsultationsView from "./pages/ConsultationsView.tsx";
-import PrescriptionsView from "./pages/PrescriptionsView.tsx";
-import QueueTrackingView from "./pages/QueueTrackingView";
+import MedicalHistory from "./pages/MedicalHistory";
+import Prescriptions from "./pages/Prescriptions";
+import QueueTracking from "./pages/QueueTracking";
 import PatientDashboard from "./pages/PatientDashboard";
-import type { PatientSessionUser } from "./types.ts";
+import type { PatientSessionUser } from "../../interface/PatientPortal";
 
 type PatientPage =
   | "dashboard"
@@ -33,7 +33,7 @@ function readLoggedInPatient(): PatientSessionUser | null {
   }
 }
 
-function PatientInformation() {
+function Patient() {
   const [sidebarOpen, setSidebarOpen] = useState(
     () => window.innerWidth >= 1024,
   );
@@ -141,14 +141,14 @@ function PatientInformation() {
             />
           )}
           {activePage === "queue-tracking" && (
-            <QueueTrackingView
+            <QueueTracking
               refreshKey={refreshKey}
               onLoadingChange={setLoading}
             />
           )}
           {(activePage === "medical-history" ||
             activePage === "laboratory-results") && (
-            <ConsultationsView
+            <MedicalHistory
               key={activePage}
               patientId={patientId}
               refreshKey={refreshKey}
@@ -161,7 +161,7 @@ function PatientInformation() {
             />
           )}
           {activePage === "prescriptions" && (
-            <PrescriptionsView
+            <Prescriptions
               patient={patient}
               patientId={patientId}
               refreshKey={refreshKey}
@@ -175,4 +175,4 @@ function PatientInformation() {
   );
 }
 
-export default PatientInformation;
+export default Patient;

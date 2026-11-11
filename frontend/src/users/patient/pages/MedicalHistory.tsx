@@ -10,9 +10,9 @@ import {
 import EmptyState from "../../../components/EmptyState";
 import ErrorMessage from "../../../components/ErrorMessage";
 import LoadingScreen from "../../../components/LoadingScreen";
-import { fetchPatientMedicalHistory } from "../patientApi";
-import type { HistoryRecord, Pagination } from "../types";
-import PatientVisitPanel from "../components/PatientVisitPanel";
+import { fetchPatientMedicalHistory } from "../components/patientApi";
+import type { HistoryRecord, Pagination } from "../../../interface/PatientPortal";
+import PatientVisitPanel from "../components/MedicalHistory/PatientVisitPanel";
 import PortalStatus from "../components/PortalStatus";
 
 type Props = {
@@ -27,7 +27,7 @@ const fieldClass =
 const recordKey = (record: HistoryRecord) =>
   record.record_type + ":" + record.record_id;
 
-export default function ConsultationsView({
+export default function MedicalHistory({
   patientId,
   refreshKey = 0,
   onLoadingChange,
