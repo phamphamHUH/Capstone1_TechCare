@@ -166,7 +166,18 @@ function Doctor() {
           />
 
           <div className="pb-6">
-            {page === "dashboard" && <DoctorDashboard />}
+            {page === "dashboard" && (
+              <DoctorDashboard
+                room={room}
+                queues={queues}
+                serviceCount={roomServices.length}
+                loading={loading}
+                error={error}
+                queueLoadFailed={queueLoadFailed}
+                setPage={setPage}
+                loadData={loadData}
+              />
+            )}
 
             {page === "consultation-queue" && (
               <ConsultationQueue

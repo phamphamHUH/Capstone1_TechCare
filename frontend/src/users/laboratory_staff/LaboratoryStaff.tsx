@@ -115,6 +115,11 @@ function LaboratoryStaff() {
             setOpen={setOpen}
             loading={loading}
             loadData={loadData}
+            room={room}
+            queues={queues}
+            serviceCount={services.length}
+            queueLoadFailed={queueLoadFailed}
+            setPage={setPage}
           />
         )}
 
