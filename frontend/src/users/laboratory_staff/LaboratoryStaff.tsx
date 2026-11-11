@@ -11,7 +11,9 @@ import type { QueueEntry } from "../../interface/Queue";
 import type { Service } from "../../interface/Service";
 
 function LaboratoryStaff() {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(
+    () => typeof window === "undefined" || window.innerWidth >= 1024,
+  );
   const [searchParams, setSearchParams] = useSearchParams();
   const [queues, setQueues] = useState<QueueEntry[]>([]);
   const [services, setServices] = useState<Service[]>([]);
@@ -96,7 +98,7 @@ function LaboratoryStaff() {
   return (
     <SidebarNavContext.Provider value={{ navItems, page, setPage }}>
       <div className="flex min-h-screen cursor-default">
-        <SideBar open={open} page={page} setPage={setPage} navItems={navItems} />
+        <SideBar open={open} setOpen={setOpen} page={page} setPage={setPage} navItems={navItems} />
         {page === "dashboard" && (
           <LabstaffDashboard
             error={error}

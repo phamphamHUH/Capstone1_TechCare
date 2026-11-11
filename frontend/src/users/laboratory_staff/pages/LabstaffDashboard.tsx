@@ -27,7 +27,7 @@ function LabstaffDashboard({
         loadData={loadData}
       />
       {loading && <LoadingScreen variant="page" message="Loading laboratory data..." />}
-      {!loading && error && <ErrorMessage className="mx-6">{error}</ErrorMessage>}
+      {!loading && error && <ErrorMessage className="mx-4 sm:mx-6">{error}</ErrorMessage>}
     </main>
   );
 }

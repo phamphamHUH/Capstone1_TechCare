@@ -127,7 +127,8 @@ function QueueTable({
     <>
       {acceptError && <ErrorMessage>{acceptError}</ErrorMessage>}
 
-      <table className="w-full table-fixed">
+      <div className="overflow-x-auto">
+      <table className="w-full min-w-[820px] table-fixed">
         <colgroup>
           <col className="w-1/40" />
           <col className="w-4/40" />
@@ -345,9 +346,10 @@ function QueueTable({
           ))}
         </tbody>
       </table>
+      </div>
 
       {total > 0 && (
-        <div className="flex items-center justify-between px-4 py-3 text-xs text-gray-500">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-xs text-gray-500">
           <span>
             Showing {from} - {to} of {total} queues
           </span>

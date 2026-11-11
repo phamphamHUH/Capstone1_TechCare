@@ -56,7 +56,7 @@ export function ReleaseConfirmationContent({
         </Dialog.Close>
       </header>
       <div className="p-5">
-        <dl className="grid grid-cols-2 gap-4 rounded-md border border-gray-300 bg-gray-50 p-3 text-sm [&_dt]:mb-1 [&_dt]:text-xs [&_dt]:text-gray-500 [&_dd]:wrap-anywhere">
+        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 rounded-md border border-gray-300 bg-gray-50 p-3 text-sm [&_dt]:mb-1 [&_dt]:text-xs [&_dt]:text-gray-500 [&_dd]:wrap-anywhere">
           <div>
             <dt>Patient</dt>
             <dd className="font-semibold">

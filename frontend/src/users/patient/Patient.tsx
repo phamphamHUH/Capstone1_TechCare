@@ -93,7 +93,7 @@ function Patient() {
 
   if (!patient || !patientId) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 p-6">
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4 sm:p-6">
         <ErrorMessage className="max-w-md">
           Patient account not found. Please sign in again to access your
           records.
@@ -105,24 +105,13 @@ function Patient() {
   return (
     <SidebarNavContext.Provider value={{ navItems, page: activePage, setPage }}>
       <div className="flex min-h-screen bg-gray-50 text-gray-900">
-        {sidebarOpen && (
-          <button
-            type="button"
-            aria-label="Close navigation"
-            onClick={() => setSidebarOpen(false)}
-            className="fixed inset-y-0 left-64 right-0 z-30 bg-black/30 lg:hidden"
-          />
-        )}
-        <div
-          className={`${sidebarOpen ? "" : "hidden lg:block"} fixed inset-y-0 left-0 z-40 lg:sticky lg:top-0 lg:h-screen lg:self-start`}
-        >
-          <SideBar
-            open={sidebarOpen}
-            page={activePage}
-            setPage={setPage}
-            navItems={navItems}
-          />
-        </div>
+        <SideBar
+          open={sidebarOpen}
+          setOpen={setSidebarOpen}
+          page={activePage}
+          setPage={setPage}
+          navItems={navItems}
+        />
 
         <div className="min-w-0 flex-1">
           <Header
