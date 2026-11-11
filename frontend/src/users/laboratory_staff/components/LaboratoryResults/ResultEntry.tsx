@@ -33,6 +33,7 @@ import { AnalysisButton, AnalysisNotice, FlaskBadge } from "./AnalysisUi";
 import TemplateFields from "./TemplateFields";
 import ResultSuccessOverlay from "./ResultSuccessOverlay";
 import PrintResultView from "./PrintResultView";
+import ResultReleaseControl from "./ResultReleaseControl";
 
 type ResultEntryProps = {
   request: AnalysisRequest;
@@ -165,6 +166,11 @@ export default function ResultEntry({
     requestAnimationFrame(() =>
       document.getElementById("preview-laboratory-result")?.focus(),
     );
+  }
+
+  function handleReleased(result: ResultReleaseResponse) {
+    setRelease(result);
+    setNotice("Laboratory result released successfully.");
   }
 
   useEffect(() => {
@@ -368,7 +374,7 @@ export default function ResultEntry({
         remarks: remarks.trim(),
       });
 
-      setNotice("Laboratory result saved successfully.");
+      setNotice("Result saved. Release it below to make it available to the patient.");
       setSavedResultId(result.result_id);
       setShowSuccess(true);
       committed = true;
@@ -772,8 +778,16 @@ export default function ResultEntry({
               </form>
             )}
           </div>
+          {savedResultId && previewReports[0] && (
+            <ResultReleaseControl
+              report={previewReports[0]}
+              onBackToList={onCancel}
+              onReleased={handleReleased}
+            />
+          )}
           <ResultSuccessOverlay
             open={showSuccess}
+            description="The result is saved and awaiting release. Close this message and select Release Result to make it available in the patient's Laboratory Results."
             onClose={() => setShowSuccess(false)}
             returnFocusRef={headingRef}
             onBackToList={() => {
@@ -790,7 +804,7 @@ export default function ResultEntry({
           onBack={returnToEntry}
           backLabel="Back to Entry"
           onBackToList={onCancel}
-          onReleased={setRelease}
+          onReleased={handleReleased}
         />
       )}
     </>

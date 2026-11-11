@@ -1,13 +1,26 @@
 import ErrorMessage from "../../components/ErrorMessage";
-import NotificationBell from "../../components/NotificationBell";
-import { useMemo, useState } from "react";
-import { FileClock, LogOut, Menu, Pill } from "lucide-react";
-import { useNavigate } from "react-router";
+import { useEffect, useMemo, useState } from "react";
+import {
+  FileClock,
+  FlaskConical,
+  LayoutGrid,
+  ListOrdered,
+  Pill,
+} from "lucide-react";
+import Header from "../../components/Header";
+import SideBar from "../../components/SideBar";
 import ConsultationsView from "./pages/ConsultationsView.tsx";
 import PrescriptionsView from "./pages/PrescriptionsView.tsx";
+import QueueTrackingView from "./pages/QueueTrackingView";
+import PatientDashboard from "./pages/PatientDashboard";
 import type { PatientSessionUser } from "./types.ts";
 
-type PatientPage = "consultations" | "prescriptions";
+type PatientPage =
+  | "dashboard"
+  | "medical-history"
+  | "queue-tracking"
+  | "laboratory-results"
+  | "prescriptions";
 
 function readLoggedInPatient(): PatientSessionUser | null {
   const stored = sessionStorage.getItem("user");
@@ -21,23 +34,65 @@ function readLoggedInPatient(): PatientSessionUser | null {
 }
 
 function PatientInformation() {
-  const navigate = useNavigate();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activePage, setActivePage] = useState<PatientPage>("consultations");
+  const [sidebarOpen, setSidebarOpen] = useState(
+    () => window.innerWidth >= 1024,
+  );
+  const [activePage, setActivePage] = useState<PatientPage>("dashboard");
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [consultationId, setConsultationId] = useState<string | undefined>();
+
+  useEffect(() => {
+    const refreshWhenVisible = () => {
+      if (
+        document.visibilityState === "visible" &&
+        !document.querySelector('[role="dialog"]')
+      ) {
+        setRefreshKey((current) => current + 1);
+      }
+    };
+    window.addEventListener("focus", refreshWhenVisible);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      window.removeEventListener("focus", refreshWhenVisible);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, []);
 
   const patient = useMemo(() => readLoggedInPatient(), []);
   const patientId = patient?.patient_id ?? patient?.user_id ?? "";
 
-  function logout() {
-    sessionStorage.removeItem("token");
-    sessionStorage.removeItem("user");
-    sessionStorage.removeItem("role");
-    navigate("/");
+  const navItems = [
+    { page: "dashboard", label: "Dashboard", icon: <LayoutGrid size={20} /> },
+    {
+      page: "queue-tracking",
+      label: "Queue Tracking",
+      icon: <ListOrdered size={20} />,
+    },
+    {
+      page: "laboratory-results",
+      label: "Laboratory Results",
+      icon: <FlaskConical size={20} />,
+    },
+    {
+      page: "medical-history",
+      label: "Medical History",
+      icon: <FileClock size={20} />,
+    },
+    { page: "prescriptions", label: "Prescriptions", icon: <Pill size={20} /> },
+  ];
+
+  function setPage(page: string) {
+    if (!navItems.some((item) => item.page === page)) return;
+    setActivePage(page as PatientPage);
+    setConsultationId(undefined);
+    setLoading(false);
+    if (window.innerWidth < 1024) setSidebarOpen(false);
   }
 
   if (!patient || !patientId) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 p-6">
         <ErrorMessage className="max-w-md">
           Patient account not found. Please sign in again to access your
           records.
@@ -47,100 +102,76 @@ function PatientInformation() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f7f9fb] text-slate-900">
-      <header className="fixed left-0 right-0 top-0 z-30 flex h-[70px] items-center border-b border-slate-200 bg-white">
-        <div
-          className={`flex h-full items-center border-r border-slate-200 px-4 transition-all ${sidebarOpen ? "w-[160px]" : "w-[72px]"}`}
-        >
-          <img
-            src="/assets/images/reyna-g-logo.png"
-            alt="Reyna G"
-            className="h-11 w-11 object-contain"
-          />
-          {sidebarOpen && (
-            <span className="ml-2 text-lg font-extrabold text-black">
-              Reyna G
-            </span>
-          )}
-        </div>
-
-        <div className="flex flex-1 items-center justify-between px-4">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setSidebarOpen((current) => !current)}
-              className="rounded-md p-2 text-slate-600 hover:bg-slate-100"
-              aria-label="Toggle sidebar"
-            >
-              <Menu size={18} />
-            </button>
-            <h1 className="text-sm font-bold">
-              {activePage === "consultations"
-                ? "Consultation"
-                : "Prescriptions"}
-            </h1>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <NotificationBell basePath="/api/patient/notifications" />
-
-            <button
-              type="button"
-              onClick={logout}
-              className="flex items-center gap-2 rounded-md border border-red-300 px-3 py-2 text-xs font-semibold text-red-500 hover:bg-red-50"
-            >
-              <LogOut size={14} />
-              Logout
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <aside
-        className={`fixed bottom-0 left-0 top-[70px] z-20 border-r border-slate-200 bg-white p-3 transition-all ${
-          sidebarOpen ? "w-[160px]" : "w-[72px]"
-        }`}
+    <div className="flex min-h-screen bg-gray-50 text-gray-900">
+      {sidebarOpen && (
+        <button
+          type="button"
+          aria-label="Close navigation"
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-y-0 left-64 right-0 z-30 bg-black/30 lg:hidden"
+        />
+      )}
+      <div
+        className={`${sidebarOpen ? "" : "hidden lg:block"} fixed inset-y-0 left-0 z-40 lg:sticky lg:top-0 lg:h-screen lg:self-start`}
       >
-        <nav className="space-y-2">
-          <button
-            type="button"
-            onClick={() => setActivePage("consultations")}
-            className={`flex w-full items-center gap-3 rounded-md px-3 py-3 text-left text-xs font-semibold transition ${
-              activePage === "consultations"
-                ? "bg-[#be0000] text-white"
-                : "text-slate-700 hover:bg-slate-100"
-            }`}
-          >
-            <FileClock size={17} className="shrink-0" />
-            {sidebarOpen && <span>Consultation</span>}
-          </button>
+        <SideBar
+          open={sidebarOpen}
+          page={activePage}
+          setPage={setPage}
+          navItems={navItems}
+        />
+      </div>
 
-          <button
-            type="button"
-            onClick={() => setActivePage("prescriptions")}
-            className={`flex w-full items-center gap-3 rounded-md px-3 py-3 text-left text-xs font-semibold transition ${
-              activePage === "prescriptions"
-                ? "bg-[#be0000] text-white"
-                : "text-slate-700 hover:bg-slate-100"
-            }`}
-          >
-            <Pill size={17} className="shrink-0" />
-            {sidebarOpen && <span>Prescriptions</span>}
-          </button>
-        </nav>
-      </aside>
-
-      <main
-        className={`min-h-screen pt-[70px] transition-all ${sidebarOpen ? "pl-[160px]" : "pl-[72px]"}`}
-      >
-        <div className="mx-auto max-w-[1500px] p-5 lg:p-7">
-          {activePage === "consultations" ? (
-            <ConsultationsView patient={patient} patientId={patientId} />
-          ) : (
-            <PrescriptionsView patient={patient} patientId={patientId} />
+      <div className="min-w-0 flex-1">
+        <Header
+          page={
+            navItems.find((item) => item.page === activePage)?.label ||
+            "Dashboard"
+          }
+          loading={loading}
+          open={sidebarOpen}
+          setOpen={setSidebarOpen}
+          loadData={() => setRefreshKey((current) => current + 1)}
+        />
+        <main className="space-y-6 px-4 pb-6 sm:px-6">
+          {activePage === "dashboard" && (
+            <PatientDashboard
+              patient={patient}
+              refreshKey={refreshKey}
+              setPage={setPage}
+            />
           )}
-        </div>
-      </main>
+          {activePage === "queue-tracking" && (
+            <QueueTrackingView
+              refreshKey={refreshKey}
+              onLoadingChange={setLoading}
+            />
+          )}
+          {(activePage === "medical-history" ||
+            activePage === "laboratory-results") && (
+            <ConsultationsView
+              key={activePage}
+              patientId={patientId}
+              refreshKey={refreshKey}
+              onLoadingChange={setLoading}
+              laboratoryOnly={activePage === "laboratory-results"}
+              onPrescriptions={(id) => {
+                setPage("prescriptions");
+                setConsultationId(id);
+              }}
+            />
+          )}
+          {activePage === "prescriptions" && (
+            <PrescriptionsView
+              patient={patient}
+              patientId={patientId}
+              refreshKey={refreshKey}
+              onLoadingChange={setLoading}
+              consultationId={consultationId}
+            />
+          )}
+        </main>
+      </div>
     </div>
   );
 }

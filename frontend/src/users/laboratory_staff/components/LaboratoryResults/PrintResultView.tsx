@@ -38,7 +38,7 @@ type ReportAssetState = {
 
 type ReportPreviewProps = { report: LaboratoryReportData };
 
-function ReportPreview({ report }: ReportPreviewProps) {
+export function ReportPreview({ report }: ReportPreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLIFrameElement>(null);
   const printButtonRef = useRef<HTMLButtonElement>(null);

@@ -43,27 +43,12 @@ type ParameterTableProps = {
   report: LaboratoryReportData;
 };
 
-function microscopyLayout(report: LaboratoryReportData) {
-  const name = `${report.template.form_name} ${(report.template.testNames ?? []).join(" ")}`;
-  if (/\burinalysis\b|\burine (analysis|examination|routine)\b/i.test(name))
-    return "paired";
-  if (
-    /\bstool (examination|exam)\b|\b(fecalysis|faecalysis)\b|\b(fecal|faecal) examination\b/i.test(
-      name,
-    )
-  )
-    return "single";
-  return null;
-}
-
 function ParameterValue({
   component,
   report,
-  showReference = false,
 }: {
   component: BuilderComponent;
   report: LaboratoryReportData;
-  showReference?: boolean;
 }) {
   const value = Object.hasOwn(report.values, component.fieldKey)
     ? report.values[component.fieldKey]
@@ -71,68 +56,15 @@ function ParameterValue({
   const flag = resultFlag(component, value);
   const abnormal =
     flag && flag !== (component.validation.flagLabels?.normal || "Normal");
-  const reference = referenceRange(component);
-
   return (
     <>
       {reportText(value)}
-      {showReference && component.settings.unit && (
-        <span>{` ${component.settings.unit}`}</span>
-      )}
       {abnormal && <span className="flag abnormal">{flag}</span>}
-      {showReference && reference !== "—" && (
-        <div className="small muted">Reference: {reference}</div>
-      )}
     </>
   );
 }
 
 function ParameterTable({ fields, report }: ParameterTableProps) {
-  const layout = microscopyLayout(report);
-  if (layout) {
-    const midpoint =
-      layout === "paired" ? Math.ceil(fields.length / 2) : fields.length;
-    return (
-      <table
-        className={`microscopy ${layout === "single" ? "microscopy-single" : ""}`}
-        aria-label="Laboratory parameters"
-      >
-        <tbody>
-          {fields.slice(0, midpoint).map((component, index) => {
-            const second =
-              layout === "paired" ? fields[index + midpoint] : undefined;
-            return (
-              <tr key={component.id}>
-                <th scope="row">{component.label}</th>
-                <td className="result-value">
-                  <ParameterValue
-                    component={component}
-                    report={report}
-                    showReference
-                  />
-                </td>
-                {layout === "paired" && (
-                  <>
-                    <th scope="row">{second?.label}</th>
-                    <td className="result-value">
-                      {second && (
-                        <ParameterValue
-                          component={second}
-                          report={report}
-                          showReference
-                        />
-                      )}
-                    </td>
-                  </>
-                )}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    );
-  }
-
   return (
     <table className="parameters" aria-label="Laboratory parameters">
       <colgroup>
@@ -144,21 +76,19 @@ function ParameterTable({ fields, report }: ParameterTableProps) {
         <tr>
           <th scope="col">Test</th>
           <th scope="col">Result</th>
-          <th scope="col">Reference Range (S.I.)</th>
+          <th scope="col">Reference</th>
         </tr>
       </thead>
       <tbody>
         {fields.map((component) => {
           const reference = referenceRange(component);
           const unit = component.settings.unit;
-          const referenceWithUnit = reference
-            .split("\n")
-            .map((line) =>
-              unit && !line.toLowerCase().includes(unit.toLowerCase())
-                ? `${line} ${unit}`
-                : line,
-            )
-            .join("\n");
+          const referenceWithUnit =
+            reference === "—" ||
+            !unit ||
+            reference.toLowerCase().includes(unit.toLowerCase())
+              ? reference
+              : `${reference} ${unit}`;
 
           return (
             <tr key={component.id}>
@@ -170,6 +100,7 @@ function ParameterTable({ fields, report }: ParameterTableProps) {
                 }}
               >
                 <ParameterValue component={component} report={report} />
+                {unit && <span>{` ${unit}`}</span>}
               </td>
               <td>{referenceWithUnit}</td>
             </tr>
@@ -190,8 +121,7 @@ function TemplateContent({ report }: TemplateContentProps) {
   const isParameter = (field: BuilderComponent) =>
     ["text_field", "number_field", "date_field", "checkbox"].includes(
       field.type,
-    ) &&
-    (!field.settings.width || field.settings.width === "FULL");
+    );
 
   for (const component of components) {
     const last = groups.at(-1);
@@ -374,7 +304,6 @@ type LaboratoryReportProps = {
 
 export default function LaboratoryReport({ report }: LaboratoryReportProps) {
   const { request, template } = report;
-  const microscopy = microscopyLayout(report);
 
   return (
     <article
@@ -427,10 +356,7 @@ export default function LaboratoryReport({ report }: LaboratoryReportProps) {
         </div>
       </dl>
       <div className="report-body">
-        <h2 className="report-title">
-          {microscopy ? "Clinical Microscopy" : template.form_name}
-        </h2>
-        {microscopy && <p className="report-category">{template.form_name}</p>}
+        <h2 className="report-title">{template.form_name}</h2>
         <TemplateContent report={report} />
       </div>
       <section className="notes">
