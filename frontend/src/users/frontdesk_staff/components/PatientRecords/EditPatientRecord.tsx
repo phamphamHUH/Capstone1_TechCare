@@ -64,12 +64,16 @@ function buildForm(p: Patient | null) {
 type FormState = ReturnType<typeof buildForm>;
 
 const inputClass =
-  "w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-100";
+  "w-full rounded-md border border-gray-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-100";
 const labelClass = "mb-1.5 block text-xs font-medium text-gray-500";
 
 // Defined outside the component so inputs don't remount on every keystroke
 function TextInput({
-  label, value, onChange, type = "text", placeholder = "Not provided",
+  label,
+  value,
+  onChange,
+  type = "text",
+  placeholder = "Not provided",
 }: {
   label: string;
   value: string;
@@ -92,7 +96,11 @@ function TextInput({
 }
 
 function SelectInput({
-  label, value, onChange, options, placeholder,
+  label,
+  value,
+  onChange,
+  options,
+  placeholder,
 }: {
   label: string;
   value: string;
@@ -103,10 +111,16 @@ function SelectInput({
   return (
     <div>
       <label className={labelClass}>{label}</label>
-      <select value={value} onChange={(e) => onChange(e.target.value)} className={inputClass}>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={inputClass}
+      >
         <option value="">{placeholder}</option>
         {options.map((o) => (
-          <option key={o} value={o}>{o}</option>
+          <option key={o} value={o}>
+            {o}
+          </option>
         ))}
       </select>
     </div>
@@ -114,14 +128,18 @@ function SelectInput({
 }
 
 function Card({
-  title, children, wide = false,
+  title,
+  children,
+  wide = false,
 }: {
   title: string;
   children: React.ReactNode;
   wide?: boolean;
 }) {
   return (
-    <div className={`rounded-3xl bg-white p-6 shadow-sm ${wide ? "lg:col-span-2" : ""}`}>
+    <div
+      className={`rounded-md bg-white p-6 shadow-sm ${wide ? "lg:col-span-2" : ""}`}
+    >
       <h2 className="mb-6 text-base font-semibold text-gray-900">{title}</h2>
       {children}
     </div>
@@ -149,17 +167,26 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
   const set = (key: keyof FormState) => (v: string) =>
     setForm((f) => ({ ...f, [key]: v }));
 
-  const fullName = [form.first_name, form.middle_name, form.last_name, form.suffix]
+  const fullName = [
+    form.first_name,
+    form.middle_name,
+    form.last_name,
+    form.suffix,
+  ]
     .filter(Boolean)
     .join(" ");
   const initials = `${form.first_name.charAt(0)}${form.last_name.charAt(0)}`;
-  const age = form.birthdate ? String(Math.max(0, calculateAge(form.birthdate))) : "";
+  const age = form.birthdate
+    ? String(Math.max(0, calculateAge(form.birthdate)))
+    : "";
 
   // Anything changed compared to what was loaded?
   const original = buildForm(patient);
   const isDirty =
     image !== null ||
-    (Object.keys(form) as (keyof FormState)[]).some((k) => form[k] !== original[k]);
+    (Object.keys(form) as (keyof FormState)[]).some(
+      (k) => form[k] !== original[k],
+    );
 
   const closeNotice = () => {
     const after = notice?.after;
@@ -225,8 +252,11 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
         type: "danger",
         title: "Couldn't save changes",
         message:
-          (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-          (err instanceof Error ? err.message : "Unable to complete this action. Please try again."),
+          (err as { response?: { data?: { message?: string } } })?.response
+            ?.data?.message ||
+          (err instanceof Error
+            ? err.message
+            : "Unable to complete this action. Please try again."),
       });
     } finally {
       setSaving(false);
@@ -236,10 +266,13 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
   return (
     <>
       {/* Overlay */}
-      <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={requestClose} />
+      <div
+        className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+        onClick={requestClose}
+      />
 
       {/* Modal */}
-      <div className="fixed left-1/2 top-1/2 z-50 flex w-[94%] max-w-5xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-3xl bg-gray-50 shadow-2xl">
+      <div className="fixed left-1/2 top-1/2 z-50 flex w-[94%] max-w-5xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-md bg-gray-50 shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-100 bg-white px-6 py-5">
           <div className="flex items-center gap-3">
@@ -251,8 +284,12 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
               <ArrowLeft size={19} />
             </button>
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Edit Patient Record</h2>
-              <p className="mt-0.5 text-sm text-gray-500">Update patient and contact information</p>
+              <h2 className="text-lg font-semibold text-gray-900">
+                Edit Patient Record
+              </h2>
+              <p className="mt-0.5 text-sm text-gray-500">
+                Update patient and contact information
+              </p>
             </div>
           </div>
 
@@ -270,7 +307,7 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
           {error && <ErrorMessage className="mb-4">{error}</ErrorMessage>}
 
           {/* Profile Hero */}
-          <div className="overflow-hidden rounded-3xl bg-white shadow-sm">
+          <div className="overflow-hidden rounded-md bg-white shadow-sm">
             <div className="h-36 bg-linear-to-r from-gray-100 via-gray-50 to-gray-100" />
 
             <div className="px-8 pb-8">
@@ -280,10 +317,10 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
                     <img
                       src={preview}
                       alt={fullName}
-                      className="h-32 w-32 rounded-3xl border-4 border-white object-cover shadow-lg"
+                      className="h-32 w-32 rounded-md border-4 border-white object-cover shadow-lg"
                     />
                   ) : (
-                    <div className="flex h-32 w-32 items-center justify-center rounded-3xl border-4 border-white bg-gray-200 text-4xl font-bold text-gray-500 shadow-lg">
+                    <div className="flex h-32 w-32 items-center justify-center rounded-md border-4 border-white bg-gray-200 text-4xl font-bold text-gray-500 shadow-lg">
                       {initials}
                     </div>
                   )}
@@ -291,7 +328,7 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="absolute bottom-1 right-1 flex h-10 w-10 items-center justify-center rounded-xl border-2 border-white bg-gray-900 text-white shadow-lg transition hover:bg-gray-800"
+                    className="absolute bottom-1 right-1 flex h-10 w-10 items-center justify-center rounded-md border-2 border-white bg-gray-900 text-white shadow-lg transition hover:bg-gray-800"
                   >
                     <Camera size={18} />
                   </button>
@@ -307,7 +344,9 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
               </div>
 
               <div className="mt-5">
-                <h1 className="text-2xl font-bold tracking-tight text-gray-900">{fullName}</h1>
+                <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                  {fullName}
+                </h1>
 
                 <p className="mt-1 text-sm text-gray-500">
                   {patient.patient_id}
@@ -324,7 +363,9 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
                   Change profile photo
                 </button>
 
-                {image && <p className="mt-1 text-xs text-gray-400">{image.name}</p>}
+                {image && (
+                  <p className="mt-1 text-xs text-gray-400">{image.name}</p>
+                )}
               </div>
             </div>
           </div>
@@ -334,10 +375,26 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
             {/* Personal */}
             <Card title="Personal Information" wide>
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                <TextInput label="First Name" value={form.first_name} onChange={set("first_name")} />
-                <TextInput label="Middle Name" value={form.middle_name} onChange={set("middle_name")} />
-                <TextInput label="Last Name" value={form.last_name} onChange={set("last_name")} />
-                <TextInput label="Suffix" value={form.suffix} onChange={set("suffix")} />
+                <TextInput
+                  label="First Name"
+                  value={form.first_name}
+                  onChange={set("first_name")}
+                />
+                <TextInput
+                  label="Middle Name"
+                  value={form.middle_name}
+                  onChange={set("middle_name")}
+                />
+                <TextInput
+                  label="Last Name"
+                  value={form.last_name}
+                  onChange={set("last_name")}
+                />
+                <TextInput
+                  label="Suffix"
+                  value={form.suffix}
+                  onChange={set("suffix")}
+                />
                 <SelectInput
                   label="Sex"
                   value={form.sex}
@@ -345,10 +402,15 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
                   options={SEX_OPTIONS}
                   placeholder="Select sex"
                 />
-                <TextInput label="Birthdate" type="date" value={form.birthdate} onChange={set("birthdate")} />
+                <TextInput
+                  label="Birthdate"
+                  type="date"
+                  value={form.birthdate}
+                  onChange={set("birthdate")}
+                />
                 <div>
                   <label className={labelClass}>Age</label>
-                  <div className="rounded-xl bg-gray-50 px-3 py-2.5 text-sm font-semibold text-gray-700">
+                  <div className="rounded-md bg-gray-50 px-3 py-2.5 text-sm font-semibold text-gray-700">
                     {age || "—"}
                   </div>
                 </div>
@@ -359,25 +421,34 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
             <Card title="Contact Information">
               <div className="space-y-5">
                 <div className="flex gap-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-gray-100">
                     <Mail size={18} className="text-gray-600" />
                   </div>
                   <div className="flex-1">
-                    <TextInput label="Email" type="email" value={form.email} onChange={set("email")} />
+                    <TextInput
+                      label="Email"
+                      type="email"
+                      value={form.email}
+                      onChange={set("email")}
+                    />
                   </div>
                 </div>
 
                 <div className="flex gap-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-gray-100">
                     <Phone size={18} className="text-gray-600" />
                   </div>
                   <div className="flex-1">
-                    <TextInput label="Mobile Number" value={form.contact_number} onChange={set("contact_number")} />
+                    <TextInput
+                      label="Mobile Number"
+                      value={form.contact_number}
+                      onChange={set("contact_number")}
+                    />
                   </div>
                 </div>
 
                 <div className="flex gap-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-gray-100">
                     <MapPin size={18} className="text-gray-600" />
                   </div>
                   <div className="flex-1">
@@ -397,10 +468,22 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
                       className={`${inputClass} resize-none`}
                     />
                     <div className="grid grid-cols-2 gap-4">
-                      <TextInput label="City" value={form.city} onChange={set("city")} />
-                      <TextInput label="Province" value={form.province} onChange={set("province")} />
+                      <TextInput
+                        label="City"
+                        value={form.city}
+                        onChange={set("city")}
+                      />
+                      <TextInput
+                        label="Province"
+                        value={form.province}
+                        onChange={set("province")}
+                      />
                     </div>
-                    <TextInput label="ZIP Code" value={form.zip_code} onChange={set("zip_code")} />
+                    <TextInput
+                      label="ZIP Code"
+                      value={form.zip_code}
+                      onChange={set("zip_code")}
+                    />
                   </div>
                 </div>
               </div>
@@ -411,7 +494,7 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
               <div className="space-y-5">
                 <div>
                   <label className={labelClass}>Patient ID</label>
-                  <div className="rounded-xl bg-gray-50 px-3 py-2.5 text-sm font-semibold text-gray-700">
+                  <div className="rounded-md bg-gray-50 px-3 py-2.5 text-sm font-semibold text-gray-700">
                     {patient.patient_id}
                   </div>
                 </div>
@@ -432,8 +515,18 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
                 />
 
                 <div className="grid grid-cols-2 gap-5">
-                  <TextInput label="Height (CM)" type="number" value={form.height_cm} onChange={set("height_cm")} />
-                  <TextInput label="Weight (KG)" type="number" value={form.weight_kg} onChange={set("weight_kg")} />
+                  <TextInput
+                    label="Height (CM)"
+                    type="number"
+                    value={form.height_cm}
+                    onChange={set("height_cm")}
+                  />
+                  <TextInput
+                    label="Weight (KG)"
+                    type="number"
+                    value={form.weight_kg}
+                    onChange={set("weight_kg")}
+                  />
                 </div>
               </div>
             </Card>
@@ -441,21 +534,57 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
             {/* Guardian */}
             <Card title="Guardian Information (If Minor)" wide>
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                <TextInput label="Full Name" value={form.guardian_name} onChange={set("guardian_name")} />
-                <TextInput label="Relationship" value={form.guardian_relationship} onChange={set("guardian_relationship")} />
-                <TextInput label="Contact Number" value={form.guardian_contact} onChange={set("guardian_contact")} />
+                <TextInput
+                  label="Full Name"
+                  value={form.guardian_name}
+                  onChange={set("guardian_name")}
+                />
+                <TextInput
+                  label="Relationship"
+                  value={form.guardian_relationship}
+                  onChange={set("guardian_relationship")}
+                />
+                <TextInput
+                  label="Contact Number"
+                  value={form.guardian_contact}
+                  onChange={set("guardian_contact")}
+                />
               </div>
             </Card>
 
             {/* Medical */}
             <Card title="Medical Information" wide>
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                <TextInput label="Allergies" value={form.allergies} onChange={set("allergies")} />
-                <TextInput label="Existing Medical Conditions" value={form.existing_conditions} onChange={set("existing_conditions")} />
-                <TextInput label="Current Medications" value={form.current_medications} onChange={set("current_medications")} />
-                <TextInput label="Previous Surgeries" value={form.previous_surgeries} onChange={set("previous_surgeries")} />
-                <TextInput label="Previous Hospitalizations" value={form.previous_hospitalizations} onChange={set("previous_hospitalizations")} />
-                <TextInput label="Family Medical History" value={form.family_medical_history} onChange={set("family_medical_history")} />
+                <TextInput
+                  label="Allergies"
+                  value={form.allergies}
+                  onChange={set("allergies")}
+                />
+                <TextInput
+                  label="Existing Medical Conditions"
+                  value={form.existing_conditions}
+                  onChange={set("existing_conditions")}
+                />
+                <TextInput
+                  label="Current Medications"
+                  value={form.current_medications}
+                  onChange={set("current_medications")}
+                />
+                <TextInput
+                  label="Previous Surgeries"
+                  value={form.previous_surgeries}
+                  onChange={set("previous_surgeries")}
+                />
+                <TextInput
+                  label="Previous Hospitalizations"
+                  value={form.previous_hospitalizations}
+                  onChange={set("previous_hospitalizations")}
+                />
+                <TextInput
+                  label="Family Medical History"
+                  value={form.family_medical_history}
+                  onChange={set("family_medical_history")}
+                />
                 <SelectInput
                   label="Smoking"
                   value={form.smoking_status}
@@ -479,7 +608,7 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
             <button
               onClick={requestClose}
               disabled={saving}
-              className="flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-red-100 hover:text-red-900 disabled:opacity-50"
+              className="flex items-center gap-2 rounded-md bg-white px-5 py-3 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-red-100 hover:text-red-900 disabled:opacity-50"
             >
               <ArrowLeft size={16} />
               Cancel
@@ -489,7 +618,7 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
               onClick={() => setConfirmSave(true)}
               disabled={saving || !isDirty}
               title={isDirty ? undefined : "No changes to save"}
-              className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex items-center gap-2 rounded-md bg-blue-600 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {saving ? <LoadingSpinner size={16} /> : <Save size={16} />}
               {saving ? "Saving..." : "Save Changes"}
@@ -507,7 +636,11 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
         onClose={() => setConfirmSave(false)}
         actions={[
           { label: "Cancel", onClick: () => setConfirmSave(false) },
-          { label: "Save changes", pendingLabel: "Saving...", onClick: saveChanges },
+          {
+            label: "Save changes",
+            pendingLabel: "Saving...",
+            onClick: saveChanges,
+          },
         ]}
       />
 

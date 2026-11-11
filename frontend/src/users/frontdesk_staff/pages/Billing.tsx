@@ -162,7 +162,7 @@ function Billing({ bills, loading, error, loadData }: BillingProps) {
         setDetails(data);
         invoiceReady = Boolean(
           data.bill.payment_method &&
-            data.bill.payment_method !== "Not recorded",
+          data.bill.payment_method !== "Not recorded",
         );
       }
     }
@@ -216,7 +216,7 @@ function Billing({ bills, loading, error, loadData }: BillingProps) {
         <ErrorMessage className="mt-4">{actionError}</ErrorMessage>
       )}
       {stats.awaitingLaboratory > 0 && (
-        <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+        <p className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
           {stats.awaitingLaboratory} paid{" "}
           {stats.awaitingLaboratory === 1
             ? "bill still needs"

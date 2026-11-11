@@ -144,7 +144,7 @@ function PrescriptionsView({
               View your current prescriptions.
             </p>
 
-            <label className="mt-5 flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm text-gray-500 focus-within:border-sky-400 focus-within:ring-4 focus-within:ring-sky-400/20">
+            <label className="mt-5 flex items-center gap-2 rounded-md border border-gray-200 bg-gray-50 px-3 text-sm text-gray-500 focus-within:border-sky-400 focus-within:ring-4 focus-within:ring-sky-400/20">
               <Search
                 size={17}
                 strokeWidth={1.5}
@@ -164,7 +164,7 @@ function PrescriptionsView({
               value={status}
               onChange={(event) => setStatus(event.target.value)}
               aria-label="Filter prescriptions by status"
-              className="mt-2 h-9 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm text-gray-600 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-400/20"
+              className="mt-2 h-9 w-full rounded-md border border-gray-200 bg-gray-50 px-3 text-sm text-gray-600 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-400/20"
             >
               <option value="">All Status</option>
               <option value="Active">Active</option>
@@ -199,7 +199,7 @@ function PrescriptionsView({
                     key={prescription.prescription_id}
                     onClick={() => setSelectedId(prescription.prescription_id)}
                     aria-pressed={active}
-                    className={`w-full cursor-pointer rounded-lg border p-3 text-left transition focus-visible:outline-2 focus-visible:outline-sky-500 ${
+                    className={`w-full cursor-pointer rounded-md border p-3 text-left transition focus-visible:outline-2 focus-visible:outline-sky-500 ${
                       active
                         ? "border-sky-200 bg-sky-50"
                         : "border-gray-200 hover:bg-gray-50"
@@ -207,7 +207,7 @@ function PrescriptionsView({
                   >
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div className="flex min-w-0 items-start gap-2.5">
-                        <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-sky-600">
+                        <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-sky-50 text-sky-600">
                           <FileText size={20} />
                         </div>
                         <div className="min-w-0">
@@ -252,7 +252,7 @@ function PrescriptionsView({
               <EmptyState message="Select a prescription to preview it." />
             </div>
           ) : (
-            <div className="mt-5 rounded-lg border border-gray-200 bg-white p-4 sm:p-6">
+            <div className="mt-5 rounded-md border border-gray-200 bg-white p-4 sm:p-6">
               <header className="flex flex-wrap items-start justify-between gap-4 border-b border-gray-300 pb-4">
                 <div className="flex items-center gap-3">
                   <img
@@ -301,7 +301,7 @@ function PrescriptionsView({
                 </h3>
               </div>
 
-              <div className="grid gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm sm:grid-cols-2">
+              <div className="grid gap-3 rounded-md border border-gray-200 bg-gray-50 p-4 text-sm sm:grid-cols-2">
                 <div className="min-w-0 break-words">
                   <span className="text-gray-500">Patient Name:</span>{" "}
                   <strong className="text-gray-700">
@@ -314,7 +314,7 @@ function PrescriptionsView({
                 </div>
               </div>
 
-              <div className="mt-5 overflow-x-auto rounded-lg border border-gray-200">
+              <div className="mt-5 overflow-x-auto rounded-md border border-gray-200">
                 {items.length === 0 ? (
                   <EmptyState message="No medication items were returned for this prescription." />
                 ) : (
@@ -374,7 +374,7 @@ function PrescriptionsView({
                 )}
               </div>
 
-              <div className="mt-5 rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <div className="mt-5 rounded-md border border-gray-200 bg-gray-50 p-4">
                 <p className="text-sm font-bold text-gray-700">
                   Additional Notes
                 </p>

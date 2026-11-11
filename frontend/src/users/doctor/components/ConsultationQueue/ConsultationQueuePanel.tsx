@@ -146,7 +146,7 @@ function ConsultationQueuePanel({
   const loadingLabel = activeMainTab === "all" ? "" : `${activeMainTab} `;
 
   return (
-    <div className="w-full min-h-20 border rounded-3xl border-gray-300 flex flex-col gap-5 justify-around">
+    <div className="w-full min-h-20 border rounded-md border-gray-300 flex flex-col gap-5 justify-around">
       {/* MAIN FILTERS */}
       <div className="flex w-full justify-around h-10 items-end border-b border-gray-300">
         {mainFilterValues.map((mainFilter) => {
@@ -186,7 +186,7 @@ function ConsultationQueuePanel({
             value={searchFilter}
             onChange={(e) => setSearchFilter(e.target.value)}
             placeholder="Search..."
-            className="h-9 w-full rounded-lg border border-gray-300 bg-white pl-9 pr-3 text-sm text-gray-700 outline-none transition focus:border-sky-400 focus:ring-1 focus:ring-sky-100"
+            className="h-9 w-full rounded-md border border-gray-300 bg-white pl-9 pr-3 text-sm text-gray-700 outline-none transition focus:border-sky-400 focus:ring-1 focus:ring-sky-100"
           />
         </div>
 
@@ -194,7 +194,7 @@ function ConsultationQueuePanel({
           <select
             value={serviceFilter}
             onChange={(e) => setServiceFilter(e.target.value)}
-            className="h-9 min-w-27.5 appearance-none rounded-lg border border-gray-300 bg-white px-3 pr-8 text-sm text-gray-600 outline-none focus:border-sky-400"
+            className="h-9 min-w-27.5 appearance-none rounded-md border border-gray-300 bg-white px-3 pr-8 text-sm text-gray-600 outline-none focus:border-sky-400"
           >
             <option value="all">Services</option>
             {serviceOptions.map((name) => (
@@ -215,7 +215,7 @@ function ConsultationQueuePanel({
             onChange={(e) =>
               setPriorityFilter(e.target.value as PriorityFilter)
             }
-            className="h-9 min-w-25.5 appearance-none rounded-lg border border-gray-300 bg-white px-3 pr-8 text-sm text-gray-600 outline-none focus:border-sky-400"
+            className="h-9 min-w-25.5 appearance-none rounded-md border border-gray-300 bg-white px-3 pr-8 text-sm text-gray-600 outline-none focus:border-sky-400"
           >
             <option value="all">Priority: All</option>
             <option value="yes">Priority: Yes</option>

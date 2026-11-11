@@ -88,7 +88,7 @@ export default function ResultSuccessOverlay({
           <Dialog.Popup
             initialFocus={primaryActionRef}
             finalFocus={returnFocusRef}
-            className="relative max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto rounded-2xl border border-gray-300 bg-white shadow-xl outline-none"
+            className="relative max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto rounded-md border border-gray-300 bg-white shadow-xl outline-none"
           >
             <ResultSuccessContent
               title={title}

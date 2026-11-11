@@ -68,7 +68,7 @@ function QueueTable({ queues, onRefresh, loadFailed }: QueueTableProps) {
   return (
     <>
       {error && <ErrorMessage className="mb-3">{error}</ErrorMessage>}
-      <div className="max-h-105 overflow-auto rounded-xl border border-gray-200 bg-white">
+      <div className="max-h-105 overflow-auto rounded-md border border-gray-200 bg-white">
         <table className="w-full text-sm">
           <colgroup>
             <col className="w-4/30" />
@@ -191,7 +191,7 @@ function QueueTable({ queues, onRefresh, loadFailed }: QueueTableProps) {
             role="dialog"
             aria-modal="true"
             aria-labelledby="cancel-queue-title"
-            className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
+            className="w-full max-w-md rounded-md bg-white p-6 shadow-xl"
           >
             <h2 id="cancel-queue-title" className="text-lg font-semibold">
               Cancel waiting entry?
@@ -206,14 +206,14 @@ function QueueTable({ queues, onRefresh, loadFailed }: QueueTableProps) {
                 autoFocus
                 disabled={busy}
                 onClick={() => setCancelEntry(null)}
-                className="rounded-lg border border-gray-200 px-4 py-2 text-sm"
+                className="rounded-md border border-gray-200 px-4 py-2 text-sm"
               >
                 Keep Entry
               </button>
               <button
                 disabled={busy}
                 onClick={() => void cancel()}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm text-white"
+                className="rounded-md bg-red-600 px-4 py-2 text-sm text-white"
               >
                 {busy ? "Cancelling…" : "Cancel Entry"}
               </button>

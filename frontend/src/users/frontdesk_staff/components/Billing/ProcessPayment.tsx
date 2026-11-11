@@ -319,7 +319,7 @@ function ProcessPayment({
         type="button"
         disabled={submitting}
         onClick={goBack}
-        className="mb-5 flex cursor-pointer items-center gap-2 rounded-2xl border border-sky-300 bg-sky-50 px-3 py-1 text-xs text-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
+        className="mb-5 flex cursor-pointer items-center gap-2 rounded-md border border-sky-300 bg-sky-50 px-3 py-1 text-xs text-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
       >
         <MoveLeft size={14} />
         {showInvoice ? "Back to Payment Details" : "Back to Billing"}
@@ -345,7 +345,7 @@ function ProcessPayment({
       {notice && (
         <p
           role="status"
-          className={`mt-4 rounded-lg border p-3 text-sm ${
+          className={`mt-4 rounded-md border p-3 text-sm ${
             notice.tone === "success"
               ? "border-green-200 bg-green-50 text-green-800"
               : "border-amber-200 bg-amber-50 text-amber-900"

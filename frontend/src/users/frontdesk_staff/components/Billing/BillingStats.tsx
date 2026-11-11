@@ -34,7 +34,7 @@ function BillingStats({ stats }: BillingStatsProps) {
   ];
 
   return (
-    <section className="my-5 overflow-hidden rounded-2xl border border-gray-300 bg-gray-300">
+    <section className="my-5 overflow-hidden rounded-md border border-gray-300 bg-gray-300">
       <div className="grid grid-cols-1 gap-px sm:grid-cols-2 xl:grid-cols-4">
         {cards.map((card) => {
           const Icon = card.icon;

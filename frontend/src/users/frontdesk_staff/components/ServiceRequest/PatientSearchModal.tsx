@@ -110,7 +110,7 @@ function PatientSearchModal({
       onClick={onClose}
     >
       <div
-        className="flex h-5/6 w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
+        className="flex h-5/6 w-full max-w-xl flex-col overflow-hidden rounded-md bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -147,7 +147,7 @@ function PatientSearchModal({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name, patient ID (e.g. P-26), or contact number..."
-              className="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 pl-9 pr-3 text-xs outline-none focus:border-sky-400"
+              className="h-10 w-full rounded-md border border-gray-200 bg-gray-50 pl-9 pr-3 text-xs outline-none focus:border-sky-400"
             />
           </div>
 
@@ -178,12 +178,10 @@ function PatientSearchModal({
 
         {/* List */}
         <div className="mt-3 min-h-0 flex-1 overflow-y-auto bg-gray-50 px-6 py-3">
-          {error && (
-            <ErrorMessage>{error}</ErrorMessage>
-          )}
+          {error && <ErrorMessage>{error}</ErrorMessage>}
           {loading ? (
             <LoadingScreen message="Loading patients..." />
-          ) : ((filtered.length === 0 ? (
+          ) : filtered.length === 0 ? (
             <EmptyState message="No patients found." />
           ) : (
             <ul className="flex flex-col gap-3">
@@ -197,7 +195,7 @@ function PatientSearchModal({
                       type="button"
                       onClick={() => setSelectedId(p.patient_id)}
                       onDoubleClick={() => onSelect(p)}
-                      className={`flex w-full cursor-pointer items-center gap-3 rounded-xl border bg-white px-4 py-3 text-left transition ${
+                      className={`flex w-full cursor-pointer items-center gap-3 rounded-md border bg-white px-4 py-3 text-left transition ${
                         selected
                           ? "border-sky-500 bg-sky-50"
                           : "border-gray-200 hover:border-sky-300"
@@ -260,7 +258,7 @@ function PatientSearchModal({
                 );
               })}
             </ul>
-          )))}
+          )}
         </div>
 
         {/* Footer */}
@@ -268,7 +266,7 @@ function PatientSearchModal({
           <button
             type="button"
             onClick={onRegister}
-            className="flex cursor-pointer items-center gap-2 rounded-lg border border-sky-300 px-5 py-2.5 text-xs font-semibold text-sky-600 hover:bg-sky-50"
+            className="flex cursor-pointer items-center gap-2 rounded-md border border-sky-300 px-5 py-2.5 text-xs font-semibold text-sky-600 hover:bg-sky-50"
           >
             <UserPlus size={15} />
             Register New Patient
@@ -286,7 +284,7 @@ function PatientSearchModal({
               type="button"
               disabled={!selectedPatient}
               onClick={() => selectedPatient && onSelect(selectedPatient)}
-              className="cursor-pointer rounded-lg bg-sky-500 px-5 py-2.5 text-xs font-semibold text-white hover:bg-sky-600 disabled:cursor-not-allowed disabled:bg-gray-300"
+              className="cursor-pointer rounded-md bg-sky-500 px-5 py-2.5 text-xs font-semibold text-white hover:bg-sky-600 disabled:cursor-not-allowed disabled:bg-gray-300"
             >
               Confirm Selection
             </button>

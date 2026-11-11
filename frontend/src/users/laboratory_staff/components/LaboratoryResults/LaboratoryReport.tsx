@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import type { BuilderComponent } from "../../../../interface/FormTemplate";
 import type { LaboratoryReportData } from "../../../../interface/LaboratoryAnalysis";
-import { formatLabDate } from "./AnalysisList";
+import { formatLabDate } from "../../../../utils/formats";
 import { resultFlag } from "./laboratoryValidation";
 import { REPORT_LOGO, reportText, safeReportImage } from "./laboratoryPrint";
 import { CLINIC_INFO } from "../../../../lib/clinicInfo";

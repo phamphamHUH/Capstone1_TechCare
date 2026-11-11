@@ -3,7 +3,12 @@ import UniversalModal from "../../../../components/UniversalModal";
 import { Eye, EyeOff } from "lucide-react";
 import ErrorMessage from "../../../../components/ErrorMessage";
 import api from "../../../../lib/axios";
-import { Field, SelectField, Section, fieldClass } from "../../../../components/FormFields";
+import {
+  Field,
+  SelectField,
+  Section,
+  fieldClass,
+} from "../../../../components/FormFields";
 import { DOCTOR_FIELDS } from "./doctorField";
 import {
   departmentAfterRoleChange,
@@ -37,18 +42,35 @@ const today = () => new Date().toLocaleDateString("en-CA");
 
 const getInitialForm = () => ({
   // Account
-  username: "", password: "", confirm_password: "",
+  username: "",
+  password: "",
+  confirm_password: "",
   // Personal
-  first_name: "", middle_name: "", last_name: "", suffix: "",
-  sex: "", birthdate: "", email: "", contact_number: "", address: "",
-  emergency_contact: "", emergency_contact_name: "",
+  first_name: "",
+  middle_name: "",
+  last_name: "",
+  suffix: "",
+  sex: "",
+  birthdate: "",
+  email: "",
+  contact_number: "",
+  address: "",
+  emergency_contact: "",
+  emergency_contact_name: "",
   // Employment
-  role: "", department: "",
-  employment_status: "active", date_hired: today(),
-  shift_start: "08:00", shift_end: "17:00",
+  role: "",
+  department: "",
+  employment_status: "active",
+  date_hired: today(),
+  shift_start: "08:00",
+  shift_end: "17:00",
   // Doctor
-  prc_license_number: "", ptr_number: "", s2_license: "",
-  medical_specialty: "", subspecialty: "", board_certification: "",
+  prc_license_number: "",
+  ptr_number: "",
+  s2_license: "",
+  medical_specialty: "",
+  subspecialty: "",
+  board_certification: "",
 });
 type FormState = ReturnType<typeof getInitialForm>;
 
@@ -123,8 +145,18 @@ function AddUserModal({ onClose, loadData }: Props) {
     setFormError("");
 
     const required: (keyof FormState)[] = [
-      "username", "password", "confirm_password", "first_name", "last_name",
-      "sex", "birthdate", "email", "contact_number", "address", "role", "date_hired",
+      "username",
+      "password",
+      "confirm_password",
+      "first_name",
+      "last_name",
+      "sex",
+      "birthdate",
+      "email",
+      "contact_number",
+      "address",
+      "role",
+      "date_hired",
     ];
     if (required.some((key) => !form[key])) {
       setFormError("Please fill out all required fields.");
@@ -138,7 +170,11 @@ function AddUserModal({ onClose, loadData }: Props) {
       setFormError("Your passwords do not match.");
       return;
     }
-    if (form.shift_start && form.shift_end && form.shift_start >= form.shift_end) {
+    if (
+      form.shift_start &&
+      form.shift_end &&
+      form.shift_start >= form.shift_end
+    ) {
       setFormError("Shift start time must be earlier than shift end time.");
       return;
     }
@@ -176,7 +212,7 @@ function AddUserModal({ onClose, loadData }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <form
         onSubmit={handleSubmit}
-        className="flex max-h-[92vh] w-full max-w-5xl flex-col rounded-2xl bg-white p-6 shadow-xl"
+        className="flex max-h-[92vh] w-full max-w-5xl flex-col rounded-md bg-white p-6 shadow-xl"
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-bold text-black">Add Employee</h2>
@@ -184,7 +220,7 @@ function AddUserModal({ onClose, loadData }: Props) {
             type="button"
             onClick={onClose}
             disabled={submitting}
-            className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm hover:bg-gray-100 disabled:opacity-50"
+            className="rounded-md border border-gray-200 px-3 py-1.5 text-sm hover:bg-gray-100 disabled:opacity-50"
           >
             X
           </button>
@@ -193,18 +229,24 @@ function AddUserModal({ onClose, loadData }: Props) {
         <div className="space-y-8 overflow-y-auto pr-2">
           {/* ACCOUNT */}
           <Section title="Account Information">
-            <Field label="Username" required value={form.username} onChange={set("username")} width="w-44" />
+            <Field
+              label="Username"
+              required
+              value={form.username}
+              onChange={set("username")}
+              width="w-44"
+            />
 
             <label className="flex items-center gap-2 text-sm text-gray-500">
               <span className="whitespace-nowrap">
                 Password<span className="text-red-500"> *</span>
               </span>
-              <span className="flex w-44 items-center rounded-lg border border-gray-200 focus-within:border-sky-400">
+              <span className="flex w-44 items-center rounded-md border border-gray-200 focus-within:border-sky-400">
                 <input
                   type={showPassword ? "text" : "password"}
                   value={form.password}
                   onChange={(e) => set("password")(e.target.value)}
-                  className="h-8 w-full rounded-lg bg-transparent px-2 text-sm text-gray-800 outline-none"
+                  className="h-8 w-full rounded-md bg-transparent px-2 text-sm text-gray-800 outline-none"
                 />
                 <button
                   type="button"
@@ -233,7 +275,11 @@ function AddUserModal({ onClose, loadData }: Props) {
             <div className="flex items-center gap-3 text-sm text-gray-500">
               <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-gray-50">
                 {photoPreview ? (
-                  <img src={photoPreview} alt="Profile preview" className="h-full w-full object-cover" />
+                  <img
+                    src={photoPreview}
+                    alt="Profile preview"
+                    className="h-full w-full object-cover"
+                  />
                 ) : (
                   <span className="text-xs text-gray-400">Photo</span>
                 )}
@@ -249,32 +295,103 @@ function AddUserModal({ onClose, loadData }: Props) {
                   />
                 </label>
                 {photo && (
-                  <button type="button" onClick={removePhoto} className="text-xs text-red-600 hover:underline">
+                  <button
+                    type="button"
+                    onClick={removePhoto}
+                    className="text-xs text-red-600 hover:underline"
+                  >
                     Remove
                   </button>
                 )}
-                <span className="text-[11px] text-gray-400">JPG, PNG or WEBP, max 5MB</span>
+                <span className="text-[11px] text-gray-400">
+                  JPG, PNG or WEBP, max 5MB
+                </span>
               </div>
             </div>
 
             <div className="basis-full" />
-            <Field label="First Name" required value={form.first_name} onChange={set("first_name")} width="w-36" />
-            <Field label="Middle Name" value={form.middle_name} onChange={set("middle_name")} width="w-36" />
-            <Field label="Last Name" required value={form.last_name} onChange={set("last_name")} width="w-36" />
-            <Field label="Suffix" value={form.suffix} onChange={set("suffix")} width="w-14" />
+            <Field
+              label="First Name"
+              required
+              value={form.first_name}
+              onChange={set("first_name")}
+              width="w-36"
+            />
+            <Field
+              label="Middle Name"
+              value={form.middle_name}
+              onChange={set("middle_name")}
+              width="w-36"
+            />
+            <Field
+              label="Last Name"
+              required
+              value={form.last_name}
+              onChange={set("last_name")}
+              width="w-36"
+            />
+            <Field
+              label="Suffix"
+              value={form.suffix}
+              onChange={set("suffix")}
+              width="w-14"
+            />
 
             <div className="basis-full" />
-            <SelectField label="Sex" required value={form.sex} onChange={set("sex")} options={SEX_OPTIONS} width="w-24" />
-            <Field label="Date of Birth" required type="date" value={form.birthdate} onChange={set("birthdate")} width="w-36" />
-            <Field label="Email Address" required type="email" value={form.email} onChange={set("email")} width="w-52" />
-            <Field label="Mobile Number" required value={form.contact_number} onChange={set("contact_number")} width="w-36" />
+            <SelectField
+              label="Sex"
+              required
+              value={form.sex}
+              onChange={set("sex")}
+              options={SEX_OPTIONS}
+              width="w-24"
+            />
+            <Field
+              label="Date of Birth"
+              required
+              type="date"
+              value={form.birthdate}
+              onChange={set("birthdate")}
+              width="w-36"
+            />
+            <Field
+              label="Email Address"
+              required
+              type="email"
+              value={form.email}
+              onChange={set("email")}
+              width="w-52"
+            />
+            <Field
+              label="Mobile Number"
+              required
+              value={form.contact_number}
+              onChange={set("contact_number")}
+              width="w-36"
+            />
 
             <div className="basis-full" />
-            <Field label="Address" required value={form.address} onChange={set("address")} width="w-[28rem]" />
+            <Field
+              label="Address"
+              required
+              value={form.address}
+              onChange={set("address")}
+              width="w-[28rem]"
+            />
 
             <div className="basis-full" />
-            <Field label="Emergency Contact #" value={form.emergency_contact} onChange={set("emergency_contact")} width="w-36" />
-            <Field label="Emergency Contact Name" value={form.emergency_contact_name} onChange={set("emergency_contact_name")} width="w-48" />
+            <Field
+              label="Emergency Contact #"
+              value={form.emergency_contact}
+              onChange={set("emergency_contact")}
+              width="w-36"
+            />
+            <Field
+              label="Emergency Contact Name"
+              value={form.emergency_contact_name}
+              onChange={set("emergency_contact_name")}
+              width="w-48"
+            />
           </Section>
 
           {/* EMPLOYMENT */}
@@ -300,11 +417,23 @@ function AddUserModal({ onClose, loadData }: Props) {
                 width="w-40"
               />
             ) : (
-              <Field label="Department" value={form.department} onChange={set("department")} width="w-40" />
+              <Field
+                label="Department"
+                value={form.department}
+                onChange={set("department")}
+                width="w-40"
+              />
             )}
 
             <div className="basis-full" />
-            <Field label="Date Hired" required type="date" value={form.date_hired} onChange={set("date_hired")} width="w-36" />
+            <Field
+              label="Date Hired"
+              required
+              type="date"
+              value={form.date_hired}
+              onChange={set("date_hired")}
+              width="w-36"
+            />
 
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <span className="whitespace-nowrap">Shift Schedule</span>
@@ -328,7 +457,13 @@ function AddUserModal({ onClose, loadData }: Props) {
           {isDoctor && (
             <Section title="Doctor Information">
               {DOCTOR_FIELDS.map(({ key, label }) => (
-                <Field key={key} label={label} value={form[key]} onChange={set(key)} width="w-40" />
+                <Field
+                  key={key}
+                  label={label}
+                  value={form[key]}
+                  onChange={set(key)}
+                  width="w-40"
+                />
               ))}
             </Section>
           )}
@@ -349,7 +484,7 @@ function AddUserModal({ onClose, loadData }: Props) {
           <button
             type="submit"
             disabled={submitting}
-            className="rounded-lg bg-sky-400 px-5 py-2 text-sm text-white hover:bg-sky-500 disabled:opacity-50"
+            className="rounded-md bg-sky-400 px-5 py-2 text-sm text-white hover:bg-sky-500 disabled:opacity-50"
           >
             {submitting ? "Adding…" : "Add Employee"}
           </button>

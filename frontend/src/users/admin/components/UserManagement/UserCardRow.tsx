@@ -19,7 +19,7 @@ function UserCardRow({ user, setSelectedUser, setShowUserProfile }: Props) {
 
   return (
     <div
-      className="flex w-full cursor-pointer items-center gap-4 rounded-xl border border-gray-300 bg-white px-4 py-3 shadow-sm transition hover:shadow-md"
+      className="flex w-full cursor-pointer items-center gap-4 rounded-md border border-gray-300 bg-white px-4 py-3 shadow-sm transition hover:shadow-md"
       onClick={openProfile}
     >
       {/* Avatar */}

@@ -282,7 +282,7 @@ function VisitDetails({
 
       <div className="mt-4 flex items-center gap-3 pb-4">
         <div
-          className={`flex size-12 shrink-0 items-center justify-center rounded-xl ${
+          className={`flex size-12 shrink-0 items-center justify-center rounded-md ${
             isLab ? "bg-gray-100 text-gray-600" : "bg-indigo-50 text-indigo-500"
           }`}
         >
@@ -350,7 +350,7 @@ function VisitDetails({
               const rows = toRows(res.results);
               return (
                 <div key={res.result_id} className="mb-3 last:mb-0">
-                  <div className="overflow-x-auto rounded-lg border border-gray-200">
+                  <div className="overflow-x-auto rounded-md border border-gray-200">
                     <table className="w-full text-left text-xs">
                       <thead>
                         <tr className="border-b border-gray-200 bg-gray-50 text-gray-600">
@@ -427,7 +427,7 @@ function VisitDetails({
           ).map(([title, value]) =>
             isEmpty(value) ? null : (
               <Section key={title} title={title}>
-                <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm">
+                <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm">
                   <JsonView value={value} />
                 </div>
               </Section>
@@ -442,7 +442,7 @@ function VisitDetails({
                 {details.prescription.map((p) => (
                   <div
                     key={p.prescription_id}
-                    className="rounded-lg border border-gray-200 p-3 text-sm"
+                    className="rounded-md border border-gray-200 p-3 text-sm"
                   >
                     <div className="overflow-x-auto border-b border-gray-200">
                       <table className="w-full text-left text-xs">

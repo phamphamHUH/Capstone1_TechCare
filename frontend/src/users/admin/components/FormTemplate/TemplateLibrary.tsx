@@ -135,9 +135,9 @@ export default function TemplateLibrary({
       </div>
 
       {/* Top Header Card */}
-      <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="bg-white border border-gray-200 rounded-md p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-sky-200/80 flex-shrink-0" />
+          <div className="w-14 h-14 rounded-md bg-sky-200/80 flex-shrink-0" />
           <div>
             <h2 className="text-xl font-bold text-gray-900">
               Form Template Library
@@ -160,7 +160,7 @@ export default function TemplateLibrary({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search Template.."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-sky-400 bg-white"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-sky-400 bg-white"
             />
           </div>
 
@@ -168,7 +168,7 @@ export default function TemplateLibrary({
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
-            className="px-3.5 py-2 border border-gray-300 rounded-xl text-xs font-medium text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-sky-400"
+            className="px-3.5 py-2 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-sky-400"
           >
             <option value="most_used">Sort by: Most Used</option>
             <option value="recently_updated">Sort by: Recently Updated</option>
@@ -194,7 +194,7 @@ export default function TemplateLibrary({
                   key={cat}
                   type="button"
                   onClick={() => setSelectedCategory(cat)}
-                  className={`flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                  className={`flex items-center justify-between px-4 py-2.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
                     isActive
                       ? "bg-sky-100/80 text-sky-700 shadow-xs"
                       : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
@@ -218,7 +218,7 @@ export default function TemplateLibrary({
           <button
             type="button"
             onClick={onCreateNew}
-            className="mt-4 flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-sky-400 text-sky-600 hover:bg-sky-50 text-xs font-bold transition-all shadow-xs cursor-pointer"
+            className="mt-4 flex items-center justify-center gap-2 py-3 px-4 rounded-md border border-sky-400 text-sky-600 hover:bg-sky-50 text-xs font-bold transition-all shadow-xs cursor-pointer"
           >
             <Plus size={16} />
             <span>Create New Template</span>
@@ -234,14 +234,24 @@ export default function TemplateLibrary({
                 : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4"
             }`}
           >
-            {sortedTemplates.length === 0 && <EmptyState className="col-span-full" message="No templates found." description={searchQuery.trim() ? "Try changing or clearing your search." : "Create a template to get started."} />}
+            {sortedTemplates.length === 0 && (
+              <EmptyState
+                className="col-span-full"
+                message="No templates found."
+                description={
+                  searchQuery.trim()
+                    ? "Try changing or clearing your search."
+                    : "Create a template to get started."
+                }
+              />
+            )}
             {sortedTemplates.map((tpl) => {
               const isSelected = selectedTemplate?.form_id === tpl.form_id;
               return (
                 <div
                   key={tpl.form_id}
                   onClick={() => setSelectedTemplate(tpl)}
-                  className={`bg-white border rounded-2xl p-4 flex flex-col justify-between h-44 transition-all cursor-pointer shadow-xs hover:shadow-sm ${
+                  className={`bg-white border rounded-md p-4 flex flex-col justify-between h-44 transition-all cursor-pointer shadow-xs hover:shadow-sm ${
                     isSelected
                       ? "border-sky-500 ring-2 ring-sky-200 bg-sky-50/20"
                       : "border-gray-200 hover:border-sky-300"
@@ -269,7 +279,7 @@ export default function TemplateLibrary({
                         e.stopPropagation();
                         setSelectedTemplate(tpl);
                       }}
-                      className="px-2.5 py-1 text-sky-600 hover:bg-sky-50 rounded-lg text-xs font-semibold cursor-pointer"
+                      className="px-2.5 py-1 text-sky-600 hover:bg-sky-50 rounded-md text-xs font-semibold cursor-pointer"
                     >
                       Details
                     </button>
@@ -283,7 +293,7 @@ export default function TemplateLibrary({
             }).map((_, i) => (
               <div
                 key={`placeholder-${i}`}
-                className="border border-gray-200/80 rounded-2xl p-4 h-44 flex items-center justify-center bg-gray-50/40 select-none"
+                className="border border-gray-200/80 rounded-md p-4 h-44 flex items-center justify-center bg-gray-50/40 select-none"
               />
             ))}
           </div>
@@ -296,25 +306,25 @@ export default function TemplateLibrary({
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
-                className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-100 cursor-pointer"
+                className="w-7 h-7 rounded-md border border-gray-200 flex items-center justify-center hover:bg-gray-100 cursor-pointer"
               >
                 &lt;
               </button>
               <button
                 type="button"
-                className="w-7 h-7 rounded-lg bg-sky-500 text-white font-bold flex items-center justify-center shadow-xs"
+                className="w-7 h-7 rounded-md bg-sky-500 text-white font-bold flex items-center justify-center shadow-xs"
               >
                 1
               </button>
               <button
                 type="button"
-                className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-100 cursor-pointer"
+                className="w-7 h-7 rounded-md border border-gray-200 flex items-center justify-center hover:bg-gray-100 cursor-pointer"
               >
                 2
               </button>
               <button
                 type="button"
-                className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-100 cursor-pointer"
+                className="w-7 h-7 rounded-md border border-gray-200 flex items-center justify-center hover:bg-gray-100 cursor-pointer"
               >
                 &gt;
               </button>
@@ -324,7 +334,7 @@ export default function TemplateLibrary({
 
         {/* Right Details Drawer */}
         {selectedTemplate && (
-          <aside className="w-full lg:w-80 flex-shrink-0 bg-white border border-gray-200 rounded-2xl p-5 flex flex-col justify-between shadow-sm animate-fade-in">
+          <aside className="w-full lg:w-80 flex-shrink-0 bg-white border border-gray-200 rounded-md p-5 flex flex-col justify-between shadow-sm animate-fade-in">
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                 <h3 className="font-bold text-gray-900 text-sm">
@@ -390,7 +400,7 @@ export default function TemplateLibrary({
                 type="button"
                 onClick={() => handlePreviewClick(selectedTemplate)}
                 disabled={previewLoadingId === selectedTemplate.form_id}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-sky-300 text-sky-600 hover:bg-sky-50 text-xs font-bold transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-md border border-sky-300 text-sky-600 hover:bg-sky-50 text-xs font-bold transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {previewLoadingId === selectedTemplate.form_id ? (
                   <LoadingSpinner size={14} />
@@ -407,7 +417,7 @@ export default function TemplateLibrary({
               <button
                 type="button"
                 onClick={() => onEditTemplate(selectedTemplate)}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-sky-300 text-sky-600 hover:bg-sky-50 text-xs font-bold transition-colors cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-md border border-sky-300 text-sky-600 hover:bg-sky-50 text-xs font-bold transition-colors cursor-pointer"
               >
                 <Edit size={14} />
                 <span>Edit Template</span>
@@ -416,7 +426,7 @@ export default function TemplateLibrary({
               <button
                 type="button"
                 onClick={() => setShowDeleteConfirm(true)}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold transition-colors cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-md bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold transition-colors cursor-pointer"
               >
                 <Trash2 size={14} />
                 <span>Delete Template</span>
@@ -429,7 +439,7 @@ export default function TemplateLibrary({
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && selectedTemplate && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-gray-200 text-center">
+          <div className="bg-white rounded-md max-w-sm w-full p-6 shadow-xl border border-gray-200 text-center">
             <h4 className="font-bold text-gray-900 text-sm mb-1">
               Delete Template?
             </h4>
@@ -444,7 +454,7 @@ export default function TemplateLibrary({
               <button
                 type="button"
                 onClick={() => setShowDeleteConfirm(false)}
-                className="flex-1 py-2 text-xs font-semibold rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 cursor-pointer"
+                className="flex-1 py-2 text-xs font-semibold rounded-md border border-gray-200 hover:bg-gray-50 text-gray-700 cursor-pointer"
               >
                 Cancel
               </button>
@@ -455,7 +465,7 @@ export default function TemplateLibrary({
                   setShowDeleteConfirm(false);
                   setSelectedTemplate(null);
                 }}
-                className="flex-1 py-2 text-xs font-bold rounded-xl bg-red-600 hover:bg-red-700 text-white cursor-pointer"
+                className="flex-1 py-2 text-xs font-bold rounded-md bg-red-600 hover:bg-red-700 text-white cursor-pointer"
               >
                 Delete
               </button>

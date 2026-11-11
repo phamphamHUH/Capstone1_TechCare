@@ -108,7 +108,7 @@ function PatientSelectionHeader({
           <button
             type="button"
             onClick={() => setModalOpen(true)}
-            className="border border-blue-300 text-blue-300 text-sm px-5 py-2 rounded-lg flex items-center gap-2 cursor-pointer transition-all
+            className="border border-blue-300 text-blue-300 text-sm px-5 py-2 rounded-md flex items-center gap-2 cursor-pointer transition-all
                        hover:border-blue-500 hover:text-blue-500 hover:scale-101 active:border-blue-900 active:text-blue-900 active:scale-100"
           >
             <User size={15} />

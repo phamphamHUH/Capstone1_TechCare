@@ -14,7 +14,7 @@ export default function PatientPrescriptionCard({
   allowSwitchPatient = true,
 }: PatientPrescriptionCardProps) {
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs mb-6 transition-all w-full">
+    <div className="bg-white border border-gray-200 rounded-md p-5 shadow-xs mb-6 transition-all w-full">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         {/* Left: Avatar & Details */}
         <div className="flex items-center gap-4">
@@ -70,7 +70,7 @@ export default function PatientPrescriptionCard({
             <button
               type="button"
               onClick={onSelectPatient}
-              className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-300 px-3.5 py-2 rounded-xl transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-300 px-3.5 py-2 rounded-md transition-colors cursor-pointer"
             >
               <User size={14} className="text-gray-500" />
               <span>Change Patient</span>

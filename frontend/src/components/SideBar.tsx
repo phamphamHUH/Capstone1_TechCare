@@ -34,7 +34,7 @@ function SideBar({ open, page, setPage, navItems }: SideBarProps) {
             {navItems.map((item) => (
               <a
                 key={item.page}
-                className={`hover:scale-101 active:scale-100 active:bg-sky-200 active:text-sky-700 rounded-xl py-2 px-3 transition-all cursor-pointer ${
+                className={`hover:scale-101 active:scale-100 active:bg-sky-200 active:text-sky-700 rounded-md py-2 px-3 transition-all cursor-pointer ${
                   page === item.page ? "bg-sky-100 text-sky-600 " : ""
                 }`}
                 onClick={() => setPage(item.page)}

@@ -188,7 +188,7 @@ function BillingTable({
                 type="button"
                 disabled={currentPage <= 1}
                 onClick={() => setPage(currentPage - 1)}
-                className="cursor-pointer rounded-lg border border-gray-200 px-3 py-1 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+                className="cursor-pointer rounded-md border border-gray-200 px-3 py-1 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Previous
               </button>
@@ -199,7 +199,7 @@ function BillingTable({
                 type="button"
                 disabled={currentPage >= totalPages}
                 onClick={() => setPage(currentPage + 1)}
-                className="cursor-pointer rounded-lg border border-gray-200 px-3 py-1 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+                className="cursor-pointer rounded-md border border-gray-200 px-3 py-1 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Next
               </button>

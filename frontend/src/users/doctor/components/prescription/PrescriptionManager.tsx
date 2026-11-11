@@ -272,7 +272,7 @@ export default function PrescriptionManager({
 
       {/* Consultation Section Tabs (matching attached Screen 1 reference) */}
       {showConsultationTabs && (
-        <div className="bg-white border border-gray-200 rounded-2xl shadow-xs overflow-hidden">
+        <div className="bg-white border border-gray-200 rounded-md shadow-xs overflow-hidden">
           {/* Tabs Bar */}
           <div className="flex items-center gap-1 border-b border-gray-200 px-6 pt-3 bg-gray-50/50 overflow-x-auto">
             <button
@@ -341,11 +341,20 @@ export default function PrescriptionManager({
             {activeTab === "prescription" ? (
               savedPrescriptions.length === 0 ? (
                 /* No Prescription Yet Empty State */
-                <EmptyState message="No prescriptions found." description="Add prescribed medications for this consultation." action={
-                  <button type="button" onClick={() => setViewMode("create")} className="inline-flex items-center gap-2 rounded-md bg-sky-500 px-4 py-2 text-sm font-medium text-white hover:bg-sky-600">
-                    <Plus size={16} />Create Prescription
-                  </button>
-                } />
+                <EmptyState
+                  message="No prescriptions found."
+                  description="Add prescribed medications for this consultation."
+                  action={
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("create")}
+                      className="inline-flex items-center gap-2 rounded-md bg-sky-500 px-4 py-2 text-sm font-medium text-white hover:bg-sky-600"
+                    >
+                      <Plus size={16} />
+                      Create Prescription
+                    </button>
+                  }
+                />
               ) : (
                 /* Active / Saved Prescriptions for this Consultation */
                 <div className="flex flex-col gap-6">
@@ -362,7 +371,7 @@ export default function PrescriptionManager({
                     <button
                       type="button"
                       onClick={() => setViewMode("create")}
-                      className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+                      className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-md transition-colors cursor-pointer"
                     >
                       <Plus size={15} />
                       <span>Add Another Prescription</span>
@@ -373,7 +382,7 @@ export default function PrescriptionManager({
                     {savedPrescriptions.map((rx) => (
                       <div
                         key={rx.id}
-                        className="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs flex flex-col justify-between hover:border-blue-300 transition-all"
+                        className="bg-white border border-gray-200 rounded-md p-5 shadow-xs flex flex-col justify-between hover:border-blue-300 transition-all"
                       >
                         <div>
                           <div className="flex items-center justify-between text-xs mb-2">
@@ -418,7 +427,7 @@ export default function PrescriptionManager({
                               }
                               setViewMode("preview");
                             }}
-                            className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold rounded-md transition-colors cursor-pointer"
                           >
                             <Eye size={14} />
                             <span>Preview Slip</span>
@@ -433,7 +442,7 @@ export default function PrescriptionManager({
                               }
                               setViewMode("create");
                             }}
-                            className="py-2 px-3 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+                            className="py-2 px-3 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs font-semibold rounded-md transition-colors cursor-pointer"
                           >
                             Edit
                           </button>
@@ -466,7 +475,7 @@ export default function PrescriptionManager({
         <button
           type="button"
           onClick={onClose}
-          className="px-5 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+          className="px-5 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-semibold rounded-md transition-colors cursor-pointer"
         >
           Back
         </button>
@@ -474,7 +483,7 @@ export default function PrescriptionManager({
         <button
           type="button"
           disabled
-          className="px-6 py-2.5 bg-gray-200 text-gray-400 text-xs font-semibold rounded-xl cursor-not-allowed select-none"
+          className="px-6 py-2.5 bg-gray-200 text-gray-400 text-xs font-semibold rounded-md cursor-not-allowed select-none"
         >
           Save Consultation
         </button>
