@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import Header from "../../components/Header";
 import SideBar from "../../components/SideBar";
-import { SidebarNavContext } from "../../components/sidebar/sidebarNav";
+import { SidebarNavContext } from "../../components/sidebar/utils/sidebarNav";
 import MedicalHistory from "./pages/MedicalHistory";
 import Prescriptions from "./pages/Prescriptions";
 import QueueTracking from "./pages/QueueTracking";

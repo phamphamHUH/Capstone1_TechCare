@@ -3,7 +3,7 @@ import axios from "axios";
 import { FileText, FlaskConical, LayoutGrid, UserRound } from "lucide-react";
 import ErrorMessage from "../../../components/ErrorMessage";
 import LoadingScreen from "../../../components/LoadingScreen";
-import { fetchPatientQueues } from "../components/patientApi";
+import { fetchPatientQueues } from "../components/utils/patientApi";
 import type { PatientQueueResponse } from "../../../interface/PatientPortal";
 import QueueCard, {
   type QueueGroup,

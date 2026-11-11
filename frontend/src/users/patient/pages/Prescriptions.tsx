@@ -4,7 +4,7 @@ import LoadingScreen from "../../../components/LoadingScreen";
 import { useEffect, useMemo, useState } from "react";
 import { FileText, MousePointerClick, Pill, Search } from "lucide-react";
 import PatientSummaryCard from "../components/PatientSummaryCard";
-import { fetchPatientPrescriptions } from "../components/patientApi";
+import { fetchPatientPrescriptions } from "../components/utils/patientApi";
 import type {
   PatientSessionUser,
   PrescriptionItem,

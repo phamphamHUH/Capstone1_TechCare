@@ -6,7 +6,7 @@ import LoadingScreen from "../../../../../components/LoadingScreen";
 import ErrorMessage from "../../../../../components/ErrorMessage";
 import type { LaboratoryReportData } from "../../../../../interface/LaboratoryAnalysis";
 import { ReportPreview } from "../../../../laboratory_staff/components/LaboratoryResults/PrintResultView";
-import { fetchPatientLaboratoryReport } from "../patientLaboratoryReport";
+import { fetchPatientLaboratoryReport } from "../utils/patientLaboratoryReport";
 
 function ReleasedReportPreview({ resultId }: { resultId: string }) {
   const [state, setState] = useState<{

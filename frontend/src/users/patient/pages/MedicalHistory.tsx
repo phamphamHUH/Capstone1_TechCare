@@ -10,7 +10,7 @@ import {
 import EmptyState from "../../../components/EmptyState";
 import ErrorMessage from "../../../components/ErrorMessage";
 import LoadingScreen from "../../../components/LoadingScreen";
-import { fetchPatientMedicalHistory } from "../components/patientApi";
+import { fetchPatientMedicalHistory } from "../components/utils/patientApi";
 import type { HistoryRecord, Pagination } from "../../../interface/PatientPortal";
 import PatientVisitPanel from "../components/MedicalHistory/PatientVisitPanel";
 import PortalStatus from "../components/PortalStatus";

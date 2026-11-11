@@ -1,13 +1,13 @@
-import api from "../../../../lib/axios";
+import api from "../../../../../lib/axios";
 import type {
   AnalysisRequest,
   LaboratoryReportData,
-} from "../../../../interface/LaboratoryAnalysis";
+} from "../../../../../interface/LaboratoryAnalysis";
 import {
   releasedReports,
   type ReleasedResult,
-} from "../../../laboratory_staff/components/LaboratoryResults/laboratoryResultAdapters";
-import { patientAge } from "../../../laboratory_staff/components/LaboratoryResults/laboratoryAnalysis";
+} from "../../../../laboratory_staff/components/LaboratoryResults/utils/laboratoryResultAdapters";
+import { patientAge } from "../../../../laboratory_staff/components/LaboratoryResults/utils/laboratoryAnalysis";
 
 type PatientReleasedResult = ReleasedResult & {
   status: "Released";

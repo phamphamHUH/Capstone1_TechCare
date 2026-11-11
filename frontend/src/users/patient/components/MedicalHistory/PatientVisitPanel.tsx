@@ -4,7 +4,7 @@ import axios from "axios";
 import EmptyState from "../../../../components/EmptyState";
 import ErrorMessage from "../../../../components/ErrorMessage";
 import LoadingScreen from "../../../../components/LoadingScreen";
-import { fetchPatientVisit } from "../patientApi";
+import { fetchPatientVisit } from "../utils/patientApi";
 import type { HistoryRecord, PatientVisitDetails } from "../../../../interface/PatientPortal";
 import PortalStatus from "../PortalStatus";
 import PatientLaboratoryPrint from "./PatientVisitPanel/PatientLaboratoryPrint";
