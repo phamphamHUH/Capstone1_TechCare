@@ -160,7 +160,7 @@ export default function FormTemplate({
 
   return (
     <main className="flex-1 min-w-0 overflow-y-auto">
-      <div className="mt-4 px-6">
+      <div className="mt-4 px-4 sm:px-6">
         {/* CHANGED: Conditional UI rendering for Loading, Error, or Template Views */}
         {fetchError && <ErrorMessage>{fetchError}</ErrorMessage>}
         {fetching && formTemplates.length === 0 && viewMode === "library" ? (

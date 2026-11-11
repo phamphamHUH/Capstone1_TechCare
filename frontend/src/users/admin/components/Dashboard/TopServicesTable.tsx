@@ -29,7 +29,7 @@ function TopServicesTable({ services }: TopServicesTableProps) {
   return (
     <div>
       <div className="max-h-96 overflow-auto">
-        <table className="w-full text-sm">
+        <table className="min-w-[560px] w-full text-sm">
           <thead>
             <tr className="text-left text-xs text-gray-500">
               <th className={`${headCell} w-10 pl-6 pr-2 text-right`}>#</th>

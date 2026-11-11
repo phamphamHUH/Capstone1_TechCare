@@ -19,7 +19,7 @@ function UserCardRow({ user, setSelectedUser, setShowUserProfile }: Props) {
 
   return (
     <div
-      className="flex w-full cursor-pointer items-center gap-4 rounded-md border border-gray-300 bg-white px-4 py-3 shadow-sm transition hover:shadow-md"
+      className="flex w-full flex-wrap sm:flex-nowrap cursor-pointer items-center gap-3 sm:gap-4 rounded-md border border-gray-300 bg-white px-4 py-3 shadow-sm transition hover:shadow-md"
       onClick={openProfile}
     >
       {/* Avatar */}
@@ -36,13 +36,13 @@ function UserCardRow({ user, setSelectedUser, setShowUserProfile }: Props) {
       )}
 
       {/* Name + role */}
-      <div className="w-48 min-w-0 shrink-0">
+      <div className="min-w-0 flex-1 sm:w-48 sm:flex-none sm:shrink-0">
         <h2 className="truncate text-sm font-bold text-gray-900">{fullName}</h2>
         <p className="truncate text-xs text-gray-600">{roleLabel(user.role)}</p>
       </div>
 
       {/* Details */}
-      <div className="grid min-w-0 flex-1 grid-cols-1 gap-x-6 gap-y-1 text-xs text-gray-700 md:grid-cols-2 xl:grid-cols-4">
+      <div className="order-last basis-full sm:order-none sm:basis-auto grid min-w-0 flex-1 grid-cols-1 gap-x-6 gap-y-1 text-xs text-gray-700 md:grid-cols-2 xl:grid-cols-4">
         <p className="flex min-w-0 items-center gap-2">
           <Hash size={12} className="shrink-0 text-gray-500" />
           <span className="truncate">{user.user_id}</span>

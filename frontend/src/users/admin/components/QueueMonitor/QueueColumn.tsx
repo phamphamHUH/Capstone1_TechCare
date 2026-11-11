@@ -116,8 +116,8 @@ function QueueColumn({ title, entries }: QueueColumnProps) {
       </div>
 
       {/* NEXT IN LINE */}
-      <div className="flex-1 bg-white">
-        <table className="w-full text-left">
+      <div className="flex-1 overflow-x-auto bg-white">
+        <table className="w-full min-w-[360px] text-left">
           <thead>
             <tr className={`text-xs font-semibold ${theme.tableHead}`}>
               <th className="w-10 px-4 py-2.5">#</th>

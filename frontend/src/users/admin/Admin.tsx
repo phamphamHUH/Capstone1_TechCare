@@ -206,7 +206,7 @@ function Admin() {
   return (
     <SidebarNavContext.Provider value={{ navItems, page, setPage }}>
       <div className="flex min-h-screen bg-gray-50">
-        <SideBar open={open} page={page} setPage={setPage} navItems={navItems} />
+        <SideBar open={open} setOpen={setOpen} page={page} setPage={setPage} navItems={navItems} />
 
         <div className="flex-1 min-w-0">
           <Header
@@ -275,7 +275,7 @@ function Admin() {
             )}
 
             {!navItems.some((item) => item.page === page) && (
-              <div className="mx-6 rounded-md border border-gray-200 bg-white p-8 text-center">
+              <div className="mx-4 sm:mx-6 rounded-md border border-gray-200 bg-white p-4 sm:p-8 text-center">
                 <h2 className="font-semibold text-gray-800">Page not found</h2>
                 <button
                   type="button"

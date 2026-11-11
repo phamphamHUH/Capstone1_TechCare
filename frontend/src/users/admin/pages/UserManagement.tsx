@@ -85,7 +85,7 @@ function UserManagement({
       {/* =========================
     SEARCH / ACTION BAR
 ========================== */}
-      <div className="flex items-center gap-6 mb-3 px-6">
+      <div className="flex flex-wrap items-center gap-3 sm:gap-6 mb-3 px-4 sm:px-6">
         {/* Users */}
         <div className="shrink-0">
           <h2 className="text-2xl font-semibold">Users</h2>
@@ -96,7 +96,7 @@ function UserManagement({
         </div>
 
         {/* Search */}
-        <div className="relative flex-1 max-w-xl">
+        <div className="relative order-last basis-full sm:order-none sm:basis-auto flex-1 max-w-xl">
           <Search
             size={19}
             strokeWidth={1.5}
@@ -156,7 +156,7 @@ function UserManagement({
         hasUnassignedDepartment={hasUnassignedDepartment}
       />
 
-      {error && <ErrorMessage className="mx-6 mb-5">{error}</ErrorMessage>}
+      {error && <ErrorMessage className="mx-4 sm:mx-6 mb-5">{error}</ErrorMessage>}
 
       {/* =========================
                 MODALS
@@ -198,7 +198,7 @@ function UserManagement({
         {loading && users.length === 0 ? (
           <LoadingScreen message="Loading users..." />
         ) : filteredUsers.length > 0 && viewMode === "list" ? (
-          <div className="flex flex-col gap-3 px-6">
+          <div className="flex flex-col gap-3 px-4 sm:px-6">
             {filteredUsers.map((user) => (
               <UserCardRow
                 key={user.user_id}
@@ -209,7 +209,7 @@ function UserManagement({
             ))}
           </div>
         ) : filteredUsers.length > 0 ? (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6 px-6">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6 px-4 sm:px-6">
             {filteredUsers.map((user) => (
               <UserCardSquare
                 key={user.user_id}
@@ -220,7 +220,7 @@ function UserManagement({
             ))}
           </div>
         ) : (
-          <div className="mx-6">
+          <div className="mx-4 sm:mx-6">
             <EmptyState
               message={error ? "Users are unavailable." : "No users found."}
               description={
@@ -241,7 +241,7 @@ function UserManagement({
             =========================
 
             <div className="w-full overflow-x-auto">
-                <table className="min-w-full border border-gray-300">
+                <table className="w-full min-w-[860px] border border-gray-300">
                     <thead className="bg-gray-200">
                         <tr>
                             <th className="border p-3 text-left">ID</th>

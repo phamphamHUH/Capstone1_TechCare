@@ -79,7 +79,7 @@ function AdminDashboard({
 
   return (
     <main className="min-w-0">
-      <div className="space-y-6 px-6">
+      <div className="space-y-6 px-4 sm:px-6">
         {/* Range selector */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -186,7 +186,7 @@ function AdminDashboard({
                     title="Revenue Over Time"
                     subtitle={`Paid bills after discounts, by ${sales.bucket}`}
                   >
-                    <div className="px-6 pt-10 pb-6">
+                    <div className="px-4 sm:px-6 pt-10 pb-6">
                       <RevenueChart
                         timeline={sales.timeline}
                         bucket={sales.bucket}
@@ -199,7 +199,7 @@ function AdminDashboard({
                     title="Sales Breakdown"
                     subtitle={periodLabel}
                   >
-                    <div className="p-6">
+                    <div className="p-4 sm:p-6">
                       <SalesBreakdown
                         serviceTypes={sales.service_types}
                         paymentMethods={sales.payment_methods}
@@ -223,7 +223,7 @@ function AdminDashboard({
             {catalog && services && (
               <>
                 <section className="bg-white border border-gray-300 rounded-md overflow-hidden">
-                  <div className="px-6 py-5 border-b border-gray-300">
+                  <div className="px-4 sm:px-6 py-5 border-b border-gray-300">
                     <div className="flex items-center gap-3">
                       <Package {...iconProps} />
                       <div>
@@ -334,7 +334,7 @@ function UnavailableAnalytics({ inventory = false }: { inventory?: boolean }) {
     <>
       <section className="overflow-hidden rounded-md border border-gray-300 bg-white">
         {inventory && (
-          <h2 className="border-b border-gray-300 px-6 py-5 text-lg font-semibold">
+          <h2 className="border-b border-gray-300 px-4 sm:px-6 py-5 text-lg font-semibold">
             Service Inventory
           </h2>
         )}
@@ -410,7 +410,7 @@ function Panel({
     <section
       className={`bg-white border border-gray-300 rounded-md overflow-hidden min-w-0 ${className}`}
     >
-      <div className="px-6 py-5 border-b border-gray-300">
+      <div className="px-4 sm:px-6 py-5 border-b border-gray-300">
         <div className="flex items-center gap-3">
           {icon}
           <div>
