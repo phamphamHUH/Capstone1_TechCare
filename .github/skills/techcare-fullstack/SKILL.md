@@ -253,10 +253,17 @@ Only routes that exist in the code are listed. ✅ = works against the current s
 
 **There is no email verification and no forgot-password flow** (removed in `ecf14c4` together with the `is_verified`, `verify_token`, `reset_token` and `pending_email` columns). Passwords are reset only by staff: admin `PATCH /api/admin/users/:user_id/password`, front desk `PATCH /api/fdstaff/patients/:patient_id/password` (both use the shared `components/ResetPasswordModal`).
 
-**Email service (information only, nothing to click):**
+**"Set your password" links** (`utils/passwordLink.ts`; columns `password_token_hash` + `password_token_expires_at` on `users` and `patients`; only the SHA-256 hash is stored; one use, 7 days):
+- **Employees:** the Add User form lets the admin choose. **Email a link** (default): `addUser` gets no `password`, stores an unknown random one and emails a link to `/set-password?token=…`; while it is pending `login` returns 403 "Your account isn't set up yet…". **Set the password now**: `addUser` gets `password` (≥ 8), no link is created, and the email just says the administrator will give them the password. Both use `employeeAccountCreatedEmail(…, link | null)`.
+- **Patients:** `addPatient` still sets the front-desk password (the last name). Patients with an email also get a link (`patientAccountCreated`) to **change** it; the front-desk password works until they do. No email → no link.
+- Public endpoints: `POST /api/auth/password-link/check {token}` → `{account_type, first_name, username}` (404 if invalid/expired); `POST /api/auth/password-link {token, password}` sets the password (≥ 8) and clears the link in the same UPDATE (single use).
+- A staff password reset (admin users / front desk patients) also clears any pending link. Expired employee link → the admin uses Reset password.
+- Never return `password_token_hash`: strip it with `password_hash` (`const { password_hash, password_token_hash, ...safe } = row`).
+
+**Email service:**
 - `services/email/sendEmail.ts`: `sendEmail()` calls Brevo over HTTPS (Render's free tier blocks SMTP). With no `BREVO_API_KEY` it prints the email to the console instead. It never throws; it returns `false` on failure, so callers fire and forget with `void sendEmail(...)`. `sendEmailToPatient(patientId, build)` looks up the patient's email and first name and skips patients without an email.
 - `services/email/emailTemplates.ts` re-exports one file per email from `emailTemplates/`: `employeeAccountCreated`, `patientAccountCreated`, `labResultsReady`, `paymentReceipt` (all share `layout.ts`, which escapes every value).
-- Agreed scope: emails only for account created/edited, password changed, lab results ready and payment receipt. Account-edited and password-changed emails are not built yet. Anything else email-related was removed on purpose.
+- Agreed scope: emails only for account created (with the set/change-password link), account edited, password changed, lab results ready and payment receipt. Account-edited and password-changed emails are not built yet. No email verification or forgot-password flow.
 
 ### `/api/admin` (always JWT + `admin`)
 | Method | Path | Handler | Notes |

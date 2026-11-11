@@ -49,6 +49,10 @@ const TABLES: TableDefinition[] = [
       account_status: "BOOLEAN NOT NULL DEFAULT TRUE",
       profile_photo: "TEXT",
       active: "BOOLEAN NOT NULL DEFAULT FALSE",
+      // One-time "set your password" link from the account-created email
+      // (SHA-256 of the token, never the token itself).
+      password_token_hash: "VARCHAR(64)",
+      password_token_expires_at: "TIMESTAMPTZ",
       created_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
       updated_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
       // Doctor-specific fields
@@ -106,6 +110,10 @@ const TABLES: TableDefinition[] = [
       account_status: "BOOLEAN NOT NULL DEFAULT TRUE",
       profile_photo: "TEXT",
       active: "BOOLEAN NOT NULL DEFAULT FALSE",
+      // One-time "set your password" link from the account-created email
+      // (SHA-256 of the token, never the token itself).
+      password_token_hash: "VARCHAR(64)",
+      password_token_expires_at: "TIMESTAMPTZ",
       civil_status: "VARCHAR(50) NOT NULL DEFAULT 'Single'",
       blood_type: "VARCHAR(50)",
       created_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",

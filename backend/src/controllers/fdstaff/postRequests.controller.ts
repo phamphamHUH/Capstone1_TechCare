@@ -28,6 +28,7 @@ import { publishQueueChange } from "../../services/queue-sse/index.js";
 import { actorId, notifyPriorityPatient, notifyQueued } from "../../services/notifications/index.js";
 import { sendEmail } from "../../services/email/sendEmail.js";
 import { patientAccountCreatedEmail } from "../../services/email/emailTemplates.js";
+import { createPasswordLink, PASSWORD_LINK_DAYS } from "../../utils/passwordLink.js";
 import { recomputeBillTotals } from "../../utils/recomputeBills.js";
 import { getOrCreateOpenBill } from "../../utils/getOrCreateBill.js";
 export async function addPatient(
@@ -102,8 +103,11 @@ export async function addPatient(
 
     const patientId = await generatePatientId();
 
+    // The front desk password (the last name; the front desk can reset it).
+    // Patients with an email also get a link to change it to their own.
     const password = last_name;
     const hashedPassword = await bcrypt.hash(password, 10);
+    const passwordLink = email ? createPasswordLink() : null;
 
     // Upload photo to Cloudinary if one was attached (multer puts it on req.file)
     let imageUrl: string | null = null;
@@ -147,7 +151,9 @@ export async function addPatient(
         family_medical_history,
         smoking_status,
         alcohol_consumption,
-        image_url
+        image_url,
+        password_token_hash,
+        password_token_expires_at
       )
       VALUES (
         ${patientId},
@@ -181,7 +187,9 @@ export async function addPatient(
         ${family_medical_history ?? null},
         ${smoking_status ?? null},
         ${alcohol_consumption ?? null},
-        ${imageUrl}
+        ${imageUrl},
+        ${passwordLink?.hash ?? null},
+        ${passwordLink?.expiresAt ?? null}
       )
       RETURNING *;
     `;
@@ -189,13 +197,23 @@ export async function addPatient(
     const age = calculateAge(birthdate);
 
     // =========================
-    // WELCOME EMAIL (information only)
+    // WELCOME EMAIL WITH "CHANGE YOUR PASSWORD" LINK
     // =========================
     // Not awaited: the patient shouldn't wait on the email provider.
-    if (email) void sendEmail(patientAccountCreatedEmail(email, first_name, patientId));
+    if (email && passwordLink) {
+      void sendEmail(
+        patientAccountCreatedEmail(
+          email,
+          first_name,
+          patientId,
+          passwordLink.url,
+          PASSWORD_LINK_DAYS,
+        ),
+      );
+    }
 
-    // Don't send the password hash to the client.
-    const { password_hash, ...safePatient } = response[0];
+    // Don't send the password or link hashes to the client.
+    const { password_hash, password_token_hash, ...safePatient } = response[0];
 
     return res.status(201).json({
       message: "Patient added successfully.",

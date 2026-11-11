@@ -157,7 +157,7 @@ export async function updatePatient(
     const age = calculateAge(updatedPatient.birthdate);
 
     // Don't send the password hash to the client.
-    const { password_hash, ...safePatient } = updatedPatient;
+    const { password_hash, password_token_hash, ...safePatient } = updatedPatient;
 
     return res.status(200).json({
       message: "Patient updated successfully.",
@@ -203,7 +203,10 @@ export async function resetPatientPassword(
 
     const [patient] = await sql`
       UPDATE patients
-      SET password_hash = ${hashedPassword}, updated_at = NOW()
+      SET password_hash = ${hashedPassword},
+          password_token_hash = NULL, -- a staff reset replaces any emailed link
+          password_token_expires_at = NULL,
+          updated_at = NOW()
       WHERE patient_id = ${patient_id}
       RETURNING first_name, last_name
     `;
