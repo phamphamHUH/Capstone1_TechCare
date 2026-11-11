@@ -137,7 +137,6 @@ function PatientInformation() {
           {activePage === "dashboard" && (
             <PatientDashboard
               patient={patient}
-              refreshKey={refreshKey}
               setPage={setPage}
             />
           )}

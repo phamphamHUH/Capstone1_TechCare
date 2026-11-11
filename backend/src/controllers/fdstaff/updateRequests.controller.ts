@@ -108,23 +108,6 @@ export async function updatePatient(
       } as updatePatient.error);
     }
 
-    // =========================
-    // EMAIL CHANGE
-    // =========================
-    // Verified patient: keep their current email and put the new one in
-    // pending_email until they confirm it (they stay verified meanwhile).
-    // Unverified patient: just replace the email.
-    // Either way a verification link is sent to the new email below.
-    const emailChanged =
-      Boolean(email?.trim()) &&
-      email.trim().toLowerCase() !==
-        String(existingPatient.email).toLowerCase();
-
-    const newEmail =
-      emailChanged && !existingPatient.is_verified ? email.trim() : null;
-    const newPendingEmail =
-      emailChanged && existingPatient.is_verified ? email.trim() : null;
-
     let imageUrl: string | null = null;
     if (req.file) {
       const uploaded = await cloudinary.uploader.upload(req.file.path, {
