@@ -34,13 +34,12 @@ export function collectionDay(value: string) {
     return "";
   }
 
-  // TIMESTAMP values without an offset are clinic-local dates.
+  // Values without an offset are already local dates.
   if (!/(Z|[+-]\d{2}:?\d{2})$/i.test(value)) {
     return value.slice(0, 10);
   }
 
   return new Date(value).toLocaleDateString("en-CA", {
-    timeZone: "Asia/Manila",
   });
 }
 
@@ -50,7 +49,6 @@ export function patientAge(birthdate: string): number | null {
   }
 
   const today = new Date().toLocaleDateString("en-CA", {
-    timeZone: "Asia/Manila",
   });
 
   const [year, month, day] = birthdate.slice(0, 10).split("-").map(Number);

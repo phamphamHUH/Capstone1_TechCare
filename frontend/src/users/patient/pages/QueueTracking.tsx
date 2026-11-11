@@ -95,7 +95,6 @@ export default function QueueTracking({
             {new Date(data.updated_at).toLocaleTimeString("en-US", {
               hour: "2-digit",
               minute: "2-digit",
-              timeZone: "Asia/Manila",
             })}
           </p>
         )}

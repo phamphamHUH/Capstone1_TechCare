@@ -251,14 +251,12 @@ export default function MedicalHistory({
                           month: "short",
                           day: "numeric",
                           year: "numeric",
-                          timeZone: "Asia/Manila",
                         })}
                       </p>
                       <p className="mt-1 text-xs text-gray-400">
                         {date.toLocaleTimeString("en-US", {
                           hour: "2-digit",
                           minute: "2-digit",
-                          timeZone: "Asia/Manila",
                         })}
                       </p>
                     </div>

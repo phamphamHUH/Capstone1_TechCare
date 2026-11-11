@@ -78,6 +78,7 @@ function PatientSelectionHeader({
                 <h1>{`${calculateAge(patient.birthdate)} years old `}</h1>
                 <h1>
                   DOB:{" "}
+                  {/* Birthdate is a calendar date: keep the clinic zone so every viewer sees the same day. */}
                   {new Date(patient.birthdate).toLocaleDateString("en-US", {
                     month: "short",
                     day: "numeric",

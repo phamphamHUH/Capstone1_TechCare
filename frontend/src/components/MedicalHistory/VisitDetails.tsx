@@ -84,7 +84,6 @@ const fmtDate = (iso: string) =>
     month: "short",
     day: "numeric",
     year: "numeric",
-    timeZone: "Asia/Manila",
   });
 
 const fmtDateTime = (iso: string) =>
@@ -92,7 +91,6 @@ const fmtDateTime = (iso: string) =>
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
-    timeZone: "Asia/Manila",
   })}`;
 
 const humanize = (k: string) =>

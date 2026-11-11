@@ -24,6 +24,7 @@ import api from "../../lib/axios";
 
 import type { User } from "../../interface/User";
 import type { Service } from "../../interface/Service";
+import { browserTimeZone } from "../../utils/formats";
 import type { Activity } from "../../interface/Activity";
 import type {
   AnalyticsRange,
@@ -168,7 +169,7 @@ function Admin() {
     setAnalyticsError(null);
 
     try {
-      const params = { range: analyticsRange };
+      const params = { range: analyticsRange, tz: browserTimeZone() };
       const [salesResponse, serviceResponse] = await Promise.all([
         api.get<SalesAnalytics>("/api/admin/analytics/sales", { params }),
         api.get<ServiceAnalytics>("/api/admin/analytics/services", { params }),

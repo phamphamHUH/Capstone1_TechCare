@@ -30,8 +30,8 @@ type QueuesProps = {
 };
 
 const isToday = (iso: string) =>
-  new Date(iso).toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }) ===
-  new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
+  new Date(iso).toLocaleDateString("en-CA") ===
+  new Date().toLocaleDateString("en-CA");
 
 // Status rules shared by the stat card counts and the stat card filters,
 // so a card's number always matches the rows it shows when clicked.

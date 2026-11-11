@@ -9,6 +9,7 @@ import type {
   AnalyticsRange,
   SalesAnalytics,
 } from "../../../../../interface/Analytics";
+import { browserTimeZone } from "../../../../../utils/formats";
 import { BarList, DataTable, FigureRow, SectionTitle, type Column } from "./DetailParts";
 import {
   formatDateTime,
@@ -37,9 +38,10 @@ function formatStamp(value: string | null) {
   return `${formatDateTime(value)} · ${hour % 12 === 0 ? 12 : hour % 12}:${String(minute).padStart(2, "0")} ${suffix}`;
 }
 
-// Whole days since a Manila wall-clock time.
+// Whole days since a wall-clock time in the viewer's time zone
+// (analytics sends times without an offset, already in the browser's zone).
 function daysSince(value: string) {
-  const then = Date.parse(`${value}+08:00`);
+  const then = Date.parse(value);
   return Number.isNaN(then) ? 0 : Math.max(0, Math.floor((Date.now() - then) / 86_400_000));
 }
 
@@ -81,7 +83,7 @@ function useAnalyticsBills(range: AnalyticsRange) {
       setError(null);
       try {
         const response = await api.get<AnalyticsBills>("/api/admin/analytics/bills", {
-          params: { range },
+          params: { range, tz: browserTimeZone() },
         });
         if (!ignore) setData(response.data);
       } catch (loadError) {

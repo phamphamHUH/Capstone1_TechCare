@@ -69,9 +69,7 @@ function FrontdeskDashboard({
 }: FrontdeskDashboardProps) {
   useEffect(() => connectQueueStream({ onQueueChanged: loadData }), [loadData]);
 
-  const today = new Date().toLocaleDateString("en-CA", {
-    timeZone: "Asia/Manila",
-  });
+  const today = new Date().toLocaleDateString("en-CA");
 
   const statusOf = (queue: QueueEntry) => queue.status.toLowerCase();
 
@@ -94,9 +92,7 @@ function FrontdeskDashboard({
   const registeredToday = patients.filter(
     (patient) =>
       patient.created_at &&
-      new Date(patient.created_at).toLocaleDateString("en-CA", {
-        timeZone: "Asia/Manila",
-      }) === today,
+      new Date(patient.created_at).toLocaleDateString("en-CA") === today,
   ).length;
 
   const totalQueue = queues.length;

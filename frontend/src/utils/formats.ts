@@ -75,7 +75,7 @@ export function formatLabDate(value: string) {
   const date = new Date(
     /(Z|[+-]\d{2}:?\d{2})$/i.test(value)
       ? value
-      : `${value.replace(" ", "T")}+08:00`,
+      : value.replace(" ", "T"), // no offset: already the viewer's local time
   );
 
   if (!Number.isFinite(date.getTime())) {
@@ -83,11 +83,20 @@ export function formatLabDate(value: string) {
   }
 
   return date.toLocaleString("en-US", {
-    timeZone: "Asia/Manila",
     month: "short",
     day: "numeric",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+// The viewer's IANA time zone (e.g. "Asia/Manila"), sent to endpoints that
+// group or filter by day so "today" matches what the viewer sees.
+export function browserTimeZone(): string | undefined {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
+  } catch {
+    return undefined;
+  }
 }

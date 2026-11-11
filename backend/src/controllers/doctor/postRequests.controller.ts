@@ -132,7 +132,7 @@ export async function addLaboratoryRequest(
            requested_at,
            estimated_release_date
          )
-         VALUES ($1, $2, $3, $4, $5, COALESCE($6::timestamp, CURRENT_TIMESTAMP), $7)
+         VALUES ($1, $2, $3, $4, $5, COALESCE($6::timestamptz, CURRENT_TIMESTAMP), $7)
          RETURNING *`,
         [
           request_id,

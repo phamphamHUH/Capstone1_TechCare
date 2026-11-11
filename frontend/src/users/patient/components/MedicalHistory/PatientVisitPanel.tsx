@@ -243,7 +243,6 @@ export default function PatientVisitPanel({
                       new Date(record.occurred_at).toLocaleString("en-US", {
                         dateStyle: "medium",
                         timeStyle: "short",
-                        timeZone: "Asia/Manila",
                       }),
                     ],
                     ["Requested By", details.requested_by],

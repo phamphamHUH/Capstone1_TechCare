@@ -12,6 +12,8 @@ function PatientHeader({ patient }: PatientHeaderProps) {
 
   const initials = `${patient.first_name.charAt(0)}${patient.last_name.charAt(0)}`;
 
+  // Birthdate is a calendar date, not a moment: keep the clinic zone so
+  // every viewer sees the same day.
   const dob = new Date(patient.birthdate).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",

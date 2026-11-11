@@ -1,9 +1,10 @@
 // Date ranges for the admin analytics endpoints.
 //
-// Bills and records are stored as TIMESTAMP columns holding UTC values, so
-// SQL converts them with `AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Manila'` and
-// compares them to the Manila wall-clock bounds built here.
-// The Philippines has no daylight saving time, so Manila is always UTC+8.
+// Ranges follow the viewer's time zone: the browser sends its IANA name as
+// ?tz= (e.g. "Asia/Manila"). Bills and records are TIMESTAMPTZ columns, so SQL
+// converts them to that zone's wall-clock time with `AT TIME ZONE ${tz}` and
+// compares them to the wall-clock bounds built here. Without ?tz= the clinic's
+// zone is used.
 
 export const ANALYTICS_RANGES = ["today", "7d", "30d", "12mo"] as const;
 export type AnalyticsRange = (typeof ANALYTICS_RANGES)[number];
@@ -14,14 +15,42 @@ export type AnalyticsBucket = "hour" | "day" | "month";
 export type ResolvedAnalyticsRange = {
   range: AnalyticsRange;
   bucket: AnalyticsBucket;
-  // Manila wall-clock times as "YYYY-MM-DD HH:MM:SS" (start inclusive, end exclusive).
+  // The viewer's IANA time zone the bounds below are in.
+  time_zone: string;
+  // Wall-clock times in time_zone as "YYYY-MM-DD HH:MM:SS" (start inclusive, end exclusive).
   start: string;
   end: string;
   // The period of the same length right before `start`, for comparisons.
   previous_start: string;
 };
 
-const MANILA_OFFSET_MS = 8 * 60 * 60 * 1000;
+// Used when the browser doesn't send ?tz=.
+export const CLINIC_TIME_ZONE = "Asia/Manila";
+
+// Reads ?tz=. Returns null when it isn't a time zone Intl knows.
+export function readTimeZone(rawTimeZone: unknown): string | null {
+  if (rawTimeZone === undefined || rawTimeZone === "") return CLINIC_TIME_ZONE;
+  if (typeof rawTimeZone !== "string" || rawTimeZone.length > 64) return null;
+  try {
+    return new Intl.DateTimeFormat("en-US", { timeZone: rawTimeZone })
+      .resolvedOptions().timeZone;
+  } catch {
+    return null;
+  }
+}
+
+// The wall-clock year/month/day in a time zone at a given moment.
+function wallClockDate(now: Date, timeZone: string) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+  }).formatToParts(now);
+  const part = (type: string) =>
+    Number(parts.find((p) => p.type === type)?.value);
+  return { year: part("year"), month: part("month") - 1, day: part("day") };
+}
 
 export function isAnalyticsRange(value: unknown): value is AnalyticsRange {
   return (
@@ -30,20 +59,18 @@ export function isAnalyticsRange(value: unknown): value is AnalyticsRange {
   );
 }
 
-// Formats a Date whose UTC fields hold a Manila wall-clock time.
+// Formats a Date whose UTC fields hold a wall-clock time.
 function toSqlTimestamp(date: Date) {
   return date.toISOString().slice(0, 19).replace("T", " ");
 }
 
 export function resolveAnalyticsRange(
   range: AnalyticsRange,
+  timeZone: string = CLINIC_TIME_ZONE,
   now: Date = new Date(),
 ): ResolvedAnalyticsRange {
-  // Shift "now" so its UTC fields read as the Manila date and time.
-  const manilaNow = new Date(now.getTime() + MANILA_OFFSET_MS);
-  const year = manilaNow.getUTCFullYear();
-  const month = manilaNow.getUTCMonth();
-  const day = manilaNow.getUTCDate();
+  // Today's date as the viewer sees it.
+  const { year, month, day } = wallClockDate(now, timeZone);
 
   // Date.UTC rolls over correctly for negative days and months.
   const at = (y: number, m: number, d: number) => new Date(Date.UTC(y, m, d));
@@ -83,14 +110,19 @@ export function resolveAnalyticsRange(
   return {
     range,
     bucket,
+    time_zone: timeZone,
     start: toSqlTimestamp(start),
     end: toSqlTimestamp(end),
     previous_start: toSqlTimestamp(previousStart),
   };
 }
 
-// Reads ?range=, defaulting to 30 days. Returns null when it is not allowed.
-export function readAnalyticsRange(rawRange: unknown) {
+// Reads ?range= (default 30 days) and ?tz= (default clinic zone).
+// Returns null when either is not allowed.
+export function readAnalyticsRange(rawRange: unknown, rawTimeZone?: unknown) {
   const range = rawRange === undefined || rawRange === "" ? "30d" : rawRange;
-  return isAnalyticsRange(range) ? resolveAnalyticsRange(range) : null;
+  const timeZone = readTimeZone(rawTimeZone);
+  return isAnalyticsRange(range) && timeZone
+    ? resolveAnalyticsRange(range, timeZone)
+    : null;
 }

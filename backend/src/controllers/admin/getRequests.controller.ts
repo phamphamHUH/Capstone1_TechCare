@@ -263,16 +263,16 @@ export async function getSalesAnalytics(
   res: Response<SalesAnalyticsDTO.response | SalesAnalyticsDTO.error>,
 ) {
   try {
-    const { range: rawRange } = req.query as SalesAnalyticsDTO.query;
-    const period = readAnalyticsRange(rawRange);
+    const { range: rawRange, tz } = req.query as SalesAnalyticsDTO.query;
+    const period = readAnalyticsRange(rawRange, tz);
 
     if (!period) {
       return res.status(400).json({
-        message: `Invalid range. Use one of: ${ANALYTICS_RANGES.join(", ")}.`,
+        message: `Invalid range or time zone. Use range ${ANALYTICS_RANGES.join(", ")} and an IANA tz such as Asia/Manila.`,
       });
     }
 
-    const { start, end, previous_start, bucket } = period;
+    const { start, end, previous_start, bucket, time_zone } = period;
     const step = `1 ${bucket}`;
 
     const [summaryRows, pendingRows, timelineRows, methodRows, serviceRows] =
@@ -289,7 +289,7 @@ export async function getSalesAnalytics(
           FROM (
             SELECT
               total_amount, subtotal, discount_amount,
-              paid_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Manila' AS paid_local
+              paid_at AT TIME ZONE ${time_zone} AS paid_local
             FROM bills
             WHERE LOWER(TRIM(status)) = 'paid' AND paid_at IS NOT NULL
           ) paid
@@ -320,7 +320,7 @@ export async function getSalesAnalytics(
           LEFT JOIN bills b
             ON LOWER(TRIM(b.status)) = 'paid'
            AND b.paid_at IS NOT NULL
-           AND date_trunc(${bucket}, b.paid_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Manila') = slot.bucket
+           AND date_trunc(${bucket}, b.paid_at AT TIME ZONE ${time_zone}) = slot.bucket
           GROUP BY slot.bucket
           ORDER BY slot.bucket
         `,
@@ -333,8 +333,8 @@ export async function getSalesAnalytics(
           FROM bills
           WHERE LOWER(TRIM(status)) = 'paid'
             AND paid_at IS NOT NULL
-            AND (paid_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Manila') >= ${start}::timestamp
-            AND (paid_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Manila') < ${end}::timestamp
+            AND (paid_at AT TIME ZONE ${time_zone}) >= ${start}::timestamp
+            AND (paid_at AT TIME ZONE ${time_zone}) < ${end}::timestamp
           GROUP BY 1
           ORDER BY revenue DESC
         `,
@@ -363,8 +363,8 @@ export async function getSalesAnalytics(
           LEFT JOIN services s ON s.service_id = line.item->>'service_id'
           WHERE LOWER(TRIM(b.status)) = 'paid'
             AND b.paid_at IS NOT NULL
-            AND (b.paid_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Manila') >= ${start}::timestamp
-            AND (b.paid_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Manila') < ${end}::timestamp
+            AND (b.paid_at AT TIME ZONE ${time_zone}) >= ${start}::timestamp
+            AND (b.paid_at AT TIME ZONE ${time_zone}) < ${end}::timestamp
           GROUP BY 1, 2, 3, 4
           ORDER BY revenue DESC, service_name
         `,
@@ -447,16 +447,16 @@ export async function getAnalyticsBills(
   res: Response<AnalyticsBillsDTO.response | AnalyticsBillsDTO.error>,
 ) {
   try {
-    const { range: rawRange } = req.query as AnalyticsBillsDTO.query;
-    const period = readAnalyticsRange(rawRange);
+    const { range: rawRange, tz } = req.query as AnalyticsBillsDTO.query;
+    const period = readAnalyticsRange(rawRange, tz);
 
     if (!period) {
       return res.status(400).json({
-        message: `Invalid range. Use one of: ${ANALYTICS_RANGES.join(", ")}.`,
+        message: `Invalid range or time zone. Use range ${ANALYTICS_RANGES.join(", ")} and an IANA tz such as Asia/Manila.`,
       });
     }
 
-    const { start, end } = period;
+    const { start, end, time_zone } = period;
 
     const [paidRows, pendingRows] = await Promise.all([
       sql`
@@ -466,14 +466,14 @@ export async function getAnalyticsBills(
           b.status, b.subtotal, b.discount_type, b.discount_amount, b.total_amount,
           b.payment_method,
           CASE WHEN jsonb_typeof(b.items) = 'array' THEN jsonb_array_length(b.items) ELSE 0 END AS item_count,
-          to_char(b.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Manila', 'YYYY-MM-DD"T"HH24:MI:SS') AS created_at,
-          to_char(b.paid_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Manila', 'YYYY-MM-DD"T"HH24:MI:SS') AS paid_at
+          to_char(b.created_at AT TIME ZONE ${time_zone}, 'YYYY-MM-DD"T"HH24:MI:SS') AS created_at,
+          to_char(b.paid_at AT TIME ZONE ${time_zone}, 'YYYY-MM-DD"T"HH24:MI:SS') AS paid_at
         FROM bills b
         LEFT JOIN patients p ON p.patient_id = b.patient_id
         WHERE LOWER(TRIM(b.status)) = 'paid'
           AND b.paid_at IS NOT NULL
-          AND (b.paid_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Manila') >= ${start}::timestamp
-          AND (b.paid_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Manila') < ${end}::timestamp
+          AND (b.paid_at AT TIME ZONE ${time_zone}) >= ${start}::timestamp
+          AND (b.paid_at AT TIME ZONE ${time_zone}) < ${end}::timestamp
         ORDER BY b.paid_at DESC
       `,
 
@@ -493,7 +493,7 @@ export async function getAnalyticsBills(
             WHERE tri.bill_id = b.bill_id
               AND LOWER(TRIM(tri.status)) NOT IN ('cancelled', 'canceled', 'rejected')
           ) AS item_count,
-          to_char(b.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Manila', 'YYYY-MM-DD"T"HH24:MI:SS') AS created_at,
+          to_char(b.created_at AT TIME ZONE ${time_zone}, 'YYYY-MM-DD"T"HH24:MI:SS') AS created_at,
           NULL AS paid_at
         FROM bills b
         LEFT JOIN patients p ON p.patient_id = b.patient_id
@@ -540,16 +540,16 @@ export async function getServiceAnalytics(
   res: Response<ServiceAnalyticsDTO.response | ServiceAnalyticsDTO.error>,
 ) {
   try {
-    const { range: rawRange } = req.query as ServiceAnalyticsDTO.query;
-    const period = readAnalyticsRange(rawRange);
+    const { range: rawRange, tz } = req.query as ServiceAnalyticsDTO.query;
+    const period = readAnalyticsRange(rawRange, tz);
 
     if (!period) {
       return res.status(400).json({
-        message: `Invalid range. Use one of: ${ANALYTICS_RANGES.join(", ")}.`,
+        message: `Invalid range or time zone. Use range ${ANALYTICS_RANGES.join(", ")} and an IANA tz such as Asia/Manila.`,
       });
     }
 
-    const { start, end } = period;
+    const { start, end, time_zone } = period;
 
     // "Orders" = consultation records + laboratory request items, not cancelled.
     const rows = await sql`
@@ -575,13 +575,13 @@ export async function getServiceAnalytics(
         FROM (
           SELECT
             cr.service_id,
-            cr.requested_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Manila' AS ordered_local,
+            cr.requested_at AT TIME ZONE ${time_zone} AS ordered_local,
             cr.status
           FROM consultation_records cr
           UNION ALL
           SELECT
             tri.service_id,
-            tri.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Manila',
+            tri.created_at AT TIME ZONE ${time_zone},
             tri.status
           FROM test_request_items tri
         ) ordered
