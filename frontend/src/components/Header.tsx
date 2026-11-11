@@ -19,8 +19,14 @@ function Header({ page, loading, open, setOpen, loadData }: HeaderProps) {
       ? rawRole.replace("-", " ") // "laboratorystaff" / "frontdeskstaff"
       : rawRole;
 
-  // Queue notifications are only for doctors and laboratory staff.
-  const hasNotifications = role === "doctor" || role === "laboratory-staff";
+  // Queue notifications: doctors and lab staff use the staff endpoint,
+  // patients their own. Check rawRole: `role` above is for display only.
+  const notificationsPath =
+    rawRole === "patient"
+      ? "/api/patient/notifications"
+      : rawRole === "doctor" || rawRole === "laboratory-staff"
+        ? "/api/notifications"
+        : null;
 
   return (
     <header className="flex items-center justify-between h-24 gap-4 mb-6 px-6 border-b border-gray-300">
@@ -42,7 +48,7 @@ function Header({ page, loading, open, setOpen, loadData }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-2">
-        {hasNotifications && <NotificationBell basePath="/api/notifications" />}
+        {notificationsPath && <NotificationBell basePath={notificationsPath} />}
 
         <button
           type="button"
