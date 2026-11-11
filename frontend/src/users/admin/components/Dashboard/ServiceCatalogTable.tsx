@@ -7,7 +7,7 @@ import {
   formatPeso,
   serviceTypeColor,
   serviceTypeLabel,
-} from "./formatters";
+} from "./utils/formatters";
 
 type CatalogFilter = "all" | "consultation" | "laboratory" | "unused" | "inactive";
 

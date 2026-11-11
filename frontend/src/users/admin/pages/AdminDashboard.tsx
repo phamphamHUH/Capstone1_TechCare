@@ -41,7 +41,7 @@ import {
   formatPeso,
   formatPesoWhole,
   percentChange,
-} from "../components/Dashboard/formatters";
+} from "../components/Dashboard/utils/formatters";
 
 type AdminDashboardProps = {
   range: AnalyticsRange;

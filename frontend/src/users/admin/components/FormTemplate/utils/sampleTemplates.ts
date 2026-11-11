@@ -1,4 +1,4 @@
-import type { FormTemplate } from "../../../../interface/FormTemplate";
+import type { FormTemplate } from "../../../../../interface/FormTemplate";
 
 export const SAMPLE_CBC_TEMPLATE: FormTemplate = {
   form_id: "sample-cbc",

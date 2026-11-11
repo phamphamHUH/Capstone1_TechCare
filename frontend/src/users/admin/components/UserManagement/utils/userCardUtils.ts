@@ -1,4 +1,4 @@
-import type { User } from "../../../../interface/User";
+import type { User } from "../../../../../interface/User";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Admin",

@@ -14,7 +14,7 @@ import {
   KeyRound,
 } from "lucide-react";
 import ResetPasswordModal from "../../../../components/ResetPasswordModal";
-import { DOCTOR_FIELDS } from "./doctorField";
+import { DOCTOR_FIELDS } from "./utils/doctorField";
 import UniversalModal from "../../../../components/UniversalModal";
 
 type Props = {

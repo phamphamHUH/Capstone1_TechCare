@@ -1,4 +1,4 @@
-import type { User } from "../../../../interface/User";
+import type { User } from "../../../../../interface/User";
 
 export type StatusFilter = "all" | "active" | "inactive";
 

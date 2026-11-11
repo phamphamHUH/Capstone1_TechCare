@@ -1,7 +1,7 @@
 import { AtSign, Clock, Flag, Hash } from "lucide-react";
 import type { User } from "../../../../interface/User";
 import UserCardMenu from "./UserCardMenu";
-import { getUserDisplay, roleLabel } from "./userCardUtils";
+import { getUserDisplay, roleLabel } from "./utils/userCardUtils";
 
 type Props = {
   user: User;

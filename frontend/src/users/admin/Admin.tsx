@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 
 import SideBar from "../../components/SideBar";
-import { SidebarNavContext } from "../../components/sidebar/sidebarNav";
+import { SidebarNavContext } from "../../components/sidebar/utils/sidebarNav";
 import Header from "../../components/Header";
 
 import UserManagement from "./pages/UserManagement";

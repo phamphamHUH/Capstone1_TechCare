@@ -21,8 +21,8 @@ import {
   isLabRoom,
   LAB_ROOMS,
   LAB_STAFF_ROLE,
-} from "./labRooms";
-import { DOCTOR_FIELDS } from "./doctorField";
+} from "./utils/labRooms";
+import { DOCTOR_FIELDS } from "./utils/doctorField";
 import UniversalModal from "../../../../components/UniversalModal";
 
 type Props = {

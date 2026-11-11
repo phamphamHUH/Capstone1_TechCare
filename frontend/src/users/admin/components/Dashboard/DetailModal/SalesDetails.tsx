@@ -18,7 +18,7 @@ import {
   percentChange,
   serviceTypeColor,
   serviceTypeLabel,
-} from "../formatters";
+} from "../utils/formatters";
 
 export type SalesDetailKind = "revenue" | "paid-bills" | "average-bill" | "discounts" | "outstanding";
 

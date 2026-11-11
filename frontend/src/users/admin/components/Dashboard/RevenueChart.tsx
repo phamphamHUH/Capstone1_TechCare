@@ -7,7 +7,7 @@ import {
   formatBucketShort,
   formatPeso,
   formatPesoCompact,
-} from "./formatters";
+} from "./utils/formatters";
 
 type RevenueChartProps = {
   timeline: SalesTimelinePoint[];

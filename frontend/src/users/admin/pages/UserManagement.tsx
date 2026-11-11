@@ -17,7 +17,7 @@ import {
   matchesFilters,
   matchesSearch,
   type UserFilterValues,
-} from "../components/UserManagement/userFilterValues";
+} from "../components/UserManagement/utils/userFilterValues";
 import UserProfile from "../components/UserManagement/UserProfile";
 
 type ViewMode = "grid" | "list";

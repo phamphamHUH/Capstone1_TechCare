@@ -9,12 +9,12 @@ import {
   Section,
   fieldClass,
 } from "../../../../components/FormFields";
-import { DOCTOR_FIELDS } from "./doctorField";
+import { DOCTOR_FIELDS } from "./utils/doctorField";
 import {
   departmentAfterRoleChange,
   LAB_ROOMS,
   LAB_STAFF_ROLE,
-} from "./labRooms";
+} from "./utils/labRooms";
 
 type Props = {
   onClose: () => void;

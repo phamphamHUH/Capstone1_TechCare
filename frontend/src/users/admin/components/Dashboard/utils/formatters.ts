@@ -1,4 +1,4 @@
-import type { AnalyticsRange } from "../../../../interface/Analytics";
+import type { AnalyticsRange } from "../../../../../interface/Analytics";
 
 export const RANGE_OPTIONS: { value: AnalyticsRange; label: string; previous: string }[] = [
   { value: "today", label: "Today", previous: "yesterday" },

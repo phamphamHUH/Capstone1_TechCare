@@ -15,7 +15,7 @@ import {
   formatPeso,
   serviceTypeColor,
   serviceTypeLabel,
-} from "../formatters";
+} from "../utils/formatters";
 
 export type InventoryDetailKind =
   | "active"

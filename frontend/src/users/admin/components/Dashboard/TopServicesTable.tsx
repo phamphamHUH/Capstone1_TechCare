@@ -5,7 +5,7 @@ import {
   formatPeso,
   serviceTypeColor,
   serviceTypeLabel,
-} from "./formatters";
+} from "./utils/formatters";
 
 type TopServicesTableProps = {
   services: SalesByService[];

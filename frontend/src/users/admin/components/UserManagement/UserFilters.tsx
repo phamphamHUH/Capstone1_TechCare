@@ -1,11 +1,11 @@
 import { ChevronDown, X } from "lucide-react";
-import { roleLabel } from "./userCardUtils";
+import { roleLabel } from "./utils/userCardUtils";
 import {
   DEFAULT_USER_FILTERS,
   isFiltered,
   type StatusFilter,
   type UserFilterValues,
-} from "./userFilterValues";
+} from "./utils/userFilterValues";
 
 type Props = {
   filters: UserFilterValues;
