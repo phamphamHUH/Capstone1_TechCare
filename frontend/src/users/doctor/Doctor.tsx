@@ -14,7 +14,9 @@ import ActiveConsultation from "./pages/ActiveConsultation";
 import TestRequest from "./pages/TestRequest";
 
 function Doctor() {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(
+    () => typeof window === "undefined" || window.innerWidth >= 1024,
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [queueLoadFailed, setQueueLoadFailed] = useState(false);
@@ -152,7 +154,7 @@ function Doctor() {
   return (
     <SidebarNavContext.Provider value={{ navItems, page, setPage }}>
       <div className="flex min-h-screen ">
-        <SideBar open={open} page={page} setPage={setPage} navItems={navItems} />
+        <SideBar open={open} setOpen={setOpen} page={page} setPage={setPage} navItems={navItems} />
 
         <div className="flex-1 min-w-0">
           <Header

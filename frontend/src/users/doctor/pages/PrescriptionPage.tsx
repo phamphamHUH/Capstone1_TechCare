@@ -17,7 +17,7 @@ function Consultation({
   return (
     <main className="flex-1 min-w-0 bg-gray-50/50 min-h-screen overflow-y-auto">
 
-      <div className="p-6 md:p-8">
+      <div className="p-4 sm:p-6 md:p-8">
         <PrescriptionManager />
       </div>
     </main>

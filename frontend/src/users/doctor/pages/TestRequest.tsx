@@ -155,13 +155,13 @@ function TestRequest({
     },
   ];
   return (
-    <main className="flex-1 min-w-0 pb-5 px-6">
+    <main className="flex-1 min-w-0 pb-5 px-4 sm:px-6">
       {selectedQueue ? (
         <>
           {/* PATIENT HEADER */}
           <section className="rounded-md border border-gray-200 bg-white p-4">
-            <div className="flex justify-between">
-              <div className="flex gap-5 text-xs">
+            <div className="flex flex-wrap justify-between gap-3">
+              <div className="flex min-w-0 gap-3 sm:gap-5 text-xs">
                 <div className="relative h-15 w-15 overflow-hidden rounded-full bg-sky-50">
                   {selectedQueue.image_url ? (
                     <img
@@ -177,8 +177,8 @@ function TestRequest({
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-3">
-                    <p className="text-xl font-semibold">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <p className="text-lg sm:text-xl font-semibold">
                       {selectedQueue.patient_name}
                     </p>
                     <p className="text-gray-500 font-light">
@@ -186,7 +186,7 @@ function TestRequest({
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-3 text-gray-600">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-gray-600">
                     <p>{selectedQueue.sex}</p>
                     <span>•</span>
                     <p>
@@ -223,7 +223,7 @@ function TestRequest({
             </div>
 
             {/* QUEUE INFORMATION */}
-            <div className="flex items-center gap-3 text-sm text-gray-600 mt-3 font-semibold">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-600 mt-3 font-semibold">
               <p>{selectedQueue.queue_id}</p>
               <span>•</span>
               <p>{selectedQueue.consultation_record_id}</p>
@@ -234,7 +234,7 @@ function TestRequest({
             </div>
           </section>
           {/* SERVICE TABS */}
-          <section className="flex gap-5 mt-6">
+          <section className="flex flex-wrap gap-3 sm:gap-5 mt-6">
             {cards.map((card, index) => {
               const Icon = card.icon;
               return (
@@ -254,8 +254,8 @@ function TestRequest({
               );
             })}
           </section>
-          <section className="border border-gray-200 rounded-md mt-5 grid grid-cols-5 min-h-7/12 shadow-lg">
-            <div className="col-span-3 border-r border-gray-200 px-6 py-5 flex flex-col justify-between">
+          <section className="border border-gray-200 rounded-md mt-5 grid grid-cols-1 lg:grid-cols-5 min-h-7/12 shadow-lg">
+            <div className="min-w-0 lg:col-span-3 border-b lg:border-b-0 lg:border-r border-gray-200 px-4 sm:px-6 py-5 flex flex-col justify-between">
               <ServiceSelectionPanel
                 services={pageItems}
                 activeTab={activeTab}
@@ -272,7 +272,7 @@ function TestRequest({
                 onPageChange={setPageNumber}
               />
             </div>
-            <div className="col-span-2 px-8 py-5 flex flex-col justify-between">
+            <div className="min-w-0 lg:col-span-2 px-4 sm:px-8 py-5 flex flex-col justify-between">
               <ServiceList
                 activeTab={activeTab}
                 services={services}

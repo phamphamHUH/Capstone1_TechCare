@@ -112,7 +112,7 @@ function AddMedication({
   };
 
   return (
-    <section className="col-span-6 rounded-md border border-gray-200 bg-white px-5 py-6">
+    <section className="min-w-0 lg:col-span-6 rounded-md border border-gray-200 bg-white px-4 sm:px-5 py-6">
       <div className="flex items-center gap-3 border-b border-gray-200 pb-3 font-semibold">
         <Pill size={20} className="text-sky-600" />
         <h1>{editing ? "Edit Medication" : "Add Medication"}</h1>
@@ -120,7 +120,7 @@ function AddMedication({
 
       <div className="mt-5 space-y-4">
         {/* Name + dosage */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <label htmlFor="med-name" className="text-xs font-semibold">
               Medication Name *
@@ -159,7 +159,7 @@ function AddMedication({
         </div>
 
         {/* Frequency + duration */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <label htmlFor="med-frequency" className="text-xs font-semibold">
               Frequency *

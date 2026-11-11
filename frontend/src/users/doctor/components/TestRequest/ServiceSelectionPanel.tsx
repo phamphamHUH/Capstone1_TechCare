@@ -118,7 +118,7 @@ function ServiceSelectionPanel({
             No services found.
           </p>
         ) : (
-          <div className="grid grid-cols-2 gap-x-5 gap-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-2">
             {services.map((service) => (
               <label
                 key={service.id}

@@ -44,7 +44,7 @@ function ConsultationQueue({
   }, [loadData]);
 
   return (
-    <div className="px-6 overflow-x-auto flex flex-col space-y-6 z-0">
+    <div className="px-4 sm:px-6 overflow-x-auto flex flex-col space-y-6 z-0">
       <RequestSummary services={services} room={room} />
       <ConsultationQueuePanel
         queues={queues}

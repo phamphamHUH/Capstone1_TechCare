@@ -104,7 +104,7 @@ function Prescription({ selectedQueue, onBack, onPreview }: PrescriptionProps) {
         <h1 className="text-xl font-semibold">Prescription</h1>
         <p className="text-xs font-light">(* indicates required fields)</p>
       </div>
-      <div className="grid grid-cols-10 gap-5 mb-5 prescriptionItems-start">
+      <div className="grid grid-cols-1 lg:grid-cols-10 gap-5 mb-5 items-start">
         {/* ADD / EDIT MEDICATION */}
         <AddMedication
           key={editingIndex ?? "new"}
@@ -116,7 +116,7 @@ function Prescription({ selectedQueue, onBack, onPreview }: PrescriptionProps) {
         />
 
         {/* PRESCRIPTION LIST */}
-        <section className="col-span-4 flex flex-col rounded-md border border-gray-200 bg-white px-5 py-6">
+        <section className="min-w-0 lg:col-span-4 flex flex-col rounded-md border border-gray-200 bg-white px-4 sm:px-5 py-6">
           <div className="flex prescriptionItems-center gap-3 border-b border-gray-200 pb-3 font-semibold">
             <FileCheckCorner size={20} className="text-sky-600" />
             <h1>Prescription List ({prescriptionItems.length})</h1>

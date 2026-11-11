@@ -296,7 +296,7 @@ function Overview({
 
   return (
     <div key={selectedQueue.queue_id} className="space-y-5">
-      <div className="flex gap-3 border px-5 py-3 rounded-md border-gray-200 items-center">
+      <div className="flex flex-wrap gap-x-3 gap-y-1 border px-4 sm:px-5 py-3 rounded-md border-gray-200 items-center">
         <h1>Findings</h1>
         <p className="text-xs font-extralight">(* indicates required fields)</p>
       </div>
@@ -458,7 +458,7 @@ function Overview({
 
       {/* Actions */}
       {submitError && <p className="text-xs text-red-500">{submitError}</p>}
-      <div className="flex justify-between">
+      <div className="flex flex-wrap justify-between gap-3">
         <button
           type="button"
           onClick={() => setConfirmingEnd(true)}
@@ -467,7 +467,7 @@ function Overview({
         >
           Complete Consultation
         </button>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <button
             type="button"
             onClick={() =>
