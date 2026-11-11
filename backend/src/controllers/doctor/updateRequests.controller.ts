@@ -42,7 +42,7 @@ export async function acceptConsultationQueue(
       UPDATE queue_entries q
       SET status = 'Serving', updated_at = NOW()
       WHERE q.queue_id = ${queue_id}
-        AND q.queue_id LIKE 'CONS-%'
+        AND q.queue_id ~ '^CONS?-'
         AND LOWER(TRIM(q.status)) IN ('waiting', 'skipped')
         AND EXISTS (
           SELECT 1 FROM consultation_records cr
@@ -62,7 +62,7 @@ export async function acceptConsultationQueue(
             WHERE cr.queue_id = q.queue_id AND cr.patient_id = q.patient_id AND s.room::text = ${roomText}
           ) AS in_room
         FROM queue_entries q
-        WHERE q.queue_id = ${queue_id} AND q.queue_id LIKE 'CONS-%'
+        WHERE q.queue_id = ${queue_id} AND q.queue_id ~ '^CONS?-'
           AND EXISTS (SELECT 1 FROM consultation_records cr WHERE cr.queue_id = q.queue_id AND cr.patient_id = q.patient_id)
       `;
       if (!existing)
@@ -132,7 +132,7 @@ export async function completeConsultationQueueEntry(
     const {
       rows: [entry],
     } = await client.query(
-      "SELECT * FROM queue_entries WHERE queue_id = $1 AND queue_id LIKE 'CONS-%' FOR UPDATE",
+      "SELECT * FROM queue_entries WHERE queue_id = $1 AND queue_id ~ '^CONS?-' FOR UPDATE",
       [queue_id.trim()],
     );
     if (!entry) return await reject(404, "Consultation queue entry not found.");
@@ -254,7 +254,7 @@ export async function cancelConsultationQueue(
     const {
       rows: [entry],
     } = await client.query(
-      "SELECT * FROM queue_entries WHERE queue_id = $1 AND queue_id LIKE 'CONS-%' FOR UPDATE",
+      "SELECT * FROM queue_entries WHERE queue_id = $1 AND queue_id ~ '^CONS?-' FOR UPDATE",
       [queue_id.trim()],
     );
     if (!entry) return await reject(404, "Consultation queue entry not found.");
@@ -401,7 +401,7 @@ export async function skipConsultationQueueEntry(
         updated_at = NOW()
       WHERE q.queue_number = ${currentQueueNumber + 1}
         AND LOWER(q.status) = 'waiting'
-        AND q.queue_id LIKE 'CONS-%'
+        AND q.queue_id ~ '^CONS?-'
         AND q.created_at >= CURRENT_DATE
         AND q.created_at <  CURRENT_DATE + INTERVAL '1 day';
     `;

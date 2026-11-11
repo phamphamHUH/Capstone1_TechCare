@@ -1,6 +1,6 @@
 ---
 name: techcare-id-generation
-description: Human-readable business IDs and queue numbers for TechCare (U-26-1105-0001, P-..., LR-..., CONS-0001) generated app-side with advisory locks inside transactions, plus the DB-default alternative. Use when creating a new entity that needs a readable ID, fixing duplicate/colliding IDs, daily vs monthly reset formats, Manila timezone numbering, queue numbers per room, or consolidating the duplicate consultation ID generators. Full stack: generator util, controller usage, DB constraints, frontend display, tests.
+description: Human-readable business IDs and queue numbers for TechCare (U-26-1105-0001, P-..., LR-..., CON-0001) generated app-side with advisory locks inside transactions, plus the DB-default alternative. Use when creating a new entity that needs a readable ID, fixing duplicate/colliding IDs, daily vs monthly reset formats, Manila timezone numbering, queue numbers per room, or consolidating the duplicate consultation ID generators. Full stack: generator util, controller usage, DB constraints, frontend display, tests.
 ---
 
 # ID Generation (the original app-side way)
@@ -17,7 +17,7 @@ description: Human-readable business IDs and queue numbers for TechCare (U-26-11
 | Laboratory item | `LI-YY-MMDD-NNNN` | daily | 4 |
 | Consultation record | `CR-YY-MMDD-NNNN` | daily | 4 |
 | Prescription | `RX-YY-MMDD-NNNN` | daily | 4 |
-| Consult / lab queue id | `CONS-NNNN` / `LAB-NNNN` | never | 4 |
+| Consult / lab / imaging queue id | `CON-NNNN` (older `CONS-NNNN`) / `LAB-NNNN` / `IMG-NNNN` | never | 4 |
 | Lab result | `RES-<uuid>` | n/a | |
 | Form / component | `F-<Date.now()>` / `FC-<form_id>-<i>` | n/a | |
 
@@ -73,7 +73,7 @@ Delete `generateConsultationId.ts` (the second CR- generator) and point the doct
 
 ### Queue ids and numbers (two different things)
 ```ts
-/** CONS-0001 / LAB-0001: monotonic, never resets */
+/** CON-0001 / LAB-0001 / IMG-0001: monotonic, never resets (CON continues after old CONS-) */
 export async function nextQueueId(c: PoolClient, prefix: "CONS" | "LAB") {
   await c.query("SELECT pg_advisory_xact_lock(hashtext($1))", [`queue_id:${prefix}`]);
   const { rows } = await c.query(

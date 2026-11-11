@@ -317,7 +317,7 @@ async function main() {
       const labUser = pick(labStaff, i);
       const daysAgo = i % 7 === 0 ? 0 : i % 90;
       const createdAt = timestampDaysAgo(daysAgo, 8 + (i % 8));
-      const queueId = `CONS-SEED-${String(i).padStart(6, "0")}`;
+      const queueId = `CON-SEED-${String(i).padStart(6, "0")}`;
       const queueNumber = ((i - 1) % 80) + 1;
       const queueStatus = pick(statuses, i);
       queueIds.push(queueId);
