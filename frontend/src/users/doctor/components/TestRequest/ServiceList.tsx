@@ -33,6 +33,7 @@ function ServiceList({
     requestId?: string;
     count: number;
   } | null>(null);
+  const isLabRequest = activeTab === "laboratory" || activeTab === "imaging";
 
   const servicesList = selectedServices
     .map((id) => services.find((service) => service.service_id === id))
@@ -56,30 +57,35 @@ function ServiceList({
       setSubmitting(true);
       setError(null);
 
-      if (activeTab === "laboratory") {
-        const res = await api.post("/api/fdstaff/laboratory-requests", {
-          patient_id: patientId,
-          services: selectedServices.map((service_id) => ({ service_id })),
-        });
+      const body =
+        activeTab === "package"
+          ? {
+              patient_id: patientId,
+              packages: selectedServices.map((package_id) => ({
+                package_id,
+              })),
+            }
+          : {
+              patient_id: patientId,
+              services: selectedServices.map((service_id) => ({
+                service_id,
+              })),
+            };
 
-        setSuccess({
-          requestId: (Array.isArray(res.data.request)
-            ? res.data.request[0]
-            : res.data.request
-          )?.request_id,
-          count: selectedServices.length,
-        });
-      } else {
-        const res = await api.post("/api/fdstaff/consultation-requests", {
-          patient_id: patientId,
-          service_id: selectedServices[0],
-        });
+      const res = await api.post("/api/fdstaff/laboratory-requests", body);
 
-        setSuccess({
-          requestId: res.data.consultation_record?.consultation_record_id,
-          count: 1,
-        });
-      }
+      setSuccess({
+        requestId: (Array.isArray(res.data.request)
+          ? res.data.request[0]
+          : res.data.request
+        )?.request_id,
+        count: selectedServices.length,
+      });
+
+      setSuccess({
+        requestId: res.data.consultation_record?.consultation_record_id,
+        count: 1,
+      });
 
       onClearAll();
       void onSubmitted?.();
@@ -94,15 +100,14 @@ function ServiceList({
       setSubmitting(false);
     }
   };
-
   return (
     <>
       <div className="flex flex-col flex-1 min-h-0">
         <div className="flex items-center justify-between mb-5 pb-5 border-b border-gray-200">
           <h1 className="font-bold text-lg">
-            {activeTab === "laboratory"
-              ? `Selected Laboratory Services (${servicesList.length})`
-              : "Select Consultation Service"}
+            {isLabRequest
+              ? `Selected ${activeTab === "imaging" ? "Imaging" : "Laboratory"} Services (${servicesList.length})`
+              : `Selected Packages (${servicesList.length})`}
           </h1>
           {servicesList.length > 0 && (
             <button

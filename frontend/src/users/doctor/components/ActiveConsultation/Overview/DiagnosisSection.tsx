@@ -148,7 +148,7 @@ function DiagnosisSection({
 
   return (
     <Section
-      title="Assessment / Diagnosis"
+      title="Assessment / Diagnosis *"
       action={
         <button
           type="button"

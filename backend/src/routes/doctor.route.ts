@@ -12,7 +12,7 @@ import {
 import { getReleasedLaboratoryResults } from "../controllers/labstaff/getRequests.controller.js";
 import {
   addLaboratoryRequest,
-  addPrescriptions,
+  addPrescription,
 } from "../controllers/doctor/postRequests.controller.js";
 import {
   getConsultationQueueDetails,
@@ -20,6 +20,7 @@ import {
   getMedicalHistory,
   getMedicalHistoryDetails,
   getMedicalHistoryFull,
+  getPrescriptionPreviewDetails,
   getRoomSpecificServices,
   // getLaboratoryServices,
   // getConsultationPatient,
@@ -33,7 +34,7 @@ if (ENV.IS_PRODUCTION) {
 }
 // POST requests
 router.post("/laboratory-requests", addLaboratoryRequest);
-router.post("/prescriptions/:consultation_record_id", addPrescriptions);
+router.post("/prescriptions", addPrescription);
 // GET requests
 router.get("/laboratory-results/:result_id", getReleasedLaboratoryResults);
 router.get("/services/:room", getRoomSpecificServices);
@@ -53,6 +54,10 @@ router.get(
 router.get(
   "/medical-history/:record_type/:record_id/full",
   getMedicalHistoryFull,
+);
+router.get(
+  "/prescriptions/preview/:consultation_record_id",
+  getPrescriptionPreviewDetails,
 );
 
 router.patch("/consultation-queues/:queue_id/accept", acceptConsultationQueue);

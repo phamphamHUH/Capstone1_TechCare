@@ -1,19 +1,13 @@
 import React, { useState } from "react";
-import { Syringe, BoneFracture, Package } from "lucide-react";
-// import ServiceTypeTabs from "../components/ServiceRequest/ServiceTypeTabs";
-// import ServiceSelectionPanel from "../components/ServiceRequest/ServiceSelectionPanel";
-// import ServiceList from "../components/ServiceRequest/ServiceList";
+import { Syringe, BoneFracture, Package, TriangleAlert } from "lucide-react";
 import type { SortOrder, Service } from "../../../interface/Service";
 import type { Patient } from "../../../interface/Patient";
 import calculateAge from "../../../utils/calculateAge";
-import {
-  formatAge,
-  formatDateTime,
-  formatPatientAddress,
-} from "../../../utils/formats";
+import { formatAge, formatDateTime } from "../../../utils/formats";
 import type { QueueEntry } from "../../../interface/Queue";
 import ServiceSelectionPanel from "../components/TestRequest/ServiceSelectionPanel";
 import ServiceList from "../components/TestRequest/ServiceList";
+import ConfirmDialog from "#components/ConfirmDialog";
 
 type ServiceRequestProps = {
   services: Service[];
@@ -34,14 +28,15 @@ function TestRequest({
   selectedQueue,
 }: ServiceRequestProps) {
   const [activeTab, setActiveTab] = useState("laboratory");
-  const [patient, setPatient] = useState<Patient | null>(null);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [pendingTab, setPendingTab] = useState<string | null>(null);
 
   // FILTERS
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortOrder>("a-z");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [pageNumber, setPageNumber] = useState(1);
+  const isolatedTabs = ["consultation", "package"];
 
   // reset to page 1 whenever a filter changes (in handlers, not in an effect)
   const handleSearch = (value: string) => {
@@ -111,6 +106,25 @@ function TestRequest({
   };
   const clearServices = () => setSelectedServices([]);
 
+  const switchTab = (tab: string) => {
+    clearServices();
+    handleTab(tab);
+  };
+
+  const handleTabClick = (tab: string) => {
+    if (tab === activeTab) return;
+
+    const needsClear =
+      isolatedTabs.includes(tab) || isolatedTabs.includes(activeTab);
+
+    if (needsClear && selectedServices.length > 0) {
+      setPendingTab(tab); // ask first
+      return;
+    }
+    if (needsClear) clearServices();
+    handleTab(tab);
+  };
+
   const initials = (selectedQueue?.patient_name ?? "")
     .trim()
     .split(/\s+/)
@@ -140,7 +154,6 @@ function TestRequest({
       icon: Package,
     },
   ];
-
   return (
     <main className="flex-1 min-w-0 pb-5 px-6">
       {selectedQueue ? (
@@ -230,10 +243,7 @@ function TestRequest({
                       hover:text-sky-600 hover:border-sky-200 hover:scale-101 active:scale-100 active:text-sky-600 
                       ${activeTab === card.service_type ? "text-sky-400 " : "border-gray-200"}`}
                   key={index}
-                  onClick={() => {
-                    clearServices();
-                    handleTab(card.service_type);
-                  }}
+                  onClick={() => handleTabClick(card.service_type)}
                 >
                   <Icon size={25} />
                   <div>
@@ -267,11 +277,10 @@ function TestRequest({
                 activeTab={activeTab}
                 services={services}
                 selectedServices={selectedServices}
-                patientId={patient?.patient_id ?? null}
+                patientId={selectedQueue?.patient_id ?? null}
                 onToggleService={toggleService}
                 onClearAll={clearServices}
                 onSubmitted={async () => {
-                  setPatient(null);
                   await loadData();
                 }}
               />
@@ -293,6 +302,24 @@ function TestRequest({
             the consultation queue to begin a consultation.
           </p>
         </div>
+      )}
+      {pendingTab && (
+        <ConfirmDialog
+          tone="warning"
+          icon={TriangleAlert}
+          title="Switch Service Type?"
+          confirmLabel="Switch & Clear"
+          cancelLabel="Stay Here"
+          description={`Switching to ${
+            cards.find((c) => c.service_type === pendingTab)?.mainHeading ??
+            "this tab"
+          } will clear your currently selected services. Do you want to continue?`}
+          onCancel={() => setPendingTab(null)}
+          onConfirm={() => {
+            switchTab(pendingTab);
+            setPendingTab(null);
+          }}
+        />
       )}
     </main>
   );

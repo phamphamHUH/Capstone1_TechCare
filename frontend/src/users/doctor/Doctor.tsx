@@ -3,11 +3,9 @@ import Header from "#components/Header";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LayoutGrid, ListOrdered, FileText, Stethoscope } from "lucide-react";
 import { useSearchParams } from "react-router";
-import DigitizedDocument from "./pages/DigitizedDocument";
 import ConsultationQueue from "./pages/ConsultationQueue";
 import MedicalHistory from "./pages/MedicalHistory";
 import DoctorDashboard from "./pages/DoctorDashboard";
-import Consultation from "./pages/Consultation";
 import type { Service } from "../../interface/Service";
 import type { QueueEntry } from "../../interface/Queue";
 import api from "#lib/axios";
@@ -25,6 +23,15 @@ function Doctor() {
   const latestLoad = useRef(0);
   const [selectedQueue, setSelectedQueue] = useState<QueueEntry | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
+  const [findingsSavedForRecord, setFindingsSavedForRecord] = useState<
+    string | null
+  >(null);
+  const [overviewStep, setOverviewStep] = useState<
+    "findings" | "prescription" | "preview"
+  >("findings");
+
+  const findingsSaved =
+    findingsSavedForRecord === selectedQueue?.consultation_record_id;
 
   const room = "Consultation Room";
   const page = searchParams.get("page") ?? "dashboard";
@@ -44,11 +51,6 @@ function Doctor() {
       icon: <LayoutGrid size={20} />,
     },
     {
-      page: "consultation",
-      label: "Consultation",
-      icon: <Stethoscope size={20} />,
-    },
-    {
       page: "consultation-queue",
       label: "Consultation Queue",
       icon: <ListOrdered size={20} />,
@@ -59,8 +61,8 @@ function Doctor() {
       icon: <Stethoscope size={20} />,
     },
     {
-      page: "laboratory-request",
-      label: "Laboratory Request",
+      page: "test-request",
+      label: "Test Request",
       icon: <FileText size={20} />,
     },
   ];
@@ -139,8 +141,15 @@ function Doctor() {
     void initialize();
   }, [loadData]);
 
+  const handleCompleted = useCallback(async () => {
+    setFindingsSavedForRecord(null);
+    setOverviewStep("findings");
+
+    await loadData();
+  }, [loadData]);
+
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen ">
       <SideBar open={open} page={page} setPage={setPage} navItems={navItems} />
 
       <div className="flex-1 min-w-0">
@@ -154,15 +163,6 @@ function Doctor() {
 
         <div className="pb-6">
           {page === "dashboard" && <DoctorDashboard />}
-
-          {(page === "consultation" || page === "prescription") && (
-            <Consultation
-              loading={loading}
-              open={open}
-              setOpen={setOpen}
-              loadData={loadData}
-            />
-          )}
 
           {page === "consultation-queue" && (
             <ConsultationQueue
@@ -182,6 +182,7 @@ function Doctor() {
           {page === "active-consultation" && (
             <ActiveConsultation
               selectedQueue={selectedQueue}
+              setSelectedQueue={setSelectedQueue}
               room={room}
               loading={loading}
               error={
@@ -189,6 +190,11 @@ function Doctor() {
                   ? "The active consultation could not be refreshed."
                   : null
               }
+              findingsSaved={findingsSaved}
+              setFindingsSavedForRecord={setFindingsSavedForRecord}
+              overviewStep={overviewStep}
+              setOverviewStep={setOverviewStep}
+              onCompleted={handleCompleted}
             />
           )}
 
@@ -201,7 +207,7 @@ function Doctor() {
             />
           )}
 
-          {page === "laboratory-request" && (
+          {page === "test-request" && (
             <TestRequest
               services={services}
               open={open}

@@ -607,3 +607,85 @@ export async function getAllservices(
     } as getAllServices.error);
   }
 }
+
+export async function getPrescriptionPreviewDetails(
+  req: Request,
+  res: Response,
+) {
+  try {
+    const { consultation_record_id } = req.params;
+
+    if (!consultation_record_id) {
+      return res.status(400).json({
+        message: "Consultation record ID is required.",
+      });
+    }
+
+    const prescription = await sql`
+      SELECT
+        pr.prescription_id,
+        pr.consultation_record_id,
+        pr.prescribed_at,
+        pr.valid_until,
+        pr.status,
+        pr.prescription_items,
+        pr.notes,
+
+        p.patient_id,
+        CONCAT_WS(
+          ' ',
+          p.first_name,
+          p.middle_name,
+          p.last_name,
+          p.suffix
+        ) AS patient_name,
+        p.birthdate,
+        p.sex,
+
+        DATE_PART('year', AGE(CURRENT_DATE, p.birthdate))::INT AS age,
+
+        u.user_id AS prescriber_id,
+        CONCAT_WS(
+          ' ',
+          u.first_name,
+          u.middle_name,
+          u.last_name,
+          u.suffix
+        ) AS prescriber_name,
+        u.prc_license_number,
+        u.medical_specialty
+
+      FROM prescription_records pr
+
+      INNER JOIN patients p
+        ON p.patient_id = pr.patient_id
+
+      INNER JOIN users u
+        ON u.user_id = pr.prescriber_id
+
+      INNER JOIN consultation_records cr
+        ON cr.consultation_record_id = pr.consultation_record_id
+
+      WHERE pr.consultation_record_id = ${consultation_record_id}
+
+      ORDER BY pr.prescribed_at DESC
+      LIMIT 1
+    `;
+
+    if (prescription.length === 0) {
+      return res.status(404).json({
+        message: "Prescription record not found.",
+      });
+    }
+
+    return res.status(200).json({
+      prescription: prescription[0],
+    });
+  } catch (error) {
+    console.error("GET PRESCRIPTION PREVIEW ERROR:", error);
+
+    return res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}

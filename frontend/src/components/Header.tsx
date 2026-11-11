@@ -12,7 +12,13 @@ type HeaderProps = {
 };
 
 function Header({ page, loading, open, setOpen, loadData }: HeaderProps) {
-  const role = sessionStorage.getItem("role") ?? "";
+  const rawRole = sessionStorage.getItem("role") ?? "";
+
+  const role =
+    rawRole === "laboratory-staff" || rawRole === "frontdesk-staff"
+      ? rawRole.replace("-", " ") // "laboratorystaff" / "frontdeskstaff"
+      : rawRole;
+
   // Queue notifications are only for doctors and laboratory staff.
   const hasNotifications = role === "doctor" || role === "laboratory-staff";
 
