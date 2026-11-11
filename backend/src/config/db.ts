@@ -240,10 +240,16 @@ const TABLES: TableDefinition[] = [
       id: "SERIAL PRIMARY KEY",
       request_id: "VARCHAR(255) UNIQUE NOT NULL",
       patient_id: "VARCHAR(255) NOT NULL REFERENCES patients(patient_id)",
+      // Set when a doctor requests tests from a consultation; NULL for
+      // front desk walk-in requests.
+      consultation_record_id:
+        "VARCHAR(255) REFERENCES consultation_records(consultation_record_id)",
       requested_by: "VARCHAR(255) NOT NULL REFERENCES users(user_id)",
       status: "VARCHAR(20) NOT NULL DEFAULT 'Requested'",
       is_priority: "BOOLEAN NOT NULL DEFAULT FALSE",
       request_date: "DATE NOT NULL DEFAULT CURRENT_DATE",
+      // Optional date the doctor expects the results to be ready.
+      estimated_release_date: "DATE",
       requested_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
       updated_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
     },
