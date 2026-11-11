@@ -31,7 +31,7 @@ function QueueTabs({
   return (
     <div
       role="tablist"
-      className="flex w-full justify-around h-10 items-end border-b border-gray-300"
+      className="flex w-full justify-around h-10 items-end overflow-x-auto overflow-y-hidden border-b border-gray-300"
     >
       {mainFilterValues.map((mainFilter) => {
         const isActive = activeMainFilter === mainFilter.value;
@@ -46,7 +46,7 @@ function QueueTabs({
               onClick(mainFilter.value);
               setOpenQueueAccordion(null);
             }}
-            className={`px-5 py-1 text-sm ${
+            className={`shrink-0 whitespace-nowrap px-3 sm:px-5 py-1 text-sm ${
               isActive
                 ? "text-blue-600 border-b border-blue-600"
                 : "text-gray-900"

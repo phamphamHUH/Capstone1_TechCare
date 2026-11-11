@@ -12,6 +12,8 @@ function PatientHeader({ patient }: PatientHeaderProps) {
 
   const initials = `${patient.first_name.charAt(0)}${patient.last_name.charAt(0)}`;
 
+  // Birthdate is a calendar date, not a moment: keep the clinic zone so
+  // every viewer sees the same day.
   const dob = new Date(patient.birthdate).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
@@ -26,9 +28,9 @@ function PatientHeader({ patient }: PatientHeaderProps) {
   const isPWD = false;
 
   return (
-    <div className="flex justify-between border mx-6 mt-5 px-5 py-3 border-gray-200 rounded-md shadow-lg">
-      <div className="flex items-center gap-4">
-        <div className="relative h-20 w-20 overflow-hidden rounded-full bg-gray-100">
+    <div className="flex flex-wrap justify-between gap-3 border mx-4 sm:mx-6 mt-5 px-4 sm:px-5 py-3 border-gray-200 rounded-md shadow-lg">
+      <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+        <div className="relative h-14 w-14 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-full bg-gray-100">
           {patient.image_url ? (
             <img
               src={patient.image_url}
@@ -41,14 +43,14 @@ function PatientHeader({ patient }: PatientHeaderProps) {
             </div>
           )}
         </div>
-        <div className="flex flex-col gap-1">
-          <div className="flex gap-2 items-center">
-            <h1 className="font-bold text-xl">{fullName}</h1>
+        <div className="flex min-w-0 flex-col gap-1">
+          <div className="flex flex-wrap gap-x-2 gap-y-1 items-center">
+            <h1 className="font-bold text-lg sm:text-xl">{fullName}</h1>
             <span className="text-sm font-medium text-gray-500">
               {patient.patient_id}
             </span>
           </div>
-          <div className="flex gap-2 text-xs">
+          <div className="flex flex-wrap gap-2 text-xs">
             {isSeniorCitizen && (
               <span className="rounded-full text-xs bg-sky-100 px-3 py-0.5 text-sky-600">
                 Senior Citizen

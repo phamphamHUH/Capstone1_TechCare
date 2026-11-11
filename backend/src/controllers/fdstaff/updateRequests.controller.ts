@@ -9,7 +9,7 @@ import {
   generateQueueNumberLaboratory,
 } from "../../utils/generateId.js";
 import { publishQueueChange } from "../../services/queue-sse/index.js";
-import { calculateAge } from "../../utils/calculateAge.js";
+import { calculateAge } from "./utils/calculateAge.js";
 import type { Request, Response } from "express";
 import type {
   updatePatient,
@@ -107,23 +107,6 @@ export async function updatePatient(
         message: "Patient not found.",
       } as updatePatient.error);
     }
-
-    // =========================
-    // EMAIL CHANGE
-    // =========================
-    // Verified patient: keep their current email and put the new one in
-    // pending_email until they confirm it (they stay verified meanwhile).
-    // Unverified patient: just replace the email.
-    // Either way a verification link is sent to the new email below.
-    const emailChanged =
-      Boolean(email?.trim()) &&
-      email.trim().toLowerCase() !==
-        String(existingPatient.email).toLowerCase();
-
-    const newEmail =
-      emailChanged && !existingPatient.is_verified ? email.trim() : null;
-    const newPendingEmail =
-      emailChanged && existingPatient.is_verified ? email.trim() : null;
 
     let imageUrl: string | null = null;
     if (req.file) {

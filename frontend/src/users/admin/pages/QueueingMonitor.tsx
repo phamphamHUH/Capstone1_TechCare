@@ -90,12 +90,12 @@ function QueueingMonitor(_props: QueueingMonitorProps) {
   return (
     <div
       ref={screenRef}
-      className="mx-6 flex min-h-[80vh] flex-col rounded-md bg-slate-100 p-3 text-slate-900"
+      className="mx-4 sm:mx-6 flex min-h-[80vh] flex-col rounded-md bg-slate-100 p-3 text-slate-900"
     >
       {/* HEADER: title, connection badge, clock, fullscreen */}
       <header className="mb-3 flex flex-wrap items-center justify-between gap-3 px-1">
-        <div className="flex items-center gap-3">
-          <h2 className="text-2xl font-bold tracking-tight text-blue-950">
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-blue-950">
             Queue Monitor
           </h2>
           <span

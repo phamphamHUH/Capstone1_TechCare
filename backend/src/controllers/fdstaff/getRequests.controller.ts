@@ -14,102 +14,6 @@ import type {
   getBillDetails,
 } from "./dto/get.dto.js";
 
-function calculateAge(dateOfBirth: string | Date): number | "Invalid Age" {
-  const birthDate = new Date(dateOfBirth);
-  const today = new Date();
-
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const hasHadBirthday =
-    today.getMonth() > birthDate.getMonth() ||
-    (today.getMonth() === birthDate.getMonth() &&
-      today.getDate() >= birthDate.getDate());
-
-  if (!hasHadBirthday) {
-    age--;
-  }
-
-  if (age < 0) {
-    return "Invalid Age";
-  }
-
-  return age;
-}
-
-export function buildPrintablePatientRecord(
-  patient: Record<string, any>,
-  queueEntries: Record<string, any>[] = [],
-  labRequests: Record<string, any>[] = [],
-  billing: Record<string, any>[] = [],
-) {
-  const fullName = [
-    patient.first_name,
-    patient.middle_name,
-    patient.last_name,
-    patient.suffix,
-  ]
-    .filter(Boolean)
-    .join(" ");
-
-  const summary = {
-    age: calculateAge(patient.birthdate ?? patient.date_of_birth),
-    sex: patient.sex ?? "N/A",
-    blood_type: patient.blood_type ?? "N/A",
-    civil_status: patient.civil_status ?? "N/A",
-    total_visits: Array.isArray(queueEntries) ? queueEntries.length : 0,
-    total_lab_requests: Array.isArray(labRequests) ? labRequests.length : 0,
-    total_billing: billing
-      .reduce((sum, item) => sum + Number(item.total_amount ?? 0), 0)
-      .toFixed(2),
-    pending_balance: billing
-      .filter((item) => String(item.status ?? "").toLowerCase() !== "paid")
-      .reduce((sum, item) => sum + Number(item.total_amount ?? 0), 0)
-      .toFixed(2),
-  };
-
-  return {
-    patient: {
-      patient_id: patient.patient_id,
-      full_name: fullName,
-      first_name: patient.first_name,
-      middle_name: patient.middle_name,
-      last_name: patient.last_name,
-      suffix: patient.suffix,
-      sex: patient.sex,
-      email: patient.email,
-      address: patient.address,
-      contact_number: patient.contact_number,
-      birthdate: patient.birthdate ?? patient.date_of_birth,
-      blood_type: patient.blood_type,
-      civil_status: patient.civil_status,
-      image_url: patient.image_url,
-      created_at: patient.created_at,
-      updated_at: patient.updated_at,
-    },
-    summary,
-    visits: queueEntries.map((visit) => ({
-      queue_id: visit.queue_id,
-      service_id: visit.service_id,
-      status: visit.status,
-      created_at: visit.created_at,
-      updated_at: visit.updated_at,
-    })),
-    labRequests: labRequests.map((request) => ({
-      request_id: request.request_id,
-      status: request.status,
-      is_paid: request.is_paid,
-      requested_at: request.requested_at,
-      updated_at: request.updated_at,
-    })),
-    billing: billing.map((bill) => ({
-      bill_id: bill.bill_id,
-      total_amount: Number(bill.total_amount ?? 0).toFixed(2),
-      status: bill.status,
-      payment_method: bill.payment_method,
-      billed_at: bill.billed_at,
-    })),
-  };
-}
-
 export async function getAllPatients(
   req: Request,
   res: Response<getAllPatients.response | getAllPatients.error>,
@@ -366,67 +270,6 @@ export async function getQueueRequests(
       message: "Failed to fetch queue requests",
     } as getQueueRequests.error);
   }
-}
-
-// Shared by the bill list and the bill details so both always agree.
-// Legacy "Unpaid" rows come out as "Pending". The stored value is left alone.
-function selectBills(billId: string | null) {
-  return sql`
-    SELECT b.bill_id, b.patient_id, b.items, b.discount_type, b.discount_amount, b.payment_method,
-      b.reference_num, b.invoice_id, b.paid_at, b.created_at,
-      CASE WHEN LOWER(TRIM(b.status)) = 'paid' THEN 'Paid' ELSE 'Pending' END AS status,
-      CASE WHEN LOWER(TRIM(b.status)) <> 'paid' AND lines.count > 0 THEN lines.subtotal ELSE b.subtotal END AS subtotal,
-      CASE WHEN LOWER(TRIM(b.status)) <> 'paid' AND lines.count > 0 THEN lines.subtotal ELSE b.total_amount END AS total_amount,
-      COALESCE(
-        CASE WHEN LOWER(TRIM(b.status)) = 'paid' OR lines.count = 0 THEN (
-          SELECT ARRAY_AGG(item->>'service_name')
-          FROM jsonb_array_elements(CASE WHEN jsonb_typeof(b.items) = 'array' THEN b.items ELSE '[]'::jsonb END) item
-        ) END,
-        lines.names,
-        '{}'::text[]
-      ) AS services,
-      CASE
-        WHEN NOT lab.has_items THEN 'No laboratory tests'
-        WHEN LOWER(TRIM(b.status)) <> 'paid' THEN 'Waiting for payment'
-        WHEN lab.has_unforwarded THEN 'Needs forwarding'
-        ELSE 'Forwarded'
-      END AS laboratory_status,
-      lab.has_priority AS is_priority,
-      CONCAT_WS(' ', p.first_name, p.last_name) AS patient_name,
-      CONCAT_WS(' ', u.first_name, u.last_name) AS received_by,
-      p.sex, p.birthdate, DATE_PART('year', AGE(p.birthdate))::int AS age,
-      COALESCE(DATE_PART('year', AGE(p.birthdate)) >= 60, false) AS is_senior,
-      COALESCE(p.is_pwd, false) AS is_pwd
-    FROM bills b
-    JOIN patients p ON p.patient_id = b.patient_id
-    LEFT JOIN users u ON u.user_id = b.received_by
-    LEFT JOIN LATERAL (
-      SELECT ARRAY_AGG(l.service_name::text ORDER BY l.created_at, l.service_name) AS names,
-        SUM(l.price) AS subtotal, COUNT(*) AS count
-      FROM (
-        SELECT s.service_name, s.price, cr.requested_at AS created_at
-        FROM consultation_records cr JOIN services s ON s.service_id = cr.service_id
-        WHERE cr.bill_id = b.bill_id AND LOWER(TRIM(cr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
-        UNION ALL
-        SELECT s.service_name, s.price, tri.created_at
-        FROM test_request_items tri JOIN services s ON s.service_id = tri.service_id
-        JOIN test_requests tr ON tr.request_id = tri.request_id
-        WHERE tri.bill_id = b.bill_id AND LOWER(TRIM(tri.status)) NOT IN ('cancelled', 'canceled', 'rejected')
-          AND LOWER(TRIM(tr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
-      ) l
-    ) lines ON TRUE
-    LEFT JOIN LATERAL (
-      SELECT COUNT(*) > 0 AS has_items,
-        COALESCE(BOOL_OR(tri.queue_id IS NULL AND LOWER(TRIM(tri.status)) = 'requested'), false) AS has_unforwarded,
-        COALESCE(BOOL_OR(tr.is_priority), false) AS has_priority
-      FROM test_request_items tri JOIN test_requests tr ON tr.request_id = tri.request_id
-      WHERE tri.bill_id = b.bill_id AND LOWER(TRIM(tri.status)) NOT IN ('cancelled', 'canceled', 'rejected')
-        AND LOWER(TRIM(tr.status)) NOT IN ('cancelled', 'canceled', 'rejected')
-    ) lab ON TRUE
-    WHERE LOWER(TRIM(b.status)) IN ('pending', 'unpaid', 'paid')
-      AND (${billId}::text IS NULL OR b.bill_id = ${billId})
-    ORDER BY CASE WHEN LOWER(TRIM(b.status)) = 'paid' THEN 1 ELSE 0 END, COALESCE(b.paid_at, b.created_at) DESC
-    LIMIT 1000`;
 }
 
 export async function getBills(
@@ -868,6 +711,10 @@ export async function getMedicalHistoryFull(
 }
 ////////////////  --------- GET medical history controller ---------  //////////////////
 import type { getPatientMedicalHistory as MedicalHistoryDTO } from "./dto/get.dto.js";
+import { buildFullName } from "./utils/buildFullName.js";
+import { resolveLabItemsTable } from "./utils/resolveLabItemsTable.js";
+import { selectBills } from "./utils/selectBills.js";
+import { buildPrintablePatientRecord } from "./utils/buildPrintablePatientRecord.js";
 
 // DATABASE ROW TYPES
 // =======================================================================
@@ -940,32 +787,6 @@ type MedicalHistoryLabResultRow = {
 
 // HELPERS
 // =======================================================================
-
-async function resolveLabItemsTable(): Promise<
-  "test_request_items" | "request_items" | null
-> {
-  const laboratoryRequestItems = (await sql`
-    SELECT to_regclass('public.test_request_items') AS table_name
-  `) as { table_name: string | null }[];
-
-  if (laboratoryRequestItems[0]?.table_name) {
-    return "test_request_items";
-  }
-
-  const requestItems = (await sql`
-    SELECT to_regclass('public.request_items') AS table_name
-  `) as { table_name: string | null }[];
-
-  if (requestItems[0]?.table_name) {
-    return "request_items";
-  }
-
-  return null;
-}
-
-function buildFullName(parts: Array<string | null | undefined>): string {
-  return parts.filter(Boolean).join(" ");
-}
 
 // GET PATIENT MEDICAL HISTORY
 // =======================================================================

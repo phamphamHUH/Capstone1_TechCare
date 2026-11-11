@@ -105,9 +105,9 @@ function PatientRecords({
 
   return (
     <main className="flex-1 min-w-0">
-      <h1 className="text-2xl font-bold px-6 mb-5">Patient Records</h1>
-      {error && <ErrorMessage className="mx-6 mb-5">{error}</ErrorMessage>}
-      <div className="mx-6 py-5 border rounded-md border-gray-200">
+      <h1 className="text-2xl font-bold px-4 sm:px-6 mb-5">Patient Records</h1>
+      {error && <ErrorMessage className="mx-4 sm:mx-6 mb-5">{error}</ErrorMessage>}
+      <div className="mx-4 sm:mx-6 py-5 border rounded-md border-gray-200">
         <div className="relative flex-1 basis-70 left-6 mb-3">
           <Search
             size={17}

@@ -2,8 +2,8 @@ import type { CSSProperties } from "react";
 import type { BuilderComponent } from "../../../../interface/FormTemplate";
 import type { LaboratoryReportData } from "../../../../interface/LaboratoryAnalysis";
 import { formatLabDate } from "../../../../utils/formats";
-import { resultFlag } from "./laboratoryValidation";
-import { REPORT_LOGO, reportText, safeReportImage } from "./laboratoryPrint";
+import { resultFlag } from "./utils/laboratoryValidation";
+import { REPORT_LOGO, reportText, safeReportImage } from "./utils/laboratoryPrint";
 import { CLINIC_INFO } from "../../../../lib/clinicInfo";
 
 function referenceRange(component: BuilderComponent) {

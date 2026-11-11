@@ -117,10 +117,10 @@ function ActivityMonitoring({
 
   return (
     <main className="flex-1 min-w-0">
-      <div className="mx-6">
+      <div className="mx-4 sm:mx-6">
         <div className="flex items-start justify-between gap-4 mb-6">
           <div>
-            <h1 className="font-bold text-3xl">Activity Logs</h1>
+            <h1 className="font-bold text-2xl sm:text-3xl">Activity Logs</h1>
             <h3 className="font-light">Track Activities</h3>
           </div>
         </div>

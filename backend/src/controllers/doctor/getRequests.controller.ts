@@ -9,6 +9,7 @@ import type {
   getConsultationQueueDetails,
   getAllServices,
 } from "./dto/get.dto.js";
+import { selectLabResultLines } from "./utils/selectLabResultLines.js";
 
 export async function getRoomSpecificServices(
   req: Request,
@@ -263,44 +264,6 @@ export async function getMedicalHistory(
       detail: error instanceof Error ? error.message : String(error),
     } as getMedicalHistory.error);
   }
-}
-
-// test_results stores one row per lab item with a JSON list of tests.
-// The doctor's history screen shows one line per test.
-async function selectLabResultLines(item_id: string) {
-  const rows = await sql`
-    SELECT result_id, results, remarks, verified_by, verified_at, image_url, created_at
-    FROM test_results
-    WHERE item_id = ${item_id}
-    ORDER BY created_at
-  `;
-
-  return rows.flatMap((row) => {
-    const tests: Record<string, any>[] = Array.isArray(row.results)
-      ? row.results
-      : [];
-    const components: Record<string, any>[] =
-      tests[0]?.template_snapshot?.components ?? [];
-
-    return tests.map((test, index) => {
-      const settings =
-        components.find((c) => c.fieldKey === test.field_key)?.settings ?? {};
-      const isLast = index === tests.length - 1;
-      return {
-        result_id: `${row.result_id}-${index}`,
-        result_value: `${test.name}: ${test.result}`,
-        unit: settings.unit || null,
-        reference_range: settings.referenceRange || null,
-        flag: null,
-        // Remarks and verification belong to the whole result, so show them once.
-        remarks: isLast ? row.remarks : null,
-        verified_by: isLast ? row.verified_by : null,
-        verified_at: isLast && row.verified_at ? String(row.verified_at) : null,
-        image_url: row.image_url,
-        created_at: String(row.created_at),
-      };
-    });
-  });
 }
 
 export async function getMedicalHistoryDetails(
@@ -605,5 +568,87 @@ export async function getAllservices(
     return res.status(500).json({
       message: "Internal Server Error",
     } as getAllServices.error);
+  }
+}
+
+export async function getPrescriptionPreviewDetails(
+  req: Request,
+  res: Response,
+) {
+  try {
+    const { consultation_record_id } = req.params;
+
+    if (!consultation_record_id) {
+      return res.status(400).json({
+        message: "Consultation record ID is required.",
+      });
+    }
+
+    const prescription = await sql`
+      SELECT
+        pr.prescription_id,
+        pr.consultation_record_id,
+        pr.prescribed_at,
+        pr.valid_until,
+        pr.status,
+        pr.prescription_items,
+        pr.notes,
+
+        p.patient_id,
+        CONCAT_WS(
+          ' ',
+          p.first_name,
+          p.middle_name,
+          p.last_name,
+          p.suffix
+        ) AS patient_name,
+        p.birthdate,
+        p.sex,
+
+        DATE_PART('year', AGE(CURRENT_DATE, p.birthdate))::INT AS age,
+
+        u.user_id AS prescriber_id,
+        CONCAT_WS(
+          ' ',
+          u.first_name,
+          u.middle_name,
+          u.last_name,
+          u.suffix
+        ) AS prescriber_name,
+        u.prc_license_number,
+        u.medical_specialty
+
+      FROM prescription_records pr
+
+      INNER JOIN patients p
+        ON p.patient_id = pr.patient_id
+
+      INNER JOIN users u
+        ON u.user_id = pr.prescriber_id
+
+      INNER JOIN consultation_records cr
+        ON cr.consultation_record_id = pr.consultation_record_id
+
+      WHERE pr.consultation_record_id = ${consultation_record_id}
+
+      ORDER BY pr.prescribed_at DESC
+      LIMIT 1
+    `;
+
+    if (prescription.length === 0) {
+      return res.status(404).json({
+        message: "Prescription record not found.",
+      });
+    }
+
+    return res.status(200).json({
+      prescription: prescription[0],
+    });
+  } catch (error) {
+    console.error("GET PRESCRIPTION PREVIEW ERROR:", error);
+
+    return res.status(500).json({
+      message: "Internal Server Error",
+    });
   }
 }

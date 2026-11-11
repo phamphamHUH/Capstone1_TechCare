@@ -230,27 +230,18 @@ export async function generateLaboratoryItemID(client: PoolClient) {
 }
 
 export async function generatePrescriptionId() {
-  const now = new Date();
-
-  const year = String(now.getFullYear()).slice(-2);
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-
-  const prefix = `${year}-${month}${day}`;
-  const prescriptionCreatedToday = await sql`
+  const result = await sql`
     SELECT prescription_id
     FROM prescription_records
-    WHERE prescription_id LIKE ${`RX-${prefix}-%`}
-    ORDER BY prescription_id DESC
+    WHERE prescription_id LIKE 'RX-%'
+    ORDER BY SPLIT_PART(prescription_id, '-', 2)::int DESC
     LIMIT 1
   `;
 
-  const nextNumber =
-    prescriptionCreatedToday.length > 0
-      ? Number(prescriptionCreatedToday[0].prescription_id.slice(-4)) + 1
-      : 1;
+  const last = result[0]?.prescription_id;
+  const nextNumber = last ? Number(last.split("-")[1]) + 1 : 1;
 
-  return `RX-${prefix}-${String(nextNumber).padStart(4, "0")}`;
+  return `RX-${String(nextNumber).padStart(4, "0")}`;
 }
 
 export async function generateConsultationRecordId(client: PoolClient) {

@@ -152,7 +152,7 @@ function InformationCard({ onClose, queueIdCard }: InformationCardProps) {
           {detailLoading ? (
             <LoadingScreen message="Loading consultation..." />
           ) : detail ? (
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {/* PATIENT CARD */}
               <div className="rounded-md border border-gray-200 bg-white px-6 py-3">
                 <div className="flex items-center gap-3 border-b border-gray-200 pb-4">
@@ -165,7 +165,7 @@ function InformationCard({ onClose, queueIdCard }: InformationCardProps) {
                   </div>
                 </div>
 
-                <div className="mt-3 grid grid-cols-3 gap-3 rounded-md border border-gray-200 bg-gray-50 px-4 py-3 text-sm">
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 rounded-md border border-gray-200 bg-gray-50 px-4 py-3 text-sm">
                   <div>
                     <p className="text-[10px] font-semibold uppercase text-gray-500">
                       Age
@@ -191,7 +191,7 @@ function InformationCard({ onClose, queueIdCard }: InformationCardProps) {
                 <h3 className="mt-4 text-[11px] font-bold uppercase tracking-wide text-gray-500">
                   Contact & Background
                 </h3>
-                <div className="mt-2 grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
                   <div>
                     <p className="text-xs text-gray-500">Contact Number</p>
                     <p className="font-semibold">{detail.contact_number}</p>
@@ -246,7 +246,7 @@ function InformationCard({ onClose, queueIdCard }: InformationCardProps) {
                   <h2 className="font-bold">Queue & Request Details</h2>
                 </div>
 
-                <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
                   <div>
                     <p className="text-xs text-gray-500">Request ID</p>
                     <p className="font-semibold">

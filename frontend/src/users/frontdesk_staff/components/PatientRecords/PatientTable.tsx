@@ -27,7 +27,7 @@ function PatientTable({
   };
   return (
     <div className="max-h-105 overflow-auto bg-white">
-      <table className="w-full text-sm">
+      <table className="min-w-[960px] w-full text-sm">
         <colgroup>
           <col className="w-8/35" />
           <col className="w-5/35" />

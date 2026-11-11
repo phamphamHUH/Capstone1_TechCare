@@ -1,8 +1,9 @@
 import EmptyState from "../../../../components/EmptyState";
 import ErrorMessage from "../../../../components/ErrorMessage";
+import ConfirmDialog from "../../../../components/ConfirmDialog";
 import LoadingScreen from "../../../../components/LoadingScreen";
 
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { CircleCheck, ChevronDown, ChevronUp } from "lucide-react";
 import React, { useState, type Dispatch, type SetStateAction } from "react";
 import type { LaboratoryItem } from "../../../../interface/LaboratoryItem";
 import type { Queue } from "../../../../interface/Queue";
@@ -37,6 +38,8 @@ function QueueTable({
 }: QueueTableProps) {
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
   const [acceptError, setAcceptError] = useState<string | null>(null);
+  // Queue waiting for the "Complete" confirmation.
+  const [confirmComplete, setConfirmComplete] = useState<Queue | null>(null);
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -127,7 +130,32 @@ function QueueTable({
     <>
       {acceptError && <ErrorMessage>{acceptError}</ErrorMessage>}
 
-      <table className="w-full table-fixed">
+      {confirmComplete && (
+        <ConfirmDialog
+          title="Complete this queue?"
+          description={
+            <>
+              Mark <strong>{confirmComplete.queue_id}</strong>
+              {confirmComplete.patient_name && (
+                <> for <strong>{confirmComplete.patient_name}</strong></>
+              )}{" "}
+              as completed? Make sure all samples were collected. The patient
+              will leave the queue.
+            </>
+          }
+          confirmLabel="Complete"
+          confirmIcon={CircleCheck}
+          onCancel={() => setConfirmComplete(null)}
+          onConfirm={async () => {
+            const queueId = confirmComplete.queue_id;
+            setConfirmComplete(null);
+            await handleComplete(queueId);
+          }}
+        />
+      )}
+
+      <div className="overflow-x-auto">
+      <table className="w-full min-w-[820px] table-fixed">
         <colgroup>
           <col className="w-1/40" />
           <col className="w-4/40" />
@@ -238,7 +266,7 @@ function QueueTable({
                         {status === "serving" && (
                           <button
                             disabled={busy}
-                            onClick={() => handleComplete(queue.queue_id)}
+                            onClick={() => setConfirmComplete(queue)}
                             className="cursor-pointer rounded-sm border-2 border-green-500 px-4 py-2 text-xs text-green-500 transition-all duration-300 hover:scale-105 hover:bg-green-100 disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             Complete
@@ -345,9 +373,10 @@ function QueueTable({
           ))}
         </tbody>
       </table>
+      </div>
 
       {total > 0 && (
-        <div className="flex items-center justify-between px-4 py-3 text-xs text-gray-500">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-xs text-gray-500">
           <span>
             Showing {from} - {to} of {total} queues
           </span>

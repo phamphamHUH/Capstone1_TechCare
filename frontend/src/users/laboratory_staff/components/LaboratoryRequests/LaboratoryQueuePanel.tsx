@@ -190,7 +190,7 @@ function LaboratoryQueuePanel({
   const loadingLabel = activeMainTab === "all" ? "" : `${activeMainTab} `;
 
   return (
-    <div className="w-full min-h-20 border rounded-md border-gray-300 flex flex-col gap-5 justify-around">
+    <div className="w-full min-w-0 min-h-20 border rounded-md border-gray-300 flex flex-col gap-5 justify-around">
       {/* MAIN FILTERS */}
       <QueueTabs
         mainFilterValues={mainFilterValues}

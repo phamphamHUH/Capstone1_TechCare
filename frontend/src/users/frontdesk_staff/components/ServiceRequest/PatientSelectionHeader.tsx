@@ -42,10 +42,10 @@ function PatientSelectionHeader({
 
   return (
     <>
-      <div className="flex justify-between border mx-8 mt-5 px-5 py-3 border-gray-200 rounded-md shadow-lg">
+      <div className="flex flex-wrap justify-between gap-3 border mx-4 sm:mx-8 mt-5 px-4 sm:px-5 py-3 border-gray-200 rounded-md shadow-lg">
         {patient ? (
-          <div className="flex items-center gap-4">
-            <div className="relative h-20 w-20 overflow-hidden rounded-full bg-gray-100">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+            <div className="relative h-14 w-14 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-full bg-gray-100">
               {patient.image_url ? (
                 <img
                   src={patient.image_url}
@@ -58,9 +58,9 @@ function PatientSelectionHeader({
                 </div>
               )}
             </div>
-            <div className="flex flex-col gap-1">
-              <div className="flex gap-2 items-center">
-                <h1 className="font-bold text-xl">{fullName}</h1>
+            <div className="flex min-w-0 flex-col gap-1">
+              <div className="flex flex-wrap gap-x-2 gap-y-1 items-center">
+                <h1 className="font-bold text-lg sm:text-xl">{fullName}</h1>
                 {calculateAge(patient.birthdate) >= 60 && (
                   <h1 className="rounded-full text-xs bg-sky-100 px-3 py-0.5 text-sky-600">
                     Senior Citizen
@@ -72,12 +72,13 @@ function PatientSelectionHeader({
                   </h1>
                 )}
               </div>
-              <div className="flex gap-5 text-xs">
+              <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs">
                 <h1>{`${patient.patient_id} `}</h1>
                 <h1>{`${patient.sex} `}</h1>
                 <h1>{`${calculateAge(patient.birthdate)} years old `}</h1>
                 <h1>
                   DOB:{" "}
+                  {/* Birthdate is a calendar date: keep the clinic zone so every viewer sees the same day. */}
                   {new Date(patient.birthdate).toLocaleDateString("en-US", {
                     month: "short",
                     day: "numeric",
@@ -86,7 +87,7 @@ function PatientSelectionHeader({
                   })}
                 </h1>
               </div>
-              <div className="flex gap-3 text-sm ">
+              <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
                 <div className="flex gap-1 items-center">
                   <Phone size={13} />
                   <h1>{patient.contact_number}</h1>

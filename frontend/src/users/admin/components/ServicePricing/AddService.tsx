@@ -181,7 +181,7 @@ function AddService({ loadData, onClose, services }: Props) {
         </div>
         {formError && <ErrorMessage className="mb-4">{formError}</ErrorMessage>}
         <div>
-          <div className="grid grid-cols-2 gap-5 mb-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
             <label
               className={`flex cursor-pointer items-center gap-2 rounded border-2 px-3 py-2 text-sm ${
                 serviceTab === "single-service"
@@ -242,7 +242,7 @@ function AddService({ loadData, onClose, services }: Props) {
         </div>
         {serviceTab === "single-service" && (
           <div className="w-full">
-            <div className="w-full grid grid-cols-2 gap-5 mb-2">
+            <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-5 mb-2">
               <div>
                 <label className="text-xs font-semibold">Service Name *</label>
                 <input
@@ -266,7 +266,7 @@ function AddService({ loadData, onClose, services }: Props) {
                 />
               </div>
             </div>
-            <div className="w-full grid grid-cols-2 gap-5 mb-3">
+            <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-5 mb-3">
               <div>
                 <label className="text-xs font-semibold">Service Type *</label>
                 <select
@@ -315,7 +315,7 @@ function AddService({ loadData, onClose, services }: Props) {
 
         {serviceTab === "package" && (
           <div className="w-full">
-            <div className="w-full grid grid-cols-3 gap-5 mb-2">
+            <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-5 mb-2">
               <div>
                 <label className="text-xs font-semibold">Package Name *</label>
                 <input
@@ -400,7 +400,7 @@ function AddService({ loadData, onClose, services }: Props) {
               </div>
 
               <div className="w-full overflow-x-auto rounded-md border border-gray-200 mt-3">
-                <table className="w-full text-left text-xs">
+                <table className="min-w-[520px] w-full text-left text-xs">
                   <thead className="bg-gray-50 text-gray-600">
                     <tr>
                       <th className="px-4 py-1">

@@ -9,12 +9,12 @@ import {
   Section,
   fieldClass,
 } from "../../../../components/FormFields";
-import { DOCTOR_FIELDS } from "./doctorField";
+import { DOCTOR_FIELDS } from "./utils/doctorField";
 import {
   departmentAfterRoleChange,
   LAB_ROOMS,
   LAB_STAFF_ROLE,
-} from "./labRooms";
+} from "./utils/labRooms";
 
 type Props = {
   onClose: () => void;
@@ -212,7 +212,7 @@ function AddUserModal({ onClose, loadData }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <form
         onSubmit={handleSubmit}
-        className="flex max-h-[92vh] w-full max-w-5xl flex-col rounded-md bg-white p-6 shadow-xl"
+        className="flex max-h-[92dvh] w-full max-w-5xl flex-col rounded-md bg-white p-4 sm:p-6 shadow-xl"
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-bold text-black">Add Employee</h2>

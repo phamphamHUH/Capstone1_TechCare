@@ -99,7 +99,7 @@ function ServiceModal({
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative z-10 flex max-h-[90vh] w-full max-w-5/11 flex-col overflow-hidden rounded-md bg-white shadow-xl">
+      <div className="relative z-10 flex max-h-[90vh] w-full lg:max-w-5/11 flex-col overflow-hidden rounded-md bg-white shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-100 px-6 py-5">
           <div className="flex items-center gap-3">
@@ -194,8 +194,8 @@ function ServiceModal({
         </div>
 
         {/* Services table */}
-        <div className="mx-6 mt-5 min-h-0 overflow-auto rounded-md">
-          <table className="w-full table-fixed text-sm">
+        <div className="mx-4 sm:mx-6 mt-5 min-h-0 overflow-auto rounded-md">
+          <table className="min-w-[520px] w-full table-fixed text-sm">
             <colgroup>
               <col className="w-[20%]" />
               <col className="w-[35%]" />

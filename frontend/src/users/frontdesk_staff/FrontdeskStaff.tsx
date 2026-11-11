@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import api from "../../lib/axios";
 import SideBar from "../../components/SideBar";
+import { SidebarNavContext } from "../../components/sidebar/utils/sidebarNav";
 import Billing from "./pages/Billing";
 import FrontdeskDashboard from "./pages/FrontdeskDashboard";
 import PatientRecords from "./pages/PatientRecords";
@@ -180,104 +181,106 @@ function FrontdeskStaff() {
   }, [loadData]);
 
   return (
-    <div className="flex min-h-screen">
-      <SideBar open={open} page={page} setPage={setPage} navItems={navItems} />
-      <div className="flex-1 min-w-0">
-        <Header
-          page={currentPage}
-          loading={loading}
-          open={open}
-          setOpen={setOpen}
-          loadData={loadData}
-        />
+    <SidebarNavContext.Provider value={{ navItems, page, setPage }}>
+      <div className="flex min-h-screen">
+        <SideBar open={open} setOpen={setOpen} page={page} setPage={setPage} navItems={navItems} />
+        <div className="flex-1 min-w-0">
+          <Header
+            page={currentPage}
+            loading={loading}
+            open={open}
+            setOpen={setOpen}
+            loadData={loadData}
+          />
 
-        <div className="pb-6">
-          {page === "dashboard" && (
-            <FrontdeskDashboard
-              error={dashboardError}
-              patients={patients}
-              bills={bills}
-              queues={queues}
-              open={open}
-              setOpen={setOpen}
-              loadData={loadData}
-              loading={loading}
-              setPage={setPage}
-            />
-          )}
+          <div className="pb-6">
+            {page === "dashboard" && (
+              <FrontdeskDashboard
+                error={dashboardError}
+                patients={patients}
+                bills={bills}
+                queues={queues}
+                open={open}
+                setOpen={setOpen}
+                loadData={loadData}
+                loading={loading}
+                setPage={setPage}
+              />
+            )}
 
-          {page === "patient-registration" && (
-            <PatientRegistration
-              open={open}
-              setOpen={setOpen}
-              loadData={loadData}
-              loading={loading}
-            />
-          )}
+            {page === "patient-registration" && (
+              <PatientRegistration
+                open={open}
+                setOpen={setOpen}
+                loadData={loadData}
+                loading={loading}
+              />
+            )}
 
-          {page === "patient-records" && (
-            <PatientRecords
-              error={patientError}
-              patients={patients}
-              loadFailed={failedSources.includes("patients")}
-              selectedPatient={selectedPatient}
-              setSelectedPatient={setSelectedPatient}
-              open={open}
-              setOpen={setOpen}
-              loadData={loadData}
-              loading={loading}
-            />
-          )}
+            {page === "patient-records" && (
+              <PatientRecords
+                error={patientError}
+                patients={patients}
+                loadFailed={failedSources.includes("patients")}
+                selectedPatient={selectedPatient}
+                setSelectedPatient={setSelectedPatient}
+                open={open}
+                setOpen={setOpen}
+                loadData={loadData}
+                loading={loading}
+              />
+            )}
 
-          {page === "queues" && (
-            <Queues
-              error={queueError}
-              loadFailed={failedSources.includes("queues")}
-              queues={queues}
-              queueRequests={queueRequests}
-              open={open}
-              setOpen={setOpen}
-              loadData={loadData}
-              loading={loading}
-            />
-          )}
+            {page === "queues" && (
+              <Queues
+                error={queueError}
+                loadFailed={failedSources.includes("queues")}
+                queues={queues}
+                queueRequests={queueRequests}
+                open={open}
+                setOpen={setOpen}
+                loadData={loadData}
+                loading={loading}
+              />
+            )}
 
-          {page === "service-request" && (
-            <ServiceRequest
-              error={serviceError}
-              services={services}
-              open={open}
-              setOpen={setOpen}
-              loadData={loadData}
-              loading={loading}
-              setPage={setPage}
-            />
-          )}
+            {page === "service-request" && (
+              <ServiceRequest
+                error={serviceError}
+                services={services}
+                open={open}
+                setOpen={setOpen}
+                loadData={loadData}
+                loading={loading}
+                setPage={setPage}
+              />
+            )}
 
-          {page === "billing" && (
-            <Billing
-              bills={bills}
-              loading={loading}
-              error={billingError}
-              loadData={loadData}
-            />
-          )}
+            {page === "billing" && (
+              <Billing
+                bills={bills}
+                loading={loading}
+                error={billingError}
+                loadData={loadData}
+              />
+            )}
 
-          {page === "patient-medical-history" && (
-            <MedicalHistory
-              error={patientError ? "Patient details could not be loaded." : ""}
-              open={open}
-              patients={patients}
-              selectedPatient={patientIdParam}
-              loadFailed={failedSources.includes("patients")}
-              setOpen={setOpen}
-              loadData={loadData}
-              loading={loading}
-            />
-          )}
+            {page === "patient-medical-history" && (
+              <MedicalHistory
+                error={patientError ? "Patient details could not be loaded." : ""}
+                open={open}
+                patients={patients}
+                selectedPatient={patientIdParam}
+                loadFailed={failedSources.includes("patients")}
+                setOpen={setOpen}
+                loadData={loadData}
+                loading={loading}
+              />
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </SidebarNavContext.Provider>
   );
 }
 

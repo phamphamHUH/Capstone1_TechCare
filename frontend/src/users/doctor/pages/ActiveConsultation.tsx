@@ -3,17 +3,28 @@ import type { QueueEntry } from "../../../interface/Queue";
 import { formatAge, formatDateTime } from "../../../utils/formats";
 import calculateAge from "../../../utils/calculateAge";
 import MedicalHistoryTab from "../components/ActiveConsultation/MedicalHistoryTab";
-import DigitalDocumentsTab from "../components/ActiveConsultation/DigitalDocumentsTab";
 import Overview from "../components/ActiveConsultation/Overview";
 import LoadingScreen from "../../../components/LoadingScreen";
 import LoadingRegion from "../../../components/LoadingRegion";
 import ErrorMessage from "../../../components/ErrorMessage";
+import Prescription from "../components/ActiveConsultation/Prescription";
+import Preview from "../components/ActiveConsultation/Preview";
 
 type ActiveConsultationProps = {
   selectedQueue: QueueEntry | null;
+  setSelectedQueue: React.Dispatch<React.SetStateAction<QueueEntry | null>>;
   room: string;
   loading?: boolean;
   error?: string | null;
+  findingsSaved: boolean;
+  setFindingsSavedForRecord: React.Dispatch<
+    React.SetStateAction<string | null>
+  >;
+  overviewStep: "findings" | "prescription" | "preview";
+  setOverviewStep: React.Dispatch<
+    React.SetStateAction<"findings" | "prescription" | "preview">
+  >;
+  onCompleted?: () => void | Promise<void>;
 };
 
 export type ConsultationTabs =
@@ -25,11 +36,24 @@ export type ConsultationTabs =
 
 function ActiveConsultation({
   selectedQueue,
+  setSelectedQueue,
   room,
   loading,
   error,
+  findingsSaved,
+  setFindingsSavedForRecord,
+  overviewStep,
+  setOverviewStep,
+  onCompleted,
 }: ActiveConsultationProps) {
   const [activeTab, setActiveTab] = useState<ConsultationTabs>("overview");
+  const [prevRecordId, setPrevRecordId] = useState(
+    selectedQueue?.consultation_record_id,
+  );
+  if (selectedQueue?.consultation_record_id !== prevRecordId) {
+    setPrevRecordId(selectedQueue?.consultation_record_id);
+    setOverviewStep("findings");
+  }
 
   const initials = (selectedQueue?.patient_name ?? "")
     .trim()
@@ -46,7 +70,6 @@ function ActiveConsultation({
   }[] = [
     { id: "overview", label: "Overview" },
     { id: "medical-history", label: "Medical History" },
-    { id: "digital-documents", label: "Digital Documents" },
   ];
 
   if (loading && !selectedQueue) {
@@ -60,16 +83,15 @@ function ActiveConsultation({
       loading={Boolean(loading && selectedQueue)}
       message="Refreshing active consultation..."
     >
-      <div className="px-6 overflow-x-auto flex flex-col space-y-6 z-0">
+      <div className="px-4 sm:px-6 overflow-x-clip flex flex-col space-y-6 z-0">
         {error && <ErrorMessage>{error}</ErrorMessage>}
-
         {selectedQueue ? (
           <>
             {/* HEADER */}
             <section className="rounded-md border border-gray-200 bg-white p-4">
               {/* PATIENT HEADER */}
-              <div className="flex justify-between">
-                <div className="flex gap-5 text-xs">
+              <div className="flex flex-wrap justify-between gap-3">
+                <div className="flex min-w-0 gap-3 sm:gap-5 text-xs">
                   <div className="relative h-15 w-15 overflow-hidden rounded-full bg-sky-50">
                     {selectedQueue.image_url ? (
                       <img
@@ -85,8 +107,8 @@ function ActiveConsultation({
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-3">
-                      <p className="text-xl font-semibold">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <p className="text-lg sm:text-xl font-semibold">
                         {selectedQueue.patient_name}
                       </p>
                       <p className="text-gray-500 font-light">
@@ -94,7 +116,7 @@ function ActiveConsultation({
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-3 text-gray-600">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-gray-600">
                       <p>{selectedQueue.sex}</p>
                       <span>•</span>
                       <p>
@@ -135,7 +157,7 @@ function ActiveConsultation({
               </div>
 
               {/* QUEUE INFORMATION */}
-              <div className="flex items-center gap-3 text-sm text-gray-600 mt-3 font-semibold">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-600 mt-3 font-semibold">
                 <p>{selectedQueue.queue_id}</p>
                 <span>•</span>
                 <p>{selectedQueue.consultation_record_id}</p>
@@ -144,61 +166,68 @@ function ActiveConsultation({
                 <span>•</span>
                 <p>In Consultation</p>
               </div>
+              {/* CONSULTATION TABS */}
+              <div className="mt-6">
+                <nav className="flex gap-4 sm:gap-6 overflow-x-auto overflow-y-hidden">
+                  {consultationTabs.map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`shrink-0 whitespace-nowrap pb-3 text-sm font-medium transition-colors cursor-pointer border-b-2 ${
+                        activeTab === tab.id
+                          ? "border-sky-600 text-sky-600"
+                          : "border-transparent text-gray-500 hover:text-gray-800"
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </nav>
+              </div>
             </section>
-
-            {/* CONSULTATION TABS */}
-            <div className="mt-6">
-              <nav className="flex gap-6">
-                {consultationTabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`pb-3 text-sm font-medium transition-colors cursor-pointer border-b-2 ${
-                      activeTab === tab.id
-                        ? "border-sky-600 text-sky-600"
-                        : "border-transparent text-gray-500 hover:text-gray-800"
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </nav>
-            </div>
 
             {/* TAB CONTENT */}
             <section>
-              {activeTab === "overview" && (
-                <Overview
-                  key={selectedQueue.consultation_record_id}
-                  selectedQueue={selectedQueue}
-                  onProceed={() => setActiveTab("prescription")}
-                />
-              )}
-
+              {activeTab === "overview" &&
+                (overviewStep === "findings" ? (
+                  <Overview
+                    key={selectedQueue.consultation_record_id}
+                    selectedQueue={selectedQueue}
+                    setSelectedQueue={setSelectedQueue}
+                    findingsSaved={findingsSaved}
+                    onFindingsSaved={() =>
+                      setFindingsSavedForRecord(
+                        selectedQueue.consultation_record_id,
+                      )
+                    }
+                    onProceed={() => setOverviewStep("prescription")}
+                    onCompleted={onCompleted}
+                  />
+                ) : overviewStep === "prescription" ? (
+                  <Prescription
+                    selectedQueue={selectedQueue}
+                    onBack={() => setOverviewStep("findings")}
+                    onPreview={() => setOverviewStep("preview")}
+                  />
+                ) : (
+                  <Preview
+                    selectedQueue={selectedQueue}
+                    setSelectedQueue={setSelectedQueue}
+                    onCompleted={onCompleted}
+                  />
+                ))}
               {activeTab === "medical-history" && (
                 <MedicalHistoryTab
                   key={selectedQueue.patient_id}
                   patientId={selectedQueue.patient_id}
-                />
-              )}
-
-              {activeTab === "laboratory-results" && <div>lab</div>}
-
-              {activeTab === "digital-documents" && (
-                <DigitalDocumentsTab
-                  key={`${selectedQueue.patient_id}:${selectedQueue.consultation_record_id}`}
-                  patientId={selectedQueue.patient_id}
-                  consultationRecordId={selectedQueue.consultation_record_id}
                   onReturn={() => setActiveTab("overview")}
                 />
               )}
-
-              {activeTab === "prescription" && <div>prescription</div>}
             </section>
           </>
         ) : (
-          <div className="flex flex-col items-center justify-center rounded-md border border-dashed border-gray-300 bg-gray-50 px-6 py-16 text-center">
+          <div className="flex flex-col items-center justify-center rounded-md border border-dashed border-gray-300 bg-gray-50 px-4 sm:px-6 py-16 text-center">
             <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100">
               <span className="text-2xl text-yellow-600">!</span>
             </div>

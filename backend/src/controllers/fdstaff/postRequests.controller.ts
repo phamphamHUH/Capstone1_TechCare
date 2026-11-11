@@ -3,7 +3,7 @@ import { ENV } from "../../config/env.js";
 import { sql } from "../../config/db.js";
 import { pool } from "../../config/db.js";
 import bcrypt from "bcryptjs";
-import { calculateAge } from "../../utils/calculateAge.js";
+import { calculateAge } from "./utils/calculateAge.js";
 import type { Request, Response } from "express";
 import cloudinary from "../../config/cloudinary.js";
 import {
@@ -598,51 +598,3 @@ export async function addConsultationRecord(
     client.release();
   }
 }
-
-// =========================
-// RESEND PATIENT VERIFICATION EMAIL
-// =========================
-// POST /api/fdstaff/patients/:patient_id/verification-email
-// Goes to their new email if they changed it, otherwise to their current one.
-// export async function resendPatientVerification(
-//   req: Request,
-//   res: Response<
-//     resendPatientVerification.response | resendPatientVerification.error
-//   >,
-// ) {
-//   try {
-//     const { patient_id } = req.params;
-
-//     const [patient] = await sql`
-//       SELECT is_verified, pending_email FROM patients WHERE patient_id = ${patient_id}
-//     `;
-
-//     if (!patient) {
-//       return res.status(404).json({ message: "Patient not found." });
-//     }
-
-//     if (patient.is_verified && !patient.pending_email) {
-//       return res
-//         .status(409)
-//         .json({ message: "This patient's email is already verified." });
-//     }
-
-//     const emailSent = await sendPatientVerificationEmail(String(patient_id));
-
-//     if (!emailSent) {
-//       return res
-//         .status(502)
-//         .json({ message: "The email couldn't be sent. Please try again." });
-//     }
-
-//     return res
-//       .status(200)
-//       .json({ message: "A new verification email was sent." });
-//   } catch (error) {
-//     console.error("RESEND PATIENT VERIFICATION ERROR:", error);
-
-//     return res
-//       .status(500)
-//       .json({ message: "Failed to send the verification email." });
-//   }
-// }

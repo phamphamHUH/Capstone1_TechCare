@@ -11,7 +11,7 @@ import type {
   FindingsFormState,
 } from "./types.ts";
 import { PHYSICAL_EXAM_FIELDS, newDiagnosisRow } from "./types.ts";
-import { LIMITS, validateFindingsForm } from "./validation.ts";
+import { LIMITS, validateFindingsForm } from "./utils/validation.ts";
 
 type Props = {
   value: FindingsFormState;

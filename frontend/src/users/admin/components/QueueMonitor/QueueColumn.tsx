@@ -28,6 +28,9 @@ const THEMES = {
     rowAlt: "bg-sky-50/40",
     footer: "bg-sky-50 text-blue-700/80",
     footerIcon: "text-blue-600",
+    nextRow: "bg-sky-50",
+    nextBadge: "bg-blue-700",
+    servingStrip: "border-sky-100 bg-sky-50/50",
   },
   green: {
     Icon: FlaskConical,
@@ -45,6 +48,9 @@ const THEMES = {
     rowAlt: "bg-emerald-50/40",
     footer: "bg-emerald-50 text-green-700/80",
     footerIcon: "text-green-600",
+    nextRow: "bg-emerald-50",
+    nextBadge: "bg-green-700",
+    servingStrip: "border-emerald-100 bg-emerald-50/50",
   },
 } as const;
 
@@ -85,42 +91,15 @@ function QueueColumn({ title, entries }: QueueColumnProps) {
         <h3 className={`text-xl font-bold ${theme.title}`}>{title} Queue</h3>
       </div>
 
-      {/* NOW SERVING */}
-      <div className="bg-white">
-        <p className={`px-4 py-2 text-sm font-semibold ${theme.label}`}>
-          Now Serving
+      {/* WAITING QUEUE: the main focus of the monitor */}
+      <div className="flex-1 overflow-x-auto bg-white">
+        <p className={`px-4 pt-3 pb-2 text-sm font-semibold ${theme.label}`}>
+          Waiting · {waiting.length}
         </p>
-
-        {serving.length === 0 ? (
-          <EmptyState message="No one is being served." />
-        ) : (
-          serving.map((entry) => (
-            <div
-              key={entry.queue_id}
-              className={`flex items-center text-white ${theme.banner}`}
-            >
-              <p className="flex-1 py-4 text-center text-5xl font-extrabold tracking-wide tabular-nums">
-                {entry.queue_id}
-              </p>
-              <div
-                className={`my-3 border-l px-6 py-2 text-center ${theme.bannerDivider}`}
-              >
-                <p className="text-lg font-bold">{entry.room || "—"}</p>
-                <p className={`text-xs ${theme.bannerSub}`}>
-                  {entry.service_name || title}
-                </p>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-
-      {/* NEXT IN LINE */}
-      <div className="flex-1 bg-white">
-        <table className="w-full text-left">
+        <table className="w-full min-w-[360px] text-left">
           <thead>
             <tr className={`text-xs font-semibold ${theme.tableHead}`}>
-              <th className="w-10 px-4 py-2.5">#</th>
+              <th className="w-12 px-4 py-2.5">#</th>
               <th className="px-2 py-2.5">Queue Number</th>
               <th className="px-2 py-2.5">Patient Name</th>
               <th className="px-4 py-2.5 text-right">Room Number</th>
@@ -130,47 +109,62 @@ function QueueColumn({ title, entries }: QueueColumnProps) {
             {waiting.length === 0 ? (
               <tr>
                 <td colSpan={4} className="p-4">
-                  <EmptyState compact message="Queue is empty." />
+                  <EmptyState compact message="No one is waiting." />
                 </td>
               </tr>
             ) : (
-              waiting.slice(0, NEXT_IN_LINE_LIMIT).map((entry, index) => (
-                <tr
-                  key={entry.queue_id}
-                  className={`border-t border-slate-100 ${index % 2 === 1 ? theme.rowAlt : ""}`}
-                >
-                  <td className={`px-4 py-4 text-base ${theme.index}`}>
-                    {index + 1}
-                  </td>
-                  <td className="px-2 py-4">
-                    <span
-                      className={`inline-block rounded px-2.5 py-1 text-base font-bold tabular-nums ${theme.chip}`}
+              waiting.slice(0, NEXT_IN_LINE_LIMIT).map((entry, index) => {
+                const isNext = index === 0;
+                return (
+                  <tr
+                    key={entry.queue_id}
+                    className={`border-t border-slate-100 ${
+                      isNext ? theme.nextRow : index % 2 === 1 ? theme.rowAlt : ""
+                    }`}
+                  >
+                    <td
+                      className={`px-4 font-semibold ${theme.index} ${isNext ? "py-5 text-xl" : "py-4 text-lg"}`}
                     >
-                      {entry.queue_id}
-                    </span>
-                  </td>
-                  <td className="px-2 py-4 text-base text-slate-800">
-                    <span className="flex flex-wrap items-center gap-2">
-                      {entry.patient_name}
-                      {entry.is_priority && (
-                        <span className="rounded bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-600">
-                          PRIORITY
+                      {isNext ? (
+                        <span className={`rounded px-2 py-0.5 text-xs font-bold uppercase text-white ${theme.nextBadge}`}>
+                          Next
                         </span>
+                      ) : (
+                        index + 1
                       )}
-                      {statusOf(entry) === "skipped" && (
-                        <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
-                          skipped
-                        </span>
-                      )}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4 text-right">
-                    <span className="inline-block rounded border border-slate-200 bg-white px-3 py-1 text-sm font-semibold text-slate-800">
-                      {entry.room || "—"}
-                    </span>
-                  </td>
-                </tr>
-              ))
+                    </td>
+                    <td className={`px-2 ${isNext ? "py-5" : "py-4"}`}>
+                      <span
+                        className={`inline-block rounded px-3 py-1 font-extrabold tabular-nums ${theme.chip} ${
+                          isNext ? "text-3xl" : "text-2xl"
+                        }`}
+                      >
+                        {entry.queue_id}
+                      </span>
+                    </td>
+                    <td className={`px-2 text-slate-800 ${isNext ? "py-5 text-xl font-semibold" : "py-4 text-lg"}`}>
+                      <span className="flex flex-wrap items-center gap-2">
+                        {entry.patient_name}
+                        {entry.is_priority && (
+                          <span className="rounded bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-600">
+                            PRIORITY
+                          </span>
+                        )}
+                        {statusOf(entry) === "skipped" && (
+                          <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                            skipped
+                          </span>
+                        )}
+                      </span>
+                    </td>
+                    <td className={`px-4 text-right ${isNext ? "py-5" : "py-4"}`}>
+                      <span className="inline-block rounded border border-slate-200 bg-white px-3 py-1 text-base font-semibold text-slate-800">
+                        {entry.room || "—"}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })
             )}
 
             {waiting.length > NEXT_IN_LINE_LIMIT && (
@@ -182,6 +176,30 @@ function QueueColumn({ title, entries }: QueueColumnProps) {
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* NOW SERVING: compact strip, secondary to the waiting queue */}
+      <div className={`border-t px-4 py-2.5 ${theme.servingStrip}`}>
+        <p className={`mb-1.5 text-xs font-semibold ${theme.label}`}>
+          Now Serving
+        </p>
+        {serving.length === 0 ? (
+          <p className="text-sm text-slate-500">No one is being served.</p>
+        ) : (
+          <ul className="flex flex-wrap gap-2">
+            {serving.map((entry) => (
+              <li
+                key={entry.queue_id}
+                className={`flex items-center gap-2 rounded px-2.5 py-1 text-sm text-white ${theme.banner}`}
+              >
+                <span className="font-bold tabular-nums">{entry.queue_id}</span>
+                <span className={`border-l pl-2 ${theme.bannerDivider} ${theme.bannerSub}`}>
+                  {entry.room || "—"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {/* Footer counters */}

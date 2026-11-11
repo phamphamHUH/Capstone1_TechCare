@@ -1,4 +1,6 @@
 import FieldError from "../../../../components/FieldError";
+import ConfirmDialog from "../../../../components/ConfirmDialog";
+import UniversalModal from "../../../../components/UniversalModal";
 import EmptyState from "../../../../components/EmptyState";
 import LoadingScreen, {
   LoadingSpinner,
@@ -9,6 +11,7 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  ClipboardCheck,
   Eye,
   Search,
   TestTubeDiagonal,
@@ -20,25 +23,34 @@ import type {
   ResultValues,
   ResultReleaseResponse,
 } from "../../../../interface/LaboratoryAnalysis";
-import { inputTypes, validateResults } from "./laboratoryValidation";
+import { inputTypes, validateResults } from "./utils/laboratoryValidation";
 import {
   apiMessage,
   resultEntryApi,
   submitResultEntry,
-} from "./laboratoryResultsApi";
+} from "./utils/laboratoryResultsApi";
 import { formatLabDate } from "../../../../utils/formats";
 import { CategoryBadge } from "./AnalysisList";
-import { matchingTest } from "./reportTemplates";
+import { matchingTest } from "./utils/reportTemplates";
 import { AnalysisButton, AnalysisNotice, FlaskBadge } from "./AnalysisUi";
 import TemplateFields from "./TemplateFields";
 import ResultSuccessOverlay from "./ResultSuccessOverlay";
 import PrintResultView from "./PrintResultView";
 import ResultReleaseControl from "./ResultReleaseControl";
+import ResultReview from "./ResultEntry/ResultReview";
+import {
+  clearDraft,
+  draftKey,
+  readDraft,
+  writeDraft,
+} from "./ResultEntry/utils/resultDrafts";
 
 type ResultEntryProps = {
   request: AnalysisRequest;
   onCancel: () => void;
   onSaved?: () => void;
+  // Tells the page when there are unsaved entries (to confirm page changes).
+  onDirtyChange?: (dirty: boolean) => void;
   initialStep?: 1 | 2;
   preloadedTemplates?: readonly ReportTemplate[];
 };
@@ -74,6 +86,7 @@ export default function ResultEntry({
   request,
   onCancel,
   onSaved,
+  onDirtyChange,
   initialStep = 1,
   preloadedTemplates,
 }: ResultEntryProps) {
@@ -105,6 +118,19 @@ export default function ResultEntry({
   const [showPreview, setShowPreview] = useState(false);
   const [touched, setTouched] = useState<Set<string>>(new Set());
   const [submitted, setSubmitted] = useState(false);
+  // Drafts: hydrated once templates (and any saved draft) have loaded.
+  const storageKey = useMemo(() => draftKey(request), [request]);
+  const [hydrated, setHydrated] = useState(false);
+  const [draftRestoredAt, setDraftRestoredAt] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<
+    | { kind: "leave" }
+    | { kind: "template"; next: ReportTemplate }
+    | { kind: "discard" }
+    | { kind: "save" }
+    | null
+  >(null);
+  const onDirtyChangeRef = useRef(onDirtyChange);
+  onDirtyChangeRef.current = onDirtyChange;
   const formRef = useRef<HTMLFormElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const template = templates.find((item) => item.form_id === templateId);
@@ -199,10 +225,25 @@ export default function ResultEntry({
 
         const published = applicableTemplates(items, request);
         setTemplates(published);
-        setTemplateId(published[0]?.form_id ?? "");
-        setValues(
-          initialStep === 2 && published[0] ? initialValues(published[0]) : {},
-        );
+
+        const draft = readDraft(storageKey);
+        const draftTemplate =
+          draft && published.find((item) => item.form_id === draft.templateId);
+
+        if (draft && draftTemplate) {
+          setTemplateId(draftTemplate.form_id);
+          setValues({ ...initialValues(draftTemplate), ...draft.values });
+          setRemarks(draft.remarks);
+          setStep(2);
+          setDraftRestoredAt(draft.savedAt);
+        } else {
+          setTemplateId(published[0]?.form_id ?? "");
+          setValues(
+            initialStep === 2 && published[0]
+              ? initialValues(published[0])
+              : {},
+          );
+        }
         setErrors({});
         setTouched(new Set());
         setSubmitted(false);
@@ -217,13 +258,28 @@ export default function ResultEntry({
       } finally {
         if (!controller.signal.aborted) {
           setLoading(false);
+          setHydrated(true);
         }
       }
     }
 
     void load();
     return () => controller.abort();
-  }, [request, preloadedTemplates, initialStep, reload]);
+  }, [request, preloadedTemplates, initialStep, reload, storageKey]);
+
+  // Save the draft on every change (cheap, and nothing is lost on a misclick).
+  const draftActive = hydrated && !savedResultId && Boolean(templateId);
+  useEffect(() => {
+    if (!draftActive) return;
+    if (dirty) writeDraft(storageKey, { templateId, values, remarks });
+    else clearDraft(storageKey);
+  }, [draftActive, templateId, values, remarks, dirty, storageKey]);
+
+  useEffect(() => {
+    onDirtyChangeRef.current?.(dirty);
+  }, [dirty]);
+
+  useEffect(() => () => onDirtyChangeRef.current?.(false), []);
 
   useEffect(() => {
     if (!dirty) {
@@ -240,26 +296,28 @@ export default function ResultEntry({
   }, [dirty]);
 
   function cancel() {
-    if (
-      !saving &&
-      (!dirty ||
-        window.confirm("Discard the laboratory values entered in this form?"))
-    ) {
-      onCancel();
-    }
+    if (saving) return;
+    if (dirty) setConfirm({ kind: "leave" });
+    else onCancel();
   }
 
   function chooseTemplate(next: ReportTemplate) {
-    if (
-      next.form_id === templateId ||
-      (dirty &&
-        !window.confirm(
-          "Changing the template will clear the values entered in this form. Continue?",
-        ))
-    ) {
-      return;
-    }
+    if (next.form_id === templateId) return;
+    if (dirty) setConfirm({ kind: "template", next });
+    else applyTemplate(next);
+  }
 
+  function discardDraft() {
+    clearDraft(storageKey);
+    setDraftRestoredAt(null);
+    setValues(template ? initialValues(template) : {});
+    setRemarks("");
+    setErrors({});
+    setTouched(new Set());
+    setSubmitted(false);
+  }
+
+  function applyTemplate(next: ReportTemplate) {
     setTemplateId(next.form_id);
     setValues(initialValues(next));
     setErrors({});
@@ -320,7 +378,8 @@ export default function ResultEntry({
     showErrors(values, nextTouched);
   }
 
-  async function save(event: React.FormEvent) {
+  // Validates, then asks the staff member to review the values before saving.
+  function save(event: React.FormEvent) {
     event.preventDefault();
 
     if (!template || readOnly) {
@@ -356,6 +415,14 @@ export default function ResultEntry({
       return;
     }
 
+    setConfirm({ kind: "save" });
+  }
+
+  async function submit() {
+    if (!template || readOnly) {
+      return;
+    }
+
     const test = matchingTest(request, template);
     setSaving(true);
     let committed = false;
@@ -375,6 +442,8 @@ export default function ResultEntry({
       });
 
       setNotice("Result saved. Release it below to make it available to the patient.");
+      clearDraft(storageKey);
+      setDraftRestoredAt(null);
       setSavedResultId(result.result_id);
       setShowSuccess(true);
       committed = true;
@@ -687,6 +756,19 @@ export default function ResultEntry({
                   </span>
                 </header>
                 <div className="p-4">
+                  {draftRestoredAt && !savedResultId && (
+                    <AnalysisNotice>
+                      Restored your unsaved draft from{" "}
+                      {formatLabDate(draftRestoredAt)}.{" "}
+                      <button
+                        type="button"
+                        className="cursor-pointer font-medium underline hover:text-sky-800"
+                        onClick={() => setConfirm({ kind: "discard" })}
+                      >
+                        Discard draft
+                      </button>
+                    </AnalysisNotice>
+                  )}
                   {failure && <AnalysisNotice error>{failure}</AnalysisNotice>}
                   {notice && <AnalysisNotice>{notice}</AnalysisNotice>}
                   {errors._form && (
@@ -748,6 +830,11 @@ export default function ResultEntry({
                   >
                     Cancel
                   </AnalysisButton>
+                  {draftActive && dirty && (
+                    <span className="text-xs text-gray-500" role="status">
+                      Draft saved
+                    </span>
+                  )}
                   <AnalysisButton
                     variant="link"
                     className="ml-auto"
@@ -797,6 +884,82 @@ export default function ResultEntry({
           />
         </section>
       </div>
+      {confirm?.kind === "save" && template && (
+        <UniversalModal
+          isOpen
+          title="Review results before saving"
+          description={`Check the values for ${request.patientName || request.patientId} (${template.form_name}). Saved results can't be edited here.`}
+          type="info"
+          icon={<ClipboardCheck size={32} strokeWidth={1.7} />}
+          className="max-w-xl"
+          onClose={() => setConfirm(null)}
+          initialFocusAction="cancel"
+          actions={[
+            {
+              id: "cancel",
+              label: "Back to editing",
+              variant: "secondary",
+              onClick: () => setConfirm(null),
+            },
+            {
+              id: "confirm",
+              label: "Save Result",
+              pendingLabel: "Saving...",
+              onClick: async () => {
+                setConfirm(null);
+                await submit();
+              },
+            },
+          ]}
+        >
+          <ResultReview
+            components={template.components}
+            values={values}
+            remarks={remarks}
+          />
+        </UniversalModal>
+      )}
+      {confirm?.kind === "leave" && (
+        <ConfirmDialog
+          title="Leave result entry?"
+          description="Your entries are kept as a draft on this computer and will be restored when you open this request again."
+          confirmLabel="Leave"
+          cancelLabel="Keep editing"
+          tone="warning"
+          onCancel={() => setConfirm(null)}
+          onConfirm={() => {
+            setConfirm(null);
+            onCancel();
+          }}
+        />
+      )}
+      {confirm?.kind === "template" && (
+        <ConfirmDialog
+          title="Change report template?"
+          description="Changing the template clears the values entered in this form, including the saved draft."
+          confirmLabel="Change template"
+          tone="warning"
+          onCancel={() => setConfirm(null)}
+          onConfirm={() => {
+            const next = confirm.next;
+            setConfirm(null);
+            applyTemplate(next);
+          }}
+        />
+      )}
+      {confirm?.kind === "discard" && (
+        <ConfirmDialog
+          title="Discard draft?"
+          description="This clears every value entered in this form. It can't be undone."
+          confirmLabel="Discard draft"
+          tone="warning"
+          onCancel={() => setConfirm(null)}
+          onConfirm={() => {
+            setConfirm(null);
+            discardDraft();
+          }}
+        />
+      )}
       {showPreview && template && (
         <PrintResultView
           request={request}

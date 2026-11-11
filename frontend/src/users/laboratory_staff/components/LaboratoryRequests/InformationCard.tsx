@@ -65,10 +65,10 @@ function InformationCard({ onClose, queueIdCard, room }: InformationCardProps) {
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
       <main className="relative rounded-md shadow-lg w-full">
-        <div className="fixed flex flex-col h-full max-h-4/5 w-full max-w-3/4 rounded-md border bg-gray-300 shadow-xl top-1/2 right-1/2 z-50 translate-x-1/2 -translate-y-1/2 overflow-hidden">
-          <div className="flex justify-between items-center w-full px-8 py-6 bg-white shadow-xs">
-            <div className="flex items-center gap-5">
-              <h1 className="text-2xl font-semibold">
+        <div className="fixed flex flex-col h-full max-h-[90dvh] sm:max-h-4/5 w-[calc(100%-2rem)] lg:w-3/4 rounded-md border bg-gray-300 shadow-xl top-1/2 right-1/2 z-50 translate-x-1/2 -translate-y-1/2 overflow-hidden">
+          <div className="flex justify-between items-start sm:items-center gap-3 w-full px-4 sm:px-8 py-4 sm:py-6 bg-white shadow-xs">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-5 min-w-0">
+              <h1 className="text-lg sm:text-2xl font-semibold">
                 {requestDetail
                   ? `Laboratory Request - ${requestDetail.request.request_id}`
                   : "Laboratory Request"}
@@ -108,14 +108,14 @@ function InformationCard({ onClose, queueIdCard, room }: InformationCardProps) {
             />
           </div>
 
-          <div className="w-full h-full px-5 py-3 overflow-y-auto">
+          <div className="w-full h-full px-3 sm:px-5 py-3 overflow-y-auto">
             {detailError && <ErrorMessage>{detailError}</ErrorMessage>}
             {detailLoading ? (
               <LoadingScreen message="Loading laboratory request..." />
             ) : requestDetail ? (
-              <div className="flex w-full h-full gap-6">
+              <div className="flex flex-col lg:flex-row w-full h-full gap-4 lg:gap-6">
                 {/* PATIENT INFORMATION */}
-                <div className="w-full h-full max-w-3/7 rounded-md shadow-sm bg-white">
+                <div className="w-full h-full lg:max-w-3/7 rounded-md shadow-sm bg-white">
                   <div className="flex items-center shadow-xs px-3 py-2 gap-2">
                     <UserRound size={20} />
                     <h1 className="text-xl font-semibold">
@@ -144,8 +144,8 @@ function InformationCard({ onClose, queueIdCard, room }: InformationCardProps) {
                       </div>
                     </div>
 
-                    <div className="flex items-start w-full gap-2 px-1">
-                      <div className="w-1/2 flex flex-col gap-3">
+                    <div className="flex flex-col sm:flex-row items-start w-full gap-4 sm:gap-2 px-1">
+                      <div className="w-full sm:w-1/2 flex flex-col gap-3">
                         <h2 className="text-lg font-semibold">
                           Contact Information
                         </h2>
@@ -186,7 +186,7 @@ function InformationCard({ onClose, queueIdCard, room }: InformationCardProps) {
                         </div>
                       </div>
 
-                      <div className="w-1/2 flex flex-col gap-3">
+                      <div className="w-full sm:w-1/2 flex flex-col gap-3">
                         <h2 className="text-lg font-semibold">
                           Additional Information
                         </h2>
@@ -223,7 +223,7 @@ function InformationCard({ onClose, queueIdCard, room }: InformationCardProps) {
                       <h1 className="text-lg font-semibold">
                         Clinical Information
                       </h1>
-                      <div className="flex gap-8">
+                      <div className="flex flex-wrap gap-x-8 gap-y-3">
                         <div>
                           <p className="font-semibold">Allergies</p>
                           <p className="text-xs">Allergy 1, Allergy 2</p>
@@ -242,7 +242,7 @@ function InformationCard({ onClose, queueIdCard, room }: InformationCardProps) {
                 </div>
 
                 {/* REQUEST INFORMATION */}
-                <div className="w-full h-full max-w-4/7 rounded-md flex flex-col gap-3">
+                <div className="w-full h-full lg:max-w-4/7 rounded-md flex flex-col gap-3">
                   <div className="shadow-sm bg-white">
                     <div className="flex items-center shadow-xs px-3 py-2 gap-2">
                       <FileText size={20} />
@@ -278,7 +278,8 @@ function InformationCard({ onClose, queueIdCard, room }: InformationCardProps) {
                       </div>
                     </div>
 
-                    <table className="table-fixed w-full">
+                    <div className="overflow-x-auto">
+                    <table className="table-fixed w-full min-w-[560px]">
                       <thead>
                         <tr>
                           <th>Item ID</th>
@@ -340,6 +341,7 @@ function InformationCard({ onClose, queueIdCard, room }: InformationCardProps) {
                         })}
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 </div>
               </div>

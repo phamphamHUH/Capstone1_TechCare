@@ -141,7 +141,14 @@ export async function getLaboratoryRequestDetails(
             'requested_by', tr.requested_by,
             'is_priority', q.is_priority,
             'status', q.status,
-            'is_paid', tr.is_paid,
+            -- Paid when every active item's bill is paid.
+            'is_paid', COALESCE((
+              SELECT BOOL_AND(LOWER(TRIM(b.status)) = 'paid')
+              FROM test_request_items pi
+              LEFT JOIN bills b ON b.bill_id = pi.bill_id
+              WHERE pi.request_id = tr.request_id
+                AND LOWER(TRIM(pi.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+            ), false),
             'patient_id', p.patient_id,
             'first_name', p.first_name,
             'last_name', p.last_name,

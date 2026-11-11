@@ -13,7 +13,7 @@ import type {
   AppNotification,
   NotificationType,
 } from "../interface/Notification";
-import { useNotifications } from "./NotificationBell/useNotifications";
+import { useNotifications } from "./NotificationBell/utils/useNotifications";
 import UniversalModal from "./UniversalModal";
 
 const TYPE_STYLE: Record<

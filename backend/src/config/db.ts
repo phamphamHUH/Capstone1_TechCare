@@ -45,12 +45,12 @@ const TABLES: TableDefinition[] = [
       date_hired: "DATE NOT NULL",
       shift_start: "TIME NOT NULL DEFAULT '08:00:00'",
       shift_end: "TIME NOT NULL DEFAULT '17:00:00'",
-      last_login: "TIMESTAMP",
+      last_login: "TIMESTAMPTZ",
       account_status: "BOOLEAN NOT NULL DEFAULT TRUE",
       profile_photo: "TEXT",
       active: "BOOLEAN NOT NULL DEFAULT FALSE",
-      created_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
-      updated_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      created_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      updated_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
       // Doctor-specific fields
       prc_license_number: "VARCHAR(50)",
       ptr_number: "VARCHAR(50)",
@@ -102,14 +102,14 @@ const TABLES: TableDefinition[] = [
       date_hired: "DATE",
       shift_start: "TIME NOT NULL DEFAULT '08:00:00'",
       shift_end: "TIME NOT NULL DEFAULT '17:00:00'",
-      last_login: "TIMESTAMP",
+      last_login: "TIMESTAMPTZ",
       account_status: "BOOLEAN NOT NULL DEFAULT TRUE",
       profile_photo: "TEXT",
       active: "BOOLEAN NOT NULL DEFAULT FALSE",
       civil_status: "VARCHAR(50) NOT NULL DEFAULT 'Single'",
       blood_type: "VARCHAR(50)",
-      created_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
-      updated_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      created_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      updated_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
     },
   },
 
@@ -124,8 +124,8 @@ const TABLES: TableDefinition[] = [
       active: "BOOLEAN NOT NULL DEFAULT TRUE",
       room: "VARCHAR(255) NOT NULL",
       service_category: "VARCHAR(255) NOT NULL",
-      created_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
-      updated_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      created_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      updated_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
     },
   },
 
@@ -137,8 +137,8 @@ const TABLES: TableDefinition[] = [
       package_name: "VARCHAR(255) NOT NULL",
       package_price: "NUMERIC(10,2) NOT NULL",
       active: "BOOLEAN NOT NULL DEFAULT TRUE",
-      created_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
-      updated_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      created_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      updated_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
     },
   },
 
@@ -161,8 +161,8 @@ const TABLES: TableDefinition[] = [
       is_priority: "BOOLEAN NOT NULL DEFAULT FALSE",
       skip_count: "INTEGER NOT NULL DEFAULT 0",
       status: "VARCHAR(20) NOT NULL DEFAULT 'waiting'",
-      created_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
-      updated_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      created_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      updated_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
     },
   },
 
@@ -175,8 +175,8 @@ const TABLES: TableDefinition[] = [
       items: "JSONB",
       status: "VARCHAR(20) NOT NULL DEFAULT 'Pending'",
       invoice_id: "VARCHAR(50)",
-      invoice_issued_at: "TIMESTAMP",
-      billed_at: "TIMESTAMP",
+      invoice_issued_at: "TIMESTAMPTZ",
+      billed_at: "TIMESTAMPTZ",
       subtotal: "NUMERIC(12,2) NOT NULL DEFAULT 0",
       discount_type: "VARCHAR(50)",
       discount_rate: "NUMERIC(5,2)",
@@ -184,11 +184,11 @@ const TABLES: TableDefinition[] = [
       discount_id_no: "VARCHAR(100)",
       total_amount: "NUMERIC(12,2) NOT NULL DEFAULT 0",
       payment_method: "VARCHAR(30) NOT NULL DEFAULT 'Cash'",
-      paid_at: "TIMESTAMP",
+      paid_at: "TIMESTAMPTZ",
       reference_num: "VARCHAR(50)",
       received_by: "VARCHAR(255) REFERENCES users(user_id)",
-      created_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
-      updated_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      created_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      updated_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
     },
   },
 
@@ -212,8 +212,8 @@ const TABLES: TableDefinition[] = [
       vital_signs: "JSONB",
       physical_examination: "JSONB",
       notes: "TEXT",
-      requested_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
-      consulted_at: "TIMESTAMP",
+      requested_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      consulted_at: "TIMESTAMPTZ",
     },
   },
 
@@ -226,7 +226,7 @@ const TABLES: TableDefinition[] = [
         "VARCHAR(255) NOT NULL REFERENCES consultation_records(consultation_record_id)",
       patient_id: "VARCHAR(255) NOT NULL REFERENCES patients(patient_id)",
       prescriber_id: "VARCHAR(255) NOT NULL REFERENCES users(user_id)",
-      prescribed_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      prescribed_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
       valid_until: "DATE",
       status: "VARCHAR(20) NOT NULL DEFAULT 'Active'",
       prescription_items: "JSONB NOT NULL",
@@ -240,12 +240,18 @@ const TABLES: TableDefinition[] = [
       id: "SERIAL PRIMARY KEY",
       request_id: "VARCHAR(255) UNIQUE NOT NULL",
       patient_id: "VARCHAR(255) NOT NULL REFERENCES patients(patient_id)",
+      // Set when a doctor requests tests from a consultation; NULL for
+      // front desk walk-in requests.
+      consultation_record_id:
+        "VARCHAR(255) REFERENCES consultation_records(consultation_record_id)",
       requested_by: "VARCHAR(255) NOT NULL REFERENCES users(user_id)",
       status: "VARCHAR(20) NOT NULL DEFAULT 'Requested'",
       is_priority: "BOOLEAN NOT NULL DEFAULT FALSE",
       request_date: "DATE NOT NULL DEFAULT CURRENT_DATE",
-      requested_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
-      updated_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      // Optional date the doctor expects the results to be ready.
+      estimated_release_date: "DATE",
+      requested_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      updated_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
     },
   },
 
@@ -262,8 +268,8 @@ const TABLES: TableDefinition[] = [
       bill_id: "VARCHAR(255) REFERENCES bills(bill_id)",
       status: "VARCHAR(50) NOT NULL DEFAULT 'Requested'",
       reason: "VARCHAR(255) NOT NULL DEFAULT 'None'",
-      created_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
-      updated_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      created_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      updated_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
     },
   },
 
@@ -278,11 +284,11 @@ const TABLES: TableDefinition[] = [
       remarks: "TEXT",
       image_url: "VARCHAR(500)",
       verified_by: "VARCHAR(255)",
-      verified_at: "TIMESTAMP",
-      released_at: "TIMESTAMP",
+      verified_at: "TIMESTAMPTZ",
+      released_at: "TIMESTAMPTZ",
       released_by: "VARCHAR(255)",
-      created_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
-      updated_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      created_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      updated_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
     },
   },
 
@@ -297,8 +303,8 @@ const TABLES: TableDefinition[] = [
       status: "VARCHAR(50) NOT NULL DEFAULT 'Published'",
       created_by: "VARCHAR(255) NOT NULL REFERENCES users(user_id)",
       version: "INTEGER NOT NULL DEFAULT 1",
-      created_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
-      updated_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      created_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      updated_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
     },
   },
 
@@ -309,7 +315,7 @@ const TABLES: TableDefinition[] = [
       type_id: "VARCHAR(255) UNIQUE NOT NULL",
       type_name: "VARCHAR(100) NOT NULL UNIQUE",
       data_type: "VARCHAR(50) NOT NULL",
-      created_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      created_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
     },
   },
 
@@ -336,7 +342,7 @@ const TABLES: TableDefinition[] = [
       user_id: "VARCHAR(255) NOT NULL REFERENCES users(user_id)",
       service_name: "VARCHAR(255) NOT NULL REFERENCES services(service_name)",
       details: "JSONB NOT NULL",
-      created_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      created_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
     },
   },
 
@@ -350,7 +356,7 @@ const TABLES: TableDefinition[] = [
       target_type: "VARCHAR(100) NOT NULL",
       target_id: "VARCHAR(255) NOT NULL",
       metadata: "JSONB",
-      created_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      created_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
     },
   },
 
@@ -378,7 +384,7 @@ const TABLES: TableDefinition[] = [
       title: "VARCHAR(255) NOT NULL",
       message: "TEXT",
       is_read: "BOOLEAN NOT NULL DEFAULT FALSE",
-      created_at: "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      created_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
     },
   },
 
@@ -607,10 +613,43 @@ export async function syncSchema(onlyTables?: string[]): Promise<void> {
       );
 
       // -------------------------------------------------------------
+      // FIND TIMESTAMP COLUMNS THAT SHOULD BE TIMESTAMPTZ
+      //
+      // The only type change syncSchema makes. TIMESTAMP has no time
+      // zone, so the driver read it as the server's local time (8 hours
+      // off on a computer set to Asia/Manila). Existing values were
+      // written in UTC, so they convert to the same moment.
+      // -------------------------------------------------------------
+
+      const columnsToTimestamptz = existingColumnRows
+        .filter(
+          (column) =>
+            column.data_type === "timestamp without time zone" &&
+            /^\s*TIMESTAMPTZ\b/i.test(desiredColumns[column.column_name] ?? ""),
+        )
+        .map((column) => column.column_name);
+
+      for (const columnName of columnsToTimestamptz) {
+        console.log(
+          `[schema-sync] ${tableName}: converting "${columnName}" to TIMESTAMPTZ`,
+        );
+
+        await sql.query(`
+          ALTER TABLE ${quoteIdentifier(tableName)}
+          ALTER COLUMN ${quoteIdentifier(columnName)} TYPE TIMESTAMPTZ
+          USING ${quoteIdentifier(columnName)} AT TIME ZONE 'UTC'
+        `);
+      }
+
+      // -------------------------------------------------------------
       // NOTHING TO CHANGE
       // -------------------------------------------------------------
 
       if (columnsToAdd.length === 0 && columnsToDrop.length === 0) {
+        if (columnsToTimestamptz.length > 0) {
+          console.log(`[schema-sync] ${tableName}: schema updated`);
+          continue;
+        }
         console.log(`[schema-sync] ${tableName}: already in sync`);
 
         continue;

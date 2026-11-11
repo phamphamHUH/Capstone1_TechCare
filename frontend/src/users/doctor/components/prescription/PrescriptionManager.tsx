@@ -7,7 +7,7 @@ import type {
   Prescription,
   DoctorInfo,
 } from "./types";
-import { SAMPLE_PATIENTS, DEFAULT_DOCTOR } from "./mockData";
+import { SAMPLE_PATIENTS, DEFAULT_DOCTOR } from "./utils/mockData";
 import PatientPrescriptionCard from "./PatientPrescriptionCard";
 import CreatePrescriptionView from "./CreatePrescriptionView";
 import PrescriptionPreviewView from "./PrescriptionPreviewView";

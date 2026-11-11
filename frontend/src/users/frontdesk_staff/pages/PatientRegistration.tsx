@@ -164,7 +164,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-md border border-slate-200 bg-white p-6 shadow-sm">
+    <section className="rounded-md border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
       <div className="flex items-center gap-4 border-b border-slate-200 pb-4">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-sky-200 bg-sky-50 text-sm font-bold text-sky-600">
           {number}
@@ -383,8 +383,8 @@ function PatientRegistration({ loadData }: PatientRegistrationProps) {
 
   return (
     <main className="min-w-0 flex-1 bg-slate-50">
-      <div className="w-full space-y-6 px-6 pb-8 pt-6">
-        <div className="rounded-md border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="w-full space-y-6 px-4 sm:px-6 pb-8 pt-6">
+        <div className="rounded-md border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
           <h2 className="text-2xl font-bold text-slate-900">
             Register Patient
           </h2>

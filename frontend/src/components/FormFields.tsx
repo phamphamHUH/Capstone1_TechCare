@@ -27,7 +27,7 @@ export function Field({
   disabled?: boolean;
 }) {
   return (
-    <label className="flex items-center gap-2 text-sm text-gray-500">
+    <label className="flex max-w-full flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-500">
       <span className="whitespace-nowrap">
         {label}
         {required && <span className="text-red-500"> *</span>}
@@ -39,7 +39,7 @@ export function Field({
         disabled={disabled}
         placeholder={placeholder}
         onChange={(e) => onChange?.(e.target.value)}
-        className={`${width} ${fieldClass}`}
+        className={`${width} max-w-full ${fieldClass}`}
       />
     </label>
   );
@@ -65,7 +65,7 @@ export function SelectField({
   disabled?: boolean;
 }) {
   return (
-    <label className="flex items-center gap-2 text-sm text-gray-500">
+    <label className="flex max-w-full flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-500">
       <span className="whitespace-nowrap">
         {label}
         {required && <span className="text-red-500"> *</span>}
@@ -74,7 +74,7 @@ export function SelectField({
         value={value}
         disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
-        className={`${width} ${fieldClass}`}
+        className={`${width} max-w-full ${fieldClass}`}
       >
         <option value="">{placeholder}</option>
         {options.map((o) => {

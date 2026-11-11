@@ -7,7 +7,7 @@ import {
   formatPeso,
   serviceTypeColor,
   serviceTypeLabel,
-} from "./formatters";
+} from "./utils/formatters";
 
 type CatalogFilter = "all" | "consultation" | "laboratory" | "unused" | "inactive";
 
@@ -68,7 +68,7 @@ function ServiceCatalogTable({ services }: ServiceCatalogTableProps) {
 
       {/* The list scrolls inside the panel instead of making the page longer. */}
       <div className="max-h-112 overflow-auto border-t border-gray-200">
-        <table className="w-full text-sm">
+        <table className="min-w-[640px] w-full text-sm">
           <thead>
             <tr className="text-left text-xs text-gray-500">
               <th className={`${headCell} px-6`}>Service</th>

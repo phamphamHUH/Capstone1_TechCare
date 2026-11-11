@@ -1,9 +1,9 @@
 import { sql } from "../../config/db.js";
 import cloudinary from "../../config/cloudinary.js";
 import bcrypt from "bcryptjs";
-import { registerFormComponentTypes } from "../../utils/formComponentTypes.js";
+import { registerFormComponentTypes } from "./utils/formComponentTypes.js";
 import type { Request, Response } from "express";
-import { logActivity } from "../../utils/activityLogger.js";
+import { logActivity } from "./utils/activityLogger.js";
 import type {
   updateUser,
   updateUserStatus,

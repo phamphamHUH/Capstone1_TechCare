@@ -160,7 +160,7 @@ export default function PrescriptionPreviewView({
 
           {/* Medications Table */}
           <div className="overflow-x-auto border border-gray-200 rounded-md mb-6">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="min-w-[600px] w-full text-left text-xs border-collapse">
               <thead className="bg-gray-100 text-gray-800 font-bold border-b border-gray-200">
                 <tr>
                   <th className="py-2.5 px-3 w-10 text-center">#</th>

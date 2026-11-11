@@ -93,7 +93,7 @@ export const VITAL_FIELDS = [
 export const NOTE_FIELDS = [
   {
     key: "hpi",
-    label: "History of Present Illness (HPI)",
+    label: "History of Present Illness (HPI) *",
     rows: 4,
     placeholder: "Describe the history of the present illness...",
   },

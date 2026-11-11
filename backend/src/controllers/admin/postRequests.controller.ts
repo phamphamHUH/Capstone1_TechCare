@@ -1,7 +1,7 @@
 import { sql } from "../../config/db.js";
 import cloudinary from "../../config/cloudinary.js";
 import bcrypt from "bcryptjs";
-import { registerFormComponentTypes } from "../../utils/formComponentTypes.js";
+import { registerFormComponentTypes } from "./utils/formComponentTypes.js";
 import { NextFunction, Request, Response } from "express";
 import {
   generateUserId,

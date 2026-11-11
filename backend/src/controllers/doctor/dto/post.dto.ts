@@ -25,19 +25,19 @@ export namespace addLaboratoryRequest {
 
 export namespace addPrescriptions {
   export interface item {
-    medication: string;
+    name: string;
     dosage: string;
     frequency: string;
-    duration?: string;
-    quantity?: number;
+    duration: string;
     instructions?: string;
-    [key: string]: unknown;
   }
 
   export interface body {
-    items: item[];
-    valid_until?: string | null;
+    consultation_record_id: string;
+    prescription_items: item[];
     notes?: string | null;
+    valid_until?: string | null;
+    prescriber_id?: string;
   }
 
   export interface response {
@@ -72,4 +72,3 @@ export namespace addConsultationFindings {
     errors?: Record<string, unknown>;
   }
 }
-

@@ -210,12 +210,14 @@ export namespace getFormTemplateById {
 
 // =========================
 // GET SALES ANALYTICS
-// GET /api/admin/analytics/sales?range=today|7d|30d|12mo
+// GET /api/admin/analytics/sales?range=today|7d|30d|12mo&tz=<IANA zone>
 // Money is NUMERIC in the database; the controller converts it with Number().
 // =========================
 export namespace getSalesAnalytics {
   export interface query {
     range?: string;
+    // Viewer's IANA time zone, e.g. Asia/Manila (default: clinic zone).
+    tz?: string;
   }
 
   export interface summary {
@@ -277,13 +279,15 @@ export namespace getSalesAnalytics {
 
 // =========================
 // GET ANALYTICS BILLS
-// GET /api/admin/analytics/bills?range=today|7d|30d|12mo
+// GET /api/admin/analytics/bills?range=today|7d|30d|12mo&tz=<IANA zone>
 // The bills behind the sales tiles: paid bills in the range, and every
 // unpaid bill right now (not limited to the range).
 // =========================
 export namespace getAnalyticsBills {
   export interface query {
     range?: string;
+    // Viewer's IANA time zone, e.g. Asia/Manila (default: clinic zone).
+    tz?: string;
   }
 
   export interface bill {
@@ -317,13 +321,15 @@ export namespace getAnalyticsBills {
 
 // =========================
 // GET SERVICE (CATALOG) ANALYTICS
-// GET /api/admin/analytics/services?range=today|7d|30d|12mo
+// GET /api/admin/analytics/services?range=today|7d|30d|12mo&tz=<IANA zone>
 // "Orders" are consultation records and laboratory request items created in
 // the range, excluding cancelled/rejected ones.
 // =========================
 export namespace getServiceAnalytics {
   export interface query {
     range?: string;
+    // Viewer's IANA time zone, e.g. Asia/Manila (default: clinic zone).
+    tz?: string;
   }
 
   export interface service {

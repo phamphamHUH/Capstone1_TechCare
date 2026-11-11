@@ -1,11 +1,11 @@
 import { ChevronDown, X } from "lucide-react";
-import { roleLabel } from "./userCardUtils";
+import { roleLabel } from "./utils/userCardUtils";
 import {
   DEFAULT_USER_FILTERS,
   isFiltered,
   type StatusFilter,
   type UserFilterValues,
-} from "./userFilterValues";
+} from "./utils/userFilterValues";
 
 type Props = {
   filters: UserFilterValues;
@@ -58,7 +58,7 @@ function UserFilters({
     setFilters({ ...filters, ...patch });
 
   return (
-    <div className="mb-6 flex flex-wrap items-center gap-2 px-6">
+    <div className="mb-6 flex flex-wrap items-center gap-2 px-4 sm:px-6">
       <FilterSelect
         label="Role"
         value={filters.role}

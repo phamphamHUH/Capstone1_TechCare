@@ -117,7 +117,7 @@ function PatientSearchModal({
         aria-label="Select patient"
       >
         {/* Header */}
-        <div className="flex items-start justify-between border-b border-gray-100 px-6 py-5">
+        <div className="flex items-start justify-between border-b border-gray-100 px-4 py-4 sm:px-6 sm:py-5">
           <div>
             <h2 className="text-xl font-bold">Select Patient</h2>
             <p className="mt-1 text-xs text-gray-500">
@@ -135,7 +135,7 @@ function PatientSearchModal({
         </div>
 
         {/* Search */}
-        <div className="px-6 pt-4">
+        <div className="px-4 sm:px-6 pt-4">
           <div className="relative">
             <Search
               size={16}
@@ -177,7 +177,7 @@ function PatientSearchModal({
         </div>
 
         {/* List */}
-        <div className="mt-3 min-h-0 flex-1 overflow-y-auto bg-gray-50 px-6 py-3">
+        <div className="mt-3 min-h-0 flex-1 overflow-y-auto bg-gray-50 px-4 sm:px-6 py-3">
           {error && <ErrorMessage>{error}</ErrorMessage>}
           {loading ? (
             <LoadingScreen message="Loading patients..." />
@@ -262,7 +262,7 @@ function PatientSearchModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between border-t border-gray-100 px-6 py-4">
+        <div className="flex items-center justify-between border-t border-gray-100 px-4 sm:px-6 py-4">
           <button
             type="button"
             onClick={onRegister}
