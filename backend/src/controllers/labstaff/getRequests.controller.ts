@@ -94,7 +94,7 @@ export async function getLaboratoryQueues(
         ) AS service_category
       FROM queue_entries q
       JOIN patients p ON p.patient_id = q.patient_id
-      WHERE q.queue_id LIKE 'LAB-%'
+      WHERE (q.queue_id LIKE 'LAB-%' OR q.queue_id LIKE 'IMG-%') -- laboratory and imaging queues
         AND EXISTS (
           SELECT 1
           FROM test_request_items tri

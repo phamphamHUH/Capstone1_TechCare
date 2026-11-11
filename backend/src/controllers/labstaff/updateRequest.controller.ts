@@ -43,7 +43,7 @@ export async function acceptQueueEntry(
         status = 'Serving',
         updated_at = NOW()
       WHERE q.queue_id = ${queue_id}
-        AND q.queue_id LIKE 'LAB-%'
+        AND (q.queue_id LIKE 'LAB-%' OR q.queue_id LIKE 'IMG-%') -- laboratory and imaging queues
         AND LOWER(q.status) IN ('waiting', 'skipped')
         AND EXISTS (
           SELECT 1
@@ -68,7 +68,7 @@ export async function acceptQueueEntry(
           ) AS in_room
         FROM queue_entries q
         WHERE q.queue_id = ${queue_id}
-          AND q.queue_id LIKE 'LAB-%'
+          AND (q.queue_id LIKE 'LAB-%' OR q.queue_id LIKE 'IMG-%') -- laboratory and imaging queues
       `;
 
       if (!existing) {
@@ -130,7 +130,7 @@ export async function completeQueueEntry(
             ELSE NOW()
           END
         WHERE q.queue_id = ${queue_id}
-          AND q.queue_id LIKE 'LAB-%'
+          AND (q.queue_id LIKE 'LAB-%' OR q.queue_id LIKE 'IMG-%') -- laboratory and imaging queues
           AND LOWER(q.status) IN ('serving', 'completed')
           AND EXISTS (
             SELECT 1
@@ -194,7 +194,7 @@ export async function completeQueueEntry(
           ) AS in_room
         FROM queue_entries q
         WHERE q.queue_id = ${queue_id}
-          AND q.queue_id LIKE 'LAB-%'
+          AND (q.queue_id LIKE 'LAB-%' OR q.queue_id LIKE 'IMG-%') -- laboratory and imaging queues
       `;
 
       if (!existing) {
@@ -291,7 +291,8 @@ export async function skipQueueEntry(
     }
 
     // Move the next waiting patient forward by one position.
-    // "Same queue" now means: a queue with lab items in the same room.
+    // "Same queue" means: same type (LAB- or IMG-, numbered separately)
+    // with items in the same room.
     await sql`
       UPDATE queue_entries q
       SET
@@ -299,6 +300,7 @@ export async function skipQueueEntry(
         updated_at = NOW()
       WHERE q.queue_number = ${currentQueueNumber + 1}
         AND LOWER(q.status) = 'waiting'
+        AND LEFT(q.queue_id, 4) = LEFT(${queue_id}, 4)
         AND EXISTS (
           SELECT 1
           FROM test_request_items tri
