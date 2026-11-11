@@ -3,6 +3,7 @@ import { LayoutGrid, ClipboardList, FileCheck } from "lucide-react";
 import api from "../../lib/axios";
 import LaboratoryRequests from "./pages/LaboratoryRequests";
 import SideBar from "../../components/SideBar";
+import ConfirmDialog from "../../components/ConfirmDialog";
 import { SidebarNavContext } from "../../components/sidebar/sidebarNav";
 import { useSearchParams } from "react-router";
 import LabstaffDashboard from "./pages/LabstaffDashboard";
@@ -23,7 +24,15 @@ function LaboratoryStaff() {
   const refreshing = useRef(false);
 
   const page = searchParams.get("page") ?? "dashboard";
+  // Unsaved laboratory result entry: ask before leaving the page.
+  const [unsavedResult, setUnsavedResult] = useState(false);
+  const [pendingPage, setPendingPage] = useState<string | null>(null);
+
   function setPage(newPage: string) {
+    if (newPage !== page && page === "laboratory-results" && unsavedResult) {
+      setPendingPage(newPage);
+      return;
+    }
     setSearchParams({ page: newPage });
   }
 
@@ -124,9 +133,29 @@ function LaboratoryStaff() {
         )}
 
         {page === "laboratory-results" && (
-          <LaboratoryResults open={open} setOpen={setOpen} room={room} />
+          <LaboratoryResults
+            open={open}
+            setOpen={setOpen}
+            room={room}
+            onUnsavedChange={setUnsavedResult}
+          />
         )}
       </div>
+
+      {pendingPage && (
+        <ConfirmDialog
+          title="Leave result entry?"
+          description="You have results that aren't saved yet. They're kept as a draft on this computer and will be restored when you open the request again."
+          confirmLabel="Leave page"
+          cancelLabel="Keep editing"
+          tone="warning"
+          onCancel={() => setPendingPage(null)}
+          onConfirm={() => {
+            setSearchParams({ page: pendingPage });
+            setPendingPage(null);
+          }}
+        />
+      )}
     </SidebarNavContext.Provider>
   );
 }

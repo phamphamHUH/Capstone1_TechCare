@@ -4,7 +4,15 @@ import LoadingScreen, {
 } from "../../../../components/LoadingScreen";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ArrowLeft, Eye, Maximize, Printer } from "lucide-react";
+import {
+  ArrowLeft,
+  Eye,
+  Maximize,
+  Minimize,
+  MoveHorizontal,
+  Printer,
+  Shrink,
+} from "lucide-react";
 import type {
   AnalysisRequest,
   LaboratoryReportData,
@@ -38,14 +46,27 @@ type ReportAssetState = {
 
 type ReportPreviewProps = { report: LaboratoryReportData };
 
+// "width": page width fills the preview; "page": the whole page is visible;
+// "actual": 100%.
+type ZoomMode = "width" | "page" | "actual";
+
+const ZOOM_OPTIONS: { mode: ZoomMode; label: string; icon: typeof Shrink }[] = [
+  { mode: "width", label: "Fit width", icon: MoveHorizontal },
+  { mode: "page", label: "Fit page", icon: Shrink },
+  { mode: "actual", label: "Actual size", icon: Eye },
+];
+
 export function ReportPreview({ report }: ReportPreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLIFrameElement>(null);
   const printButtonRef = useRef<HTMLButtonElement>(null);
   const [body, setBody] = useState<HTMLElement | null>(null);
   const [width, setWidth] = useState(REPORT_WIDTH + 48);
+  const [viewHeight, setViewHeight] = useState(REPORT_MIN_HEIGHT);
   const [height, setHeight] = useState(REPORT_MIN_HEIGHT);
-  const [fit, setFit] = useState(true);
+  const [zoom, setZoom] = useState<ZoomMode>("width");
+  const [fullscreen, setFullscreen] = useState(false);
 
   const [assetState, setAssetState] = useState<ReportAssetState | null>(null);
 
@@ -60,9 +81,21 @@ export function ReportPreview({ report }: ReportPreviewProps) {
       : null;
   const ready = Boolean(assets && !assets.error);
   const previewError = error || assets?.error;
-  const scale = fit
-    ? Math.max(0.1, Math.min(1, (width - 32) / REPORT_WIDTH))
-    : 1;
+  // Full screen may enlarge the report; the normal preview never goes above 100%.
+  const maxScale = fullscreen ? 2 : 1;
+  const widthScale = (width - 32) / REPORT_WIDTH;
+  const scale =
+    zoom === "actual"
+      ? 1
+      : Math.max(
+          0.1,
+          Math.min(
+            maxScale,
+            zoom === "page"
+              ? Math.min(widthScale, (viewHeight - 32) / height)
+              : widthScale,
+          ),
+        );
 
   useLayoutEffect(() => {
     const container = containerRef.current;
@@ -71,7 +104,10 @@ export function ReportPreview({ report }: ReportPreviewProps) {
       return;
     }
 
-    const measure = () => setWidth(container.clientWidth);
+    const measure = () => {
+      setWidth(container.clientWidth);
+      setViewHeight(container.clientHeight);
+    };
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(container);
@@ -95,6 +131,26 @@ export function ReportPreview({ report }: ReportPreviewProps) {
     observer.observe(body);
     return () => observer.disconnect();
   }, [body, report]);
+
+  useEffect(() => {
+    const sync = () =>
+      setFullscreen(document.fullscreenElement === previewRef.current);
+    document.addEventListener("fullscreenchange", sync);
+    return () => document.removeEventListener("fullscreenchange", sync);
+  }, []);
+
+  async function toggleFullscreen() {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else {
+        await previewRef.current?.requestFullscreen();
+        setZoom("page");
+      }
+    } catch {
+      setError("Full screen is not available in this browser.");
+    }
+  }
 
   useEffect(() => {
     if (!body) {
@@ -174,11 +230,12 @@ export function ReportPreview({ report }: ReportPreviewProps) {
       <div className="flex flex-wrap items-center gap-2 py-4">
         <AnalysisButton
           variant="secondary"
-          aria-pressed={fit}
-          onClick={() => setFit(true)}
+          onClick={() => {
+            void toggleFullscreen();
+          }}
         >
           <Maximize size={14} />
-          Fit to Page
+          Full screen
         </AnalysisButton>
         <button
           ref={printButtonRef}
@@ -192,14 +249,7 @@ export function ReportPreview({ report }: ReportPreviewProps) {
           {printing ? <LoadingSpinner size={14} /> : <Printer size={14} />}
           {report.resultId ? "Print" : "Print Draft"}
         </button>
-        <button
-          type="button"
-          onClick={() => setFit(false)}
-          aria-pressed={!fit}
-          className="ml-auto cursor-pointer rounded px-2 py-1 text-sm text-gray-500 hover:text-sky-600 focus-visible:outline-sky-500"
-        >
-          Actual size
-        </button>
+        <ZoomControls zoom={zoom} onZoom={setZoom} className="ml-auto" />
         <span
           className="w-10 text-right text-xs text-gray-500"
           aria-label={`Preview zoom ${Math.round(scale * 100)} percent`}
@@ -222,7 +272,14 @@ export function ReportPreview({ report }: ReportPreviewProps) {
           </AnalysisButton>
         </>
       )}
-      <div className="mt-1 overflow-hidden rounded-md border border-gray-300">
+      <div
+        ref={previewRef}
+        className={
+          fullscreen
+            ? "flex h-screen flex-col bg-white"
+            : "mt-1 overflow-hidden rounded-md border border-gray-300"
+        }
+      >
         <div className="flex flex-wrap items-center gap-2 border-b border-gray-300 bg-white px-4 py-3 text-sm">
           <Eye size={15} className="text-sky-600" />
           <h2 className="font-semibold">Print Preview</h2>
@@ -232,6 +289,20 @@ export function ReportPreview({ report }: ReportPreviewProps) {
           >
             {report.resultId ? "Saved result" : "Draft · Not saved"}
           </span>
+          {fullscreen && (
+            <>
+              <ZoomControls zoom={zoom} onZoom={setZoom} />
+              <AnalysisButton
+                variant="secondary"
+                onClick={() => {
+                  void toggleFullscreen();
+                }}
+              >
+                <Minimize size={14} />
+                Exit full screen
+              </AnalysisButton>
+            </>
+          )}
         </div>
         {!ready && !previewError && (
           <LoadingScreen
@@ -242,7 +313,7 @@ export function ReportPreview({ report }: ReportPreviewProps) {
         )}
         <div
           ref={containerRef}
-          className="max-h-[75vh] min-h-80 overflow-auto bg-gray-100 p-4"
+          className={`overflow-auto bg-gray-100 p-4 ${fullscreen ? "min-h-0 flex-1" : "h-[75vh] min-h-80"}`}
           aria-busy={!ready && !previewError}
         >
           <div
@@ -278,6 +349,37 @@ export function ReportPreview({ report }: ReportPreviewProps) {
       </p>
       {body && createPortal(<LaboratoryReport report={report} />, body)}
     </>
+  );
+}
+
+function ZoomControls({
+  zoom,
+  onZoom,
+  className = "",
+}: {
+  zoom: ZoomMode;
+  onZoom: (mode: ZoomMode) => void;
+  className?: string;
+}) {
+  return (
+    <div
+      role="group"
+      aria-label="Preview zoom"
+      className={`flex items-center rounded-md border border-gray-300 bg-white p-0.5 ${className}`}
+    >
+      {ZOOM_OPTIONS.map(({ mode, label, icon: Icon }) => (
+        <button
+          key={mode}
+          type="button"
+          aria-pressed={zoom === mode}
+          onClick={() => onZoom(mode)}
+          className={`flex cursor-pointer items-center gap-1.5 rounded px-2.5 py-1 text-xs transition-colors focus-visible:outline-2 focus-visible:outline-sky-500 ${zoom === mode ? "bg-sky-100 text-sky-700" : "text-gray-600 hover:bg-gray-50"}`}
+        >
+          <Icon size={13} />
+          {label}
+        </button>
+      ))}
+    </div>
   );
 }
 

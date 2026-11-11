@@ -2,6 +2,7 @@ import FieldError from "../../../../components/FieldError";
 import type { BuilderComponent } from "../../../../interface/FormTemplate";
 import type { ResultValues } from "../../../../interface/LaboratoryAnalysis";
 import { Plus, X } from "lucide-react";
+import { useLayoutEffect, useRef } from "react";
 import { inputTypes, resultFlag } from "./laboratoryValidation";
 import { AnalysisButton } from "./AnalysisUi";
 
@@ -50,6 +51,27 @@ function FieldInput({
             ? "date"
             : "text";
 
+  // Free-text results can be a phrase or several lines, so they get a text box
+  // that starts one line tall and grows with its content.
+  if (type === "text") {
+    return (
+      <GrowingTextarea
+        id={id}
+        name={key}
+        value={typeof value === "string" || typeof value === "number" ? String(value) : ""}
+        required={Boolean(settings.required || rules.required)}
+        minLength={limit(rules.minLength)}
+        maxLength={limit(rules.maxLength)}
+        placeholder={settings.placeholder || "Enter result"}
+        aria-invalid={Boolean(error)}
+        aria-describedby={error ? `${id}-error` : undefined}
+        onBlur={onBlur}
+        onChange={(event) => onChange(event.target.value)}
+        disabled={disabled}
+      />
+    );
+  }
+
   return (
     <input
       id={id}
@@ -75,6 +97,28 @@ function FieldInput({
       onBlur={onBlur}
       onChange={(event) => onChange(event.target.value)}
       disabled={disabled}
+    />
+  );
+}
+
+function GrowingTextarea(
+  props: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { value: string },
+) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  useLayoutEffect(() => {
+    const textarea = ref.current;
+    if (!textarea) return;
+    textarea.style.height = "auto";
+    textarea.style.height = `${textarea.scrollHeight + 2}px`;
+  }, [props.value]);
+
+  return (
+    <textarea
+      ref={ref}
+      rows={1}
+      {...props}
+      className={`${inputClass} block h-auto min-h-9 resize-y overflow-hidden leading-5`}
     />
   );
 }
