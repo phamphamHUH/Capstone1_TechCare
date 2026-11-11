@@ -35,9 +35,9 @@ function StatCard({ label, value, caption, icon, onClick }: StatCardProps) {
     <button
       type="button"
       onClick={onClick}
-      className="group p-4 sm:p-6 text-left cursor-pointer transition-colors hover:bg-sky-50 active:bg-sky-100 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-sky-500"
+      className="group min-w-0 bg-white p-4 sm:p-6 text-left cursor-pointer transition-colors hover:bg-sky-50 active:bg-sky-100 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-sky-500"
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         {icon}
         <p className="text-sm text-gray-500">{label}</p>
         <ChevronRight
@@ -47,7 +47,7 @@ function StatCard({ label, value, caption, icon, onClick }: StatCardProps) {
         />
       </div>
 
-      <p className={`text-3xl font-semibold ${icon ? "mt-4" : "mt-2"}`}>
+      <p className={`text-2xl sm:text-3xl font-semibold ${icon ? "mt-3 sm:mt-4" : "mt-2"}`}>
         {value}
       </p>
 
@@ -120,7 +120,7 @@ function FrontdeskDashboard({
                     FRONTDESK SUMMARY
                 ========================== */}
           <section className="bg-white border border-gray-300 rounded-md overflow-hidden">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-gray-300">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-gray-300 [&>*:last-child:nth-child(odd)]:col-span-2 lg:[&>*:last-child:nth-child(odd)]:col-span-1">
               <StatCard
                 icon={<Clock size={20} strokeWidth={1.5} />}
                 label="Patients in Queue"
@@ -172,7 +172,7 @@ function FrontdeskDashboard({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-gray-300">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-gray-300 [&>*:last-child:nth-child(odd)]:col-span-2 lg:[&>*:last-child:nth-child(odd)]:col-span-1">
               <StatCard
                 label="Waiting"
                 value={waitingCount}
