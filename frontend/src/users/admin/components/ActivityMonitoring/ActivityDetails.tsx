@@ -12,19 +12,40 @@ type ActivityDetailsProps = {
   activity: Activity | undefined;
 };
 
-function getMetadataEntries(metadata: Activity["metadata"]) {
+// "patient_id" -> "Patient ID"
+const label = (key: string) =>
+  key
+    .split(/[_\s]+/)
+    .map((word) =>
+      word.toLowerCase() === "id" ? "ID" : word[0]?.toUpperCase() + word.slice(1),
+    )
+    .join(" ");
+
+function display(value: unknown) {
+  if (value === null || value === undefined || value === "") return "—";
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
+}
+
+// metadata is JSONB, so the API sends an object; older rows may hold JSON
+// text or plain text.
+function getMetadataEntries(metadata: Activity["metadata"]): [string, string][] {
   if (!metadata) return [];
 
-  try {
-    const parsed = JSON.parse(metadata);
-    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-      return Object.entries(parsed) as [string, unknown][];
+  let parsed: unknown = metadata;
+  if (typeof metadata === "string") {
+    try {
+      parsed = JSON.parse(metadata);
+    } catch {
+      return [["Details", metadata]];
     }
-  } catch {
-    // Some activity records may contain plain text instead of JSON.
   }
 
-  return [["Details", metadata]] as [string, unknown][];
+  if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+    return Object.entries(parsed).map(([key, value]) => [label(key), display(value)]);
+  }
+  return [["Details", display(parsed)]];
 }
 
 function ActivityDetails({ activity }: ActivityDetailsProps) {
@@ -121,7 +142,7 @@ function ActivityDetails({ activity }: ActivityDetailsProps) {
             {metadataEntries.length > 0 ? (
               metadataEntries.map(([key, value]) => (
                 <p key={key} className="mb-1 last:mb-0">
-                  <span className="font-medium">{key}:</span> {String(value)}
+                  <span className="font-medium">{key}:</span> {value}
                 </p>
               ))
             ) : !activity.action_description ? (

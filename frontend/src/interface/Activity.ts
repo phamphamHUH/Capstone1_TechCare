@@ -8,7 +8,8 @@ export type Activity = {
   status: string;
   target_type: string;
   target_id: string;
-  metadata: string;
+  // JSONB column: an object from the API (plain text on some older rows).
+  metadata: Record<string, unknown> | string | null;
   created_at: string;
 };
 
