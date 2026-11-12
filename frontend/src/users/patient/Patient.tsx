@@ -1,6 +1,7 @@
 import ErrorMessage from "../../components/ErrorMessage";
 import { useEffect, useMemo, useState } from "react";
 import {
+  FileCheck2,
   FileClock,
   FlaskConical,
   LayoutGrid,
@@ -12,6 +13,7 @@ import SideBar from "../../components/SideBar";
 import { SidebarNavContext } from "../../components/sidebar/utils/sidebarNav";
 import MedicalHistory from "./pages/MedicalHistory";
 import Prescriptions from "./pages/Prescriptions";
+import MedicalDocuments from "./pages/MedicalDocuments";
 import QueueTracking from "./pages/QueueTracking";
 import PatientDashboard from "./pages/PatientDashboard";
 import type { PatientSessionUser } from "../../interface/PatientPortal";
@@ -21,7 +23,8 @@ type PatientPage =
   | "medical-history"
   | "queue-tracking"
   | "laboratory-results"
-  | "prescriptions";
+  | "prescriptions"
+  | "medical-documents";
 
 function readLoggedInPatient(): PatientSessionUser | null {
   const stored = sessionStorage.getItem("user");
@@ -81,6 +84,11 @@ function Patient() {
       icon: <FileClock size={20} />,
     },
     { page: "prescriptions", label: "Prescriptions", icon: <Pill size={20} /> },
+    {
+      page: "medical-documents",
+      label: "Medical Documents",
+      icon: <FileCheck2 size={20} />,
+    },
   ];
 
   function setPage(page: string) {
@@ -158,6 +166,13 @@ function Patient() {
                 refreshKey={refreshKey}
                 onLoadingChange={setLoading}
                 consultationId={consultationId}
+              />
+            )}
+            {activePage === "medical-documents" && (
+              <MedicalDocuments
+                patient={patient}
+                refreshKey={refreshKey}
+                onLoadingChange={setLoading}
               />
             )}
           </main>

@@ -2,7 +2,7 @@ import SideBar from "#components/SideBar";
 import { SidebarNavContext } from "../../components/sidebar/utils/sidebarNav";
 import Header from "#components/Header";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { LayoutGrid, ListOrdered, FileText, Stethoscope } from "lucide-react";
+import { LayoutGrid, ListOrdered, FileText, FileCheck2, Stethoscope } from "lucide-react";
 import { useSearchParams } from "react-router";
 import ConsultationQueue from "./pages/ConsultationQueue";
 import DoctorDashboard from "./pages/DoctorDashboard";
@@ -11,6 +11,7 @@ import type { QueueEntry } from "../../interface/Queue";
 import api from "#lib/axios";
 import ActiveConsultation from "./pages/ActiveConsultation";
 import TestRequest from "./pages/TestRequest";
+import MedicalDocuments from "./pages/MedicalDocuments";
 
 function Doctor() {
   const [open, setOpen] = useState(
@@ -23,6 +24,7 @@ function Doctor() {
   const [roomServices, setRoomServices] = useState<Service[]>([]);
   const [queues, setQueues] = useState<QueueEntry[]>([]);
   const latestLoad = useRef(0);
+  const [documentsRefreshKey, setDocumentsRefreshKey] = useState(0);
   const [selectedQueue, setSelectedQueue] = useState<QueueEntry | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const [findingsSavedForRecord, setFindingsSavedForRecord] = useState<
@@ -67,6 +69,11 @@ function Doctor() {
       label: "Test Request",
       icon: <FileText size={20} />,
     },
+    {
+      page: "medical-documents",
+      label: "Medical Documents",
+      icon: <FileCheck2 size={20} />,
+    },
   ];
 
   const currentPage =
@@ -74,6 +81,7 @@ function Doctor() {
 
   const loadData = useCallback(async () => {
     const request = ++latestLoad.current;
+    setDocumentsRefreshKey((value) => value + 1);
 
     setLoading(true);
     setError(null);
@@ -171,6 +179,7 @@ function Doctor() {
           />
 
           <div className="pb-6">
+            {page === "medical-documents" && <MedicalDocuments refreshKey={documentsRefreshKey} />}
             {page === "dashboard" && (
               <DoctorDashboard
                 room={room}

@@ -398,6 +398,32 @@ const TABLES: TableDefinition[] = [
   },
 
   {
+    // Medical certificates and clearances a doctor fills out from a published
+    // form template and releases to the patient. The template is copied at
+    // release time so later template edits never change an issued document.
+    table: "medical_documents",
+    columns: {
+      id: "SERIAL PRIMARY KEY",
+      document_id: "VARCHAR(255) UNIQUE NOT NULL",
+      document_type:
+        "VARCHAR(30) NOT NULL CHECK (document_type IN ('medical_certificate', 'medical_clearance'))",
+      patient_id: "VARCHAR(255) NOT NULL REFERENCES patients(patient_id)",
+      form_id: "VARCHAR(255) NOT NULL REFERENCES form_templates(form_id)",
+      template_snapshot: "JSONB NOT NULL",
+      field_values: "JSONB NOT NULL DEFAULT '{}'::jsonb",
+      remarks: "TEXT",
+      issued_by: "VARCHAR(255) NOT NULL REFERENCES users(user_id)",
+      // Signature block as printed on the document when it was released.
+      physician_name: "VARCHAR(255) NOT NULL",
+      physician_license: "VARCHAR(50)",
+      status: "VARCHAR(20) NOT NULL DEFAULT 'Released'",
+      issued_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      created_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      updated_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
+    },
+  },
+
+  {
     table: "sse_test",
     columns: {
       message_id: "SERIAL PRIMARY KEY",
@@ -480,6 +506,24 @@ async function createTables(): Promise<void> {
     //   ALTER TABLE consultation_records
     //   ADD COLUMN IF NOT EXISTS cancellation_reason VARCHAR(255)
     // `;
+    // An early version of medical_documents named this column "values"
+    // (a reserved word). Rename it where that version was created.
+    await sql`
+      DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_schema = 'public' AND table_name = 'medical_documents'
+            AND column_name = 'values'
+        ) AND NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_schema = 'public' AND table_name = 'medical_documents'
+            AND column_name = 'field_values'
+        ) THEN
+          ALTER TABLE medical_documents RENAME COLUMN "values" TO field_values;
+        END IF;
+      END $$
+    `;
 
     console.log("Database initialized successfully");
   } catch (error) {

@@ -311,6 +311,40 @@ function TemplateContent({ report }: TemplateContentProps) {
   );
 }
 
+function MedicalDocumentPatient({ report }: { report: LaboratoryReportData }) {
+  const { request, medicalDocument } = report;
+  return (
+    <dl className="patient">
+      <div>
+        <dt>Patient Name:</dt>
+        <dd className="patient-name">{request.patientName || "Not provided"}</dd>
+      </div>
+      <div>
+        <dt>Age/Gender:</dt>
+        <dd>{`${request.age ?? "—"} / ${request.sex || "—"}`}</dd>
+      </div>
+      <div>
+        <dt>Address:</dt>
+        <dd>{medicalDocument?.address || " "}</dd>
+      </div>
+      <div>
+        <dt>Civil Status:</dt>
+        <dd>{medicalDocument?.civilStatus || " "}</dd>
+      </div>
+      <div>
+        <dt>{`${medicalDocument?.typeLabel ?? "Document"} No.:`}</dt>
+        <dd>{report.resultId || "Draft"}</dd>
+      </div>
+      <div>
+        <dt>Date:</dt>
+        <dd>
+          {formatLabDate(report.releasedAt || new Date().toISOString())}
+        </dd>
+      </div>
+    </dl>
+  );
+}
+
 type LaboratoryReportProps = {
   report: LaboratoryReportData;
 };
@@ -353,6 +387,9 @@ export default function LaboratoryReport({ report }: LaboratoryReportProps) {
       {!report.resultId && (
         <p className="report-state draft">DRAFT — NOT SAVED OR RELEASED</p>
       )}
+      {report.medicalDocument ? (
+        <MedicalDocumentPatient report={report} />
+      ) : (
       <dl className="patient">
         <div>
           <dt>{a4 ? "Patient Name:" : "Name:"}</dt>
@@ -405,6 +442,7 @@ export default function LaboratoryReport({ report }: LaboratoryReportProps) {
           </div>
         )}
       </dl>
+      )}
       <div className="report-body">
         <h2 className="report-title">
           {a4
@@ -428,11 +466,15 @@ export default function LaboratoryReport({ report }: LaboratoryReportProps) {
         <div className="signatures" aria-label="Report signatures">
           {a4 ? (
             <div>
-              <p className="signature-name">{"\u00a0"}</p>
+              <p className="signature-name">
+                {report.attendingPhysician?.name || "\u00a0"}
+              </p>
               <p className="signature-role">
                 {imaging ? "Radiologist/Sonologist" : "Attending Physician"}
               </p>
-              <p className="license">License #: ____________</p>
+              <p className="license">
+                License #: {report.attendingPhysician?.license || "____________"}
+              </p>
             </div>
           ) : (
             <>
@@ -465,6 +507,13 @@ export default function LaboratoryReport({ report }: LaboratoryReportProps) {
             </>
           )}
         </div>
+        {report.medicalDocument ? (
+          <p className="report-meta">
+            {report.resultId
+              ? `${report.medicalDocument.typeLabel} No.: ${report.resultId} · Patient: ${request.patientId || "Not provided"} · Released ${formatLabDate(report.releasedAt || "")}`
+              : `Patient: ${request.patientId || "Not provided"} · DRAFT — NOT SAVED OR RELEASED`}
+          </p>
+        ) : (
         <p className="report-meta">
           {`Request: ${request.requestId} · Patient: ${request.patientId || "Not provided"}`}
           {report.resultId
@@ -476,6 +525,7 @@ export default function LaboratoryReport({ report }: LaboratoryReportProps) {
             ? `Verified by: ${report.verifiedBy} · ${formatLabDate(report.verifiedAt)}`
             : "Verification not recorded."}
         </p>
+        )}
       </footer>
     </article>
   );
