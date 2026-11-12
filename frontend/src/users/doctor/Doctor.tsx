@@ -152,6 +152,66 @@ function Doctor() {
   }, [loadData]);
 
   return (
+    <div className="flex min-h-screen ">
+      <SideBar open={open} page={page} setPage={setPage} navItems={navItems} />
+
+      <div className="flex-1 min-w-0">
+        <Header
+          page={currentPage}
+          loading={loading}
+          open={open}
+          setOpen={setOpen}
+          loadData={loadData}
+        />
+
+        <div className="pb-6">
+          {page === "dashboard" && <DoctorDashboard />}
+
+          {page === "consultation-queue" && (
+            <ConsultationQueue
+              services={roomServices}
+              queues={queues}
+              room={room}
+              loading={loading}
+              error={error}
+              queueLoadFailed={queueLoadFailed}
+              open={open}
+              setOpen={setOpen}
+              loadData={loadData}
+              setSelectedQueue={setSelectedQueue}
+            />
+          )}
+
+          {page === "active-consultation" && (
+            <ActiveConsultation
+              selectedQueue={selectedQueue}
+              setSelectedQueue={setSelectedQueue}
+              room={room}
+              loading={loading}
+              error={
+                queueLoadFailed
+                  ? "The active consultation could not be refreshed."
+                  : null
+              }
+              findingsSaved={findingsSaved}
+              setFindingsSavedForRecord={setFindingsSavedForRecord}
+              overviewStep={overviewStep}
+              setOverviewStep={setOverviewStep}
+              onCompleted={handleCompleted}
+            />
+          )}
+
+          {page === "test-request" && (
+            <TestRequest
+              services={services}
+              open={open}
+              setOpen={setOpen}
+              loadData={loadData}
+              loading={loading}
+              setPage={setPage}
+              selectedQueue={selectedQueue}
+            />
+          )}
     <SidebarNavContext.Provider value={{ navItems, page, setPage }}>
       <div className="flex min-h-screen ">
         <SideBar open={open} setOpen={setOpen} page={page} setPage={setPage} navItems={navItems} />

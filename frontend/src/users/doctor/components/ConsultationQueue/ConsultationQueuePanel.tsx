@@ -89,7 +89,8 @@ function ConsultationQueuePanel({
       const matchesSearch =
         !searchLower ||
         queue.queue_id?.toLowerCase().includes(searchLower) ||
-        queue.patient_id?.toLowerCase().includes(searchLower);
+        queue.patient_id?.toLowerCase().includes(searchLower) ||
+        queue.patient_name?.toLowerCase().includes(searchLower);
 
       const matchesPriority =
         priorityFilter === "all" ||
@@ -182,7 +183,7 @@ function ConsultationQueuePanel({
             type="text"
             value={searchFilter}
             onChange={(e) => setSearchFilter(e.target.value)}
-            placeholder="Search..."
+            placeholder="Queue ID, Patient ID, or Patient Name..."
             className="h-9 w-full rounded-md border border-gray-300 bg-white pl-9 pr-3 text-sm text-gray-700 outline-none transition focus:border-sky-400 focus:ring-1 focus:ring-sky-100"
           />
         </div>
