@@ -5,7 +5,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { LayoutGrid, ListOrdered, FileText, Stethoscope } from "lucide-react";
 import { useSearchParams } from "react-router";
 import ConsultationQueue from "./pages/ConsultationQueue";
-import MedicalHistory from "./pages/MedicalHistory";
 import DoctorDashboard from "./pages/DoctorDashboard";
 import type { Service } from "../../interface/Service";
 import type { QueueEntry } from "../../interface/Queue";
@@ -154,7 +153,13 @@ function Doctor() {
   return (
     <SidebarNavContext.Provider value={{ navItems, page, setPage }}>
       <div className="flex min-h-screen ">
-        <SideBar open={open} setOpen={setOpen} page={page} setPage={setPage} navItems={navItems} />
+        <SideBar
+          open={open}
+          setOpen={setOpen}
+          page={page}
+          setPage={setPage}
+          navItems={navItems}
+        />
 
         <div className="flex-1 min-w-0">
           <Header
@@ -212,16 +217,6 @@ function Doctor() {
                 onCompleted={handleCompleted}
               />
             )}
-
-            {page === "medical-history" && (
-              <MedicalHistory
-                loading={loading}
-                open={open}
-                setOpen={setOpen}
-                loadData={loadData}
-              />
-            )}
-
             {page === "test-request" && (
               <TestRequest
                 services={services}

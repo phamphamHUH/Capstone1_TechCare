@@ -212,11 +212,6 @@ function Overview({
     }
   }
 
-  const hasRequiredData =
-    notes.hpi.trim() !== "" &&
-    diagnoses.length > 0 &&
-    Object.values(exam).some((value) => value.trim() !== "");
-
   async function handleEndConsultation() {
     if (!selectedQueue) return;
     try {
@@ -467,21 +462,24 @@ function Overview({
         >
           Complete Consultation
         </button>
-        <div className="flex flex-wrap gap-3">
-          <button
-            type="button"
-            onClick={() =>
-              findingsSaved ? onProceed() : setConfirmingSkip(true)
-            }
-            disabled={isSaving}
-            className="rounded-md border cursor-pointer border-gray-300 px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
-          >
-            Proceed to Prescription
-          </button>
+        <div className="flex gap-3">
+          {findingsSaved && (
+            <button
+              type="button"
+              onClick={() =>
+                findingsSaved ? onProceed() : setConfirmingSkip(true)
+              }
+              disabled={isSaving}
+              className="rounded-md border cursor-pointer border-gray-300 px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Proceed to Prescription
+            </button>
+          )}
+
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={isSaving || !hasRequiredData}
+            disabled={isSaving}
             className="rounded-md bg-blue-600 cursor-pointer px-4 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
           >
             {isSaving ? "Saving..." : "Save Findings"}
