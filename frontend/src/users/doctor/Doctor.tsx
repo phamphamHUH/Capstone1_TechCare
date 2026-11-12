@@ -198,15 +198,6 @@ function Doctor() {
             />
           )}
 
-          {page === "medical-history" && (
-            <MedicalHistory
-              loading={loading}
-              open={open}
-              setOpen={setOpen}
-              loadData={loadData}
-            />
-          )}
-
           {page === "test-request" && (
             <TestRequest
               services={services}
