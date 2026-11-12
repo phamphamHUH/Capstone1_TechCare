@@ -79,7 +79,6 @@ export async function saveConsultationFindings(input: SaveFindingsInput) {
       presenting_complaint: { hpi: form.hpi.trim() },
       diagnosis: form.diagnosis.map((d: DiagnosisRow) => ({
         diagnosis: d.diagnosis.trim(),
-        icd10: d.icd10.trim().toUpperCase(),
         type: d.type,
       })),
       physical_examination: form.exam,

@@ -7,6 +7,10 @@ import { dbComponentToBuilderComponent } from "../../../../interface/FormTemplat
 import type { ServiceOption } from "../../pages/FormTemplate";
 import { Search, Clock, Eye, Edit, Trash2, X, Plus } from "lucide-react";
 import TemplatePreview from "./TemplatePreview";
+import {
+  PAPER_LABELS,
+  templatePaperSize,
+} from "../../../../utils/templatePaper";
 
 interface TemplateLibraryProps {
   templates: FormTemplate[];
@@ -367,6 +371,19 @@ export default function TemplateLibrary({
               </p>
 
               <div className="flex flex-col gap-2 pt-2 border-t border-gray-100 text-xs">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-gray-400">Paper Size:</span>
+                  <span className="font-medium text-gray-800">
+                    {
+                      PAPER_LABELS[
+                        templatePaperSize(
+                          selectedTemplate,
+                          `${getServiceName(selectedTemplate.service_id)} ${getCategoryName(selectedTemplate.service_id)}`,
+                        )
+                      ]
+                    }
+                  </span>
+                </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400">Service:</span>
                   <span className="font-medium text-gray-800">
@@ -478,6 +495,11 @@ export default function TemplateLibrary({
       {previewTemplate && (
         <TemplatePreview
           templateName={previewTemplate.form_name}
+          paperSize={templatePaperSize(
+            previewTemplate,
+            `${getServiceName(previewTemplate.service_id)} ${getCategoryName(previewTemplate.service_id)}`,
+          )}
+          serviceName={getServiceName(previewTemplate.service_id)}
           category={getCategoryName(previewTemplate.service_id)}
           components={previewTemplate.components}
           onClose={() => setPreviewTemplate(null)}

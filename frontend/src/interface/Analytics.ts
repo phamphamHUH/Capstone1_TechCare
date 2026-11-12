@@ -112,3 +112,21 @@ export type ServiceAnalytics = {
   summary: ServiceCatalogSummary;
   services: ServiceCatalogItem[];
 };
+
+// GET /api/admin/analytics/drug-tests (billed drug tests; never queued)
+export type DrugTestAnalytics = {
+  message: string;
+  range: AnalyticsRange;
+  start: string;
+  end: string;
+  total: number;
+  weeks: { week_start: string; count: number }[];
+  drug_tests: {
+    item_id: string;
+    bill_id: string;
+    patient_id: string;
+    patient_name: string | null;
+    service_name: string;
+    paid_at: string; // wall-clock time in the viewer's zone, no offset
+  }[];
+};

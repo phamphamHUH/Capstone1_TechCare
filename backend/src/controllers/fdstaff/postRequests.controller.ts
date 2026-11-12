@@ -4,6 +4,7 @@ import { sql } from "../../config/db.js";
 import { pool } from "../../config/db.js";
 import bcrypt from "bcryptjs";
 import { calculateAge } from "./utils/calculateAge.js";
+import { readFrontDeskVitals } from "./utils/vitalSigns.js";
 import type { Request, Response } from "express";
 import cloudinary from "../../config/cloudinary.js";
 import {
@@ -28,6 +29,7 @@ import { publishQueueChange } from "../../services/queue-sse/index.js";
 import { actorId, notifyPriorityPatient, notifyQueued } from "../../services/notifications/index.js";
 import { sendEmail } from "../../services/email/sendEmail.js";
 import { patientAccountCreatedEmail } from "../../services/email/emailTemplates.js";
+import { createPasswordLink, PASSWORD_LINK_DAYS } from "../../utils/passwordLink.js";
 import { recomputeBillTotals } from "../../utils/recomputeBills.js";
 import { getOrCreateOpenBill } from "../../utils/getOrCreateBill.js";
 export async function addPatient(
@@ -102,8 +104,11 @@ export async function addPatient(
 
     const patientId = await generatePatientId();
 
+    // The front desk password (the last name; the front desk can reset it).
+    // Patients with an email also get a link to change it to their own.
     const password = last_name;
     const hashedPassword = await bcrypt.hash(password, 10);
+    const passwordLink = email ? createPasswordLink() : null;
 
     // Upload photo to Cloudinary if one was attached (multer puts it on req.file)
     let imageUrl: string | null = null;
@@ -147,7 +152,9 @@ export async function addPatient(
         family_medical_history,
         smoking_status,
         alcohol_consumption,
-        image_url
+        image_url,
+        password_token_hash,
+        password_token_expires_at
       )
       VALUES (
         ${patientId},
@@ -181,7 +188,9 @@ export async function addPatient(
         ${family_medical_history ?? null},
         ${smoking_status ?? null},
         ${alcohol_consumption ?? null},
-        ${imageUrl}
+        ${imageUrl},
+        ${passwordLink?.hash ?? null},
+        ${passwordLink?.expiresAt ?? null}
       )
       RETURNING *;
     `;
@@ -189,13 +198,23 @@ export async function addPatient(
     const age = calculateAge(birthdate);
 
     // =========================
-    // WELCOME EMAIL (information only)
+    // WELCOME EMAIL WITH "CHANGE YOUR PASSWORD" LINK
     // =========================
     // Not awaited: the patient shouldn't wait on the email provider.
-    if (email) void sendEmail(patientAccountCreatedEmail(email, first_name, patientId));
+    if (email && passwordLink) {
+      void sendEmail(
+        patientAccountCreatedEmail(
+          email,
+          first_name,
+          patientId,
+          passwordLink.url,
+          PASSWORD_LINK_DAYS,
+        ),
+      );
+    }
 
-    // Don't send the password hash to the client.
-    const { password_hash, ...safePatient } = response[0];
+    // Don't send the password or link hashes to the client.
+    const { password_hash, password_token_hash, ...safePatient } = response[0];
 
     return res.status(201).json({
       message: "Patient added successfully.",
@@ -516,6 +535,7 @@ export async function addConsultationRecord(
     patient_id,
     service_id,
     is_priority = false,
+    vital_signs,
   } = req.body as addConsultationRecord.body;
   const user_id =
     req.user?.user_id ?? (!ENV.IS_PRODUCTION ? "U-26-1001-0004" : undefined);
@@ -523,6 +543,14 @@ export async function addConsultationRecord(
   if (!patient_id || !user_id || !service_id) {
     return res.status(400).json({
       message: "Patient ID and service ID are required.",
+    } as addConsultationRecord.error);
+  }
+
+  // Temperature, height and weight are taken before every consultation.
+  const vitals = readFrontDeskVitals(vital_signs);
+  if (!vitals.ok) {
+    return res.status(400).json({
+      message: vitals.message,
     } as addConsultationRecord.error);
   }
 
@@ -552,8 +580,8 @@ export async function addConsultationRecord(
       rows: [consultation_record_result],
     } = await client.query(
       `INSERT INTO consultation_records
-     (consultation_record_id, patient_id, service_id, requested_by, queue_id, status, bill_id)
-   VALUES ($1, $2, $3, $4, $5, 'In Queue', $6)
+     (consultation_record_id, patient_id, service_id, requested_by, queue_id, status, bill_id, vital_signs)
+   VALUES ($1, $2, $3, $4, $5, 'In Queue', $6, $7::jsonb)
    RETURNING *`,
       [
         consultation_record_id,
@@ -562,7 +590,16 @@ export async function addConsultationRecord(
         user_id,
         queue_id,
         bill_id,
+        JSON.stringify(vitals.value),
       ],
+    );
+
+    // Keep the patient's latest height and weight on their record.
+    await client.query(
+      `UPDATE patients
+       SET height_cm = $2, weight_kg = $3, updated_at = NOW()
+       WHERE patient_id = $1`,
+      [patient_id, vitals.numbers.height, vitals.numbers.weight],
     );
 
     const bill = await recomputeBillTotals(client, bill_id);

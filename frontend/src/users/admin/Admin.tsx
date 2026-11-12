@@ -7,6 +7,7 @@ import {
   FileText,
   SquareActivity,
   Tv,
+  ChartColumn,
 } from "lucide-react";
 
 import SideBar from "../../components/SideBar";
@@ -15,6 +16,7 @@ import Header from "../../components/Header";
 
 import UserManagement from "./pages/UserManagement";
 import AdminDashboard from "./pages/AdminDashboard";
+import Reports from "./pages/Reports";
 import ServicePricingManagement from "./pages/ServicePricing";
 import ActivityMonitoring from "./pages/ActivityMonitoring";
 import FormTemplate from "./pages/FormTemplate";
@@ -37,7 +39,7 @@ function Admin() {
   const [services, setServices] = useState<Service[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
 
-  // Dashboard analytics, reloaded whenever the date range changes.
+  // Reports page analytics, reloaded whenever the date range changes.
   const [analyticsRange, setAnalyticsRange] = useState<AnalyticsRange>("30d");
   const [salesAnalytics, setSalesAnalytics] = useState<SalesAnalytics | null>(
     null,
@@ -101,6 +103,11 @@ function Admin() {
       page: "queueing-monitor",
       label: "Queueing Monitor",
       icon: <Tv size={20} />,
+    },
+    {
+      page: "reports",
+      label: "Reports",
+      icon: <ChartColumn size={20} />,
     },
   ];
 
@@ -190,19 +197,22 @@ function Admin() {
     }
   }, [analyticsRange]);
 
-  // Load analytics on mount and whenever the range changes.
+  // Load analytics only while the Reports page is open (and when its range
+  // changes), so the dashboard doesn't wait on them.
+  const onReports = page === "reports";
   useEffect(() => {
+    if (!onReports) return;
     async function action() {
       await loadAnalytics();
     }
     action();
-  }, [loadAnalytics]);
+  }, [loadAnalytics, onReports]);
 
   // The header's reload button refreshes everything.
   const reloadAll = useCallback(async () => {
     if (page === "form-template") setTemplateRefresh((value) => value + 1);
-    await Promise.all([loadData(), loadAnalytics()]);
-  }, [loadData, loadAnalytics, page]);
+    await Promise.all([loadData(), onReports ? loadAnalytics() : null]);
+  }, [loadData, loadAnalytics, onReports, page]);
 
   return (
     <SidebarNavContext.Provider value={{ navItems, page, setPage }}>
@@ -212,7 +222,7 @@ function Admin() {
         <div className="flex-1 min-w-0">
           <Header
             page={currentPage}
-            loading={loading || analyticsLoading}
+            loading={loading || (onReports && analyticsLoading)}
             open={open}
             setOpen={setOpen}
             loadData={reloadAll}
@@ -221,6 +231,21 @@ function Admin() {
           <div className="pb-6">
             {page === "dashboard" && (
               <AdminDashboard
+                users={users}
+                services={services}
+                activities={activities}
+                loading={loading}
+                errors={{
+                  users: Boolean(dataErrors.users),
+                  services: Boolean(dataErrors.services),
+                  activities: Boolean(dataErrors.activities),
+                }}
+                setPage={setPage}
+              />
+            )}
+
+            {page === "reports" && (
+              <Reports
                 range={analyticsRange}
                 setRange={setAnalyticsRange}
                 sales={salesAnalytics}

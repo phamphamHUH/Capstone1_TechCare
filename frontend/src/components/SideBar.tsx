@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { X } from "lucide-react";
 import SidebarUserMenu from "./sidebar/SidebarUserMenu";
 import type { NavItem } from "./sidebar/utils/sidebarNav";
 
@@ -34,7 +35,18 @@ const isMobile = () => window.innerWidth < 1024;
 function SideBar({ open, setOpen, page, setPage, navItems }: SideBarProps) {
   const [width, setWidth] = useState(readSavedWidth);
   const [resizing, setResizing] = useState(false);
+  const [mobile, setMobile] = useState(isMobile);
   const aside = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 1023px)");
+    const onChange = () => {
+      setMobile(query.matches);
+      if (query.matches) setOpen(false);
+    };
+    query.addEventListener("change", onChange);
+    return () => query.removeEventListener("change", onChange);
+  }, [setOpen]);
 
   // Drag the right edge to resize (desktop only; mobile stays w-64).
   useEffect(() => {
@@ -76,15 +88,37 @@ function SideBar({ open, setOpen, page, setPage, navItems }: SideBarProps) {
     event.preventDefault();
   }
 
-  // Phone drawer: Escape closes it.
+  // Keep touch scrolling and keyboard focus inside the open phone drawer.
   useEffect(() => {
-    if (!open) return;
+    if (!open || !mobile) return;
+    const previousOverflow = document.body.style.overflow;
+    const previousFocus = document.activeElement as HTMLElement | null;
+    document.body.style.overflow = "hidden";
+    const focusable = () => Array.from(
+      aside.current?.querySelectorAll<HTMLElement>('button, [href], [tabindex="0"]') ?? [],
+    ).filter((element) => element.getClientRects().length > 0);
+    focusable()[0]?.focus();
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && isMobile()) setOpen(false);
+      if (event.key === "Escape") setOpen(false);
+      if (event.key !== "Tab") return;
+      const elements = focusable();
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, setOpen]);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKey);
+      if (previousFocus?.isConnected) previousFocus.focus();
+    };
+  }, [open, mobile, setOpen]);
 
   return (
     <>
@@ -99,6 +133,9 @@ function SideBar({ open, setOpen, page, setPage, navItems }: SideBarProps) {
     )}
     <aside
       ref={aside}
+      role={mobile && open ? "dialog" : undefined}
+      aria-modal={mobile && open ? true : undefined}
+      aria-label="Navigation"
       style={{ "--sidebar-width": `${width}px` } as CSSProperties}
       className={`select-none fixed inset-y-0 left-0 z-50 flex h-dvh shrink-0 flex-col overflow-y-auto bg-white text-black lg:overflow-visible lg:sticky lg:top-0 lg:z-auto lg:h-screen ${
         resizing ? "" : "transition-all duration-300"
@@ -110,7 +147,15 @@ function SideBar({ open, setOpen, page, setPage, navItems }: SideBarProps) {
     >
       {open && (
         <>
-          <div className="flex items-center justify-start gap-2 h-24 border-b border-gray-300  px-2 mb-6">
+          <div className="relative flex shrink-0 items-center justify-start gap-2 h-24 border-b border-gray-300 px-2 mb-6">
+            <button
+              type="button"
+              aria-label="Close sidebar"
+              onClick={() => setOpen(false)}
+              className="absolute right-1 top-1 flex size-11 items-center justify-center rounded-md bg-white text-gray-600 hover:bg-gray-100 lg:hidden"
+            >
+              <X size={20} />
+            </button>
             <img
               src="/assets/images/reyna-g-logo.png"
               alt="Logo"
@@ -126,9 +171,11 @@ function SideBar({ open, setOpen, page, setPage, navItems }: SideBarProps) {
 
           <nav className="flex flex-col px-5 gap-1">
             {navItems.map((item) => (
-              <a
+              <button
+                type="button"
+                aria-current={page === item.page ? "page" : undefined}
                 key={item.page}
-                className={`hover:scale-101 active:scale-100 active:bg-sky-200 active:text-sky-700 rounded-md py-2 px-3 transition-all cursor-pointer ${
+                className={`min-h-11 text-left hover:scale-101 active:scale-100 active:bg-sky-200 active:text-sky-700 rounded-md py-2 px-3 transition-all cursor-pointer ${
                   page === item.page ? "bg-sky-100 text-sky-600 " : ""
                 }`}
                 onClick={() => {
@@ -140,7 +187,7 @@ function SideBar({ open, setOpen, page, setPage, navItems }: SideBarProps) {
                   <span className="shrink-0">{item.icon}</span>
                   <span className="truncate">{item.label}</span>
                 </div>
-              </a>
+              </button>
             ))}
           </nav>
 

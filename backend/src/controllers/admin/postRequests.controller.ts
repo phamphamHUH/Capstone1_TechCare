@@ -19,6 +19,12 @@ import type {
 } from "./dto/post.dto.js";
 import { sendEmail } from "../../services/email/sendEmail.js";
 import { employeeAccountCreatedEmail } from "../../services/email/emailTemplates.js";
+import {
+  createPasswordLink,
+  PASSWORD_LINK_DAYS,
+  unusablePassword,
+} from "../../utils/passwordLink.js";
+import { MIN_PASSWORD_LENGTH } from "../../utils/password.js";
 
 ///// the token generation on add user is just for testing purposes,
 /// it will be removed later on. optional lang kasi no need tokens right after sign up, its usually on login========
@@ -34,7 +40,7 @@ export async function addUser(
   try {
     const {
       username,
-      password,
+      password, // optional: when empty the employee creates it via an emailed link
       first_name,
       middle_name,
       last_name,
@@ -65,7 +71,6 @@ export async function addUser(
     // =========================
     if (
       !username ||
-      !password ||
       !first_name ||
       !last_name ||
       !sex ||
@@ -78,6 +83,14 @@ export async function addUser(
     ) {
       return res.status(400).json({
         message: "Please fill out all required fields",
+      } as addUser.error);
+    }
+
+    // Admin chose to set the password: same rule as a password reset.
+    const adminSetsPassword = typeof password === "string" && password !== "";
+    if (adminSetsPassword && password.length < MIN_PASSWORD_LENGTH) {
+      return res.status(400).json({
+        message: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`,
       } as addUser.error);
     }
 
@@ -99,9 +112,16 @@ export async function addUser(
     }
 
     // =========================
-    // HASH PASSWORD
+    // PASSWORD: SET BY THE ADMIN, OR CREATED BY THE EMPLOYEE
     // =========================
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Without a password from the admin, the employee gets an emailed link.
+    // Until they use it the account has a password nobody knows and login
+    // is blocked.
+    const passwordLink = adminSetsPassword ? null : createPasswordLink();
+    const hashedPassword = await bcrypt.hash(
+      adminSetsPassword ? password : unusablePassword(),
+      10,
+    );
 
     // =========================
     // GENERATE USER ID
@@ -158,7 +178,9 @@ export async function addUser(
         s2_license,
         medical_specialty,
         subspecialty,
-        board_certification
+        board_certification,
+        password_token_hash,
+        password_token_expires_at
       )
       VALUES (
         ${userId},
@@ -187,24 +209,32 @@ export async function addUser(
         ${s2_license || null},
         ${medical_specialty || null},
         ${subspecialty || null},
-        ${board_certification || null}
+        ${board_certification || null},
+        ${passwordLink?.hash ?? null},
+        ${passwordLink?.expiresAt ?? null}
       )
       RETURNING *
     `;
 
-    console.log("INSERT RESULT:", signUpResult);
-
     // =========================
-    // WELCOME EMAIL (information only)
+    // ACCOUNT EMAIL ("create your password" link, or just a heads-up)
     // =========================
-    // Not awaited: the account works right away, the email is just a heads-up.
-    void sendEmail(employeeAccountCreatedEmail(email, first_name, username, role));
+    // Not awaited: the admin shouldn't wait on the email provider.
+    void sendEmail(
+      employeeAccountCreatedEmail(
+        email,
+        first_name,
+        username,
+        role,
+        passwordLink && { url: passwordLink.url, days: PASSWORD_LINK_DAYS },
+      ),
+    );
 
     // =========================
     // REMOVE SENSITIVE DATA
     // =========================
     // Prevents the password hash from being sent to the client.
-    const { password_hash, ...safeUser } = signUpResult[0];
+    const { password_hash, password_token_hash, ...safeUser } = signUpResult[0];
 
     // =========================
     // RESPONSE
@@ -257,8 +287,12 @@ export async function addService(
 ) {
   // POST /api/admin/services
   try {
-    const { service_name, price, service_type, service_category, room } =
-      req.body;
+    const { service_name, price, service_type, service_category } = req.body;
+    // Drug tests run on the clinic's own system, not in a room.
+    const room =
+      String(service_type ?? "").trim().toLowerCase() === "drug test"
+        ? req.body.room || "Drug Test"
+        : req.body.room;
 
     if (
       !service_name ||
@@ -438,11 +472,16 @@ export async function addFormTemplates(
   const {
     form_name,
     form_description,
+    paper_size,
     status,
     service_id,
     created_by,
     form_components,
   } = req.body;
+
+  if (paper_size != null && !["half_long_bond", "a4"].includes(paper_size)) {
+    return res.status(400).json({ message: "Invalid paper size." });
+  }
 
   if (
     !form_name ||
@@ -481,6 +520,7 @@ export async function addFormTemplates(
         form_id,
         form_name,
         form_description,
+        paper_size,
         service_id,
         status,
         created_by
@@ -489,6 +529,7 @@ export async function addFormTemplates(
         ${form_id},
         ${form_name},
         ${form_description ?? null},
+        ${paper_size ?? null},
         ${service_id},
         ${status ?? "Published"},
         ${created_by}

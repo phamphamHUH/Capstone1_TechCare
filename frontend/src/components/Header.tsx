@@ -1,7 +1,7 @@
 import { LoadingSpinner } from "./LoadingScreen";
 import { RotateCw } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
-import NotificationBell from "./NotificationBell";
+import NotificationBell from "./Header/NotificationBell";
 import { useSidebarNav } from "./sidebar/utils/sidebarNav";
 
 type HeaderProps = {
@@ -15,11 +15,21 @@ type HeaderProps = {
 function Header({ page, loading, open, setOpen, loadData }: HeaderProps) {
   const rawRole = sessionStorage.getItem("role") ?? "";
 
-  const role =
-    rawRole === "laboratory-staff" || rawRole === "frontdesk-staff"
-      ? rawRole.replace("-", " ") // "laboratorystaff" / "frontdeskstaff"
-      : rawRole;
+  let department = "";
+  try {
+    department = String(
+      JSON.parse(sessionStorage.getItem("user") || "{}").department ?? "",
+    ).trim();
+  } catch {
+    /* corrupted sessionStorage value: ignore */
+  }
 
+  const role =
+    rawRole === "laboratory-staff" && department.toLowerCase() === "imaging"
+      ? "imaging staff"
+      : rawRole === "laboratory-staff" || rawRole === "frontdesk-staff"
+        ? rawRole.replace("-", " ")
+        : rawRole;
   // Queue notifications: doctors and lab staff use the staff endpoint,
   // patients their own. Check rawRole: `role` above is for display only.
   const notificationsPath =
@@ -42,14 +52,18 @@ function Header({ page, loading, open, setOpen, loadData }: HeaderProps) {
           onClick={() => setOpen((previous) => !previous)}
           aria-label={open ? "Close sidebar" : "Open sidebar"}
           aria-expanded={open}
-          className="text-2xl cursor-pointer hover:scale-105 active:scale-95"
+          className="flex size-11 shrink-0 items-center justify-center rounded-md text-2xl cursor-pointer hover:bg-gray-100 active:bg-gray-200"
         >
           ☰
         </button>
 
         <div className="flex flex-col min-w-0">
-          <h1 className="text-base sm:text-lg font-semibold truncate">{page}</h1>
-          <h2 className="text-xs sm:text-sm text-gray-500 capitalize truncate">{role}</h2>
+          <h1 className="text-base sm:text-lg font-semibold truncate">
+            {page}
+          </h1>
+          <h2 className="text-xs sm:text-sm text-gray-500 capitalize truncate">
+            {role}
+          </h2>
         </div>
       </div>
 

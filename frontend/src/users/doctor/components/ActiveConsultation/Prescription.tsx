@@ -10,7 +10,7 @@ import api from "#lib/axios";
 import ConfirmDialog from "../../../../components/ConfirmDialog";
 import ErrorMessage from "../../../../components/ErrorMessage";
 import type { QueueEntry } from "../../../../interface/Queue";
-import { usePersistentState } from "../../../../utils/persistentState";
+import { usePersistentState } from "./utils/persistentState";
 import AddMedication, {
   type PrescriptionItem,
 } from "./Prescription/AddMedication";

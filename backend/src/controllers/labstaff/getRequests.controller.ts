@@ -94,7 +94,7 @@ export async function getLaboratoryQueues(
         ) AS service_category
       FROM queue_entries q
       JOIN patients p ON p.patient_id = q.patient_id
-      WHERE q.queue_id LIKE 'LAB-%'
+      WHERE (q.queue_id LIKE 'LAB-%' OR q.queue_id LIKE 'IMG-%') -- laboratory and imaging queues
         AND EXISTS (
           SELECT 1
           FROM test_request_items tri
@@ -310,7 +310,7 @@ export async function getAnalysisItems(
         COALESCE(q.status, ri.status) AS request_status,
         CASE WHEN ri.status IN ('Completed', 'Released') OR EXISTS (
           SELECT 1 FROM test_results r WHERE r.item_id = ri.item_id
-            AND r.status IN ('Pending', 'Released')
+            AND r.status IN ('Pending', 'Verified', 'Released')
         ) THEN 'Completed'
         WHEN ri.status = 'In Progress' THEN 'In Progress'
         ELSE 'Ready for Analysis' END AS analysis_status
@@ -345,10 +345,10 @@ export async function getSavedLaboratoryResults(
       .json({ message: "room is required" } as getSavedLaboratoryResults.error);
   try {
     const results = await sql`
-      SELECT r.* FROM test_results r
+      SELECT r.*, s.service_category FROM test_results r
       JOIN test_request_items ri ON ri.item_id = r.item_id
       JOIN services s ON s.service_id = ri.service_id
-      WHERE s.room = ${room} AND r.status IN ('Pending', 'Released')
+      WHERE s.room = ${room} AND r.status IN ('Pending', 'Verified', 'Released')
       ORDER BY r.updated_at DESC
     `;
     return res.json({
@@ -374,6 +374,7 @@ export async function getAvailableFormTemplates(
         ft.form_id,
         ft.form_name,
         ft.form_description,
+        ft.paper_size,
         ft.service_id,
         ft.status,
         s.service_name,

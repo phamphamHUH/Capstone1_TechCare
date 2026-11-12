@@ -170,7 +170,7 @@ export function useLiveQueue() {
   const load = useCallback(async () => {
     try { setQueue((await api.get("/api/admin/queues")).data.queues ?? []); } catch { /* keep last good data */ }
   }, []);
-  useEffect(() => connectStream({ path: "/api/admin/queue/stream", event: "queue-changed", onSignal: load, onStatus: setStatus }), [load]);
+  useEffect(() => connectStream({ path: "/api/queue/stream", event: "queue-changed", onSignal: load, onStatus: setStatus }), [load]);
   return { queue, status };
 }
 ```

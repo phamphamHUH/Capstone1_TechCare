@@ -157,7 +157,7 @@ export async function updatePatient(
     const age = calculateAge(updatedPatient.birthdate);
 
     // Don't send the password hash to the client.
-    const { password_hash, ...safePatient } = updatedPatient;
+    const { password_hash, password_token_hash, ...safePatient } = updatedPatient;
 
     return res.status(200).json({
       message: "Patient updated successfully.",
@@ -203,7 +203,10 @@ export async function resetPatientPassword(
 
     const [patient] = await sql`
       UPDATE patients
-      SET password_hash = ${hashedPassword}, updated_at = NOW()
+      SET password_hash = ${hashedPassword},
+          password_token_hash = NULL, -- a staff reset replaces any emailed link
+          password_token_expires_at = NULL,
+          updated_at = NOW()
       WHERE patient_id = ${patient_id}
       RETURNING first_name, last_name
     `;
@@ -650,9 +653,29 @@ export async function confirmPayment(
          FOR UPDATE OF tri`,
         [bill_id],
       );
-      has_laboratory_items = labItems.length > 0;
+      // Drug tests never go to the lab, so they don't count here.
+      has_laboratory_items = labItems.some((item) => item.service_type !== "drug test");
 
-      const unforwarded = labItems.filter((item) => !item.queue_id);
+      // Drug tests are billed but never queued: the clinic runs them on its
+      // own system. Paying the bill completes them; the admin counts them in
+      // Reports -> Drug Tests.
+      const drugTests = labItems.filter(
+        (item) =>
+          item.service_type === "drug test" &&
+          String(item.status).trim().toLowerCase() === "requested",
+      );
+      if (drugTests.length > 0) {
+        await client.query(
+          `UPDATE test_request_items
+           SET status = 'Completed', updated_at = NOW()
+           WHERE item_id = ANY($1::text[])`,
+          [drugTests.map((item) => item.item_id)],
+        );
+      }
+
+      const unforwarded = labItems.filter(
+        (item) => !item.queue_id && item.service_type !== "drug test",
+      );
       if (
         unforwarded.some(
           (item) =>

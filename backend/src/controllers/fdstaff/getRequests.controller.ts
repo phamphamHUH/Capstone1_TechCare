@@ -27,8 +27,12 @@ export async function getAllPatients(
         patients: [],
       } as getAllPatients.response);
     }
+    // Never send password or "set your password" link hashes to the browser.
+    const safePatients = patients.map(
+      ({ password_hash, password_token_hash, ...patient }) => patient,
+    );
     return res.status(200).json({
-      patients: patients as unknown as getAllPatients.patient[],
+      patients: safePatients as unknown as getAllPatients.patient[],
     } as getAllPatients.response);
   } catch (error) {
     console.error("Error fetching patients:", error);

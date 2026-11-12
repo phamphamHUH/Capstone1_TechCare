@@ -88,3 +88,16 @@ export namespace releaseLaboratoryResult {
     message: string;
   }
 }
+
+// PATCH /api/labstaff/laboratory-results/:result_id/verify
+// Pending -> Verified. A result must be verified before it can be released.
+export namespace verifyLaboratoryResult {
+  export interface response {
+    message: string;
+    result: Record<string, unknown>;
+  }
+
+  export interface error {
+    message: string;
+  }
+}

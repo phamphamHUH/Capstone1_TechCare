@@ -46,13 +46,6 @@ function LaboratoryRequests({
 
   return (
     <main className="flex-1 min-w-0 border-gray-300">
-      <Header
-        page="Laboratory Requests"
-        loading={loading}
-        open={open}
-        setOpen={setOpen}
-        loadData={loadData}
-      />
       <div className="px-4 sm:px-6 pb-6 flex flex-col space-y-6 z-0">
         <RequestSummary services={services} room={room} />
         <LaboratoryQueuePanel

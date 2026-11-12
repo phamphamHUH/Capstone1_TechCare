@@ -7,9 +7,9 @@ import { Search } from "lucide-react";
 import calculateAge from "../../../../utils/calculateAge.ts";
 import PrescriptionManager from "../prescription/PrescriptionManager.tsx";
 import type { PatientInfo } from "../prescription/types.ts";
-import ConsultationPatientHeader from "../consultation/ConsultationPatientHeader.tsx";
-import ConsultationFindingsForm from "../consultation/ConsultationFindingsForm.tsx";
-import LaboratoryRequestForm from "../consultation/LaboratoryRequestsForm.tsx";
+import ConsultationPatientHeader from "./ConsultationWorkspace/ConsultationPatientHeader.tsx";
+import ConsultationFindingsForm from "./ConsultationWorkspace/ConsultationFindingsForm.tsx";
+import LaboratoryRequestForm from "./ConsultationWorkspace/LaboratoryRequestsForm.tsx";
 import {
   fetchConsultationPatient,
   saveConsultationFindings,

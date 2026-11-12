@@ -1,7 +1,8 @@
 import { LoadingSpinner } from "../../../../components/LoadingScreen";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { Dialog } from "@base-ui/react/dialog";
-import { Globe, Send, X } from "lucide-react";
+import { BadgeCheck, Globe, Send, X } from "lucide-react";
+import ConfirmDialog from "../../../../components/ConfirmDialog";
 import type {
   LaboratoryReportData,
   ResultReleaseResponse,
@@ -12,6 +13,7 @@ import {
   apiMessage,
   releaseLaboratoryResult,
   resultReleaseApi,
+  verifyResult,
 } from "./utils/laboratoryResultsApi";
 import ResultSuccessOverlay from "./ResultSuccessOverlay";
 
@@ -122,6 +124,10 @@ export default function ResultReleaseControl({
   const [confirmed, setConfirmed] = useState<ResultReleaseResponse | null>(
     null,
   );
+  // Verification step before release (Pending -> Verified -> Released).
+  const [verifiedHere, setVerifiedHere] = useState<{ at?: string } | null>(null);
+  const [confirmingVerify, setConfirmingVerify] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
   const pendingRequest = useRef<AbortController | null>(null);
@@ -132,6 +138,9 @@ export default function ResultReleaseControl({
     confirmed?.status === "Released" ||
     report.releaseStatus === "Released";
   const releasedAt = confirmed?.released_at || report.releasedAt;
+  const verified =
+    released || verifiedHere !== null || report.releaseStatus === "Verified";
+  const verifiedAt = verifiedHere?.at || report.verifiedAt;
   const unavailableReason = !report.resultId
     ? "Save this result before releasing it."
     : !resultReleaseApi.releaseResult
@@ -146,6 +155,21 @@ export default function ResultReleaseControl({
         : "Online availability not recorded";
 
   useEffect(() => () => pendingRequest.current?.abort(), []);
+
+  async function confirmVerify() {
+    if (!report.resultId || verifying) return;
+    setVerifying(true);
+    setError("");
+    try {
+      const result = await verifyResult(report.resultId);
+      setVerifiedHere({ at: result.verified_at });
+    } catch (cause) {
+      setError(apiMessage(cause, "Unable to verify this result. Please try again."));
+    } finally {
+      setVerifying(false);
+      setConfirmingVerify(false);
+    }
+  }
 
   async function confirmRelease() {
     if (
@@ -201,8 +225,15 @@ export default function ResultReleaseControl({
               ? "This result is available online for the patient."
               : released
                 ? "This result is released. Patient online access has not been confirmed."
-                : "Review and release the saved laboratory result."}
+                : verified
+                  ? "Verified. You can release it to the patient now."
+                  : "Verify the saved result first, then release it."}
           </p>
+          {verifiedAt && !released && (
+            <p className="mt-1 text-xs text-gray-500">
+              Verified: {formatLabDate(verifiedAt)}
+            </p>
+          )}
           {releasedAt && (
             <p className="mt-1 text-xs text-gray-500">
               Released: {formatLabDate(releasedAt)}
@@ -213,14 +244,31 @@ export default function ResultReleaseControl({
           role="status"
           className={`rounded-full px-2.5 py-1 text-xs ${available ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"}`}
         >
-          {status}
+          {verified && !released ? "Verified" : status}
         </span>
+        {!verified && (
+          <button
+            type="button"
+            disabled={!report.resultId || verifying}
+            onClick={() => setConfirmingVerify(true)}
+            className="inline-flex min-h-9 cursor-pointer items-center justify-center gap-2 rounded-md border border-green-600 bg-white px-4 py-2 text-sm font-medium text-green-700 hover:bg-green-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {verifying ? <LoadingSpinner size={13} /> : <BadgeCheck size={14} />}
+            {verifying ? "Verifying..." : "Verify Result"}
+          </button>
+        )}
+        {error && !open && (
+          <p role="alert" className="basis-full text-sm text-red-600">
+            {error}
+          </p>
+        )}
         <button
           ref={triggerRef}
           type="button"
-          aria-disabled={released}
+          aria-disabled={released || !verified}
+          title={!verified ? "Verify the result before releasing it." : undefined}
           onClick={() => {
-            if (released) return;
+            if (released || !verified) return;
             setError("");
             setOpen(true);
           }}
@@ -230,6 +278,18 @@ export default function ResultReleaseControl({
           {released ? "Released" : "Release Result"}
         </button>
       </section>
+      {confirmingVerify && (
+        <ConfirmDialog
+          tone="info"
+          icon={BadgeCheck}
+          confirmIcon={BadgeCheck}
+          title="Verify this result?"
+          description="Confirm you have checked the values against the sample and they are correct. Editing the result later sends it back for verification."
+          confirmLabel="Verify"
+          onCancel={() => setConfirmingVerify(false)}
+          onConfirm={confirmVerify}
+        />
+      )}
       <Dialog.Root
         open={open}
         onOpenChange={(nextOpen) => {

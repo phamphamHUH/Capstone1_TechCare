@@ -7,6 +7,7 @@ import type {
   cancelQueueEntry,
   startLaboratoryAnalysis,
   releaseLaboratoryResult,
+  verifyLaboratoryResult,
 } from "./dto/update.dto.js";
 import { publishQueueChange } from "../../services/queue-sse/index.js";
 import {
@@ -43,7 +44,7 @@ export async function acceptQueueEntry(
         status = 'Serving',
         updated_at = NOW()
       WHERE q.queue_id = ${queue_id}
-        AND q.queue_id LIKE 'LAB-%'
+        AND (q.queue_id LIKE 'LAB-%' OR q.queue_id LIKE 'IMG-%') -- laboratory and imaging queues
         AND LOWER(q.status) IN ('waiting', 'skipped')
         AND EXISTS (
           SELECT 1
@@ -68,7 +69,7 @@ export async function acceptQueueEntry(
           ) AS in_room
         FROM queue_entries q
         WHERE q.queue_id = ${queue_id}
-          AND q.queue_id LIKE 'LAB-%'
+          AND (q.queue_id LIKE 'LAB-%' OR q.queue_id LIKE 'IMG-%') -- laboratory and imaging queues
       `;
 
       if (!existing) {
@@ -130,7 +131,7 @@ export async function completeQueueEntry(
             ELSE NOW()
           END
         WHERE q.queue_id = ${queue_id}
-          AND q.queue_id LIKE 'LAB-%'
+          AND (q.queue_id LIKE 'LAB-%' OR q.queue_id LIKE 'IMG-%') -- laboratory and imaging queues
           AND LOWER(q.status) IN ('serving', 'completed')
           AND EXISTS (
             SELECT 1
@@ -194,7 +195,7 @@ export async function completeQueueEntry(
           ) AS in_room
         FROM queue_entries q
         WHERE q.queue_id = ${queue_id}
-          AND q.queue_id LIKE 'LAB-%'
+          AND (q.queue_id LIKE 'LAB-%' OR q.queue_id LIKE 'IMG-%') -- laboratory and imaging queues
       `;
 
       if (!existing) {
@@ -291,7 +292,8 @@ export async function skipQueueEntry(
     }
 
     // Move the next waiting patient forward by one position.
-    // "Same queue" now means: a queue with lab items in the same room.
+    // "Same queue" means: same type (LAB- or IMG-, numbered separately)
+    // with items in the same room.
     await sql`
       UPDATE queue_entries q
       SET
@@ -299,6 +301,7 @@ export async function skipQueueEntry(
         updated_at = NOW()
       WHERE q.queue_number = ${currentQueueNumber + 1}
         AND LOWER(q.status) = 'waiting'
+        AND LEFT(q.queue_id, 4) = LEFT(${queue_id}, 4)
         AND EXISTS (
           SELECT 1
           FROM test_request_items tri
@@ -484,6 +487,54 @@ export async function startLaboratoryAnalysis(
   }
 }
 
+// The lab's verification step: a staff member checks the saved result
+// (Pending -> Verified). Release is only allowed after this.
+export async function verifyLaboratoryResult(
+  req: Request,
+  res: Response<verifyLaboratoryResult.response | verifyLaboratoryResult.error>,
+) {
+  try {
+    const { result_id } = req.params;
+    const verifier = (req.user as { user_id?: string } | undefined)?.user_id ?? null;
+
+    if (!result_id) {
+      return res.status(400).json({ message: "Result ID is required." });
+    }
+
+    const [result] = await sql`
+      UPDATE test_results
+      SET
+        status = 'Verified',
+        verified_by = ${verifier},
+        verified_at = NOW(),
+        updated_at = NOW()
+      WHERE result_id = ${result_id}
+        AND status = 'Pending'
+      RETURNING result_id, item_id, status, verified_by, verified_at, updated_at;
+    `;
+
+    if (!result) {
+      const [existing] = await sql`
+        SELECT status FROM test_results WHERE result_id = ${result_id} LIMIT 1
+      `;
+      if (!existing) {
+        return res.status(404).json({ message: "Laboratory result not found." });
+      }
+      return res.status(409).json({
+        message: `Result cannot be verified because its status is ${existing.status}.`,
+      });
+    }
+
+    return res.status(200).json({
+      message: "Laboratory result verified.",
+      result,
+    });
+  } catch (error) {
+    console.error("Unable to verify laboratory result:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
 export async function releaseLaboratoryResult(
   req: Request,
   res: Response<
@@ -499,14 +550,18 @@ export async function releaseLaboratoryResult(
       } as releaseLaboratoryResult.error);
     }
 
+    const releaser = (req.user as { user_id?: string } | undefined)?.user_id ?? null;
+
+    // Only verified results can be released (the clinic verifies first).
     const [result] = await sql`
       UPDATE test_results
       SET
         status = 'Released',
         released_at = NOW(),
+        released_by = ${releaser},
         updated_at = NOW()
       WHERE result_id = ${result_id}
-        AND status = 'Pending'
+        AND status = 'Verified'
       RETURNING result_id, item_id, status, released_at, updated_at;
     `;
 
@@ -525,7 +580,10 @@ export async function releaseLaboratoryResult(
       }
 
       return res.status(409).json({
-        message: `Result cannot be released because its status is ${existing.status}.`,
+        message:
+          existing.status === "Pending"
+            ? "Verify the result before releasing it."
+            : `Result cannot be released because its status is ${existing.status}.`,
       } as releaseLaboratoryResult.error);
     }
 

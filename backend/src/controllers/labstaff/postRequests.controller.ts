@@ -73,8 +73,12 @@ export async function saveLaboratoryResult(
           results = ${JSON.stringify(results)}::jsonb,
           remarks = ${typeof remarks === "string" ? remarks.trim() || null : null},
           image_url = ${typeof image_url === "string" ? image_url.trim() || null : null},
+          -- Editing a verified result sends it back for verification.
+          status = 'Pending',
+          verified_by = NULL,
+          verified_at = NULL,
           updated_at = NOW()
-        FROM eligible e WHERE r.item_id = e.item_id AND r.status = 'Pending'
+        FROM eligible e WHERE r.item_id = e.item_id AND r.status IN ('Pending', 'Verified')
         RETURNING r.*
       ), inserted AS (
         INSERT INTO test_results (result_id, item_id, results, remarks, image_url)

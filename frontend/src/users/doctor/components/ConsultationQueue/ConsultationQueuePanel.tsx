@@ -1,6 +1,6 @@
 import EmptyState from "../../../../components/EmptyState";
 import { useState, type Dispatch, type SetStateAction } from "react";
-import QueueTable from "./QueueTable";
+import QueueTable from "./ConsultationQueuePanel/QueueTable";
 import type { PriorityFilter, QueueEntry } from "../../../../interface/Queue";
 import type { Service } from "../../../../interface/Service";
 import { ChevronDown, Search } from "lucide-react";
@@ -81,6 +81,9 @@ function ConsultationQueuePanel({
     .filter((queue) => {
       const status = queue.status?.toLowerCase();
 
+      // Never show cancelled queues
+      if (status === "cancelled") return false;
+
       const matchesStatus =
         activeMainTab === "all"
           ? status !== "completed"
@@ -89,7 +92,8 @@ function ConsultationQueuePanel({
       const matchesSearch =
         !searchLower ||
         queue.queue_id?.toLowerCase().includes(searchLower) ||
-        queue.patient_id?.toLowerCase().includes(searchLower);
+        queue.patient_id?.toLowerCase().includes(searchLower) ||
+        queue.patient_name?.toLowerCase().includes(searchLower);
 
       const matchesPriority =
         priorityFilter === "all" ||
@@ -170,7 +174,7 @@ function ConsultationQueuePanel({
       </div>
 
       {/* SEARCH BAR AND ADDITIONAL FILTERS */}
-      <div className="mb-5 flex w-7/12 flex-wrap items-center gap-2 px-6">
+      <div className="mb-5 flex w-full lg:w-7/12 flex-wrap items-center gap-2 px-4 sm:px-6">
         <div className="relative min-w-55 flex-1 basis-70">
           <Search
             size={17}
@@ -182,7 +186,7 @@ function ConsultationQueuePanel({
             type="text"
             value={searchFilter}
             onChange={(e) => setSearchFilter(e.target.value)}
-            placeholder="Search..."
+            placeholder="Queue ID, Patient ID, or Patient Name..."
             className="h-9 w-full rounded-md border border-gray-300 bg-white pl-9 pr-3 text-sm text-gray-700 outline-none transition focus:border-sky-400 focus:ring-1 focus:ring-sky-100"
           />
         </div>

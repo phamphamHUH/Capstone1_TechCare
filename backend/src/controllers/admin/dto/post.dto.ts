@@ -1,7 +1,8 @@
 export namespace addUser {
   export interface body {
     username: string;
-    password: string;
+    // Optional. Empty: the employee creates it from the emailed link.
+    password?: string;
     first_name: string;
     middle_name?: string | null;
     last_name: string;
@@ -163,6 +164,7 @@ export namespace addFormTemplates {
   export interface body {
     form_name: string;
     form_description?: string | null;
+    paper_size?: "half_long_bond" | "a4" | null;
     status?: string;
     service_id: string;
     created_by: string;
@@ -183,6 +185,7 @@ export namespace addFormTemplates {
     form_id: string;
     form_name: string;
     form_description: string | null;
+    paper_size: "half_long_bond" | "a4" | null;
     service_id: string;
     status: string;
     created_by: string;

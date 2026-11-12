@@ -26,6 +26,12 @@ import {
   // getConsultationPatient,
 } from "../controllers/doctor/getRequests.controller.js";
 import { getAllservices } from "../controllers/admin/getRequests.controller.js";
+import {
+  getIssuedMedicalDocuments,
+  getMedicalDocumentTemplates,
+  issueMedicalDocument,
+  searchMedicalDocumentPatients,
+} from "../controllers/doctor/medicalDocuments.controller.js";
 const router = Router();
 
 if (ENV.IS_PRODUCTION) {
@@ -36,6 +42,32 @@ if (ENV.IS_PRODUCTION) {
 router.post("/laboratory-requests", addLaboratoryRequest);
 router.post("/prescriptions", addPrescription);
 // GET requests
+router.get(
+  "/medical-document-templates",
+  authMiddleware,
+  doctorMiddleware,
+  getMedicalDocumentTemplates,
+);
+// The signed-in doctor is printed as the attending physician, so these always
+// require a doctor token (also outside production).
+router.get(
+  "/medical-document-patients",
+  authMiddleware,
+  doctorMiddleware,
+  searchMedicalDocumentPatients,
+);
+router.get(
+  "/medical-documents",
+  authMiddleware,
+  doctorMiddleware,
+  getIssuedMedicalDocuments,
+);
+router.post(
+  "/medical-documents",
+  authMiddleware,
+  doctorMiddleware,
+  issueMedicalDocument,
+);
 router.get("/laboratory-results/:result_id", getReleasedLaboratoryResults);
 router.get("/services/:room", getRoomSpecificServices);
 router.get("/services", getAllservices);

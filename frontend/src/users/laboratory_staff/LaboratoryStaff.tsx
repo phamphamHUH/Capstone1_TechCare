@@ -10,6 +10,7 @@ import LabstaffDashboard from "./pages/LabstaffDashboard";
 import LaboratoryResults from "./pages/LaboratoryResults";
 import type { QueueEntry } from "../../interface/Queue";
 import type { Service } from "../../interface/Service";
+import Header from "#components/Header";
 
 function LaboratoryStaff() {
   const [open, setOpen] = useState(
@@ -36,10 +37,26 @@ function LaboratoryStaff() {
     setSearchParams({ page: newPage });
   }
 
-  // Each lab staff member's room is the department on their account.
-  const room: string =
-    JSON.parse(sessionStorage.getItem("user") || "{}").department ||
-    "Laboratory Room 2";
+  const ROOM_BY_DEPARTMENT: Record<string, string> = {
+    imaging: "Imaging Room",
+    laboratory: "Laboratory Room 2",
+  };
+
+  function getUserRoom(): string {
+    try {
+      const user = JSON.parse(sessionStorage.getItem("user") || "{}");
+      const department = String(user.department ?? "").trim();
+
+      return ROOM_BY_DEPARTMENT[department.toLowerCase()] ?? department;
+    } catch {
+      return "";
+    }
+  }
+
+  const room: string = getUserRoom() || "Laboratory Room 2";
+  const deptLabel = room.toLowerCase().includes("imaging")
+    ? "Imaging"
+    : "Laboratory";
 
   const loadData = useCallback(
     async (background = false) => {
@@ -87,12 +104,12 @@ function LaboratoryStaff() {
     },
     {
       page: "laboratory-requests",
-      label: "Laboratory Requests",
+      label: `${deptLabel} Requests`,
       icon: <ClipboardList size={20} />,
     },
     {
       page: "laboratory-results",
-      label: "Laboratory Results",
+      label: `${deptLabel} Results`,
       icon: <FileCheck size={20} />,
     },
   ];
@@ -104,42 +121,65 @@ function LaboratoryStaff() {
     })();
   }, [loadData, page]);
 
+  const currentPage =
+    navItems.find((item) => item.page === page)?.label ?? "Dashboard";
+
   return (
     <SidebarNavContext.Provider value={{ navItems, page, setPage }}>
       <div className="flex min-h-screen cursor-default">
-        <SideBar open={open} setOpen={setOpen} page={page} setPage={setPage} navItems={navItems} />
-        {page === "dashboard" && (
-          <LabstaffDashboard
-            error={error}
+        <SideBar
+          open={open}
+          setOpen={setOpen}
+          page={page}
+          setPage={setPage}
+          navItems={navItems}
+        />
+        <div className="flex-1 min-w-0">
+          <Header
+            page={currentPage}
+            loading={loading}
             open={open}
             setOpen={setOpen}
-            loading={loading}
             loadData={loadData}
           />
-        )}
+          {page === "dashboard" && (
+            <LabstaffDashboard
+              error={error}
+              open={open}
+              setOpen={setOpen}
+              loading={loading}
+              loadData={loadData}
+              room={room}
+              queues={queues}
+              serviceCount={services.length}
+              queueLoadFailed={queueLoadFailed}
+              setPage={setPage}
+            />
+          )}
 
-        {page === "laboratory-requests" && (
-          <LaboratoryRequests
-            open={open}
-            setOpen={setOpen}
-            queues={queues}
-            services={services}
-            loading={loading}
-            error={error}
-            loadData={loadData}
-            room={room}
-            queueLoadFailed={queueLoadFailed}
-          />
-        )}
+          {page === "laboratory-requests" && (
+            <LaboratoryRequests
+              open={open}
+              setOpen={setOpen}
+              queues={queues}
+              services={services}
+              loading={loading}
+              error={error}
+              loadData={loadData}
+              room={room}
+              queueLoadFailed={queueLoadFailed}
+            />
+          )}
 
-        {page === "laboratory-results" && (
-          <LaboratoryResults
-            open={open}
-            setOpen={setOpen}
-            room={room}
-            onUnsavedChange={setUnsavedResult}
-          />
-        )}
+          {page === "laboratory-results" && (
+            <LaboratoryResults
+              open={open}
+              setOpen={setOpen}
+              room={room}
+              onUnsavedChange={setUnsavedResult}
+            />
+          )}
+        </div>
       </div>
 
       {pendingPage && (

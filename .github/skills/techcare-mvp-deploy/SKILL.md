@@ -614,7 +614,7 @@ export default function ProtectedRoute({ allowedRoles, children }: { allowedRole
 ```tsx
 import { BrowserRouter, Routes, Route, Navigate } from "react-router";
 import ProtectedRoute from "./lib/ProtectedRoute";
-// import LoginPage, Admin, Doctor, FrontdeskStaff, LaboratoryStaff, PatientInformation ...
+// import LoginPage, Admin, Doctor, FrontdeskStaff, LaboratoryStaff, Patient ...
 export default function App() {
   return (
     <BrowserRouter>
@@ -625,7 +625,7 @@ export default function App() {
         <Route path="/doctor" element={<ProtectedRoute allowedRoles={["doctor"]}><Doctor /></ProtectedRoute>} />
         <Route path="/frontdesk-staff" element={<ProtectedRoute allowedRoles={["frontdesk-staff"]}><FrontdeskStaff /></ProtectedRoute>} />
         <Route path="/laboratory-staff" element={<ProtectedRoute allowedRoles={["laboratory-staff"]}><LaboratoryStaff /></ProtectedRoute>} />
-        <Route path="/patient" element={<ProtectedRoute allowedRoles={["patient"]}><PatientInformation /></ProtectedRoute>} />
+        <Route path="/patient" element={<ProtectedRoute allowedRoles={["patient"]}><Patient /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>

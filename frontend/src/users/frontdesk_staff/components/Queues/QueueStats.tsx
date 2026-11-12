@@ -63,7 +63,7 @@ function QueueStats({ stats, activeFilter, onFilterChange }: QueueProps) {
 
   return (
     <section className="mt-5 mb-6 overflow-hidden rounded-md border border-gray-300 bg-gray-300">
-      <div className="grid grid-cols-1 gap-px sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-px lg:grid-cols-5">
         {cards.map((card) => {
           const Icon = card.icon;
           const selected = activeFilter === card.filter;
@@ -80,13 +80,13 @@ function QueueStats({ stats, activeFilter, onFilterChange }: QueueProps) {
                   ? "Click to show all"
                   : `Show ${card.label.toLowerCase()}`
               }
-              className={`p-6 text-left cursor-pointer transition-colors sm:last:col-span-2 lg:last:col-span-1 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-sky-500 ${
+              className={`min-w-0 p-4 sm:p-6 text-left cursor-pointer transition-colors last:col-span-2 lg:last:col-span-1 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-sky-500 ${
                 selected
                   ? "bg-sky-50 shadow-[inset_0_-3px_0_0_var(--color-sky-500)]"
                   : "bg-white hover:bg-gray-50"
               }`}
             >
-              <div className="mb-4 flex items-center gap-3">
+              <div className="mb-3 sm:mb-4 flex items-center gap-2 sm:gap-3">
                 <Icon
                   size={20}
                   strokeWidth={1.5}
@@ -101,7 +101,7 @@ function QueueStats({ stats, activeFilter, onFilterChange }: QueueProps) {
               </div>
 
               <p
-                className={`text-3xl font-semibold ${selected ? "text-sky-700" : ""}`}
+                className={`text-2xl sm:text-3xl font-semibold ${selected ? "text-sky-700" : ""}`}
               >
                 {card.value}
               </p>

@@ -7,7 +7,7 @@ import { createServer } from "vite";
 const server = await createServer({ server: { middlewareMode: true }, appType: "custom" });
 after(() => server.close());
 const base = "/src/users/laboratory_staff/components/LaboratoryResults/";
-const { default: LaboratoryReport } = await server.ssrLoadModule(`${base}LaboratoryReport.tsx`);
+const { default: LaboratoryReport } = await server.ssrLoadModule(`${base}PrintResultView/LaboratoryReport.tsx`);
 const { default: ResultEntry } = await server.ssrLoadModule(`${base}ResultEntry.tsx`);
 const { default: PrintResultView } = await server.ssrLoadModule(`${base}PrintResultView.tsx`);
 const { REPORT_FRAME_HTML, safeReportImage, waitForReportAssets } = await server.ssrLoadModule(`${base}utils/laboratoryPrint.ts`);

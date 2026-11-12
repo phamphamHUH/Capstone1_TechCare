@@ -57,7 +57,16 @@ export interface LaboratoryReportData {
   releasedAt?: string;
   releasedBy?: string;
   onlineAvailable?: boolean;
-  releaseStatus?: "Pending" | "Released";
+  // Pending -> Verified (lab verification) -> Released
+  releaseStatus?: "Pending" | "Verified" | "Released";
+  /** Signature block for A4 reports such as medical certificates. */
+  attendingPhysician?: { name: string; license?: string | null };
+  /** Set when this report is a doctor-issued medical certificate or clearance. */
+  medicalDocument?: {
+    typeLabel: string;
+    address?: string;
+    civilStatus?: string;
+  };
 }
 
 export interface ResultReleasePayload {

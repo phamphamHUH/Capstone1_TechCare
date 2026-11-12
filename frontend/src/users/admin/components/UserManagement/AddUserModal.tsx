@@ -1,6 +1,6 @@
+import { Eye, EyeOff } from "lucide-react";
 import { useEffect, useState } from "react";
 import UniversalModal from "../../../../components/UniversalModal";
-import { Eye, EyeOff } from "lucide-react";
 import ErrorMessage from "../../../../components/ErrorMessage";
 import api from "../../../../lib/axios";
 import {
@@ -8,7 +8,7 @@ import {
   SelectField,
   Section,
   fieldClass,
-} from "../../../../components/FormFields";
+} from "./AddUserModal/FormFields";
 import { DOCTOR_FIELDS } from "./utils/doctorField";
 import {
   departmentAfterRoleChange,
@@ -43,6 +43,7 @@ const today = () => new Date().toLocaleDateString("en-CA");
 const getInitialForm = () => ({
   // Account
   username: "",
+  // Only used when the admin chooses to set the password.
   password: "",
   confirm_password: "",
   // Personal
@@ -74,8 +75,14 @@ const getInitialForm = () => ({
 });
 type FormState = ReturnType<typeof getInitialForm>;
 
+// Same rule as the backend (utils/password.ts).
+const MIN_PASSWORD_LENGTH = 8;
+
 function AddUserModal({ onClose, loadData }: Props) {
   const [form, setForm] = useState<FormState>(getInitialForm);
+  // "link": the employee creates their own password from an emailed link.
+  // "admin": the admin sets it here and gives it to the employee.
+  const [passwordMode, setPasswordMode] = useState<"link" | "admin">("link");
   const [showPassword, setShowPassword] = useState(false);
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -146,8 +153,6 @@ function AddUserModal({ onClose, loadData }: Props) {
 
     const required: (keyof FormState)[] = [
       "username",
-      "password",
-      "confirm_password",
       "first_name",
       "last_name",
       "sex",
@@ -162,12 +167,18 @@ function AddUserModal({ onClose, loadData }: Props) {
       setFormError("Please fill out all required fields.");
       return;
     }
+    if (passwordMode === "admin") {
+      if (form.password.length < MIN_PASSWORD_LENGTH) {
+        setFormError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
+        return;
+      }
+      if (form.password !== form.confirm_password) {
+        setFormError("The passwords don't match.");
+        return;
+      }
+    }
     if (form.role === LAB_STAFF_ROLE && !form.department) {
       setFormError("Please select a room for the laboratory staff.");
-      return;
-    }
-    if (form.password !== form.confirm_password) {
-      setFormError("Your passwords do not match.");
       return;
     }
     if (
@@ -184,8 +195,13 @@ function AddUserModal({ onClose, loadData }: Props) {
       const formData = new FormData();
       Object.entries(form).forEach(([key, value]) => {
         if (key === "confirm_password") return;
+        if (key === "password") {
+          // Sent only when the admin sets it; never trimmed.
+          if (passwordMode === "admin") formData.append("password", value);
+          return;
+        }
         if (!isDoctor && DOCTOR_KEYS.has(key)) return; // doctor fields only for doctors
-        const v = key === "password" ? value : value.trim();
+        const v = value.trim();
         if (v) formData.append(key, v);
       });
       if (photo) formData.append("image", photo); // must match upload.single("image")
@@ -237,36 +253,76 @@ function AddUserModal({ onClose, loadData }: Props) {
               width="w-44"
             />
 
-            <label className="flex items-center gap-2 text-sm text-gray-500">
-              <span className="whitespace-nowrap">
+            <fieldset className="basis-full space-y-2">
+              <legend className="mb-2 text-sm text-gray-500">
                 Password<span className="text-red-500"> *</span>
-              </span>
-              <span className="flex w-44 items-center rounded-md border border-gray-200 focus-within:border-sky-400">
+              </legend>
+              <label className="flex cursor-pointer items-start gap-2 text-sm text-gray-700">
                 <input
-                  type={showPassword ? "text" : "password"}
-                  value={form.password}
-                  onChange={(e) => set("password")(e.target.value)}
-                  className="h-8 w-full rounded-md bg-transparent px-2 text-sm text-gray-800 outline-none"
+                  type="radio"
+                  name="password-mode"
+                  checked={passwordMode === "link"}
+                  onChange={() => setPasswordMode("link")}
+                  className="mt-0.5 accent-sky-600"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((s) => !s)}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  className="px-2 text-gray-400 hover:text-gray-700"
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </span>
-            </label>
+                <span>
+                  Email a link so the employee creates their own password
+                  <span className="block text-xs text-gray-500">
+                    They can log in once they've set it. The link works once and expires in 7 days.
+                  </span>
+                </span>
+              </label>
+              <label className="flex cursor-pointer items-start gap-2 text-sm text-gray-700">
+                <input
+                  type="radio"
+                  name="password-mode"
+                  checked={passwordMode === "admin"}
+                  onChange={() => setPasswordMode("admin")}
+                  className="mt-0.5 accent-sky-600"
+                />
+                <span>
+                  Set the password now
+                  <span className="block text-xs text-gray-500">
+                    You give it to the employee; they can log in right away.
+                  </span>
+                </span>
+              </label>
+            </fieldset>
 
-            <Field
-              label="Confirm Password"
-              required
-              type={showPassword ? "text" : "password"}
-              value={form.confirm_password}
-              onChange={set("confirm_password")}
-              width="w-44"
-            />
+            {passwordMode === "admin" && (
+              <>
+                <label className="flex max-w-full flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-500">
+                  <span className="whitespace-nowrap">
+                    Password<span className="text-red-500"> *</span>
+                  </span>
+                  <span className="flex w-44 max-w-full items-center rounded-md border border-gray-200 focus-within:border-sky-400">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      autoComplete="new-password"
+                      value={form.password}
+                      onChange={(e) => set("password")(e.target.value)}
+                      className="h-8 w-full rounded-md bg-transparent px-2 text-sm text-gray-800 outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((shown) => !shown)}
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      className="px-2 text-gray-400 hover:text-gray-700"
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </span>
+                </label>
+                <Field
+                  label="Confirm Password"
+                  required
+                  type={showPassword ? "text" : "password"}
+                  value={form.confirm_password}
+                  onChange={set("confirm_password")}
+                  width="w-44"
+                />
+              </>
+            )}
           </Section>
 
           {/* PERSONAL */}
@@ -435,7 +491,7 @@ function AddUserModal({ onClose, loadData }: Props) {
               width="w-36"
             />
 
-            <div className="flex items-center gap-2 text-sm text-gray-500">
+            <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500">
               <span className="whitespace-nowrap">Shift Schedule</span>
               <input
                 type="time"

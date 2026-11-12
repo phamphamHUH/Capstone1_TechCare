@@ -109,40 +109,24 @@ export async function generatePackageId() {
 
   const year = String(now.getFullYear()).slice(-2);
   const month = String(now.getMonth() + 1).padStart(2, "0");
+  const prefix = `P-${year}-${month}`;
 
-  const prefix = `${year}-${month}`;
   const existingPackages = await sql`
-  SELECT package_id
-  FROM packages
-  WHERE package_id LIKE ${`P-${prefix}-%`}
-  ORDER BY package_id DESC
-  LIMIT 1
-`;
-  // or to get the data instead of prefix
-  // const usersCreatedThisMonth = await sql`
-  //   SELECT service_id
-  //   FROM services
-  //   WHERE EXTRACT(YEAR FROM created_at) = EXTRACT(YEAR FROM CURRENT_DATE)
-  //     AND EXTRACT(MONTH FROM created_at) = EXTRACT(MONTH FROM CURRENT_DATE)
-  //   ORDER BY service_id DESC
-  // `;
+    SELECT package_id
+    FROM packages
+    WHERE package_id LIKE ${`${prefix}-%`}
+    ORDER BY package_id DESC
+    LIMIT 1
+  `;
 
-  ////=========================================
-  // V this is a better approch becaus eof timezone issue but lets just use the one that calculates the actual data now for simplified
-  //   const usersCreatedToday = await sql`
-  //   SELECT service_id
-  //   FROM services
-  //   WHERE service_id LIKE ${prefix + "-%"}
-  //   ORDER BY service_id DESC
-  //   LIMIT 1
-  // `;
   let nextNumber = 1;
 
   if (existingPackages.length > 0) {
-    nextNumber = Number(existingPackages[0].service_id.slice(-3)) + 1;
+    nextNumber = Number(existingPackages[0].package_id.slice(-3)) + 1;
   }
+
   const sequence = String(nextNumber).padStart(3, "0");
-  return `P-${prefix}-${sequence}`;
+  return `${prefix}-${sequence}`;
 }
 
 export async function generateActivityId() {
@@ -368,11 +352,16 @@ export async function generateBillId(client: PoolClient) {
 // }
 ///=======================================================================================
 
+// Consultation queues are CON-0001, CON-0002, ... Older rows use the previous
+// CONS- prefix; numbering continues after the highest of either, and every
+// consultation query matches both:
+//   (queue_id LIKE 'CON-%' OR queue_id LIKE 'CONS-%')
 export async function generateConsultationQueueId(client: PoolClient) {
   const { rows } = await client.query(
     `SELECT queue_id
      FROM queue_entries
      WHERE queue_id LIKE 'CONS-%'
+       AND SPLIT_PART(queue_id, '-', 2) ~ '^[0-9]+$' -- skips seed IDs like CONS-SEED-000001
      ORDER BY SPLIT_PART(queue_id, '-', 2)::int DESC
      LIMIT 1`,
   );
@@ -387,7 +376,7 @@ export async function generateQueueNumberConsultation(client: PoolClient) {
   const { rows } = await client.query(
     `SELECT COALESCE(MAX(queue_number), 0) + 1 AS next
      FROM queue_entries
-     WHERE queue_id LIKE 'CONS-%'
+     WHERE (queue_id LIKE 'CON-%' OR queue_id LIKE 'CONS-%')
        AND (created_at AT TIME ZONE 'Asia/Manila')::date =
            (NOW() AT TIME ZONE 'Asia/Manila')::date`,
   );

@@ -10,6 +10,7 @@ import {
   getSalesAnalytics,
   getServiceAnalytics,
   getAnalyticsBills,
+  getDrugTestAnalytics,
 } from "../controllers/admin/getRequests.controller.js";
 import {
   addUser,
@@ -61,6 +62,7 @@ router.get("/form-templates/:form_id", getFormTemplateById);
 router.get("/analytics/sales", getSalesAnalytics);
 router.get("/analytics/services", getServiceAnalytics);
 router.get("/analytics/bills", getAnalyticsBills);
+router.get("/analytics/drug-tests", getDrugTestAnalytics);
 
 router.post("/add-user", upload.single("image"), addUser);
 router.post("/services", addService);

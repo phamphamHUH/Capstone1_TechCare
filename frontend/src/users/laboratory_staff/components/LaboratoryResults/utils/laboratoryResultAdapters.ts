@@ -29,6 +29,7 @@ export type ReleasedResult = {
   verified_by?: string;
   verified_at?: string;
   status?: "Pending" | "Released";
+  service_category?: string | null;
 };
 
 function resultText(value: unknown): string | number {
@@ -129,6 +130,10 @@ export function releasedReports(
         );
       }
       const template = toReportTemplate(stored, []);
+      // Recover the category for older snapshots that did not save it.
+      if (template.category.toLowerCase() === "laboratory" && row.service_category?.trim()) {
+        template.category = row.service_category.trim();
+      }
       const test = matchingTest(request, template);
       if (test?.id !== row.item_id || !template.components.length) {
         throw new Error(
@@ -271,5 +276,28 @@ export async function releaseResult(
       Number.isFinite(Date.parse(released.updated_at))
         ? released.updated_at
         : undefined,
+  };
+}
+
+// The lab's verification step (Pending -> Verified). Release needs it first.
+export async function verifyResult(
+  resultId: string,
+  signal?: AbortSignal,
+): Promise<{ result_id: string; verified_by?: string; verified_at?: string }> {
+  const response = await api.patch(
+    `${test_results_ENDPOINT}/${encodeURIComponent(resultId)}/verify`,
+    undefined,
+    { signal },
+  );
+  const verified = response.data?.result;
+  if (verified?.result_id !== resultId || verified.status !== "Verified") {
+    throw new Error(
+      "The server did not confirm verification. Reload this result before retrying.",
+    );
+  }
+  return {
+    result_id: verified.result_id,
+    verified_by: verified.verified_by ?? undefined,
+    verified_at: verified.verified_at ?? undefined,
   };
 }

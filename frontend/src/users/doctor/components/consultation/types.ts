@@ -15,7 +15,6 @@ export type DiagnosisRow = {
   /** Local-only React key; not sent to the API. */
   key: string;
   diagnosis: string;
-  icd10: string;
   type: DiagnosisType;
 };
 
@@ -76,6 +75,5 @@ let rowSeq = 0;
 export const newDiagnosisRow = (): DiagnosisRow => ({
   key: `dx-${Date.now()}-${rowSeq++}`,
   diagnosis: "",
-  icd10: "",
   type: "Secondary",
 });

@@ -167,7 +167,7 @@ export async function getPortalReleasedResult(req: Request, res: Response) {
       SELECT r.result_id, r.item_id, r.item_id AS lab_item_id, r.results, r.remarks, r.image_url,
         r.status, r.released_at, r.verified_by, r.verified_at, r.created_at, r.updated_at,
         lr.request_id, lr.patient_id, lr.requested_at, lr.is_priority,
-        li.service_id, li.queue_id, s.service_name, s.room,
+        li.service_id, li.queue_id, s.service_name, s.service_category, s.room,
         CONCAT_WS(' ', p.first_name, p.middle_name, p.last_name, p.suffix) AS patient_name,
         p.birthdate, p.sex
       FROM test_results r
@@ -204,6 +204,8 @@ export async function getPortalPrescriptions(req: Request, res: Response) {
       ? await sql`
       SELECT prescription_id, patient_id, consultation_record_id, prescription_items, notes, valid_until, status, prescribed_at
       FROM prescription_records WHERE patient_id = ${patientId} AND consultation_record_id = ${consultationId}
+        -- Patients only see prescriptions they can still use.
+        AND status = 'Active' AND (valid_until IS NULL OR valid_until >= CURRENT_DATE)
       ORDER BY prescribed_at DESC
     `
       : await sql`

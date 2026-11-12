@@ -13,6 +13,9 @@ export namespace getConsultationRequests {
     service_type?: string;
     service_category?: string;
     room?: string;
+    // Text values; the front desk sets temperature/height/weight,
+    // the doctor adds bloodPressure/heartRate/... (merged).
+    vital_signs?: Record<string, string> | null;
     [key: string]: unknown;
   }
 

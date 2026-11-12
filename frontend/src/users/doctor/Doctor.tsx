@@ -2,16 +2,16 @@ import SideBar from "#components/SideBar";
 import { SidebarNavContext } from "../../components/sidebar/utils/sidebarNav";
 import Header from "#components/Header";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { LayoutGrid, ListOrdered, FileText, Stethoscope } from "lucide-react";
+import { LayoutGrid, ListOrdered, FileText, FileCheck2, Stethoscope } from "lucide-react";
 import { useSearchParams } from "react-router";
 import ConsultationQueue from "./pages/ConsultationQueue";
-import MedicalHistory from "./pages/MedicalHistory";
 import DoctorDashboard from "./pages/DoctorDashboard";
 import type { Service } from "../../interface/Service";
 import type { QueueEntry } from "../../interface/Queue";
 import api from "#lib/axios";
 import ActiveConsultation from "./pages/ActiveConsultation";
 import TestRequest from "./pages/TestRequest";
+import MedicalDocuments from "./pages/MedicalDocuments";
 
 function Doctor() {
   const [open, setOpen] = useState(
@@ -24,6 +24,7 @@ function Doctor() {
   const [roomServices, setRoomServices] = useState<Service[]>([]);
   const [queues, setQueues] = useState<QueueEntry[]>([]);
   const latestLoad = useRef(0);
+  const [documentsRefreshKey, setDocumentsRefreshKey] = useState(0);
   const [selectedQueue, setSelectedQueue] = useState<QueueEntry | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const [findingsSavedForRecord, setFindingsSavedForRecord] = useState<
@@ -68,6 +69,11 @@ function Doctor() {
       label: "Test Request",
       icon: <FileText size={20} />,
     },
+    {
+      page: "medical-documents",
+      label: "Medical Documents",
+      icon: <FileCheck2 size={20} />,
+    },
   ];
 
   const currentPage =
@@ -75,6 +81,7 @@ function Doctor() {
 
   const loadData = useCallback(async () => {
     const request = ++latestLoad.current;
+    setDocumentsRefreshKey((value) => value + 1);
 
     setLoading(true);
     setError(null);
@@ -154,7 +161,13 @@ function Doctor() {
   return (
     <SidebarNavContext.Provider value={{ navItems, page, setPage }}>
       <div className="flex min-h-screen ">
-        <SideBar open={open} setOpen={setOpen} page={page} setPage={setPage} navItems={navItems} />
+        <SideBar
+          open={open}
+          setOpen={setOpen}
+          page={page}
+          setPage={setPage}
+          navItems={navItems}
+        />
 
         <div className="flex-1 min-w-0">
           <Header
@@ -166,7 +179,19 @@ function Doctor() {
           />
 
           <div className="pb-6">
-            {page === "dashboard" && <DoctorDashboard />}
+            {page === "medical-documents" && <MedicalDocuments refreshKey={documentsRefreshKey} />}
+            {page === "dashboard" && (
+              <DoctorDashboard
+                room={room}
+                queues={queues}
+                serviceCount={roomServices.length}
+                loading={loading}
+                error={error}
+                queueLoadFailed={queueLoadFailed}
+                setPage={setPage}
+                loadData={loadData}
+              />
+            )}
 
             {page === "consultation-queue" && (
               <ConsultationQueue
@@ -201,16 +226,6 @@ function Doctor() {
                 onCompleted={handleCompleted}
               />
             )}
-
-            {page === "medical-history" && (
-              <MedicalHistory
-                loading={loading}
-                open={open}
-                setOpen={setOpen}
-                loadData={loadData}
-              />
-            )}
-
             {page === "test-request" && (
               <TestRequest
                 services={services}

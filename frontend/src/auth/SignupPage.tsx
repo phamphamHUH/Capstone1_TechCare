@@ -48,8 +48,8 @@ function SignupPage() {
       <LeftSideBackground />
 
       {/* RIGHT SIDE */}
-      <div className="w-full md:w-1/2 flex items-center justify-center bg-gray-100">
-        <div className="w-105 bg-white/80 backdrop-blur-xl shadow-2xl rounded-md p-8 border border-white/40">
+      <div className="w-full min-w-0 md:w-1/2 flex items-center justify-center bg-gray-100 p-4 sm:p-6">
+        <div className="w-full max-w-105 bg-white/80 backdrop-blur-xl shadow-2xl rounded-md p-5 sm:p-8 border border-white/40">
           <div className="text-center mb-6">
             <h2 className="text-3xl font-bold text-gray-800">Create Account</h2>
 

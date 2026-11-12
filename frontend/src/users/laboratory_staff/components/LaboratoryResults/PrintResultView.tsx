@@ -19,16 +19,18 @@ import type {
   ResultReleaseResponse,
 } from "../../../../interface/LaboratoryAnalysis";
 import { AnalysisButton, AnalysisNotice } from "./AnalysisUi";
-import { apiMessage, fetchPrintableResults } from "./utils/laboratoryResultsApi";
-import LaboratoryReport from "./LaboratoryReport";
+import {
+  apiMessage,
+  fetchPrintableResults,
+} from "./utils/laboratoryResultsApi";
+import LaboratoryReport from "./PrintResultView/LaboratoryReport";
 import ResultReleaseControl from "./ResultReleaseControl";
 import {
-  REPORT_FRAME_HTML,
-  REPORT_MIN_HEIGHT,
-  REPORT_PAPER_LABEL,
-  REPORT_WIDTH,
+  reportFrameHtml,
+  reportPaper,
   waitForReportAssets,
 } from "./utils/laboratoryPrint";
+import { templatePaperSize } from "../../../../utils/templatePaper";
 
 type ReportLoadState = {
   request: AnalysisRequest;
@@ -57,14 +59,21 @@ const ZOOM_OPTIONS: { mode: ZoomMode; label: string; icon: typeof Shrink }[] = [
 ];
 
 export function ReportPreview({ report }: ReportPreviewProps) {
+  const paperSize = templatePaperSize(
+    report.template,
+    report.request.tests.find(
+      (test) => test.serviceId === report.template.service_id,
+    )?.name,
+  );
+  const paper = reportPaper(paperSize);
   const containerRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLIFrameElement>(null);
   const printButtonRef = useRef<HTMLButtonElement>(null);
   const [body, setBody] = useState<HTMLElement | null>(null);
-  const [width, setWidth] = useState(REPORT_WIDTH + 48);
-  const [viewHeight, setViewHeight] = useState(REPORT_MIN_HEIGHT);
-  const [height, setHeight] = useState(REPORT_MIN_HEIGHT);
+  const [width, setWidth] = useState(paper.width + 48);
+  const [viewHeight, setViewHeight] = useState(paper.height);
+  const [height, setHeight] = useState(paper.height);
   const [zoom, setZoom] = useState<ZoomMode>("width");
   const [fullscreen, setFullscreen] = useState(false);
 
@@ -83,7 +92,7 @@ export function ReportPreview({ report }: ReportPreviewProps) {
   const previewError = error || assets?.error;
   // Full screen may enlarge the report; the normal preview never goes above 100%.
   const maxScale = fullscreen ? 2 : 1;
-  const widthScale = (width - 32) / REPORT_WIDTH;
+  const widthScale = (width - 32) / paper.width;
   const scale =
     zoom === "actual"
       ? 1
@@ -109,9 +118,16 @@ export function ReportPreview({ report }: ReportPreviewProps) {
       setViewHeight(container.clientHeight);
     };
     measure();
-    const observer = new ResizeObserver(measure);
+    let animationFrame = 0;
+    const observer = new ResizeObserver(() => {
+      cancelAnimationFrame(animationFrame);
+      animationFrame = requestAnimationFrame(measure);
+    });
     observer.observe(container);
-    return () => observer.disconnect();
+    return () => {
+      cancelAnimationFrame(animationFrame);
+      observer.disconnect();
+    };
   }, []);
 
   useLayoutEffect(() => {
@@ -119,18 +135,25 @@ export function ReportPreview({ report }: ReportPreviewProps) {
       return;
     }
 
+    const frameWindow = body.ownerDocument.defaultView;
+    if (!frameWindow) return;
+
     const measure = () =>
       setHeight(
-        Math.max(
-          REPORT_MIN_HEIGHT,
-          Math.ceil(body.getBoundingClientRect().height),
-        ),
+        Math.max(paper.height, Math.ceil(body.getBoundingClientRect().height)),
       );
     measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(body);
-    return () => observer.disconnect();
-  }, [body, report]);
+    let animationFrame = 0;
+    const observer = new ResizeObserver(() => {
+      frameWindow.cancelAnimationFrame(animationFrame);
+      animationFrame = frameWindow.requestAnimationFrame(measure);
+    });
+    observer.observe(body.querySelector(".report-sheet") ?? body);
+    return () => {
+      frameWindow.cancelAnimationFrame(animationFrame);
+      observer.disconnect();
+    };
+  }, [body, report, paper.height]);
 
   useEffect(() => {
     const sync = () =>
@@ -164,7 +187,9 @@ export function ReportPreview({ report }: ReportPreviewProps) {
       return;
     }
 
-    document.title = `Laboratory Result - ${report.request.requestId} - ${report.template.form_name}`;
+    document.title = report.medicalDocument
+      ? `${report.medicalDocument.typeLabel} - ${report.resultId || "Draft"} - ${report.request.patientName}`
+      : `Laboratory Result - ${report.request.requestId} - ${report.template.form_name}`;
 
     void waitForReportAssets(document)
       .then(() => {
@@ -283,11 +308,15 @@ export function ReportPreview({ report }: ReportPreviewProps) {
         <div className="flex flex-wrap items-center gap-2 border-b border-gray-300 bg-white px-4 py-3 text-sm">
           <Eye size={15} className="text-sky-600" />
           <h2 className="font-semibold">Print Preview</h2>
-          <span className="text-gray-500">{REPORT_PAPER_LABEL}</span>
+          <span className="text-gray-500">{paper.label}</span>
           <span
             className={`ml-auto rounded-full px-2.5 py-1 text-xs ${report.resultId ? "bg-sky-50 text-sky-700" : "bg-amber-50 text-amber-700"}`}
           >
-            {report.resultId ? "Saved result" : "Draft · Not saved"}
+            {report.resultId
+              ? report.medicalDocument
+                ? "Released"
+                : "Saved result"
+              : "Draft · Not saved"}
           </span>
           {fullscreen && (
             <>
@@ -319,19 +348,19 @@ export function ReportPreview({ report }: ReportPreviewProps) {
           <div
             className="relative mx-auto bg-white shadow-sm"
             style={{
-              width: REPORT_WIDTH * scale,
+              width: paper.width * scale,
               height: height * scale,
             }}
           >
             <iframe
-              key={reload}
+              key={`${reload}:${paperSize}`}
               ref={frameRef}
               title={`${report.template.form_name} print preview for ${report.request.patientName || report.request.patientId}`}
-              srcDoc={REPORT_FRAME_HTML}
+              srcDoc={reportFrameHtml(paperSize)}
               sandbox="allow-same-origin allow-modals"
               className="absolute top-0 left-0 origin-top-left border-0 bg-white"
               style={{
-                width: REPORT_WIDTH,
+                width: paper.width,
                 height,
                 transform: `scale(${scale})`,
               }}
@@ -343,9 +372,9 @@ export function ReportPreview({ report }: ReportPreviewProps) {
         </div>
       </div>
       <p className="mt-3 text-xs leading-relaxed text-gray-500">
-        Use 8.5 × 13 inch long bond paper in portrait at 100% scale, with
-        browser headers and footers off. The report uses only the top half; the
-        bottom half stays blank.
+        {paperSize === "a4"
+          ? "Use A4 paper (210 × 297 mm) in portrait at 100% scale, with browser headers and footers off."
+          : "Use 8.5 × 13 inch long bond paper in portrait at 100% scale, with browser headers and footers off. The report uses only the top half; the bottom half stays blank."}
       </p>
       {body && createPortal(<LaboratoryReport report={report} />, body)}
     </>

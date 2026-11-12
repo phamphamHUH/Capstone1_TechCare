@@ -34,7 +34,7 @@ import {
   type VitalKey,
 } from "../../../../interface/Overview";
 import api from "#lib/axios";
-import { usePersistentState } from "../../../../utils/persistentState";
+import { usePersistentState } from "./utils/persistentState";
 
 type OverviewProps = {
   selectedQueue: QueueEntry | null;
@@ -92,10 +92,16 @@ function Overview({
       bloodPressure: "",
       heartRate: "",
       respiratoryRate: "",
-      temperature: "",
+      // Taken at the front desk; the doctor can correct it.
+      temperature: selectedQueue?.vital_signs?.temperature ?? "",
       bloodOxygen: "",
     },
   );
+  // Measured at the front desk (read-only here).
+  const height = Number(selectedQueue?.vital_signs?.height);
+  const weight = Number(selectedQueue?.vital_signs?.weight);
+  const bmi =
+    height > 0 && weight > 0 ? weight / (height / 100) ** 2 : null;
   const [notes, setNotes] = usePersistentState<Record<NoteKey, string>>(
     k("notes"),
     {
@@ -158,9 +164,8 @@ function Overview({
             chief_complaint: notes.chiefComplaint.trim(),
             hpi: notes.hpi.trim(),
           },
-          diagnosis: diagnoses.map(({ name, icd10, type }) => ({
+          diagnosis: diagnoses.map(({ name, type }) => ({
             diagnosis: name,
-            icd10,
             type,
           })),
           physical_examination: {
@@ -211,11 +216,6 @@ function Overview({
       setIsSaving(false);
     }
   }
-
-  const hasRequiredData =
-    notes.hpi.trim() !== "" &&
-    diagnoses.length > 0 &&
-    Object.values(exam).some((value) => value.trim() !== "");
 
   async function handleEndConsultation() {
     if (!selectedQueue) return;
@@ -401,9 +401,15 @@ function Overview({
                   </div>
                 </div>
               ))}
-              {/* BMI (computed later from height and weight) */}
+              {/* Height and weight come from the front desk */}
+              <Tile label="Height" className="bg-gray-50">
+                {height > 0 ? `${height} cm` : "Not Recorded"}
+              </Tile>
+              <Tile label="Weight" className="bg-gray-50">
+                {weight > 0 ? `${weight} kg` : "Not Recorded"}
+              </Tile>
               <Tile label="BMI" className="bg-gray-50">
-                Not Recorded
+                {bmi ? bmi.toFixed(1) : "Not Recorded"}
               </Tile>
             </div>
           </Section>
@@ -467,21 +473,24 @@ function Overview({
         >
           Complete Consultation
         </button>
-        <div className="flex flex-wrap gap-3">
-          <button
-            type="button"
-            onClick={() =>
-              findingsSaved ? onProceed() : setConfirmingSkip(true)
-            }
-            disabled={isSaving}
-            className="rounded-md border cursor-pointer border-gray-300 px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
-          >
-            Proceed to Prescription
-          </button>
+        <div className="flex gap-3">
+          {findingsSaved && (
+            <button
+              type="button"
+              onClick={() =>
+                findingsSaved ? onProceed() : setConfirmingSkip(true)
+              }
+              disabled={isSaving}
+              className="rounded-md border cursor-pointer border-gray-300 px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Proceed to Prescription
+            </button>
+          )}
+
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={isSaving || !hasRequiredData}
+            disabled={isSaving}
             className="rounded-md bg-blue-600 cursor-pointer px-4 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
           >
             {isSaving ? "Saving..." : "Save Findings"}
