@@ -187,7 +187,9 @@ export function ReportPreview({ report }: ReportPreviewProps) {
       return;
     }
 
-    document.title = `Laboratory Result - ${report.request.requestId} - ${report.template.form_name}`;
+    document.title = report.medicalDocument
+      ? `${report.medicalDocument.typeLabel} - ${report.resultId || "Draft"} - ${report.request.patientName}`
+      : `Laboratory Result - ${report.request.requestId} - ${report.template.form_name}`;
 
     void waitForReportAssets(document)
       .then(() => {
@@ -310,7 +312,11 @@ export function ReportPreview({ report }: ReportPreviewProps) {
           <span
             className={`ml-auto rounded-full px-2.5 py-1 text-xs ${report.resultId ? "bg-sky-50 text-sky-700" : "bg-amber-50 text-amber-700"}`}
           >
-            {report.resultId ? "Saved result" : "Draft · Not saved"}
+            {report.resultId
+              ? report.medicalDocument
+                ? "Released"
+                : "Saved result"
+              : "Draft · Not saved"}
           </span>
           {fullscreen && (
             <>

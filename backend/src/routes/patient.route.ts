@@ -12,6 +12,7 @@ import {
   markAllNotificationsRead,
   markNotificationRead,
 } from "../controllers/notifications/notifications.controller.js";
+import { getPatientMedicalDocuments } from "../controllers/doctor/medicalDocuments.controller.js";
 import { streamNotifications } from "../services/notification-sse/index.js";
 
 const router = Router();
@@ -20,6 +21,7 @@ router.get("/laboratory-results/:result_id", patientMiddleware, getPortalRelease
 router.get("/medical-history/:patient_id", patientMiddleware, getPortalHistory);
 router.get("/medical-history/:record_type/:record_id", patientMiddleware, getPortalRecord);
 router.get("/queues", patientMiddleware, getPortalQueues);
+router.get("/medical-documents", patientMiddleware, getPatientMedicalDocuments);
 router.get("/prescriptions/:patient_id", patientMiddleware, getPortalPrescriptions);
 
 router.get("/notifications", patientMiddleware, getNotifications);
