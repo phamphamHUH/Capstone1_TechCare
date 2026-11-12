@@ -30,7 +30,7 @@ export default function ComponentSettings({
 
   if (!component) {
     return (
-      <aside className="w-80 flex-shrink-0 bg-white border border-gray-200 rounded-md p-5 flex flex-col items-center justify-center text-center shadow-sm text-gray-400">
+      <aside className="w-full xl:w-80 flex-shrink-0 bg-white border border-gray-200 rounded-md p-5 flex flex-col items-center justify-center text-center shadow-sm text-gray-400">
         <EmptyState message="Select a component on the canvas to configure its properties and validation." />
       </aside>
     );
@@ -100,7 +100,7 @@ export default function ComponentSettings({
     component.validation.inputType === "Number";
 
   return (
-    <aside className="w-80 flex-shrink-0 bg-white border border-gray-200 rounded-md p-4 flex flex-col gap-4 shadow-sm overflow-y-auto max-h-[calc(100vh-140px)]">
+    <aside className="w-full xl:w-80 flex-shrink-0 bg-white border border-gray-200 rounded-md p-4 flex flex-col gap-4 shadow-sm overflow-y-auto xl:max-h-[calc(100vh-140px)]">
       {/* Selected Component Header */}
       <div>
         <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">

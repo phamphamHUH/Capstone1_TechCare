@@ -34,9 +34,9 @@ export default function TemplatePreview({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white w-full max-w-4xl rounded-md shadow-2xl border border-gray-200 overflow-hidden flex flex-col my-8">
+      <div className="bg-white w-full max-w-4xl max-h-[calc(100dvh-2rem)] rounded-md shadow-2xl border border-gray-200 overflow-hidden flex flex-col">
         {/* Modal Top Bar */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-4 border-b border-gray-200 bg-gray-50">
           <div>
             <h3 className="text-base font-bold text-gray-900">
               Report Preview: {templateName || "Untitled Template"}
@@ -57,6 +57,7 @@ export default function TemplatePreview({
             <button
               type="button"
               onClick={onClose}
+              aria-label="Close report preview"
               className="p-1.5 text-gray-400 hover:text-gray-700 rounded-md transition-colors cursor-pointer"
             >
               <X size={20} />
@@ -65,19 +66,19 @@ export default function TemplatePreview({
         </div>
 
         {/* Printable Report Canvas Content */}
-        <div className="p-8 sm:p-12 overflow-y-auto max-h-[calc(85vh-100px)] flex flex-col gap-6">
+        <div className="min-h-0 p-4 sm:p-12 overflow-y-auto flex flex-col gap-6">
           {/* Clinic Banner */}
-          <div className="flex items-center justify-between border-b-2 border-sky-600 pb-4">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b-2 border-sky-600 pb-4">
+            <div className="flex min-w-0 items-center gap-3 sm:gap-4">
               <img
                 src="/assets/images/reyna-g-logo.png"
                 alt="Clinic Logo"
-                className="w-16 h-16 object-contain"
+                className="w-12 h-12 sm:w-16 sm:h-16 shrink-0 object-contain"
                 onError={(e) => {
                   (e.target as HTMLElement).style.display = "none";
                 }}
               />
-              <div>
+              <div className="min-w-0 wrap-anywhere">
                 <h1 className="text-xl font-black text-gray-900 tracking-tight uppercase">
                   Reyna G Diagnostic Medical Clinic
                 </h1>
@@ -259,9 +260,9 @@ export default function TemplatePreview({
           </div>
 
           {/* Doctor / Pathologist Signature Placeholders */}
-          <div className="grid grid-cols-2 gap-8 pt-8 text-center text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 pt-8 text-center text-xs">
             <div className="flex flex-col items-center">
-              <div className="w-48 border-b border-gray-400 pb-1 font-bold text-gray-800">
+              <div className="w-full max-w-48 border-b border-gray-400 pb-1 font-bold text-gray-800">
                 Medical Technologist, RMT
               </div>
               <span className="text-[10px] text-gray-500 mt-0.5">
@@ -269,7 +270,7 @@ export default function TemplatePreview({
               </span>
             </div>
             <div className="flex flex-col items-center">
-              <div className="w-48 border-b border-gray-400 pb-1 font-bold text-gray-800">
+              <div className="w-full max-w-48 border-b border-gray-400 pb-1 font-bold text-gray-800">
                 Pathologist, MD, FPSP
               </div>
               <span className="text-[10px] text-gray-500 mt-0.5">

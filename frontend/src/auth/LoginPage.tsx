@@ -100,7 +100,7 @@ function LoginPage() {
       <div className="relative z-10 w-full max-w-6xl bg-white/45 backdrop-blur-sm rounded-md border border-gray-200 p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
         <LoginVideo />
 
-        <div className="w-full flex items-center justify-center px-4 sm:px-8 lg:px-12">
+        <div className="w-full min-w-0 flex items-center justify-center px-0 sm:px-8 lg:px-12">
           <div className="w-full max-w-md">
             <div className="flex items-center justify-between gap-4 mb-6">
               <div>

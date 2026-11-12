@@ -108,7 +108,7 @@ function PatientRecords({
       <h1 className="text-2xl font-bold px-4 sm:px-6 mb-5">Patient Records</h1>
       {error && <ErrorMessage className="mx-4 sm:mx-6 mb-5">{error}</ErrorMessage>}
       <div className="mx-4 sm:mx-6 py-5 border rounded-md border-gray-200">
-        <div className="relative flex-1 basis-70 left-6 mb-3">
+        <div className="relative mx-4 mb-3 sm:mx-6 sm:max-w-sm">
           <Search
             size={17}
             strokeWidth={1.5}
@@ -119,7 +119,7 @@ function PatientRecords({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search..."
-            className="h-9 rounded-md border border-gray-300 bg-white pl-9 pr-3 text-sm text-gray-700 outline-none transition focus:border-sky-400 focus:ring-1 focus:ring-sky-100"
+            className="h-9 w-full min-w-0 rounded-md border border-gray-300 bg-white pl-9 pr-3 text-sm text-gray-700 outline-none transition focus:border-sky-400 focus:ring-1 focus:ring-sky-100"
           />
         </div>
         <LoadingRegion

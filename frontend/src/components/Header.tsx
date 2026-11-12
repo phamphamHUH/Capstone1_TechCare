@@ -42,7 +42,7 @@ function Header({ page, loading, open, setOpen, loadData }: HeaderProps) {
           onClick={() => setOpen((previous) => !previous)}
           aria-label={open ? "Close sidebar" : "Open sidebar"}
           aria-expanded={open}
-          className="text-2xl cursor-pointer hover:scale-105 active:scale-95"
+          className="flex size-11 shrink-0 items-center justify-center rounded-md text-2xl cursor-pointer hover:bg-gray-100 active:bg-gray-200"
         >
           ☰
         </button>

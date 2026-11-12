@@ -306,7 +306,7 @@ export default function TemplateBuilder({
       </div>
 
       {/* Top Header Card */}
-      <div className="bg-white border border-gray-200 rounded-md p-5 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+      <div className="bg-white border border-gray-200 rounded-md p-5 shadow-sm flex flex-col 2xl:flex-row items-stretch 2xl:items-center justify-between gap-4">
         <div className="flex items-center gap-4 flex-1 min-w-0">
           {/* Blue placeholder square */}
           <div className="w-12 h-12 rounded-md bg-sky-400 flex-shrink-0" />
@@ -339,15 +339,15 @@ export default function TemplateBuilder({
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div>
+        <div className="flex min-w-0 flex-wrap items-center gap-4">
+          <div className="min-w-0 max-w-full">
             <label className="block text-[11px] font-semibold text-gray-400 uppercase mb-1">
               Category
             </label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-sky-400"
+              className="max-w-full px-3 py-2 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-sky-400"
             >
               {services.length === 0 && (
                 <option value="">No services available</option>
@@ -384,7 +384,7 @@ export default function TemplateBuilder({
       </div>
 
       {/* THREE COLUMN BUILDER WORKSPACE */}
-      <div className="flex flex-col lg:flex-row items-stretch gap-5">
+      <div className="flex flex-col xl:flex-row items-stretch gap-5">
         {/* LEFT PALETTE */}
         <ComponentPalette onAddComponent={handleAddComponent} />
 
@@ -415,7 +415,7 @@ export default function TemplateBuilder({
           <span>Save a draft or publish to save your changes.</span>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex w-full flex-wrap items-center justify-center gap-3 sm:w-auto">
           <button
             type="button"
             onClick={onBackToLibrary}

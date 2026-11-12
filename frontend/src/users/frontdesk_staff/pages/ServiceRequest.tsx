@@ -176,12 +176,14 @@ function ServiceRequest({
         onRegister={() => setPage("patient-registration")}
       />
       {/* SERVICE TABS */}
-      <section className="flex flex-wrap gap-3 mt-6 px-4 sm:px-8">
+      <section className="grid grid-cols-1 gap-3 mt-6 px-4 sm:grid-cols-2 sm:px-8 xl:grid-cols-4" aria-label="Service types">
         {cards.map((card, index) => {
           const Icon = card.icon;
           return (
-            <div
-              className={`flex flex-1 min-w-0 items-center justify-center gap-3 border px-3 py-3 rounded-md cursor-pointer shadow-md
+            <button
+              type="button"
+              aria-pressed={activeTab === card.service_type}
+              className={`flex min-w-0 items-center gap-3 border px-3 py-3 rounded-md cursor-pointer shadow-md text-left
                 hover:text-sky-600 hover:border-sky-200 hover:scale-101 active:scale-100 active:text-sky-600
                 ${activeTab === card.service_type ? "text-sky-400" : "border-gray-200"}`}
               key={index}
@@ -192,7 +194,7 @@ function ServiceRequest({
                 <h1 className="text-md font-bold">{card.mainHeading}</h1>
                 <h3 className="text-xs">{card.subHeading}</h3>
               </div>
-            </div>
+            </button>
           );
         })}
       </section>

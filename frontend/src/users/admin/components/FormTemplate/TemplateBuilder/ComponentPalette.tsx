@@ -98,7 +98,7 @@ export default function ComponentPalette({
   };
 
   return (
-    <aside className="w-72 flex-shrink-0 bg-white border border-gray-200 rounded-md p-4 flex flex-col gap-4 shadow-sm">
+    <aside className="w-full xl:w-72 flex-shrink-0 bg-white border border-gray-200 rounded-md p-4 flex flex-col gap-4 shadow-sm">
       <div>
         <h3 className="font-semibold text-gray-900 text-sm">Add Components</h3>
         <p className="text-xs text-gray-500 mt-0.5">
