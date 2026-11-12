@@ -5,7 +5,7 @@
 //   withCredentials: true,
 // });
 
-import axios from "axios";
+import axios, { type InternalAxiosRequestConfig } from "axios";
 import { ENV } from "./env.config";
 
 const api = axios.create({
@@ -34,6 +34,82 @@ api.interceptors.request.use((config) => {
 
   return config;
 });
+
+// =========================
+// SESSION REFRESH
+// =========================
+// The access token expires (JWT_EXPIRES_IN). On a 401 we trade the refresh
+// token for a new pair once, then retry the request. If that fails too, the
+// session is over and we send the user back to /login.
+
+const AUTH_KEYS = ["token", "refreshToken", "user", "role"];
+
+let pendingRefresh: Promise<string | null> | null = null;
+
+// Shared by every caller, so a burst of 401s triggers a single refresh.
+// Resolves to the new access token, or null when the session can't be renewed.
+export function refreshAccessToken(): Promise<string | null> {
+  pendingRefresh ??= (async () => {
+    const refreshToken = sessionStorage.getItem("refreshToken");
+    if (!refreshToken) return null;
+
+    try {
+      // Plain axios, not `api`, so this call never loops through the interceptor.
+      const { data } = await axios.post<{ token: string; refreshToken: string }>(
+        `${api.defaults.baseURL ?? ""}/api/auth/refresh`,
+        { refreshToken },
+      );
+      sessionStorage.setItem("token", data.token);
+      sessionStorage.setItem("refreshToken", data.refreshToken);
+      return data.token;
+    } catch {
+      return null;
+    } finally {
+      pendingRefresh = null;
+    }
+  })();
+
+  return pendingRefresh;
+}
+
+// Clears only the auth keys (keeps e.g. a doctor's unsaved drafts) and goes to /login.
+export function endSession() {
+  AUTH_KEYS.forEach((key) => sessionStorage.removeItem(key));
+  if (window.location.pathname !== "/login") window.location.assign("/login");
+}
+
+type RetriableConfig = InternalAxiosRequestConfig & { _retried?: boolean };
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const config = error?.config as RetriableConfig | undefined;
+    // A 401 from login/refresh means bad credentials, not an expired token.
+    const url = config?.url ?? "";
+    const isAuthCall =
+      url.includes("/api/auth/login") || url.includes("/api/auth/refresh");
+
+    if (
+      error?.response?.status !== 401 ||
+      !config ||
+      config._retried ||
+      isAuthCall ||
+      !sessionStorage.getItem("token") // never logged in (e.g. dev without login)
+    ) {
+      return Promise.reject(error);
+    }
+
+    config._retried = true;
+    const token = await refreshAccessToken();
+    if (!token) {
+      endSession();
+      return Promise.reject(error);
+    }
+
+    // The request interceptor attaches the new token from sessionStorage.
+    return api(config);
+  },
+);
 
 export default api;
 // There are two kinds of interceptors:

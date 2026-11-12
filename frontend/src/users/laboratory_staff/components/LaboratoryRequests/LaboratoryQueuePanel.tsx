@@ -4,8 +4,8 @@ import LoadingScreen from "../../../../components/LoadingScreen";
 import LoadingRegion from "../../../../components/LoadingRegion";
 import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import api from "../../../../lib/axios";
-import QueueTabs, { type MainFilter } from "./QueueTabs";
-import QueueTable from "./QueueTable";
+import QueueTabs, { type MainFilter } from "./LaboratoryQueuePanel/QueueTabs";
+import QueueTable from "./LaboratoryQueuePanel/QueueTable";
 import type { LaboratoryItem } from "../../../../interface/LaboratoryItem";
 import type { PriorityFilter, QueueEntry } from "../../../../interface/Queue";
 import type { Service } from "../../../../interface/Service";
@@ -190,7 +190,7 @@ function LaboratoryQueuePanel({
   const loadingLabel = activeMainTab === "all" ? "" : `${activeMainTab} `;
 
   return (
-    <div className="w-full min-h-20 border rounded-md border-gray-300 flex flex-col gap-5 justify-around">
+    <div className="w-full min-w-0 min-h-20 border rounded-md border-gray-300 flex flex-col gap-5 justify-around">
       {/* MAIN FILTERS */}
       <QueueTabs
         mainFilterValues={mainFilterValues}

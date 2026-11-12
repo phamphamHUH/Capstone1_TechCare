@@ -6,8 +6,7 @@ import {
   Pill,
 } from "lucide-react";
 import PatientSummaryCard from "../components/PatientSummaryCard";
-import EmailVerificationBanner from "../components/EmailVerificationBanner";
-import type { PatientSessionUser } from "../types";
+import type { PatientSessionUser } from "../../../interface/PatientPortal";
 
 const links = [
   {
@@ -39,11 +38,9 @@ const links = [
 
 export default function PatientDashboard({
   patient,
-  refreshKey,
   setPage,
 }: {
   patient: PatientSessionUser;
-  refreshKey: number;
   setPage: (page: string) => void;
 }) {
   return (
@@ -56,7 +53,6 @@ export default function PatientDashboard({
           Your clinic services and medical records in one place.
         </p>
       </div>
-      <EmailVerificationBanner refreshKey={refreshKey} />
       <PatientSummaryCard patient={patient} />
       <div className="grid gap-5 sm:grid-cols-2">
         {links.map((link) => (

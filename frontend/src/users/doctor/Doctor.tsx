@@ -1,4 +1,5 @@
 import SideBar from "#components/SideBar";
+import { SidebarNavContext } from "../../components/sidebar/utils/sidebarNav";
 import Header from "#components/Header";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LayoutGrid, ListOrdered, FileText, Stethoscope } from "lucide-react";
@@ -13,7 +14,9 @@ import ActiveConsultation from "./pages/ActiveConsultation";
 import TestRequest from "./pages/TestRequest";
 
 function Doctor() {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(
+    () => typeof window === "undefined" || window.innerWidth >= 1024,
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [queueLoadFailed, setQueueLoadFailed] = useState(false);
@@ -209,9 +212,91 @@ function Doctor() {
               selectedQueue={selectedQueue}
             />
           )}
+    <SidebarNavContext.Provider value={{ navItems, page, setPage }}>
+      <div className="flex min-h-screen ">
+        <SideBar open={open} setOpen={setOpen} page={page} setPage={setPage} navItems={navItems} />
+
+        <div className="flex-1 min-w-0">
+          <Header
+            page={currentPage}
+            loading={loading}
+            open={open}
+            setOpen={setOpen}
+            loadData={loadData}
+          />
+
+          <div className="pb-6">
+            {page === "dashboard" && (
+              <DoctorDashboard
+                room={room}
+                queues={queues}
+                serviceCount={roomServices.length}
+                loading={loading}
+                error={error}
+                queueLoadFailed={queueLoadFailed}
+                setPage={setPage}
+                loadData={loadData}
+              />
+            )}
+
+            {page === "consultation-queue" && (
+              <ConsultationQueue
+                services={roomServices}
+                queues={queues}
+                room={room}
+                loading={loading}
+                error={error}
+                queueLoadFailed={queueLoadFailed}
+                open={open}
+                setOpen={setOpen}
+                loadData={loadData}
+                setSelectedQueue={setSelectedQueue}
+              />
+            )}
+
+            {page === "active-consultation" && (
+              <ActiveConsultation
+                selectedQueue={selectedQueue}
+                setSelectedQueue={setSelectedQueue}
+                room={room}
+                loading={loading}
+                error={
+                  queueLoadFailed
+                    ? "The active consultation could not be refreshed."
+                    : null
+                }
+                findingsSaved={findingsSaved}
+                setFindingsSavedForRecord={setFindingsSavedForRecord}
+                overviewStep={overviewStep}
+                setOverviewStep={setOverviewStep}
+                onCompleted={handleCompleted}
+              />
+            )}
+
+            {page === "medical-history" && (
+              <MedicalHistory
+                loading={loading}
+                open={open}
+                setOpen={setOpen}
+                loadData={loadData}
+              />
+            )}
+
+            {page === "test-request" && (
+              <TestRequest
+                services={services}
+                open={open}
+                setOpen={setOpen}
+                loadData={loadData}
+                loading={loading}
+                setPage={setPage}
+                selectedQueue={selectedQueue}
+              />
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </SidebarNavContext.Provider>
   );
 }
 

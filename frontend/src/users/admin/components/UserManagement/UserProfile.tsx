@@ -14,7 +14,7 @@ import {
   KeyRound,
 } from "lucide-react";
 import ResetPasswordModal from "../../../../components/ResetPasswordModal";
-import { DOCTOR_FIELDS } from "./doctorField";
+import { DOCTOR_FIELDS } from "./utils/doctorField";
 import UniversalModal from "../../../../components/UniversalModal";
 
 type Props = {
@@ -146,7 +146,7 @@ function UserProfile({
       {/* Modal */}
       <div className="fixed left-1/2 top-1/2 z-50 w-[94%] max-w-5xl -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-md bg-gray-50 shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-100 bg-white px-6 py-5">
+        <div className="flex items-center justify-between gap-3 border-b border-gray-100 bg-white px-4 py-4 sm:px-6 sm:py-5">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">
               User Profile
@@ -166,7 +166,7 @@ function UserProfile({
         </div>
 
         {/* Content */}
-        <div className="max-h-[82vh] overflow-y-auto p-6">
+        <div className="max-h-[82dvh] overflow-y-auto p-4 sm:p-6">
           {formError && (
             <ErrorMessage className="mb-4">{formError}</ErrorMessage>
           )}
@@ -174,8 +174,8 @@ function UserProfile({
           <div className="overflow-hidden rounded-md bg-white shadow-sm">
             <div className="h-36 bg-linear-to-r from-gray-100 via-gray-50 to-gray-100" />
 
-            <div className="px-8 pb-8">
-              <div className="-mt-16 flex items-end justify-between">
+            <div className="px-4 pb-6 sm:px-8 sm:pb-8">
+              <div className="-mt-16 flex flex-wrap items-end justify-between gap-3">
                 {/* Profile Image */}
                 <div>
                   {user.profile_photo ? (
@@ -192,7 +192,7 @@ function UserProfile({
                 </div>
 
                 {/* Status + Edit */}
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                   {/* Active Status */}
                   <span
                     className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium ${

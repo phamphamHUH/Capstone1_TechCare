@@ -9,7 +9,7 @@ import {
   generateQueueNumberLaboratory,
 } from "../../utils/generateId.js";
 import { publishQueueChange } from "../../services/queue-sse/index.js";
-import { calculateAge } from "../../utils/calculateAge.js";
+import { calculateAge } from "./utils/calculateAge.js";
 import type { Request, Response } from "express";
 import type {
   updatePatient,
@@ -108,23 +108,6 @@ export async function updatePatient(
       } as updatePatient.error);
     }
 
-    // =========================
-    // EMAIL CHANGE
-    // =========================
-    // Verified patient: keep their current email and put the new one in
-    // pending_email until they confirm it (they stay verified meanwhile).
-    // Unverified patient: just replace the email.
-    // Either way a verification link is sent to the new email below.
-    const emailChanged =
-      Boolean(email?.trim()) &&
-      email.trim().toLowerCase() !==
-        String(existingPatient.email).toLowerCase();
-
-    const newEmail =
-      emailChanged && !existingPatient.is_verified ? email.trim() : null;
-    const newPendingEmail =
-      emailChanged && existingPatient.is_verified ? email.trim() : null;
-
     let imageUrl: string | null = null;
     if (req.file) {
       const uploaded = await cloudinary.uploader.upload(req.file.path, {
@@ -174,7 +157,7 @@ export async function updatePatient(
     const age = calculateAge(updatedPatient.birthdate);
 
     // Don't send the password hash to the client.
-    const { password_hash, ...safePatient } = updatedPatient;
+    const { password_hash, password_token_hash, ...safePatient } = updatedPatient;
 
     return res.status(200).json({
       message: "Patient updated successfully.",
@@ -220,7 +203,10 @@ export async function resetPatientPassword(
 
     const [patient] = await sql`
       UPDATE patients
-      SET password_hash = ${hashedPassword}, updated_at = NOW()
+      SET password_hash = ${hashedPassword},
+          password_token_hash = NULL, -- a staff reset replaces any emailed link
+          password_token_expires_at = NULL,
+          updated_at = NOW()
       WHERE patient_id = ${patient_id}
       RETURNING first_name, last_name
     `;

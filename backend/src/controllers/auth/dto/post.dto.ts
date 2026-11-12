@@ -53,3 +53,56 @@ export namespace login {
     error?: string;
   }
 }
+
+export namespace refresh {
+  export interface body {
+    refreshToken: string;
+  }
+
+  export interface response {
+    message: string;
+    token: string;
+    refreshToken: string;
+  }
+
+  export interface error {
+    message: string;
+  }
+}
+
+// POST /api/auth/password-link/check
+// Opens the "set your password" page: whose account the emailed link is for.
+export namespace checkPasswordLink {
+  export interface body {
+    token: string;
+  }
+
+  export interface response {
+    message: string;
+    account_type: login.accountType; // "user" = create password, "patient" = change it
+    first_name: string;
+    username: string;
+  }
+
+  export interface error {
+    message: string;
+  }
+}
+
+// POST /api/auth/password-link
+// Sets the password from the emailed link. The link works once.
+export namespace setPasswordFromLink {
+  export interface body {
+    token: string;
+    password: string;
+  }
+
+  export interface response {
+    message: string;
+    account_type: login.accountType;
+  }
+
+  export interface error {
+    message: string;
+  }
+}

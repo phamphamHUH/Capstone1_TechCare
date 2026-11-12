@@ -1,9 +1,9 @@
 import { sql } from "../../config/db.js";
 import cloudinary from "../../config/cloudinary.js";
 import bcrypt from "bcryptjs";
-import { registerFormComponentTypes } from "../../utils/formComponentTypes.js";
+import { registerFormComponentTypes } from "./utils/formComponentTypes.js";
 import type { Request, Response } from "express";
-import { logActivity } from "../../utils/activityLogger.js";
+import { logActivity } from "./utils/activityLogger.js";
 import type {
   updateUser,
   updateUserStatus,
@@ -129,7 +129,7 @@ export async function updateUser(
     // =========================
     // REMOVE SENSITIVE DATA
     // =========================
-    const { password_hash, ...safeUser } = updatedUser[0];
+    const { password_hash, password_token_hash, ...safeUser } = updatedUser[0];
 
     // =========================
     // RESPONSE
@@ -497,6 +497,8 @@ export async function resetUserPassword(
     const [user] = await sql`
       UPDATE users
       SET password_hash = ${hashedPassword},
+          password_token_hash = NULL, -- a staff reset replaces any emailed link
+          password_token_expires_at = NULL,
           updated_at = NOW()
       WHERE user_id = ${user_id}
       RETURNING username

@@ -36,14 +36,12 @@ const formatDate = (iso: string) =>
     month: "short",
     day: "numeric",
     year: "numeric",
-    timeZone: "Asia/Manila",
   });
 
 const formatTime = (iso: string) =>
   new Date(iso).toLocaleTimeString("en-US", {
     hour: "2-digit",
     minute: "2-digit",
-    timeZone: "Asia/Manila",
   });
 
 const getPageNumbers = (page: number, totalPages: number) => {

@@ -25,9 +25,9 @@ import type {
 } from "../../../../interface/Billing";
 import { formatAge, formatDateTime, peso } from "../../../../utils/formats";
 import InvoiceDocument from "./InvoiceDocument";
-import { printInvoice } from "./invoicePrint";
-import BillingModal, { type BillingModalKind } from "./BillingModal";
-import InvoicePreview from "./InvoicePreview";
+import { printInvoice } from "./utils/invoicePrint";
+import BillingModal, { type BillingModalKind } from "./ProcessPayment/BillingModal";
+import InvoicePreview from "./ProcessPayment/InvoicePreview";
 
 type ProcessPaymentProps = {
   bill: Bill;
@@ -245,7 +245,7 @@ function ProcessPayment({
     setModalError("");
 
     try {
-      const { downloadInvoicePdf } = await import("./invoicePdf");
+      const { downloadInvoicePdf } = await import("./utils/invoicePdf");
       await downloadInvoicePdf(
         invoiceRef.current,
         bill.invoice_id || bill.bill_id,

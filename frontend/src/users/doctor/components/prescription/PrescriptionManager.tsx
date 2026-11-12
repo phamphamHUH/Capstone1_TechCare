@@ -7,13 +7,13 @@ import type {
   Prescription,
   DoctorInfo,
 } from "./types";
-import { SAMPLE_PATIENTS, DEFAULT_DOCTOR } from "./mockData";
+import { SAMPLE_PATIENTS, DEFAULT_DOCTOR } from "./utils/mockData";
 import PatientPrescriptionCard from "./PatientPrescriptionCard";
-import CreatePrescriptionView from "./CreatePrescriptionView";
-import PrescriptionPreviewView from "./PrescriptionPreviewView";
-import PrescriptionSavedModal from "./PrescriptionSavedModal";
-import PatientSwitcherModal from "./PatientSwitcherModal";
-import PatientHistoryModal from "./PatientHistoryModal";
+import CreatePrescriptionView from "./PrescriptionManager/CreatePrescriptionView";
+import PrescriptionPreviewView from "./PrescriptionManager/PrescriptionPreviewView";
+import PrescriptionSavedModal from "./PrescriptionManager/PrescriptionSavedModal";
+import PatientSwitcherModal from "./PrescriptionManager/PatientSwitcherModal";
+import PatientHistoryModal from "./PrescriptionManager/PatientHistoryModal";
 
 export interface PrescriptionManagerProps {
   initialPatient?: PatientInfo;

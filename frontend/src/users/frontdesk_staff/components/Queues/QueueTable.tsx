@@ -69,7 +69,7 @@ function QueueTable({ queues, onRefresh, loadFailed }: QueueTableProps) {
     <>
       {error && <ErrorMessage className="mb-3">{error}</ErrorMessage>}
       <div className="max-h-105 overflow-auto rounded-md border border-gray-200 bg-white">
-        <table className="w-full text-sm">
+        <table className="min-w-[760px] w-full text-sm">
           <colgroup>
             <col className="w-4/30" />
             <col className="w-7/30" />

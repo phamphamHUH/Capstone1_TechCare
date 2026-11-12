@@ -44,7 +44,7 @@ const chevronClass =
   "pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400";
 
 const tabClass = (selected: boolean) =>
-  `flex items-center gap-2 border px-3 py-1 rounded-md cursor-pointer ${
+  `flex shrink-0 items-center gap-2 whitespace-nowrap border px-3 py-1 rounded-md cursor-pointer ${
     selected
       ? "border-sky-500 bg-sky-500 text-white"
       : "border-gray-300 hover:bg-gray-50 text-gray-500"
@@ -164,7 +164,7 @@ function ServicePricing({
 
   return (
     <div className="flex-1 min-w-0">
-      <div className="px-6 mb-6 flex justify-between items-center">
+      <div className="px-4 sm:px-6 mb-6 flex flex-wrap justify-between items-center gap-3">
         <div>
           <h1 className="text-2xl font-bold">Services and Packages List</h1>
           <p className="text-sm font-light">
@@ -181,7 +181,7 @@ function ServicePricing({
         </button>
       </div>
 
-      {error && <ErrorMessage className="mx-6 mb-5">{error}</ErrorMessage>}
+      {error && <ErrorMessage className="mx-4 sm:mx-6 mb-5">{error}</ErrorMessage>}
 
       {showAddService && (
         <AddService
@@ -208,9 +208,9 @@ function ServicePricing({
         loading={loading && services.length > 0}
         message="Refreshing services and packages..."
       >
-        <div className="mx-6 border py-4 rounded-md border-gray-300">
+        <div className="mx-4 sm:mx-6 border py-4 rounded-md border-gray-300">
           {/* TABS */}
-          <div className="flex gap-2 px-2 mb-4 text-sm">
+          <div className="flex gap-2 px-2 mb-4 text-sm overflow-x-auto">
             <button
               type="button"
               onClick={() => changeStatusFilter("all")}
@@ -240,7 +240,7 @@ function ServicePricing({
 
           {/* Filters */}
           <div className="mb-4 flex flex-wrap items-center gap-3 px-2">
-            <div className="relative min-w-60 flex-1 basis-70">
+            <div className="relative min-w-0 sm:min-w-60 flex-1 basis-70">
               <Search
                 size={17}
                 strokeWidth={1.5}
@@ -275,7 +275,7 @@ function ServicePricing({
 
           {/* Table */}
           <div className="overflow-x-auto border border-gray-200">
-            <table className="min-w-full text-sm">
+            <table className="w-full min-w-[900px] text-sm">
               <thead className="border-b border-gray-200 bg-gray-200">
                 <tr>
                   <th className="px-4 py-3 text-left font-medium text-gray-500">
@@ -384,7 +384,7 @@ function ServicePricing({
 
           {/* Pagination */}
           {total > 0 && (
-            <div className="flex items-center justify-between px-4 pt-4 text-xs text-gray-500">
+            <div className="flex flex-wrap items-center justify-between gap-2 px-4 pt-4 text-xs text-gray-500">
               <span>
                 Showing {from} - {to} of {total} services
               </span>

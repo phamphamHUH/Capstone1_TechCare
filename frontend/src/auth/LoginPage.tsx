@@ -53,11 +53,12 @@ function LoginPage() {
         localStorage.removeItem("remembered_user");
       }
 
-      const { token, user } = response.data;
+      const { token, refreshToken, user } = response.data;
       const role = user.role;
 
       sessionStorage.setItem("user", JSON.stringify(user));
       sessionStorage.setItem("token", token);
+      sessionStorage.setItem("refreshToken", refreshToken);
       sessionStorage.setItem("role", role);
 
       navigate(`/${role}`);

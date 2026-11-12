@@ -1,5 +1,5 @@
 import { useState } from "react";
-import ServiceModal from "./ServiceModal";
+import ServiceModal from "./RequestSummary/ServiceModal";
 import RoomSummaryPanel, {
   type ServiceStatusFilter,
 } from "../../../../components/RoomSummaryPanel";

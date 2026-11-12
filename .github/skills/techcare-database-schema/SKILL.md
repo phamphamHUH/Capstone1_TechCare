@@ -27,14 +27,14 @@ Always parameterize. Never interpolate user input into identifiers.
 - Primary key is `id SERIAL`, except `actions.action_id` and `sse_test.message_id`.
 - Foreign keys point at the **string business IDs** (`patient_id`, `user_id`), not the serial. The exception is `activity_logs.action_id`, an INTEGER that refers to `actions.action_id` with no FK.
 - Users and patients are separate tables; the column is `password_hash`.
-- Timestamps are **`TIMESTAMP` without time zone**, not `TIMESTAMPTZ`. See [Time zones](#time-zones).
+- Timestamps are **`TIMESTAMPTZ`** (all 34 columns converted from `TIMESTAMP` on 2026-11-12). See [Time zones](#time-zones).
 - Statuses are plain `VARCHAR` with no CHECK constraint, so casing varies. Compare with `LOWER(TRIM(status))`.
 - There are no secondary indexes: only the primary key and UNIQUE indexes exist.
 - `DECIMAL`/`NUMERIC` columns come back as strings: `Number(row.total_amount)`.
 
 ## Tables
 
-18 tables. Unless a column says `NOT NULL`, it is nullable. `TS` = `TIMESTAMP`, `V` = `VARCHAR`, `now` = `DEFAULT CURRENT_TIMESTAMP`. Every `created_at`/`updated_at` listed is `TS NOT NULL now`.
+18 tables. Unless a column says `NOT NULL`, it is nullable. `TS` = `TIMESTAMPTZ`, `V` = `VARCHAR`, `now` = `DEFAULT CURRENT_TIMESTAMP`. Every `created_at`/`updated_at` listed is `TS NOT NULL now`.
 
 ### People
 
@@ -94,7 +94,7 @@ Always parameterize. Never interpolate user input into identifiers.
 
 ### Queue and consultation
 
-**`queue_entries`**: `queue_id V(255) UNIQUE NOT NULL` (`CONS-####`/`LAB-####`), `patient_id V(255) NOT NULL → patients`, `queue_number INTEGER NOT NULL`, `is_priority BOOLEAN NOT NULL DEFAULT FALSE`, `skip_count INTEGER NOT NULL DEFAULT 0`, `status V(20) NOT NULL DEFAULT 'waiting'`, `created_at`, `updated_at`. **No `service_id` or `service_type`**: reach the service through `consultation_records.queue_id` or `laboratory_request_items.queue_id`.
+**`queue_entries`**: `queue_id V(255) UNIQUE NOT NULL` (`CON-####`/`LAB-####`/`IMG-####` (older rows: `CONS-####`; match consultation queues with `(queue_id LIKE 'CON-%' OR queue_id LIKE 'CONS-%')`)), `patient_id V(255) NOT NULL → patients`, `queue_number INTEGER NOT NULL`, `is_priority BOOLEAN NOT NULL DEFAULT FALSE`, `skip_count INTEGER NOT NULL DEFAULT 0`, `status V(20) NOT NULL DEFAULT 'waiting'`, `created_at`, `updated_at`. **No `service_id` or `service_type`**: reach the service through `consultation_records.queue_id` or `laboratory_request_items.queue_id`.
 
 **`consultation_records`** (**no `doctor_id`, `created_at` or `updated_at`**)
 | Column | Definition |
@@ -237,13 +237,13 @@ Advisory lock keys (`pg_advisory_xact_lock(hashtext(...))`): `open_bill:<patient
 Each `TABLES` entry is `{ table, columns: { col: "TYPE ..." } }`. There is only this one definition, with no separate `createSQL`. `TABLES` is not exported.
 
 Boot order in `server.ts`:
-1. `connectNeon()`: `CREATE TABLE IF NOT EXISTS` for each entry. It does not alter existing tables.
+1. `connectNeon()`: every `CREATE TABLE IF NOT EXISTS` in one `sql.transaction` (one round trip), retried up to 5 times with backoff (1, 2, 4, 8 s) so a brief network drop doesn't crash the server. It does not alter existing tables.
 2. `syncSchema()`, only when `IS_PRODUCTION=true`.
 
 ### What `syncSchema(onlyTables?)` does
 - A full sync **drops every table not in `TABLES`** with `CASCADE`. A selective sync drops no tables.
 - For each configured table it creates the table if missing, adds missing columns, and **drops columns not in `columns`** with `CASCADE`.
-- It compares **column names only**. It never changes an existing column's type, nullability or default, and never adds a missing FK or UNIQUE.
+- It compares **column names only**, with one exception: a column that is `timestamp without time zone` in the database and `TIMESTAMPTZ` in `TABLES` is converted with `ALTER COLUMN … TYPE TIMESTAMPTZ USING col AT TIME ZONE 'UTC'` (stored values were UTC, so every time stays the same moment). It never makes any other type, nullability or default change, and never adds a missing FK or UNIQUE.
 - A `NOT NULL` column with no default is added as nullable and tightened only if no row has NULL, so on a table with rows it stays nullable. That is the cause of most of the drift below.
 
 ### Adding a column
@@ -295,20 +295,23 @@ Consequences:
 - A fresh database gets the strict `TABLES` definitions, so inserts that work live can fail there.
 
 ## Time zones
-Columns are `TIMESTAMP` without time zone, filled by `CURRENT_TIMESTAMP` in the session zone. The live session zone is `GMT`, so stored values are UTC wall-clock time.
+All timestamp columns are `TIMESTAMPTZ`, filled by `CURRENT_TIMESTAMP`. The live session zone is `GMT`. The driver returns them as JS `Date`s and JSON sends ISO strings ending in `Z`, so every client sees the right moment whatever its own zone.
 
 ```sql
--- Correct Manila date of a stored row
-(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Manila')::date
--- Correct Manila date of now
-(NOW() AT TIME ZONE 'Asia/Manila')::date
-
--- WRONG on a TIMESTAMP column: treats the UTC value as if it were Manila time
+-- Manila date of a stored row (correct on TIMESTAMPTZ)
 (created_at AT TIME ZONE 'Asia/Manila')::date
-```
-Tested live: for `2026-11-07 02:00` (10:00 AM Manila), the wrong form gives Nov 6 and the correct form gives Nov 7. Rows created before 4 PM Manila time get the previous day.
+-- Manila date of now
+(NOW() AT TIME ZONE 'Asia/Manila')::date
+-- Viewer's zone in analytics: pass it as a parameter
+paid_at AT TIME ZONE ${tz}
 
-**The wrong form is in `generateQueueNumberConsultation` and `generateQueueNumberLaboratory` (`utils/generateId.ts`)**, so those rows are not counted as today. Queue numbers should restart at 1 for tickets issued before 4 PM Manila and restart again at 4 PM. Do not copy this form. Other filters use `CURRENT_DATE`, which is the GMT date.
+-- WRONG on TIMESTAMPTZ (was only right for the old TIMESTAMP columns): shifts by 16 hours
+(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Manila')
+```
+- Before the change, `TIMESTAMP` values were read as the *server's* local time, so a backend running on a computer set to Asia/Manila showed every time 8 hours early ("8h ago" on a notification just sent).
+- `CURRENT_DATE` is the GMT date, so `created_at >= CURRENT_DATE` filters (queue lists, ID counters) roll over at 8 AM Manila, while queue numbers (`generateId.ts`) reset at Manila midnight.
+- Inserting a JS `Date` or an ISO string with an offset now keeps the offset. Cast parameters with `::timestamptz`, not `::timestamp` (which drops the offset).
+- Rows written from a JS `Date` by a backend running in Manila before 2026-11-12 may be 8 hours ahead; rows filled by `CURRENT_TIMESTAMP` are correct.
 
 ## Seeding
 | Command | Effect |

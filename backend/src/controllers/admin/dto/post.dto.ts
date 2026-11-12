@@ -1,7 +1,8 @@
 export namespace addUser {
   export interface body {
     username: string;
-    password: string;
+    // Optional. Empty: the employee creates it from the emailed link.
+    password?: string;
     first_name: string;
     middle_name?: string | null;
     last_name: string;

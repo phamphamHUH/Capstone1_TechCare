@@ -9,9 +9,9 @@ import type {
   FormTemplate,
 } from "../../../../interface/FormTemplate";
 import type { ServiceOption } from "../../pages/FormTemplate";
-import ComponentPalette from "./ComponentPalette";
-import BuilderCanvas from "./BuilderCanvas";
-import ComponentSettings from "./ComponentSettings";
+import ComponentPalette from "./TemplateBuilder/ComponentPalette";
+import BuilderCanvas from "./TemplateBuilder/BuilderCanvas";
+import ComponentSettings from "./TemplateBuilder/ComponentSettings";
 import TemplatePreview from "./TemplatePreview";
 
 interface TemplateBuilderProps {

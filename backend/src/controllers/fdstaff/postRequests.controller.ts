@@ -3,7 +3,7 @@ import { ENV } from "../../config/env.js";
 import { sql } from "../../config/db.js";
 import { pool } from "../../config/db.js";
 import bcrypt from "bcryptjs";
-import { calculateAge } from "../../utils/calculateAge.js";
+import { calculateAge } from "./utils/calculateAge.js";
 import type { Request, Response } from "express";
 import cloudinary from "../../config/cloudinary.js";
 import {
@@ -28,6 +28,7 @@ import { publishQueueChange } from "../../services/queue-sse/index.js";
 import { actorId, notifyPriorityPatient, notifyQueued } from "../../services/notifications/index.js";
 import { sendEmail } from "../../services/email/sendEmail.js";
 import { patientAccountCreatedEmail } from "../../services/email/emailTemplates.js";
+import { createPasswordLink, PASSWORD_LINK_DAYS } from "../../utils/passwordLink.js";
 import { recomputeBillTotals } from "../../utils/recomputeBills.js";
 import { getOrCreateOpenBill } from "../../utils/getOrCreateBill.js";
 export async function addPatient(
@@ -102,8 +103,11 @@ export async function addPatient(
 
     const patientId = await generatePatientId();
 
+    // The front desk password (the last name; the front desk can reset it).
+    // Patients with an email also get a link to change it to their own.
     const password = last_name;
     const hashedPassword = await bcrypt.hash(password, 10);
+    const passwordLink = email ? createPasswordLink() : null;
 
     // Upload photo to Cloudinary if one was attached (multer puts it on req.file)
     let imageUrl: string | null = null;
@@ -147,7 +151,9 @@ export async function addPatient(
         family_medical_history,
         smoking_status,
         alcohol_consumption,
-        image_url
+        image_url,
+        password_token_hash,
+        password_token_expires_at
       )
       VALUES (
         ${patientId},
@@ -181,7 +187,9 @@ export async function addPatient(
         ${family_medical_history ?? null},
         ${smoking_status ?? null},
         ${alcohol_consumption ?? null},
-        ${imageUrl}
+        ${imageUrl},
+        ${passwordLink?.hash ?? null},
+        ${passwordLink?.expiresAt ?? null}
       )
       RETURNING *;
     `;
@@ -189,13 +197,23 @@ export async function addPatient(
     const age = calculateAge(birthdate);
 
     // =========================
-    // WELCOME EMAIL (information only)
+    // WELCOME EMAIL WITH "CHANGE YOUR PASSWORD" LINK
     // =========================
     // Not awaited: the patient shouldn't wait on the email provider.
-    if (email) void sendEmail(patientAccountCreatedEmail(email, first_name, patientId));
+    if (email && passwordLink) {
+      void sendEmail(
+        patientAccountCreatedEmail(
+          email,
+          first_name,
+          patientId,
+          passwordLink.url,
+          PASSWORD_LINK_DAYS,
+        ),
+      );
+    }
 
-    // Don't send the password hash to the client.
-    const { password_hash, ...safePatient } = response[0];
+    // Don't send the password or link hashes to the client.
+    const { password_hash, password_token_hash, ...safePatient } = response[0];
 
     return res.status(201).json({
       message: "Patient added successfully.",
@@ -598,51 +616,3 @@ export async function addConsultationRecord(
     client.release();
   }
 }
-
-// =========================
-// RESEND PATIENT VERIFICATION EMAIL
-// =========================
-// POST /api/fdstaff/patients/:patient_id/verification-email
-// Goes to their new email if they changed it, otherwise to their current one.
-// export async function resendPatientVerification(
-//   req: Request,
-//   res: Response<
-//     resendPatientVerification.response | resendPatientVerification.error
-//   >,
-// ) {
-//   try {
-//     const { patient_id } = req.params;
-
-//     const [patient] = await sql`
-//       SELECT is_verified, pending_email FROM patients WHERE patient_id = ${patient_id}
-//     `;
-
-//     if (!patient) {
-//       return res.status(404).json({ message: "Patient not found." });
-//     }
-
-//     if (patient.is_verified && !patient.pending_email) {
-//       return res
-//         .status(409)
-//         .json({ message: "This patient's email is already verified." });
-//     }
-
-//     const emailSent = await sendPatientVerificationEmail(String(patient_id));
-
-//     if (!emailSent) {
-//       return res
-//         .status(502)
-//         .json({ message: "The email couldn't be sent. Please try again." });
-//     }
-
-//     return res
-//       .status(200)
-//       .json({ message: "A new verification email was sent." });
-//   } catch (error) {
-//     console.error("RESEND PATIENT VERIFICATION ERROR:", error);
-
-//     return res
-//       .status(500)
-//       .json({ message: "Failed to send the verification email." });
-//   }
-// }

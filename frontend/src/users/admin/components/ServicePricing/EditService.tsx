@@ -193,7 +193,7 @@ function EditService({ service, services, onClose, loadData }: Props) {
         {formError && <ErrorMessage className="mb-4">{formError}</ErrorMessage>}
         {!isPackage && (
           <div className="w-full">
-            <div className="w-full grid grid-cols-2 gap-5 mb-2">
+            <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-5 mb-2">
               <div>
                 <label className="text-xs font-semibold">Service Name *</label>
                 <input
@@ -217,7 +217,7 @@ function EditService({ service, services, onClose, loadData }: Props) {
               </div>
             </div>
 
-            <div className="w-full grid grid-cols-2 gap-5 mb-3">
+            <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-5 mb-3">
               <div>
                 <label className="text-xs font-semibold">Service Type *</label>
                 <select
@@ -263,7 +263,7 @@ function EditService({ service, services, onClose, loadData }: Props) {
 
         {isPackage && (
           <div className="w-full">
-            <div className="w-full grid grid-cols-3 gap-5 mb-2">
+            <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-5 mb-2">
               <div>
                 <label className="text-xs font-semibold">Package Name *</label>
                 <input
@@ -340,7 +340,7 @@ function EditService({ service, services, onClose, loadData }: Props) {
               </div>
 
               <div className="w-full max-h-60 overflow-auto rounded-md border border-gray-200 mt-5">
-                <table className="w-full text-left text-xs">
+                <table className="min-w-[520px] w-full text-left text-xs">
                   <thead className="sticky top-0 bg-gray-50 text-gray-600">
                     <tr>
                       <th className="px-4 py-3">

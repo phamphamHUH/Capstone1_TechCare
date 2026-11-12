@@ -168,15 +168,15 @@ function ServiceRequest({
 
   return (
     <main className="flex-1 min-w-0 pb-5">
-      <h1 className="text-2xl font-bold px-6">Select Service Type</h1>
-      {error && <ErrorMessage className="mx-6 mt-5">{error}</ErrorMessage>}
+      <h1 className="text-2xl font-bold px-4 sm:px-6">Select Service Type</h1>
+      {error && <ErrorMessage className="mx-4 sm:mx-6 mt-5">{error}</ErrorMessage>}
       <PatientSelectionHeader
         patient={patient}
         onSelectPatient={setPatient}
         onRegister={() => setPage("patient-registration")}
       />
       {/* SERVICE TABS */}
-      <section className="flex gap-3 mt-6 px-8">
+      <section className="flex flex-wrap gap-3 mt-6 px-4 sm:px-8">
         {cards.map((card, index) => {
           const Icon = card.icon;
           return (
@@ -200,8 +200,8 @@ function ServiceRequest({
         loading={loading && services.length > 0}
         message="Refreshing available services..."
       >
-        <div className="border border-gray-200 rounded-md mt-5 mx-8 grid grid-cols-5 min-h-7/12 shadow-lg">
-          <div className="col-span-3 border-r border-gray-200 px-8 py-5 flex flex-col justify-between">
+        <div className="border border-gray-200 rounded-md mt-5 mx-4 sm:mx-8 grid grid-cols-1 lg:grid-cols-5 min-h-7/12 shadow-lg">
+          <div className="min-w-0 lg:col-span-3 border-b lg:border-b-0 lg:border-r border-gray-200 px-4 sm:px-8 py-5 flex flex-col justify-between">
             <ServiceSelectionPanel
               services={pageItems}
               loadFailed={Boolean(error)}
@@ -219,7 +219,7 @@ function ServiceRequest({
               onPageChange={setPageNumber}
             />
           </div>
-          <div className="col-span-2 px-8 py-5 flex flex-col justify-between">
+          <div className="min-w-0 lg:col-span-2 px-4 sm:px-8 py-5 flex flex-col justify-between">
             <ServiceList
               activeTab={activeTab}
               services={services}

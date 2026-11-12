@@ -53,7 +53,7 @@ function LaboratoryRequests({
         setOpen={setOpen}
         loadData={loadData}
       />
-      <div className="px-6 overflow-x-auto flex flex-col space-y-6 z-0">
+      <div className="px-4 sm:px-6 pb-6 flex flex-col space-y-6 z-0">
         <RequestSummary services={services} room={room} />
         <LaboratoryQueuePanel
           queues={queues}

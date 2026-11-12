@@ -94,7 +94,7 @@ export async function getLaboratoryQueues(
         ) AS service_category
       FROM queue_entries q
       JOIN patients p ON p.patient_id = q.patient_id
-      WHERE q.queue_id LIKE 'LAB-%'
+      WHERE (q.queue_id LIKE 'LAB-%' OR q.queue_id LIKE 'IMG-%') -- laboratory and imaging queues
         AND EXISTS (
           SELECT 1
           FROM test_request_items tri
@@ -141,7 +141,14 @@ export async function getLaboratoryRequestDetails(
             'requested_by', tr.requested_by,
             'is_priority', q.is_priority,
             'status', q.status,
-            'is_paid', tr.is_paid,
+            -- Paid when every active item's bill is paid.
+            'is_paid', COALESCE((
+              SELECT BOOL_AND(LOWER(TRIM(b.status)) = 'paid')
+              FROM test_request_items pi
+              LEFT JOIN bills b ON b.bill_id = pi.bill_id
+              WHERE pi.request_id = tr.request_id
+                AND LOWER(TRIM(pi.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+            ), false),
             'patient_id', p.patient_id,
             'first_name', p.first_name,
             'last_name', p.last_name,
@@ -338,7 +345,7 @@ export async function getSavedLaboratoryResults(
       .json({ message: "room is required" } as getSavedLaboratoryResults.error);
   try {
     const results = await sql`
-      SELECT r.* FROM test_results r
+      SELECT r.*, s.service_category FROM test_results r
       JOIN test_request_items ri ON ri.item_id = r.item_id
       JOIN services s ON s.service_id = ri.service_id
       WHERE s.room = ${room} AND r.status IN ('Pending', 'Released')

@@ -182,7 +182,7 @@ function Billing({ bills, loading, error, loadData }: BillingProps) {
 
   if (details) {
     return (
-      <main className="min-w-0 flex-1 px-6">
+      <main className="min-w-0 flex-1 px-4 sm:px-6">
         <ProcessPayment
           key={details.bill.bill_id}
           bill={details.bill}
@@ -204,7 +204,7 @@ function Billing({ bills, loading, error, loadData }: BillingProps) {
   ];
 
   return (
-    <main className="min-w-0 flex-1 px-6" aria-label="Front desk billing">
+    <main className="min-w-0 flex-1 px-4 sm:px-6" aria-label="Front desk billing">
       <h1 className="text-2xl font-bold">Billing &amp; Payments</h1>
       <p className="text-sm font-light text-gray-600">
         Review patient bills, record payments, and forward paid laboratory

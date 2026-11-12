@@ -14,7 +14,7 @@ const TABS: { key: QueueTab; label: string }[] = [
 
 function QueueTabs({ activeTab, setActiveTab }: Props) {
   return (
-    <div className="flex gap-6 border-b border-gray-200 mb-4">
+    <div className="flex gap-4 sm:gap-6 overflow-x-auto overflow-y-hidden border-b border-gray-200 mb-4">
       {TABS.map((tab) => {
         const isActive = tab.key === activeTab;
 
@@ -24,7 +24,7 @@ function QueueTabs({ activeTab, setActiveTab }: Props) {
             onClick={() => {
               setActiveTab(tab.key);
             }}
-            className={`pb-3 text-sm font-medium border-b-2 -mb-px transition-colors cursor-pointer ${
+            className={`shrink-0 whitespace-nowrap pb-3 text-sm font-medium border-b-2 -mb-px transition-colors cursor-pointer ${
               isActive
                 ? "border-blue-500 text-blue-600"
                 : "border-transparent text-gray-500 hover:text-gray-700"

@@ -88,12 +88,17 @@ TechCare-main/
 │   ├── tests/laboratoryPrint.{test,browser}.mjs
 │   └── src/
 │       ├── main.tsx, App.tsx    # BrowserRouter + Routes
-│       ├── auth/                # LoginPage, SignupPage (dead), ClinicSlideshow, LeftSideBackground
-│       ├── components/          # shared SideBar.tsx (+ sidebar/SidebarUserMenu.tsx: profile + logout dropdown), Header.tsx (☰, title, reload icon), UniversalModal, ConfirmDialog
-│       ├── lib/                 # axios.ts, env.config.ts, ProtectedRoute.tsx, utils.ts, protectRoute.ts (empty)
-│       ├── interface/           # shared TS types: Activity, Billing, FormTemplate, HistoryRecord, Patient, Queue, Service, User, lab types
-│       ├── services/queue-sse/connectQueueStream.ts   # SSE client
-│       ├── utils/               # calculateAge, cnhelper, patientRecordPrintTemplate
+│       ├── auth/                # LoginPage, SignupPage (dead), components/ (ClinicSlideshow, LeftSideBackground, LoginVideo)
+│       ├── components/          # ONLY components used by 2+ roles/places (see "Shared vs. local components"):
+│       │                        #   SideBar.tsx (+ sidebar/SidebarUserMenu.tsx, sidebar/utils/sidebarNav.ts),
+│       │                        #   Header.tsx (+ Header/NotificationBell.tsx, Header/NotificationBell/utils/useNotifications.ts),
+│       │                        #   UniversalModal, ConfirmDialog, EmptyState, ErrorMessage, FieldError, LoadingScreen, LoadingRegion,
+│       │                        #   ResetPasswordModal, RoomSummaryPanel, QueueDashboard (+ QueueDashboard/utils/queueSummary.ts),
+│       │                        #   MedicalHistory/{HistoryTimeline,VisitDetails}
+│       ├── lib/                 # axios.ts, env.config.ts, ProtectedRoute.tsx, clinicInfo.ts, utils.ts, protectRoute.ts (empty)
+│       ├── interface/           # shared TS types: Activity, Analytics, Billing, FormTemplate, HistoryRecord, Patient, PatientPortal, Queue, Service, User, lab types
+│       ├── services/{queue-sse,notification-sse}/connect*Stream.ts   # SSE clients
+│       ├── utils/               # app-wide helpers: calculateAge, cnhelper, debounce, formats (incl. browserTimeZone), patientRecordPrintTemplate, persistentState
 │       └── users/{admin,doctor,frontdesk_staff,laboratory_staff,patient,test/sse}
 └── tools/                       # standalone ETL (pipeline.py, messydata.ipynb, sample CSVs); not wired into the app
 ```
@@ -110,7 +115,7 @@ TechCare-main/
 
 ```
 Browser (React SPA, token in sessionStorage)
-   │ axios (Bearer)                     │ fetch-event-source (Bearer) -> /api/admin/queue/stream
+   │ axios (Bearer)                     │ fetch-event-source (Bearer) -> /api/queue/stream
    ▼                                    ▼
 Express app (app.ts)
    /api/test /api/sse   (demo)
@@ -157,11 +162,11 @@ separate tables with similar columns (`password_hash`, not `password`).
 
 | Table | Key columns and notes |
 |---|---|
-| `users` | `user_id` (unique), `username`, `password_hash`, `first_name/middle_name/last_name/suffix`, `sex`, `email` (unique), `contact_number`, `emergency_contact(_name)`, `address`, `birthdate`, `role`, `department`, `employment_status`, `date_hired`, `shift_start/shift_end`, `last_login`, `account_status` (false = deactivated, login returns 403), `active` (online flag set on login/logout), `profile_photo`, `is_verified` (default TRUE so existing accounts keep working; `addUser` inserts FALSE, and login is blocked until the email is confirmed), `verify_token`/`verify_expires_at`, `reset_token`/`reset_expires_at` (SHA-256 hashes; the new columns are added by `ALTER … ADD COLUMN IF NOT EXISTS` in `connectNeon()`). |
-| `patients` | `patient_id` (unique), `username` (= patient_id when created by front desk), `password_hash` (default password is the last name), name, `sex`, `email` (unique), `contact_number`, `birthdate`, address as `street/barangay/city/province/zip_code`, `guardian_name/guardian_relationship/guardian_contact`, `is_pwd`, `height_cm`, `weight_kg`, medical history text columns, `smoking_status`, `alcohol_consumption`, `civil_status`, `blood_type`, `image_url`, `role` default `'patient'`, `account_status`, `active`, `is_verified` (default FALSE; the account works but the clinic sends no emails until verified), `pending_email` (new email waiting to be confirmed), `verify_token`/`verify_expires_at`. **No `address`, `emergency_contact_name` or `emergency_contact`.** |
+| `users` | `user_id` (unique), `username`, `password_hash`, `first_name/middle_name/last_name/suffix`, `sex`, `email` (unique), `contact_number`, `emergency_contact(_name)`, `address`, `birthdate`, `role`, `department`, `employment_status`, `date_hired`, `shift_start/shift_end`, `last_login`, `account_status` (false = deactivated, login returns 403), `active` (online flag set on login/logout), `profile_photo`. (No verification or reset-token columns; they were removed.) |
+| `patients` | `patient_id` (unique), `username` (= patient_id when created by front desk), `password_hash` (default password is the last name), name, `sex`, `email` (unique), `contact_number`, `birthdate`, address as `street/barangay/city/province/zip_code`, `guardian_name/guardian_relationship/guardian_contact`, `is_pwd`, `height_cm`, `weight_kg`, medical history text columns, `smoking_status`, `alcohol_consumption`, `civil_status`, `blood_type`, `image_url`, `role` default `'patient'`, `account_status`, `active`. **No `address`, `emergency_contact_name` or `emergency_contact`.** |
 | `services` | `service_id`, `service_type` (`consultation` / `laboratory`), `service_name` (unique), `price`, `active`, `room` (e.g. `Consultation Room`, `Laboratory Room 1/2`), `service_category`. |
 | `packages` | `package_id` (unique string), `package_name`, `package_price`, `status` (`Active`). No controller uses it yet. |
-| `queue_entries` | `queue_id` (`CONS-####` / `LAB-####`), `patient_id`, `queue_number`, `is_priority`, `skip_count`, `status`. **No `service_id` or `service_type`**: the service is reached through `consultation_records.queue_id` or `laboratory_request_items.queue_id`. |
+| `queue_entries` | `queue_id` (`CON-####` / `LAB-####` / `IMG-####` (older rows: `CONS-####`; match consultation queues with `(queue_id LIKE 'CON-%' OR queue_id LIKE 'CONS-%')`)), `patient_id`, `queue_number`, `is_priority`, `skip_count`, `status`. **No `service_id` or `service_type`**: the service is reached through `consultation_records.queue_id` or `laboratory_request_items.queue_id`. |
 | `consultation_records` | `consultation_record_id`, `patient_id`, `service_id`, `queue_id`, `bill_id` → bills, `status` (default `'Created'`), `cancellation_reason`, `is_paid`, `requested_by` → users, `consulted_by` → users, `consultation_type` (`Initial`), JSONB `diagnosis`, `presenting_complaint`, `vital_signs`, `physical_examination`, `notes`, `requested_at`, `consulted_at`. **There is no `doctor_id`.** |
 | `prescription_records` | `prescription_id` (`RX-…`), `consultation_record_id`, `patient_id`, `prescriber_id`, `valid_until`, `status` (`Active`), `prescription_items` JSONB (`[{medication,dosage,frequency,duration?,instructions?}]`), `notes`. |
 | `laboratory_requests` | `request_id` (`LR-…`), optional `consultation_record_id`, `patient_id`, `requested_by`, `status` (`Requested` → `Paid`), `is_paid`, `is_priority`, `request_date`, `estimated_release_date`, `requested_at`. |
@@ -178,10 +183,10 @@ separate tables with similar columns (`password_hash`, not `password`).
 
 ### How the schema is managed
 
-- `connectNeon()` (runs on every boot): `CREATE TABLE IF NOT EXISTS` for each entry. Its old `ALTER` repairs are commented out.
-- `syncSchema(onlyTables?)` runs **automatically on boot when `IS_PRODUCTION=true`** (see `server.ts`). It **drops tables not in `TABLES`** (`DROP … CASCADE`), adds missing columns and **drops columns not listed in each table's `columns` map**. It compares column names only, so it never changes an existing column's type, nullability or default and never adds a missing constraint. Never run it against a database holding data you care about without reading `TABLES` first.
+- `connectNeon()` (runs on every boot): every `CREATE TABLE IF NOT EXISTS` in **one `sql.transaction`** (one HTTP round trip), retried up to 5 times with backoff (1, 2, 4, 8 s) because the link to Neon `us-east-2` drops for a few seconds at a time. Before this, one slow request among ~20 crashed the server on every nodemon restart.
+- `syncSchema(onlyTables?)` runs **automatically on boot when `IS_PRODUCTION=true`** (see `server.ts`). It **drops tables not in `TABLES`** (`DROP … CASCADE`), adds missing columns and **drops columns not listed in each table's `columns` map**. It compares column names only, with **one exception**: a column that is `timestamp without time zone` in the database but `TIMESTAMPTZ` in `TABLES` is converted with `ALTER COLUMN … TYPE TIMESTAMPTZ USING col AT TIME ZONE 'UTC'` (values keep the same moment). Otherwise it never changes an existing column's type, nullability or default and never adds a missing constraint. Never run it against a database holding data you care about without reading `TABLES` first.
 - Each table has one definition, its `columns` map. There is no separate `createSQL`. The live database has drifted from it in places (Gotcha 11).
-- Editing `columns` does not alter existing tables outside production. On a non-production database, either call `syncSchema(["table"])` once or drop and reseed it. Type, nullability, default and FK changes always need an explicit `ALTER`.
+- Editing `columns` does not alter existing tables outside production. On a non-production database, either call `syncSchema(["table"])` once or drop and reseed it. Other type, nullability, default and FK changes need a new step in `syncSchema` agreed with the team; never hand-write `ALTER` in `connectNeon`.
 
 ### Seeding
 
@@ -209,7 +214,7 @@ separate tables with similar columns (`password_hash`, not `password`).
 
 ### Consultation flow
 
-Front desk `POST /api/fdstaff/consultation-requests` `{patient_id, service_id, is_priority}` creates a `CONS-####` queue entry **and** a `consultation_records` row (`In Queue`) in one transaction, then `publishQueueChange()`. The doctor side (findings, prescriptions, queue) is only partly working; see Gotchas 1–4.
+Front desk `POST /api/fdstaff/consultation-requests` `{patient_id, service_id, is_priority}` creates a `CON-####` queue entry **and** a `consultation_records` row (`In Queue`) in one transaction, then `publishQueueChange()`. The doctor side (findings, prescriptions, queue) is only partly working; see Gotchas 1–4.
 
 ## ID generation (`utils/generateId.ts`)
 
@@ -225,11 +230,11 @@ IDs are generated app-side by reading the max existing value for a scope and inc
 | Laboratory item | `LI-YY-MMDD-NNNN` | daily |
 | Consultation record | `CR-YY-MMDD-NNNN` | daily (two generators: `generateConsultationRecordId` in generateId.ts, `generateConsultationRecordID` in generateConsultationId.ts) |
 | Prescription | `RX-YY-MMDD-NNNN` | daily |
-| Consultation queue / Lab queue | `CONS-NNNN` / `LAB-NNNN` | never (monotonic) |
+| Consultation / lab / imaging queue | `CON-NNNN` (older `CONS-NNNN`) / `LAB-NNNN` / `IMG-NNNN` | never (monotonic) |
 | Lab result | `RES-<uuid>` | n/a |
 | Form template / component | `F-<Date.now()>` / `FC-<form_id>-<index>` | n/a |
 
-Queue **numbers** (display order) differ from queue IDs: consultation numbers are `MAX+1` per Manila day across all `CONS-` entries; lab numbers are `MAX+1` per Manila day **per room**.
+Queue **numbers** (display order) differ from queue IDs: consultation numbers are `MAX+1` per Manila day across all `CON-`/`CONS-` entries; lab numbers are `MAX+1` per Manila day **per room**.
 
 ## Authentication
 
@@ -244,22 +249,21 @@ Frontend: `LoginPage` stores `token`, `role`, `user` in **`sessionStorage`** (no
 Only routes that exist in the code are listed. ✅ = works against the current schema, ⚠️ = broken or unsafe (see Gotchas).
 
 ### `/api/auth`
-`POST /login` ✅, `PATCH /logout` ✅ (auth), `GET /ping` ✅. There is no `/sign-up` even though `SignupPage.tsx` posts to `/api/auth/sign-up`. `login` returns 403 for an employee with `is_verified = FALSE`.
+`POST /login` ✅, `POST /refresh {refreshToken}` ✅ (new access token from the 7-day refresh token), `PATCH /logout` ✅ (auth), `GET /ping` ✅. There is no `/sign-up` even though `SignupPage.tsx` posts to `/api/auth/sign-up`. `login` returns 403 for a deactivated employee (`account_status = FALSE`).
 
-**Email verification and password reset** (public, opened from email links):
-- `POST /verify-email {token}`: one endpoint for both. It tries `users`, then `patients` (same order as `login`), with `UPDATE … WHERE verify_token = hash AND verify_expires_at > NOW()`.
-  - **Employee:** sets `is_verified = TRUE`, so they can now log in.
-  - **Patient:** `email = COALESCE(pending_email, email)`, clears `pending_email`, and sets `is_verified = TRUE`. A 23505 unique violation returns 409.
-- `POST /forgot-password {email}`: **employees only** (`account_status` and `is_verified` TRUE). Sets `reset_token`/`reset_expires_at` (30 min) and always gives the same answer.
-- `POST /reset-password {token, password}`: employees only, password ≥ 8 characters. Clearing `reset_token` makes the link single-use.
+**There is no email verification and no forgot-password flow** (removed in `ecf14c4` together with the `is_verified`, `verify_token`, `reset_token` and `pending_email` columns). Passwords are reset only by staff: admin `PATCH /api/admin/users/:user_id/password`, front desk `PATCH /api/fdstaff/patients/:patient_id/password` (both use the shared `components/ResetPasswordModal`).
+
+**"Set your password" links** (`utils/passwordLink.ts`; columns `password_token_hash` + `password_token_expires_at` on `users` and `patients`; only the SHA-256 hash is stored; one use, 7 days):
+- **Employees:** the Add User form lets the admin choose. **Email a link** (default): `addUser` gets no `password`, stores an unknown random one and emails a link to `/set-password?token=…`; while it is pending `login` returns 403 "Your account isn't set up yet…". **Set the password now**: `addUser` gets `password` (≥ 8), no link is created, and the email just says the administrator will give them the password. Both use `employeeAccountCreatedEmail(…, link | null)`.
+- **Patients:** `addPatient` still sets the front-desk password (the last name). Patients with an email also get a link (`patientAccountCreated`) to **change** it; the front-desk password works until they do. No email → no link.
+- Public endpoints: `POST /api/auth/password-link/check {token}` → `{account_type, first_name, username}` (404 if invalid/expired); `POST /api/auth/password-link {token, password}` sets the password (≥ 8) and clears the link in the same UPDATE (single use).
+- A staff password reset (admin users / front desk patients) also clears any pending link. Expired employee link → the admin uses Reset password.
+- Never return `password_token_hash`: strip it with `password_hash` (`const { password_hash, password_token_hash, ...safe } = row`).
 
 **Email service:**
-- `services/email/sendEmail.ts`:
-  - `sendEmail()` calls Brevo over HTTPS. With no `BREVO_API_KEY`, it prints the email to the console instead. It never throws; it returns `false` on failure.
-  - `sendUserVerificationEmail(userId)` and `sendPatientVerificationEmail(patientId)` save a new link and send it. The patient version sends to `pending_email` if set.
-  - `sendEmailToPatient()` is **the rule for every other patient email:** it only sends when `is_verified = TRUE`.
-- `services/email/emailTemplates.ts`: the 3 emails.
-- `utils/emailToken.ts`: `createToken()`/`hashToken()`. Only the SHA-256 hash is stored.
+- `services/email/sendEmail.ts`: `sendEmail()` calls Brevo over HTTPS (Render's free tier blocks SMTP). With no `BREVO_API_KEY` it prints the email to the console instead. It never throws; it returns `false` on failure, so callers fire and forget with `void sendEmail(...)`. `sendEmailToPatient(patientId, build)` looks up the patient's email and first name and skips patients without an email.
+- `services/email/emailTemplates.ts` re-exports one file per email from `emailTemplates/`: `employeeAccountCreated`, `patientAccountCreated`, `labResultsReady`, `paymentReceipt` (all share `layout.ts`, which escapes every value).
+- Agreed scope: emails only for account created (with the set/change-password link), account edited, password changed, lab results ready and payment receipt. Account-edited and password-changed emails are not built yet. No email verification or forgot-password flow.
 
 ### `/api/admin` (always JWT + `admin`)
 | Method | Path | Handler | Notes |
@@ -272,12 +276,11 @@ Only routes that exist in the code are listed. ✅ = works against the current s
 | GET | `/activities` | `getAllActivities` | `activity_logs` JOIN `actions`, newest first |
 | GET | `/users` | `getAllUsers` | explicit column list, no password hash |
 | GET | `/form-templates`, `/form-templates/:form_id` | list (filters `service_id`, `status`) / template + components |
-| GET | `/analytics/sales?range=` | `getSalesAnalytics` | admin dashboard. `range` = `today`/`7d`/`30d` (default)/`12mo`, else 400. Paid-bill totals vs previous period, outstanding now, timeline buckets (hour/day/month, empty ones included), by payment method, per service from the `bills.items` snapshot (before discounts) |
-| GET | `/analytics/services?range=` | `getServiceAnalytics` | service catalog ("inventory"): every service with price, active, orders in range (consultation records + lab items, not cancelled), last ordered |
-| GET | `/analytics/bills?range=` | `getAnalyticsBills` | bills behind the sales tiles: paid in range (newest first) and all unpaid now (oldest first), with patient names |
-| POST | `/add-user` | `addUser` | multipart, optional `image` → Cloudinary `techcare/user_photos`; requires username, password, names, sex, email, contact, address, birthdate, role, date_hired; 409 on duplicate username/email/contact. Inserts with `is_verified = FALSE` and emails a confirmation link: **the employee can't log in until they click it**. Returns the user without the hash or token. |
-| POST | `/users/:user_id/verification-email` | `resendUserVerification` | new confirmation link (409 if already verified) |
-| PATCH | `/users/:user_id/password` | `resetUserPassword` | the admin types the new password (≥ 8 characters); also clears any forgot-password link |
+| GET | `/analytics/sales?range=&tz=` | `getSalesAnalytics` | admin dashboard. `range` = `today`/`7d`/`30d` (default)/`12mo`; `tz` = the viewer's IANA zone from the browser (default `Asia/Manila`); either invalid → 400. Ranges, "today" and chart buckets follow `tz`. Paid-bill totals vs previous period, outstanding now, timeline buckets (hour/day/month, empty ones included), by payment method, per service from the `bills.items` snapshot (before discounts) |
+| GET | `/analytics/services?range=&tz=` | `getServiceAnalytics` | service catalog ("inventory"): every service with price, active, orders in range (consultation records + lab items, not cancelled), last ordered |
+| GET | `/analytics/bills?range=&tz=` | `getAnalyticsBills` | bills behind the sales tiles: paid in range (newest first) and all unpaid now (oldest first), with patient names |
+| POST | `/add-user` | `addUser` | multipart, optional `image` → Cloudinary `techcare/user_photos`; requires username, password, names, sex, email, contact, address, birthdate, role, date_hired; 409 on duplicate username/email/contact. Emails the account details (`employeeAccountCreated`). Returns the user without the hash. |
+| PATCH | `/users/:user_id/password` | `resetUserPassword` | the admin types the new password (≥ 8 characters) |
 | POST | `/services` | `addService` | requires `service_name, price, service_type, service_category, room` |
 | POST | `/activities` | `addActivity` | writes legacy `system_activity` for `req.user` |
 | POST | `/actions` | `addAction` | adds an `actions` row |
@@ -304,8 +307,7 @@ Only routes that exist in the code are listed. ✅ = works against the current s
 | POST | `/consultation-requests` | ✅ transaction: queue entry + consultation record; hardcoded requester id |
 | POST | `/laboratory-requests` | ✅ transaction; hardcoded requester id |
 | POST | `/billing` | ⚠️ inserts into nonexistent `services_ids` and omits required `bill_id`; will throw |
-| PUT | `/patients/:patient_id` | ✅ partial update via COALESCE, and updates `image_url` from the uploaded image. **No `password`** (use the reset endpoint). **Email change:** a verified patient keeps their email and the new one goes to `pending_email`; an unverified patient's email is replaced. Either way a verification link goes to the new address. 409 if another patient uses it. |
-| POST | `/patients/:patient_id/verification-email` | ✅ resend the verification link (409 if already verified with no pending email) |
+| PUT | `/patients/:patient_id` | ✅ partial update via COALESCE, and updates `image_url` from the uploaded image. **No `password`** (use the reset endpoint). A new email simply replaces the old one; 409 if another patient uses it. |
 | PATCH | `/patients/:patient_id/password` | ✅ the front desk types the new password (≥ 8 characters). **The only way a patient's password is reset.** |
 | PATCH | `/laboratory-requests/:request_id` | ✅ confirm payment and forward to lab queues |
 | PUT | `/queues/:queue_id` | ⚠️ `serveQueueEntry` selects nonexistent `queue_entries.service_type`; 500 |
@@ -342,13 +344,15 @@ controller mutates queue_entries
    └─ publishQueueChange()           services/queue-sse/queueStream.hub.ts
         debounce 150 ms (one message per burst)
         └─ writes "event: queue-changed" to every connected screen
-Admin QueueingMonitor page
+Staff screens (admin QueueingMonitor, doctor/lab dashboards and request pages, front desk)
    └─ connectQueueStream()           frontend/src/services/queue-sse/connectQueueStream.ts
-        fetchEventSource(/api/admin/queue/stream, Authorization header, openWhenHidden)
-        onopen (live) and every queue-changed -> loadQueue() -> GET /api/admin/queues
+        fetchEventSource(/api/queue/stream, Authorization header, openWhenHidden)
+        "initial" and every "queue-changed" -> the page's loadData() -> REST
 ```
 
 - SSE carries a signal, never queue data. The page always reloads from REST, including on every (re)connect.
+- `/api/queue/stream` sits behind `authMiddleware`, so it is **staff only**. The patient portal does not use it: patient Queue Tracking is plain REST (loads on open, on the header reload button and when the tab regains focus; no polling, by decision: realtime is overkill there). Patients do have their own notification stream (`/api/patient/notifications/stream`, notification-sse).
+- `QueueDashboard` skips the stream's first "initial" message because the role shell has just loaded the same data; otherwise the dashboard loads twice.
 - Hub: max 50 screens (503 beyond), `retry: 3000`, `ping` every 25 s, screens tracked in an in-memory `Set` (single-instance only). `closeAllQueueStreams()` runs on SIGTERM/SIGINT so `server.close()` does not hang.
 - Client: 401/403 stops retrying (`unauthorized`), other errors retry with backoff (2 s, 4 s, 8 s, then 15 s max), 65 s of silence forces a reconnect. It uses `fetchEventSource` rather than `EventSource` because it needs the `Authorization` header.
 - **Callers of `publishQueueChange()`**: fdstaff `addConsultationRecord`, `confirmPayment`, `deleteQueue`, `deletePatient`; doctor `skipConsultationQueueEntry`; labstaff `acceptQueueEntry`, `completeQueueEntry`, `skipQueueEntry`, `cancelQueueEntry`. When you add a new controller that changes `queue_entries`, call it after the commit. The legacy fdstaff `serveQueueEntry`/`skipQueueEntry` do not.
@@ -364,7 +368,7 @@ Admin QueueingMonitor page
 | `/doctor` | `users/doctor/Doctor.tsx` | `["doctor"]` |
 | `/frontdesk-staff` | `users/frontdesk_staff/FrontdeskStaff.tsx` | `["frontdesk-staff"]` |
 | `/laboratory-staff` | `users/laboratory_staff/LaboratoryStaff.tsx` | `["laboratory-staff"]` |
-| `/patient` | `users/patient/PatientInformation.tsx` | `["patient"]` |
+| `/patient` | `users/patient/Patient.tsx` | `["patient"]` |
 | `/sse-protocols/{sse-send,SSEProtocols}` | demo pages | none |
 | `/about` | placeholder | none |
 
@@ -381,6 +385,19 @@ Each role folder keeps one shell component that owns page state and data loading
 
 Data is passed down as props; there is no React Query/SWR or global store. Use `lib/axios.ts` (`api`), never raw `fetch`/`axios`, except the SSE client.
 
+#### Responsive shell (every role, phone first)
+- `SideBar` takes `open` **and `setOpen`**. Below `lg` (1024px) it is a drawer over the page with a backdrop; tapping the backdrop, pressing Escape or choosing a page closes it. At `lg`+ it sits beside the page and can be resized. Shells start it closed on phones: `useState(() => typeof window === "undefined" || window.innerWidth >= 1024)`.
+- `Header`: ☰ toggles the sidebar. When the sidebar is collapsed on desktop the nav buttons move into the header; **on phones the header never shows nav**, only ☰, title, notifications and reload. Title and role truncate instead of overlapping.
+- Page padding is `px-4 sm:px-6` (never a bare `px-6`/`mx-6`).
+- Tables keep a readable `min-w-[…px]` inside an `overflow-x-auto` wrapper and scroll sideways on phones. Tab bars use `overflow-x-auto` with `shrink-0 whitespace-nowrap` tabs. Toolbars and header rows use `flex-wrap`.
+- Multi-column layouts stack below `lg` (`grid-cols-1 lg:grid-cols-N`, `lg:col-span-*`); form grids are `grid-cols-1 sm:grid-cols-2`.
+- Stat tiles are a 2-column grid on phones: `grid grid-cols-2 lg:grid-cols-4 gap-px bg-gray-300` with white tiles, and an odd last tile spans both columns (`[&>*:last-child:nth-child(odd)]:col-span-2`).
+
+#### Shared vs. local components
+- `src/components/` holds **only** components used by two or more roles/places. If only one component or page uses it, it lives with that user (`components/Header/NotificationBell.tsx`, `admin/components/UserManagement/AddUserModal/FormFields.tsx`).
+- Inside a role, `components/<Feature>/` groups what one page uses; child-only components go in the parent's folder (below).
+- **Helpers (`.ts`, not components) go in a `utils/` folder beside the components that use them**, mirroring the backend's `controllers/<role>/utils/`: API calls, formatters, validation, hooks, context. Examples: `LaboratoryResults/utils/laboratoryResultsApi.ts`, `Dashboard/utils/formatters.ts`, `components/sidebar/utils/sidebarNav.ts`, `patient/components/utils/patientApi.ts`. `types.ts` files stay where they are; `src/interface`, `src/lib`, `src/services` and `src/utils` are app-wide.
+
 #### Nested component folders (required for new code)
 When a component has child components that only it uses, put them in a folder **named after the parent, next to the parent file**. The parent imports its own children; pages never import a grandchild directly.
 
@@ -392,16 +409,17 @@ components/<Feature>/
 │   ├── ChildB.tsx
 │   └── ChildA/              nest again if ChildA has its own children
 ├── Leaf.tsx                 no children → stays flat
-└── formatters.ts            helpers shared across the whole feature stay at the feature root
+└── utils/
+    └── formatters.ts        helpers for this feature live in utils/
 ```
 
-Existing examples: `laboratory_staff/components/LaboratoryRequests/LaboratoryQueuePanel.tsx` + `LaboratoryQueuePanel/QueueFilter.tsx`; `admin/components/Dashboard/DetailModal.tsx` + `DetailModal/{SalesDetails,InventoryDetails,DetailParts}.tsx`; `components/SideBar.tsx` + `components/sidebar/SidebarUserMenu.tsx` (lowercase folder, predates the rule). When moving files, use `git mv` and fix relative imports (one more `../` per level). Older feature folders are still flat; restructure them only when you touch them.
+Examples: `LaboratoryRequests/LaboratoryQueuePanel/{QueueFilter,QueueTable,QueueTabs}.tsx`; `LaboratoryRequests/RequestSummary/ServiceModal.tsx`; `LaboratoryResults/PrintResultView/LaboratoryReport.tsx`; `LaboratoryResults/ResultEntry/TemplateFields.tsx`; doctor `ConsultationQueue/ConsultationQueuePanel/QueueTable/CancelationReason.tsx`, `prescription/PrescriptionManager/*`, `laboratoryRequest/ConsultationWorkspace/*`; front desk `Billing/ProcessPayment/{BillingModal,InvoicePreview}.tsx`, `ServiceRequest/PatientSelectionHeader/PatientSearchModal.tsx`; admin `FormTemplate/TemplateBuilder/*` and `Dashboard/DetailModal/*`; `components/SideBar.tsx` + `components/sidebar/` (lowercase folder, predates the rule). When moving files, use `git mv` and fix relative imports (one more `../` per level); tests that load modules by path (`tests/*.mjs`) need updating too.
 
-- **admin**: pages `AdminDashboard` (sales + service-catalog "inventory" analytics only: range buttons, clickable KPI tiles that open `components/Dashboard/DetailModal`, revenue column chart, top-selling services, scrollable service catalog; charts are plain HTML/Tailwind, no chart library; consultation `#2a78d6`, laboratory `#1baf7a`), `UserManagement`, `ServicePricing`, `ActivityMonitoring`, `QueueingMonitor` (SSE, full-screen board, `components/QueueMonitor/QueueColumn`), `FormTemplate` (drag-and-drop builder: `TemplateBuilder`, `BuilderCanvas`, `ComponentPalette`, `ComponentSettings`, `TemplatePreview`, `TemplateLibrary`, `sampleTemplates`). Shell loads services, users and activities, plus `/api/admin/analytics/{sales,services}` for the selected range (types in `interface/Analytics.ts`); the header reload button refreshes both.
+- **admin**: pages `AdminDashboard` (today at the clinic, **no money**: stat tiles for waiting / being served / done today / staff online, plus cards for queues per room (`/api/admin/queues`, live via the queue stream), recent activity, staff online by role and services per type; parts in `components/Dashboard/`), `Reports` (the collections and service-request analytics that used to be the dashboard: range buttons, clickable tiles that open `components/Reports/DetailModal`, collections chart, most requested services, service catalog; analytics load only while Reports is open; wording is clinical, not business: "Collected", "Unpaid", "Most Requested Services", never "Revenue", "Sales" or "Top-Selling"; charts are plain HTML/Tailwind, no chart library; consultation `#2a78d6`, laboratory `#1baf7a`; `StatTile` is shared at `admin/components/StatTile.tsx`), `UserManagement`, `ServicePricing`, `ActivityMonitoring`, `QueueingMonitor` (SSE, full-screen board, `components/QueueMonitor/QueueColumn`: the **waiting list is the main section** with the next patient highlighted; Now Serving is a compact strip at the bottom), `FormTemplate` (drag-and-drop builder: `TemplateBuilder` + `TemplateBuilder/{BuilderCanvas,ComponentPalette,ComponentSettings}`, `TemplatePreview`, `TemplateLibrary`, `utils/sampleTemplates`). Shell loads services, users and activities, plus `/api/admin/analytics/{sales,services}?range=&tz=browserTimeZone()` (types in `interface/Analytics.ts`); the header reload button refreshes both.
 - **frontdesk_staff**: pages `FrontdeskDashboard`, `PatientRegistration` (+ `IdCard` via html2canvas), `PatientRecords`, `Queues`, `QueueManagement`, `ServiceRequest` (consultation/lab requests), `Billing` (unpaid lab confirmation + payment history), `PatientMedicalHistory`, `MedicalHistory` (history timeline components); `Test.tsx` is a leftover. Shell loads services, patients, queues, queue-requests, unpaid lab requests.
-- **laboratory_staff**: pages `LabstaffDashboard`, `LaboratoryRequests` (queue panel, accept/skip/complete), `LaboratoryResults` (analysis list, form-template driven `ResultEntry`, release control, print view `laboratoryPrint.ts`, `laboratoryValidation.ts`, `reportTemplates.ts`, adapters/API modules). `room` is hardcoded to `"Laboratory Room 2"` in `LaboratoryStaff.tsx`.
-- **doctor**: pages `DoctorDashboard`, `Consultation` / `PrescriptionPage` (`consultation/*`, `prescription/*` components), `ConsultationQueue`, `DigitizedDocument`, `MedicalHistory` (`/api/doctor/medical-history`), `LaboratoryRequest` (`ConsultationWorkspace`). The prescription components still use `mockData.ts`. Validation mirrors the backend (`consultation/validation.ts`).
-- **patient**: `PatientInformation.tsx`, `pages/ConsultationsView`, `PrescriptionsView`, `components/PatientSummaryCard`, `patientApi.ts`, `types.ts`.
+- **laboratory_staff**: pages `LabstaffDashboard` (shared `QueueDashboard`: today's counts, Now Serving, Next in Line with wait times, shortcuts), `LaboratoryRequests` (queue panel, accept/skip/complete), `LaboratoryResults` (analysis list, form-template driven `ResultEntry`, release control, print view; helpers in `LaboratoryResults/utils/`: `laboratoryPrint`, `laboratoryValidation`, `reportTemplates`, `laboratoryResultAdapters`, `laboratoryResultsApi`, `laboratoryAnalysis`, `laboratoryNetwork`). `room` comes from the account's `department` (fallback `"Laboratory Room 2"`).
+- **doctor**: pages `DoctorDashboard` (shared `QueueDashboard` for "Consultation Room"), `ConsultationQueue`, `ActiveConsultation`, `TestRequest`, `Consultation` / `PrescriptionPage` (`laboratoryRequest/ConsultationWorkspace/*`, `prescription/PrescriptionManager/*`), `DigitizedDocument`, `MedicalHistory` (`/api/doctor/medical-history`). The prescription components still use `prescription/utils/mockData.ts`. Validation mirrors the backend (`consultation/utils/validation.ts`).
+- **patient**: shell `Patient.tsx`; pages `PatientDashboard`, `QueueTracking` (REST only, no polling), `MedicalHistory` (also lab results), `Prescriptions`; `components/{PatientSummaryCard,PortalStatus,QueueTracking/QueueCard,MedicalHistory/*}`, `components/utils/patientApi.ts`.
 
 ### Environment and API base URL
 `lib/axios.ts` baseURL: `""` in `vite dev` (uses the Vite `/api` proxy), else `VITE_API_BASE_URL` (or `VITE_API_URL`, trailing `/` and `/api` stripped; empty means same origin, which is what the monolith deployment wants).
@@ -460,7 +478,10 @@ Frontend `.env.local`: `VITE_IS_DEVELOPMENT=true`, `VITE_API_BASE_URL=http://loc
 - **Audit**: new code should log through `logActivity()` with an `actions` row, not `system_activity`.
 - **Never `SELECT *` a user and return it**: strip `password_hash` (the existing code does `const { password_hash, ...safe } = row`).
 - **Frontend**: follow the shell + `?page=` + `pages/` + `components/<Feature>/` pattern, with child-only components nested in a `Parent/` folder beside `Parent.tsx` (see "Nested component folders"); reuse `components/SideBar` and `Header`; shared types live in `src/interface/`.
-- **Analytics dates**: bill/record timestamps are UTC in `TIMESTAMP` columns; group and filter with `col AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Manila'` against Manila bounds from `utils/analyticsRange.ts` (`resolveAnalyticsRange`).
+- **Time zones**: all timestamps are `TIMESTAMPTZ`; the API sends ISO strings ending in `Z`.
+  - **Display** in the viewer's browser zone: `toLocale*String` with **no** `timeZone` option. Birthdates (`DATE`) are the exception: format them with `timeZone: "Asia/Manila"` so every viewer sees the same calendar day.
+  - **Analytics** take `?tz=` from `browserTimeZone()` (`utils/formats.ts`). The backend validates it (`readTimeZone`, default `CLINIC_TIME_ZONE = "Asia/Manila"`), builds wall-clock bounds in that zone (`resolveAnalyticsRange(range, tz)`) and groups with `col AT TIME ZONE ${tz}` (a query parameter). Never use the old double form `AT TIME ZONE 'UTC' AT TIME ZONE …`: on `TIMESTAMPTZ` it shifts times by 16 hours.
+  - **Clinic-time logic stays on the server in Manila**: queue-number resets, ID date parts, the senior-citizen check, the receipt email.
 
 ## Known Issues & Gotchas (verified against the code)
 
@@ -486,7 +507,7 @@ Schema and config:
 
 Queue and flow details:
 15. Status strings mix cases (`waiting`/`Waiting`, `serving`/`Serving`); always use `LOWER()`. `labstaff GET /laboratory-requests/items/` filters `'Collected'` but items become `'Specimen Collected'`.
-16. **Queue number generators use the wrong "today" expression.** Columns are `TIMESTAMP` holding GMT values, so `(created_at AT TIME ZONE 'Asia/Manila')::date` gives the previous day for rows created before 4 PM Manila, and queue numbers should restart at 1 for tickets issued before 4 PM and again at 4 PM. The correct form is `(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Manila')::date`. List queries use `CURRENT_DATE`, which is the GMT date, so lists and numbers can also disagree.
+16. **"Today" differs between numbering and lists.** Queue-number generators use `(created_at AT TIME ZONE 'Asia/Manila')::date`, which is correct now that columns are `TIMESTAMPTZ` (numbers reset at Manila midnight). List queries (`created_at >= CURRENT_DATE`) and the user/patient ID counters (`DATE(created_at) = CURRENT_DATE`, JS `getDate()`) use the UTC date, so they roll over at 8 AM Manila.
 17. Legacy/dead code that is safe to ignore (and a candidate to delete): `websocket.ts`, `utils/getQueueMonitorEntries.ts` (the SSE hub never calls it), `generateConsultationId.ts` duplicate generator, `middlewares/test.middleware.ts` + `/api/test` + `/api/sse` demos, `SignupPage.tsx`, `lib/protectRoute.ts` (empty), `frontdesk_staff/pages/Test.tsx`, `packages` and `sse_test` tables, `system_activity` (superseded by `activity_logs`).
 18. Laboratory staff work in the room stored in their account's `department`: seeded `labstaff101` is Laboratory Room 1 and `labstaff202` is Laboratory Room 2.
 19. **`seedBulk.ts` is broken.** It inserts `patients.emergency_contact_name/emergency_contact/address`, which don't exist, so `seed:bulk` fails. `seed:all` runs the base seed first and then fails at this step.

@@ -107,7 +107,7 @@ So:
 | `NUMERIC`, `DECIMAL` | `string` | the driver returns strings; add a comment, as `getBills.bill` does |
 | `NUMERIC` computed in JS first | `number` | only after `Number(...)` |
 | `INTEGER`, `SERIAL` | `number` | |
-| `TIMESTAMP`, `DATE`, `TIME` | `string` | what the client receives as JSON |
+| `TIMESTAMPTZ`, `DATE`, `TIME` | `string` | what the client receives as JSON; `TIMESTAMPTZ` arrives as an ISO string ending in `Z` |
 | `BOOLEAN` | `boolean` | |
 | nullable column | `T \| null` | |
 | column left out of some queries | `field?: T` | optional means "may be absent", not "may be null" |

@@ -10,20 +10,27 @@ import PrintResultView from "../components/LaboratoryResults/PrintResultView";
 import {
   apiMessage,
   fetchAnalysisRequests,
-} from "../components/LaboratoryResults/laboratoryResultsApi";
+} from "../components/LaboratoryResults/utils/laboratoryResultsApi";
 import { AnalysisNotice } from "../components/LaboratoryResults/AnalysisUi";
 import {
   fetchSavedResults,
   startAnalysis,
-} from "../components/LaboratoryResults/laboratoryResultAdapters";
+} from "../components/LaboratoryResults/utils/laboratoryResultAdapters";
 
 type LaboratoryResultsProps = {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   room: string;
+  // Unsaved result entry (the parent confirms before switching pages).
+  onUnsavedChange?: (unsaved: boolean) => void;
 };
 
-function LaboratoryResults({ open, setOpen, room }: LaboratoryResultsProps) {
+function LaboratoryResults({
+  open,
+  setOpen,
+  room,
+  onUnsavedChange,
+}: LaboratoryResultsProps) {
   const [requests, setRequests] = useState<AnalysisRequest[]>([]);
   const [selectedRequest, setSelectedRequest] =
     useState<AnalysisRequest | null>(null);
@@ -185,6 +192,7 @@ function LaboratoryResults({ open, setOpen, room }: LaboratoryResultsProps) {
             key={`${selectedRequest.requestId}:${selectedRequest.status}`}
             request={selectedRequest}
             onCancel={returnToList}
+            onDirtyChange={onUnsavedChange}
             onSaved={() => {
               setActiveTab("Completed");
               reloadRequests();

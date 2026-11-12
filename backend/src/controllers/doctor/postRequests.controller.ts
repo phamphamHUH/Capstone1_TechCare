@@ -5,8 +5,8 @@ import {
   generateLaboratoryItemID,
   generatePrescriptionId,
 } from "../../utils/generateId.js";
-import { validateLabRequest } from "../../utils/consultationValidation.js";
-import { resolveDoctorId } from "../../utils/resolveDoctorId.js";
+import { validateLabRequest } from "./utils/consultationValidation.js";
+import { resolveDoctorId } from "./utils/resolveDoctorId.js";
 import { getOrCreateOpenBill } from "../../utils/getOrCreateBill.js";
 import { recomputeBillTotals } from "../../utils/recomputeBills.js";
 import type { addLaboratoryRequest, addPrescriptions } from "./dto/post.dto.js";
@@ -132,7 +132,7 @@ export async function addLaboratoryRequest(
            requested_at,
            estimated_release_date
          )
-         VALUES ($1, $2, $3, $4, $5, COALESCE($6::timestamp, CURRENT_TIMESTAMP), $7)
+         VALUES ($1, $2, $3, $4, $5, COALESCE($6::timestamptz, CURRENT_TIMESTAMP), $7)
          RETURNING *`,
         [
           request_id,

@@ -2,10 +2,11 @@ import { useEffect } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router";
 import LoginPage from "./auth/LoginPage";
 import SignupPage from "./auth/SignupPage";
+import SetPasswordPage from "./auth/SetPasswordPage";
 import Admin from "./users/admin/Admin";
 import Doctor from "./users/doctor/Doctor";
 import FrontdeskStaff from "./users/frontdesk_staff/FrontdeskStaff";
-import PatientInformation from "./users/patient/PatientInformation";
+import Patient from "./users/patient/Patient";
 // import QueueTracking from "./queue/QueueTracking";
 import LaboratoryStaff from "./users/laboratory_staff/LaboratoryStaff";
 import ProtectedRoute from "./lib/ProtectedRoute";
@@ -31,6 +32,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/sign-up" element={<SignupPage />} />
         {/* Opened from email links, no login needed */}
+        <Route path="/set-password" element={<SetPasswordPage />} />
         <Route
           path="/admin"
           element={
@@ -51,7 +53,7 @@ function App() {
           path="/patient"
           element={
             <ProtectedRoute allowedRoles={["patient"]}>
-              <PatientInformation />
+              <Patient />
             </ProtectedRoute>
           }
         />

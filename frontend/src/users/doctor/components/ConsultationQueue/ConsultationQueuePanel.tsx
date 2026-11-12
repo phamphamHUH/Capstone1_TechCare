@@ -1,6 +1,6 @@
 import EmptyState from "../../../../components/EmptyState";
 import { useState, type Dispatch, type SetStateAction } from "react";
-import QueueTable from "./QueueTable";
+import QueueTable from "./ConsultationQueuePanel/QueueTable";
 import type { PriorityFilter, QueueEntry } from "../../../../interface/Queue";
 import type { Service } from "../../../../interface/Service";
 import { ChevronDown, Search } from "lucide-react";
@@ -144,7 +144,7 @@ function ConsultationQueuePanel({
   return (
     <div className="flex min-h-20 w-full flex-col justify-around rounded-md border border-gray-300">
       {/* MAIN FILTERS */}
-      <div className="flex h-10 w-full items-end justify-around border-b mb-5 border-gray-300">
+      <div className="flex h-10 w-full items-end justify-around overflow-x-auto overflow-y-hidden border-b mb-5 border-gray-300">
         {mainFilterValues.map((mainFilter) => {
           const isActive = activeMainTab === mainFilter.value;
 
@@ -158,7 +158,7 @@ function ConsultationQueuePanel({
                 setActiveMainTab(mainFilter.value);
                 setOpenQueueAccordion(null);
               }}
-              className={`px-5 py-1 text-sm ${
+              className={`shrink-0 whitespace-nowrap px-3 sm:px-5 py-1 text-sm ${
                 isActive
                   ? "border-b border-blue-600 text-blue-600"
                   : "text-gray-900"

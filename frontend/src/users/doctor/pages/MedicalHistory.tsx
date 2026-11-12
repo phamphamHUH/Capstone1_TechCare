@@ -639,7 +639,7 @@ function FullRecordModal({
       onClick={onClose}
     >
       <div
-        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-md bg-white p-6 shadow-xl"
+        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-md bg-white p-4 sm:p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between">

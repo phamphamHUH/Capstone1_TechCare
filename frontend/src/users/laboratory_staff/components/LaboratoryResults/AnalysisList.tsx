@@ -14,7 +14,7 @@ import type {
   AnalysisRequest,
   AnalysisStatus,
 } from "../../../../interface/LaboratoryAnalysis";
-import { collectionDay } from "./laboratoryAnalysis";
+import { collectionDay } from "./utils/laboratoryAnalysis";
 import { AnalysisButton, FlaskBadge } from "./AnalysisUi";
 import { formatLabDate } from "../../../../utils/formats";
 

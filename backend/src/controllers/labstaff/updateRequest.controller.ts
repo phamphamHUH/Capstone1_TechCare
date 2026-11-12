@@ -15,8 +15,7 @@ import {
   notifyCancelled,
   notifySkipped,
 } from "../../services/notifications/index.js";
-import { sendEmailToPatient } from "../../services/email/sendEmail.js";
-import { labResultsReadyEmail } from "../../services/email/emailTemplates.js";
+import { notifyPatientResultReleased } from "./utils/notifyPatientResultReleased.js";
 export async function acceptQueueEntry(
   req: Request,
   res: Response<acceptQueueEntry.response | acceptQueueEntry.error>,
@@ -44,7 +43,7 @@ export async function acceptQueueEntry(
         status = 'Serving',
         updated_at = NOW()
       WHERE q.queue_id = ${queue_id}
-        AND q.queue_id LIKE 'LAB-%'
+        AND (q.queue_id LIKE 'LAB-%' OR q.queue_id LIKE 'IMG-%') -- laboratory and imaging queues
         AND LOWER(q.status) IN ('waiting', 'skipped')
         AND EXISTS (
           SELECT 1
@@ -69,7 +68,7 @@ export async function acceptQueueEntry(
           ) AS in_room
         FROM queue_entries q
         WHERE q.queue_id = ${queue_id}
-          AND q.queue_id LIKE 'LAB-%'
+          AND (q.queue_id LIKE 'LAB-%' OR q.queue_id LIKE 'IMG-%') -- laboratory and imaging queues
       `;
 
       if (!existing) {
@@ -131,7 +130,7 @@ export async function completeQueueEntry(
             ELSE NOW()
           END
         WHERE q.queue_id = ${queue_id}
-          AND q.queue_id LIKE 'LAB-%'
+          AND (q.queue_id LIKE 'LAB-%' OR q.queue_id LIKE 'IMG-%') -- laboratory and imaging queues
           AND LOWER(q.status) IN ('serving', 'completed')
           AND EXISTS (
             SELECT 1
@@ -195,7 +194,7 @@ export async function completeQueueEntry(
           ) AS in_room
         FROM queue_entries q
         WHERE q.queue_id = ${queue_id}
-          AND q.queue_id LIKE 'LAB-%'
+          AND (q.queue_id LIKE 'LAB-%' OR q.queue_id LIKE 'IMG-%') -- laboratory and imaging queues
       `;
 
       if (!existing) {
@@ -292,7 +291,8 @@ export async function skipQueueEntry(
     }
 
     // Move the next waiting patient forward by one position.
-    // "Same queue" now means: a queue with lab items in the same room.
+    // "Same queue" means: same type (LAB- or IMG-, numbered separately)
+    // with items in the same room.
     await sql`
       UPDATE queue_entries q
       SET
@@ -300,6 +300,7 @@ export async function skipQueueEntry(
         updated_at = NOW()
       WHERE q.queue_number = ${currentQueueNumber + 1}
         AND LOWER(q.status) = 'waiting'
+        AND LEFT(q.queue_id, 4) = LEFT(${queue_id}, 4)
         AND EXISTS (
           SELECT 1
           FROM test_request_items tri
@@ -543,25 +544,5 @@ export async function releaseLaboratoryResult(
     return res.status(500).json({
       message: "Internal Server Error",
     } as releaseLaboratoryResult.error);
-  }
-}
-
-// Emails the patient that one of their laboratory results was released.
-async function notifyPatientResultReleased(labItemId: string) {
-  try {
-    const [item] = await sql`
-      SELECT lr.patient_id, s.service_name
-      FROM test_request_items lri
-      JOIN test_requests lr ON lr.request_id = lri.request_id
-      JOIN services s ON s.service_id = lri.service_id
-      WHERE lri.item_id = ${labItemId}
-    `;
-    if (!item) return;
-
-    await sendEmailToPatient(String(item.patient_id), (to, firstName) =>
-      labResultsReadyEmail(to, firstName, item.service_name),
-    );
-  } catch (error) {
-    console.error("RESULT RELEASED EMAIL ERROR:", error);
   }
 }

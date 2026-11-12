@@ -38,7 +38,7 @@ function MedicalHistory({
   const patient = patients.find((p) => p.patient_id === selectedPatient);
   return (
     <main className="flex-1 min-w-0">
-      <div className="flex gap-1 items-center px-6 text-sm text-gray-400">
+      <div className="flex gap-1 items-center px-4 sm:px-6 text-sm text-gray-400">
         <h1
           className="hover:text-black hover:scale-101 cursor-pointer"
           onClick={() => setSearchParams({ page: "patient-records" })}
@@ -48,7 +48,7 @@ function MedicalHistory({
         <ChevronRight size={17} />
         <h1 className="text-black">View Medical History</h1>
       </div>
-      {error && <ErrorMessage className="mx-6 mt-5">{error}</ErrorMessage>}
+      {error && <ErrorMessage className="mx-4 sm:mx-6 mt-5">{error}</ErrorMessage>}
 
       {patient ? (
         <>

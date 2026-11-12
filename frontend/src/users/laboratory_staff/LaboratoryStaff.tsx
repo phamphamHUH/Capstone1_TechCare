@@ -3,6 +3,8 @@ import { LayoutGrid, ClipboardList, FileCheck } from "lucide-react";
 import api from "../../lib/axios";
 import LaboratoryRequests from "./pages/LaboratoryRequests";
 import SideBar from "../../components/SideBar";
+import ConfirmDialog from "../../components/ConfirmDialog";
+import { SidebarNavContext } from "../../components/sidebar/utils/sidebarNav";
 import { useSearchParams } from "react-router";
 import LabstaffDashboard from "./pages/LabstaffDashboard";
 import LaboratoryResults from "./pages/LaboratoryResults";
@@ -10,7 +12,9 @@ import type { QueueEntry } from "../../interface/Queue";
 import type { Service } from "../../interface/Service";
 
 function LaboratoryStaff() {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(
+    () => typeof window === "undefined" || window.innerWidth >= 1024,
+  );
   const [searchParams, setSearchParams] = useSearchParams();
   const [queues, setQueues] = useState<QueueEntry[]>([]);
   const [services, setServices] = useState<Service[]>([]);
@@ -20,7 +24,15 @@ function LaboratoryStaff() {
   const refreshing = useRef(false);
 
   const page = searchParams.get("page") ?? "dashboard";
+  // Unsaved laboratory result entry: ask before leaving the page.
+  const [unsavedResult, setUnsavedResult] = useState(false);
+  const [pendingPage, setPendingPage] = useState<string | null>(null);
+
   function setPage(newPage: string) {
+    if (newPage !== page && page === "laboratory-results" && unsavedResult) {
+      setPendingPage(newPage);
+      return;
+    }
     setSearchParams({ page: newPage });
   }
 
@@ -93,36 +105,63 @@ function LaboratoryStaff() {
   }, [loadData, page]);
 
   return (
-    <div className="flex min-h-screen cursor-default">
-      <SideBar open={open} page={page} setPage={setPage} navItems={navItems} />
-      {page === "dashboard" && (
-        <LabstaffDashboard
-          error={error}
-          open={open}
-          setOpen={setOpen}
-          loading={loading}
-          loadData={loadData}
+    <SidebarNavContext.Provider value={{ navItems, page, setPage }}>
+      <div className="flex min-h-screen cursor-default">
+        <SideBar open={open} setOpen={setOpen} page={page} setPage={setPage} navItems={navItems} />
+        {page === "dashboard" && (
+          <LabstaffDashboard
+            error={error}
+            open={open}
+            setOpen={setOpen}
+            loading={loading}
+            loadData={loadData}
+            room={room}
+            queues={queues}
+            serviceCount={services.length}
+            queueLoadFailed={queueLoadFailed}
+            setPage={setPage}
+          />
+        )}
+
+        {page === "laboratory-requests" && (
+          <LaboratoryRequests
+            open={open}
+            setOpen={setOpen}
+            queues={queues}
+            services={services}
+            loading={loading}
+            error={error}
+            loadData={loadData}
+            room={room}
+            queueLoadFailed={queueLoadFailed}
+          />
+        )}
+
+        {page === "laboratory-results" && (
+          <LaboratoryResults
+            open={open}
+            setOpen={setOpen}
+            room={room}
+            onUnsavedChange={setUnsavedResult}
+          />
+        )}
+      </div>
+
+      {pendingPage && (
+        <ConfirmDialog
+          title="Leave result entry?"
+          description="You have results that aren't saved yet. They're kept as a draft on this computer and will be restored when you open the request again."
+          confirmLabel="Leave page"
+          cancelLabel="Keep editing"
+          tone="warning"
+          onCancel={() => setPendingPage(null)}
+          onConfirm={() => {
+            setSearchParams({ page: pendingPage });
+            setPendingPage(null);
+          }}
         />
       )}
-
-      {page === "laboratory-requests" && (
-        <LaboratoryRequests
-          open={open}
-          setOpen={setOpen}
-          queues={queues}
-          services={services}
-          loading={loading}
-          error={error}
-          loadData={loadData}
-          room={room}
-          queueLoadFailed={queueLoadFailed}
-        />
-      )}
-
-      {page === "laboratory-results" && (
-        <LaboratoryResults open={open} setOpen={setOpen} room={room} />
-      )}
-    </div>
+    </SidebarNavContext.Provider>
   );
 }
 

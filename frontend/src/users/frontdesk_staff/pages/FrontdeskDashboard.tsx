@@ -35,9 +35,9 @@ function StatCard({ label, value, caption, icon, onClick }: StatCardProps) {
     <button
       type="button"
       onClick={onClick}
-      className="group p-6 text-left cursor-pointer transition-colors hover:bg-sky-50 active:bg-sky-100 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-sky-500"
+      className="group min-w-0 bg-white p-4 sm:p-6 text-left cursor-pointer transition-colors hover:bg-sky-50 active:bg-sky-100 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-sky-500"
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         {icon}
         <p className="text-sm text-gray-500">{label}</p>
         <ChevronRight
@@ -47,7 +47,7 @@ function StatCard({ label, value, caption, icon, onClick }: StatCardProps) {
         />
       </div>
 
-      <p className={`text-3xl font-semibold ${icon ? "mt-4" : "mt-2"}`}>
+      <p className={`text-2xl sm:text-3xl font-semibold ${icon ? "mt-3 sm:mt-4" : "mt-2"}`}>
         {value}
       </p>
 
@@ -69,9 +69,7 @@ function FrontdeskDashboard({
 }: FrontdeskDashboardProps) {
   useEffect(() => connectQueueStream({ onQueueChanged: loadData }), [loadData]);
 
-  const today = new Date().toLocaleDateString("en-CA", {
-    timeZone: "Asia/Manila",
-  });
+  const today = new Date().toLocaleDateString("en-CA");
 
   const statusOf = (queue: QueueEntry) => queue.status.toLowerCase();
 
@@ -94,9 +92,7 @@ function FrontdeskDashboard({
   const registeredToday = patients.filter(
     (patient) =>
       patient.created_at &&
-      new Date(patient.created_at).toLocaleDateString("en-CA", {
-        timeZone: "Asia/Manila",
-      }) === today,
+      new Date(patient.created_at).toLocaleDateString("en-CA") === today,
   ).length;
 
   const totalQueue = queues.length;
@@ -117,14 +113,14 @@ function FrontdeskDashboard({
         }
         message="Refreshing dashboard..."
       >
-        <div className="space-y-6 px-6">
+        <div className="space-y-6 px-4 sm:px-6">
           {error && <ErrorMessage>{error}</ErrorMessage>}
           <RoomActivity queues={queues} />
           {/* =========================
                     FRONTDESK SUMMARY
                 ========================== */}
           <section className="bg-white border border-gray-300 rounded-md overflow-hidden">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-gray-300">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-gray-300 [&>*:last-child:nth-child(odd)]:col-span-2 lg:[&>*:last-child:nth-child(odd)]:col-span-1">
               <StatCard
                 icon={<Clock size={20} strokeWidth={1.5} />}
                 label="Patients in Queue"
@@ -160,7 +156,7 @@ function FrontdeskDashboard({
                     QUEUE STATUS OVERVIEW
                 ========================== */}
           <section className="bg-white border border-gray-300 rounded-md overflow-hidden">
-            <div className="px-6 py-5 border-b border-gray-300">
+            <div className="px-4 sm:px-6 py-5 border-b border-gray-300">
               <div className="flex items-center gap-3">
                 <List size={20} strokeWidth={1.5} />
 
@@ -176,7 +172,7 @@ function FrontdeskDashboard({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-gray-300">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-gray-300 [&>*:last-child:nth-child(odd)]:col-span-2 lg:[&>*:last-child:nth-child(odd)]:col-span-1">
               <StatCard
                 label="Waiting"
                 value={waitingCount}

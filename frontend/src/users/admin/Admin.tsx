@@ -7,13 +7,16 @@ import {
   FileText,
   SquareActivity,
   Tv,
+  ChartColumn,
 } from "lucide-react";
 
 import SideBar from "../../components/SideBar";
+import { SidebarNavContext } from "../../components/sidebar/utils/sidebarNav";
 import Header from "../../components/Header";
 
 import UserManagement from "./pages/UserManagement";
 import AdminDashboard from "./pages/AdminDashboard";
+import Reports from "./pages/Reports";
 import ServicePricingManagement from "./pages/ServicePricing";
 import ActivityMonitoring from "./pages/ActivityMonitoring";
 import FormTemplate from "./pages/FormTemplate";
@@ -23,6 +26,7 @@ import api from "../../lib/axios";
 
 import type { User } from "../../interface/User";
 import type { Service } from "../../interface/Service";
+import { browserTimeZone } from "../../utils/formats";
 import type { Activity } from "../../interface/Activity";
 import type {
   AnalyticsRange,
@@ -35,7 +39,7 @@ function Admin() {
   const [services, setServices] = useState<Service[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
 
-  // Dashboard analytics, reloaded whenever the date range changes.
+  // Reports page analytics, reloaded whenever the date range changes.
   const [analyticsRange, setAnalyticsRange] = useState<AnalyticsRange>("30d");
   const [salesAnalytics, setSalesAnalytics] = useState<SalesAnalytics | null>(
     null,
@@ -99,6 +103,11 @@ function Admin() {
       page: "queueing-monitor",
       label: "Queueing Monitor",
       icon: <Tv size={20} />,
+    },
+    {
+      page: "reports",
+      label: "Reports",
+      icon: <ChartColumn size={20} />,
     },
   ];
 
@@ -167,7 +176,7 @@ function Admin() {
     setAnalyticsError(null);
 
     try {
-      const params = { range: analyticsRange };
+      const params = { range: analyticsRange, tz: browserTimeZone() };
       const [salesResponse, serviceResponse] = await Promise.all([
         api.get<SalesAnalytics>("/api/admin/analytics/sales", { params }),
         api.get<ServiceAnalytics>("/api/admin/analytics/services", { params }),
@@ -188,105 +197,125 @@ function Admin() {
     }
   }, [analyticsRange]);
 
-  // Load analytics on mount and whenever the range changes.
+  // Load analytics only while the Reports page is open (and when its range
+  // changes), so the dashboard doesn't wait on them.
+  const onReports = page === "reports";
   useEffect(() => {
+    if (!onReports) return;
     async function action() {
       await loadAnalytics();
     }
     action();
-  }, [loadAnalytics]);
+  }, [loadAnalytics, onReports]);
 
   // The header's reload button refreshes everything.
   const reloadAll = useCallback(async () => {
     if (page === "form-template") setTemplateRefresh((value) => value + 1);
-    await Promise.all([loadData(), loadAnalytics()]);
-  }, [loadData, loadAnalytics, page]);
+    await Promise.all([loadData(), onReports ? loadAnalytics() : null]);
+  }, [loadData, loadAnalytics, onReports, page]);
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <SideBar open={open} page={page} setPage={setPage} navItems={navItems} />
+    <SidebarNavContext.Provider value={{ navItems, page, setPage }}>
+      <div className="flex min-h-screen bg-gray-50">
+        <SideBar open={open} setOpen={setOpen} page={page} setPage={setPage} navItems={navItems} />
 
-      <div className="flex-1 min-w-0">
-        <Header
-          page={currentPage}
-          loading={loading || analyticsLoading}
-          open={open}
-          setOpen={setOpen}
-          loadData={reloadAll}
-        />
+        <div className="flex-1 min-w-0">
+          <Header
+            page={currentPage}
+            loading={loading || (onReports && analyticsLoading)}
+            open={open}
+            setOpen={setOpen}
+            loadData={reloadAll}
+          />
 
-        <div className="pb-6">
-          {page === "dashboard" && (
-            <AdminDashboard
-              range={analyticsRange}
-              setRange={setAnalyticsRange}
-              sales={salesAnalytics}
-              services={serviceAnalytics}
-              loading={analyticsLoading}
-              error={analyticsError}
-            />
-          )}
+          <div className="pb-6">
+            {page === "dashboard" && (
+              <AdminDashboard
+                users={users}
+                services={services}
+                activities={activities}
+                loading={loading}
+                errors={{
+                  users: Boolean(dataErrors.users),
+                  services: Boolean(dataErrors.services),
+                  activities: Boolean(dataErrors.activities),
+                }}
+                setPage={setPage}
+              />
+            )}
 
-          {page === "user-management" && (
-            <UserManagement
-              loading={loading}
-              users={users}
-              error={dataErrors.users}
-              open={open}
-              setOpen={setOpen}
-              loadData={loadData}
-            />
-          )}
+            {page === "reports" && (
+              <Reports
+                range={analyticsRange}
+                setRange={setAnalyticsRange}
+                sales={salesAnalytics}
+                services={serviceAnalytics}
+                loading={analyticsLoading}
+                error={analyticsError}
+              />
+            )}
 
-          {page === "service-management" && (
-            <ServicePricingManagement
-              loading={loading}
-              services={services}
-              error={dataErrors.services}
-              open={open}
-              setOpen={setOpen}
-              loadData={loadData}
-            />
-          )}
+            {page === "user-management" && (
+              <UserManagement
+                loading={loading}
+                users={users}
+                error={dataErrors.users}
+                open={open}
+                setOpen={setOpen}
+                loadData={loadData}
+              />
+            )}
 
-          {page === "activity-monitoring" && (
-            <ActivityMonitoring
-              loading={loading}
-              activities={activities}
-              error={dataErrors.activities}
-              open={open}
-              setOpen={setOpen}
-              loadData={loadData}
-            />
-          )}
-          {page === "queueing-monitor" && (
-            <QueueingMonitor
-              loading={loading}
-              open={open}
-              setOpen={setOpen}
-              loadData={loadData}
-            />
-          )}
+            {page === "service-management" && (
+              <ServicePricingManagement
+                loading={loading}
+                services={services}
+                error={dataErrors.services}
+                open={open}
+                setOpen={setOpen}
+                loadData={loadData}
+              />
+            )}
 
-          {page === "form-template" && (
-            <FormTemplate refreshKey={templateRefresh} />
-          )}
+            {page === "activity-monitoring" && (
+              <ActivityMonitoring
+                loading={loading}
+                activities={activities}
+                error={dataErrors.activities}
+                open={open}
+                setOpen={setOpen}
+                loadData={loadData}
+              />
+            )}
+            {page === "queueing-monitor" && (
+              <QueueingMonitor
+                loading={loading}
+                open={open}
+                setOpen={setOpen}
+                loadData={loadData}
+              />
+            )}
 
-          {!navItems.some((item) => item.page === page) && (
-            <div className="mx-6 rounded-md border border-gray-200 bg-white p-8 text-center">
-              <h2 className="font-semibold text-gray-800">Page not found</h2>
-              <button
-                type="button"
-                onClick={() => setPage("dashboard")}
-                className="mt-3 text-sm text-sky-600 hover:underline"
-              >
-                Return to Dashboard
-              </button>
-            </div>
-          )}
+            {page === "form-template" && (
+              <FormTemplate refreshKey={templateRefresh} />
+            )}
+
+            {!navItems.some((item) => item.page === page) && (
+              <div className="mx-4 sm:mx-6 rounded-md border border-gray-200 bg-white p-4 sm:p-8 text-center">
+                <h2 className="font-semibold text-gray-800">Page not found</h2>
+                <button
+                  type="button"
+                  onClick={() => setPage("dashboard")}
+                  className="mt-3 text-sm text-sky-600 hover:underline"
+                >
+                  Return to Dashboard
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </SidebarNavContext.Provider>
   );
 }
 
