@@ -7,6 +7,10 @@ import { X, PackagePlus, FlaskConical, Search, Trash } from "lucide-react";
 import type { Service } from "../../../../interface/Service";
 import { peso } from "../../../../utils/formats";
 
+// Drug tests are billed but never queued, so they have no real room.
+const DRUG_TEST = "drug test";
+const DRUG_TEST_ROOM = "Drug Test";
+
 type Props = {
   onClose: () => void;
   loadData: () => void;
@@ -41,7 +45,7 @@ function AddService({ loadData, onClose, services }: Props) {
       price === "" ||
       !serviceType ||
       !serviceCategory ||
-      !room
+      (serviceType !== DRUG_TEST && !room)
     ) {
       setFormError("Please fill out all fields.");
       return;
@@ -59,7 +63,7 @@ function AddService({ loadData, onClose, services }: Props) {
         service_name: serviceName,
         service_category: serviceCategory,
         price: Number(price),
-        room,
+        room: serviceType === DRUG_TEST ? DRUG_TEST_ROOM : room,
       });
       setCreated("service");
       loadData();
@@ -278,6 +282,7 @@ function AddService({ loadData, onClose, services }: Props) {
                   <option value="consultation">Consultation</option>
                   <option value="laboratory">Laboratory</option>
                   <option value="imaging">Imaging</option>
+                  <option value="drug test">Drug Test</option>
                 </select>
               </div>
               <div>
@@ -293,6 +298,12 @@ function AddService({ loadData, onClose, services }: Props) {
                 />
               </div>
             </div>
+            {serviceType === DRUG_TEST ? (
+              <p className="mb-3 rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-600">
+                Drug tests aren't done in a room or queue: they're billed at the
+                front desk and counted in Reports → Drug Tests.
+              </p>
+            ) : (
             <div className="w-full  mb-3">
               <div>
                 <label className="text-xs font-semibold">Room *</label>
@@ -310,6 +321,7 @@ function AddService({ loadData, onClose, services }: Props) {
                 </select>
               </div>
             </div>
+            )}
           </div>
         )}
 

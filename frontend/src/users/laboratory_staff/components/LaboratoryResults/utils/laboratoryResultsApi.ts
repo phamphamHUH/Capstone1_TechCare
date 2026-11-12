@@ -16,6 +16,7 @@ import {
   loadReleasedReports,
   releaseResult,
 } from "./laboratoryResultAdapters";
+export { verifyResult } from "./laboratoryResultAdapters";
 export { fetchReleasedResults } from "./laboratoryResultAdapters";
 export {
   collectionDay,

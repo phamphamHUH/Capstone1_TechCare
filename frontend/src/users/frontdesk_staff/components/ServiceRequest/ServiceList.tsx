@@ -14,12 +14,20 @@ import api from "#lib/axios";
 import type { Service } from "../../../../interface/Service";
 import ConfirmDialog from "../../../../components/ConfirmDialog";
 import UniversalModal from "#components/UniversalModal";
+import VitalSignsFields from "./ServiceList/VitalSignsFields";
+import {
+  initialVitals,
+  vitalsError,
+  type FrontDeskVitals,
+} from "./utils/vitalSigns";
 
 type ServiceListProps = {
   services: Service[];
   activeTab: string;
   selectedServices: string[];
   patientId: string | null;
+  // Prefills height and weight for consultation vital signs.
+  patientMeasurements?: { height_cm?: number | null; weight_kg?: number | null } | null;
   onToggleService: (serviceId: string) => void;
   onClearAll: () => void;
   onSubmitted?: () => void | Promise<void>;
@@ -30,10 +38,21 @@ function ServiceList({
   activeTab,
   selectedServices,
   patientId,
+  patientMeasurements,
   onToggleService,
   onClearAll,
   onSubmitted,
 }: ServiceListProps) {
+  // Vital signs start fresh for every patient (height/weight from their record).
+  const [vitals, setVitals] = useState<FrontDeskVitals>(() =>
+    initialVitals(patientMeasurements),
+  );
+  const [vitalsPatient, setVitalsPatient] = useState(patientId);
+  if (patientId !== vitalsPatient) {
+    setVitalsPatient(patientId);
+    setVitals(initialVitals(patientMeasurements));
+  }
+  const [vitalsTouched, setVitalsTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const pending = useRef(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -44,7 +63,9 @@ function ServiceList({
     requestId?: string;
     count: number;
   } | null>(null);
-  const isLabRequest = activeTab === "laboratory" || activeTab === "imaging";
+  // Imaging and drug tests go through the same test-request endpoint as lab.
+  const isLabRequest =
+    activeTab === "laboratory" || activeTab === "imaging" || activeTab === "drug test";
   const isTestRequest = isLabRequest || activeTab === "package";
 
   const servicesList = selectedServices
@@ -56,13 +77,20 @@ function ServiceList({
     0,
   );
 
-  const canSubmit = !!patientId && selectedServices.length > 0 && !submitting;
+  const isConsultation = activeTab === "consultation";
+  const vitalsProblem = isConsultation ? vitalsError(vitals) : null;
+  const canSubmit =
+    !!patientId && selectedServices.length > 0 && !submitting && !vitalsProblem;
 
   const handleSubmit = async () => {
     if (pending.current) return;
     if (!patientId) return setError("Please select a patient first.");
     if (selectedServices.length === 0)
       return setError("Select at least one service.");
+    if (vitalsProblem) {
+      setVitalsTouched(true);
+      return setError(vitalsProblem);
+    }
 
     try {
       pending.current = true;
@@ -100,6 +128,7 @@ function ServiceList({
         const res = await api.post("/api/fdstaff/consultation-requests", {
           patient_id: patientId,
           service_id: selectedServices[0],
+          vital_signs: vitals,
         });
 
         setSuccess({
@@ -109,6 +138,8 @@ function ServiceList({
       }
 
       onClearAll();
+      setVitals(initialVitals(null));
+      setVitalsTouched(false);
       void onSubmitted?.();
     } catch (err) {
       console.error("Error submitting request:", err);
@@ -132,7 +163,7 @@ function ServiceList({
             className="font-bold text-lg outline-none"
           >
             {isLabRequest
-              ? `Selected ${activeTab === "imaging" ? "Imaging" : "Laboratory"} Services (${servicesList.length})`
+              ? `Selected ${activeTab === "imaging" ? "Imaging" : activeTab === "drug test" ? "Drug Test" : "Laboratory"} Services (${servicesList.length})`
               : activeTab === "package"
                 ? `Selected Packages (${servicesList.length})`
                 : "Select Consultation Service"}
@@ -188,6 +219,18 @@ function ServiceList({
           )}
         </div>
       </div>
+
+      {isConsultation && (
+        <VitalSignsFields
+          value={vitals}
+          onChange={(next) => {
+            setVitals(next);
+            setVitalsTouched(true);
+          }}
+          disabled={submitting}
+          error={vitalsTouched ? vitalsProblem : null}
+        />
+      )}
 
       {error && <ErrorMessage className="mt-3">{error}</ErrorMessage>}
       <div

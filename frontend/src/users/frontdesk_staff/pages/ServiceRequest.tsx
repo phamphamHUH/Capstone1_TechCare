@@ -13,6 +13,7 @@ import {
   BoneFracture,
   Package,
   TriangleAlert,
+  FlaskRound,
 } from "lucide-react";
 import ConfirmDialog from "#components/ConfirmDialog";
 
@@ -148,6 +149,14 @@ function ServiceRequest({
       icon: BoneFracture,
     },
     {
+      // Billed only: drug tests never join a queue (the clinic runs them on
+      // its own system); the admin counts them in Reports.
+      service_type: "drug test",
+      mainHeading: "Drug Test",
+      subHeading: "Bill a drug test (not added to any queue)",
+      icon: FlaskRound,
+    },
+    {
       service_type: "consultation",
       mainHeading: "Consultation Services",
       subHeading: "Request Consultation or Specialist Service",
@@ -227,6 +236,7 @@ function ServiceRequest({
               services={services}
               selectedServices={selectedServices}
               patientId={patient?.patient_id ?? null}
+              patientMeasurements={patient}
               onToggleService={toggleService}
               onClearAll={clearServices}
               onSubmitted={async () => {

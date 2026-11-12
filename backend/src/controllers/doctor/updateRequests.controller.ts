@@ -572,7 +572,8 @@ export async function addConsultationFindings(
           consultation_type    = COALESCE(${consultation_type}::text, consultation_type),
           diagnosis            = COALESCE(${diagnosis === null ? null : JSON.stringify(diagnosis)}::jsonb, diagnosis),
           presenting_complaint = COALESCE(${presenting_complaint === null ? null : JSON.stringify(presenting_complaint)}::jsonb, presenting_complaint),
-          vital_signs          = COALESCE(${vital_signs === null ? null : JSON.stringify(vital_signs)}::jsonb, vital_signs),
+          -- Merge: the doctor's BP/HR/etc. join the front desk's temperature/height/weight.
+          vital_signs          = COALESCE(vital_signs, '{}'::jsonb) || COALESCE(${vital_signs === null ? null : JSON.stringify(vital_signs)}::jsonb, '{}'::jsonb),
           physical_examination = COALESCE(${physical_examination === null ? null : JSON.stringify(physical_examination)}::jsonb, physical_examination),
           notes                = COALESCE(${notes}::text, notes),
           consulted_at         = COALESCE(consulted_at, NOW()),

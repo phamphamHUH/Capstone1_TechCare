@@ -3,8 +3,7 @@ import type { QueueEntry } from "./Queue";
 export type DiagnosisType = "Primary" | "Secondary";
 export type Diagnosis = {
   id: number;
-  name: string;
-  icd10: string;
+  name: string; // the clinic doesn't use ICD-10 codes
   type: DiagnosisType;
 };
 export type NoteField = (typeof NOTE_FIELDS)[number];

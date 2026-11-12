@@ -35,6 +35,8 @@ export interface QueueEntry {
   status: string;
   created_at: string;
   updated_at: string;
+  // Consultation queues: front desk temperature/height/weight (+ doctor vitals).
+  vital_signs?: Record<string, string> | null;
 }
 
 export interface QueueRequests {

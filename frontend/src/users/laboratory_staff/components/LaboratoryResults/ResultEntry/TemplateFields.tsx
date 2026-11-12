@@ -335,16 +335,9 @@ export default function TemplateFields({
               );
             }
 
-            if (component.type === "image") {
-              return settings.imageUrl ? (
-                <img
-                  className="max-h-40 max-w-full object-contain p-2"
-                  key={component.id}
-                  src={settings.imageUrl}
-                  alt={settings.imageAlt || component.label}
-                />
-              ) : null;
-            }
+            // Results no longer carry images (the clinic doesn't use them);
+            // an old template's image component is simply skipped here.
+            if (component.type === "image") return null;
 
             if (!inputTypes.has(component.type)) {
               return (

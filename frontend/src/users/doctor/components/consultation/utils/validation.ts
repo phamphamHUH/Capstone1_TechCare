@@ -17,7 +17,6 @@ export const LIMITS = {
   maxLabServices: 20,
 } as const;
 
-export const ICD10_PATTERN = /^[A-TV-Z][0-9][0-9AB](\.[0-9A-TV-Z]{1,4})?$/;
 
 export function validateFindingsForm(state: FindingsFormState): FieldErrors {
   const errors: FieldErrors = {};
@@ -37,18 +36,13 @@ export function validateFindingsForm(state: FindingsFormState): FieldErrors {
     const seen = new Set<string>();
     state.diagnosis.forEach((row, i) => {
       const name = row.diagnosis.trim();
-      const code = row.icd10.trim().toUpperCase();
       if (name.length < LIMITS.diagnosisNameMin)
         errors[`diagnosis.${i}.diagnosis`] = "Diagnosis name is required.";
       else if (name.length > LIMITS.diagnosisNameMax)
         errors[`diagnosis.${i}.diagnosis`] = `Must be ${LIMITS.diagnosisNameMax} characters or fewer.`;
-
-      if (!code) errors[`diagnosis.${i}.icd10`] = "ICD-10 code is required.";
-      else if (!ICD10_PATTERN.test(code))
-        errors[`diagnosis.${i}.icd10`] = "Use a valid ICD-10 code, e.g. J06.9.";
-      else if (seen.has(code))
-        errors[`diagnosis.${i}.icd10`] = "This ICD-10 code is already listed.";
-      seen.add(code);
+      else if (seen.has(name.toLowerCase()))
+        errors[`diagnosis.${i}.diagnosis`] = "This diagnosis is already listed.";
+      seen.add(name.toLowerCase());
     });
     const primary = state.diagnosis.filter((d) => d.type === "Primary").length;
     if (primary === 0) errors.diagnosis = "Mark one diagnosis as Primary.";

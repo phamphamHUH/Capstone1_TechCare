@@ -57,6 +57,7 @@ export async function getConsultationQueues(
         cr.consultation_record_id,
         cr.consultation_type,
         cr.service_id,
+        cr.vital_signs, -- temperature/height/weight from the front desk
         s.service_name,
         s.service_type,
         s.service_category,

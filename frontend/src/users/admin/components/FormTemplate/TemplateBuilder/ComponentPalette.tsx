@@ -7,7 +7,6 @@ import {
   Heading,
   AlignLeft,
   Minus,
-  Image as ImageIcon,
 } from "lucide-react";
 import type { ComponentType } from "../../../../../interface/FormTemplate";
 
@@ -74,12 +73,8 @@ const LAYOUT_ITEMS: PaletteItem[] = [
     subtitle: "Visual Seperator",
     icon: <Minus size={22} className="text-gray-600" />,
   },
-  {
-    type: "image",
-    title: "Image",
-    subtitle: "Insert Images",
-    icon: <ImageIcon size={22} className="text-gray-600" />,
-  },
+  // No "Image" component: the clinic's radiologists don't put images in
+  // results. Old templates that still have one keep opening in the canvas.
 ];
 
 export default function ComponentPalette({

@@ -21,12 +21,10 @@ export const LIMITS = {
   maxLabServices: 20,
 } as const;
 
-// ICD-10 category (letter A-T or V-Z, 2 digits / A / B) + optional subcategory.
-export const ICD10_PATTERN = /^[A-TV-Z][0-9][0-9AB](\.[0-9A-TV-Z]{1,4})?$/;
-
+// The clinic doesn't use ICD-10 codes, so a diagnosis is just a name and
+// whether it is Primary or Secondary. (Older rows may still carry `icd10`.)
 export type DiagnosisEntry = {
   diagnosis: string;
-  icd10: string;
   type: DiagnosisType;
 };
 
@@ -70,33 +68,26 @@ export function validateFindings(input: unknown): ValidationResult<FindingsValue
   } else if (body.diagnosis.length > LIMITS.maxDiagnoses) {
     errors.diagnosis = `No more than ${LIMITS.maxDiagnoses} diagnoses are allowed.`;
   } else {
-    const seenCodes = new Set<string>();
+    const seenNames = new Set<string>();
     body.diagnosis.forEach((raw, i) => {
       const row = isRecord(raw) ? raw : {};
       const name = clean(row.diagnosis);
-      const icd10 = clean(row.icd10).toUpperCase();
       const type = row.type;
 
       if (name.length < LIMITS.diagnosisNameMin) {
         errors[`diagnosis.${i}.diagnosis`] = "Diagnosis name is required.";
       } else if (name.length > LIMITS.diagnosisNameMax) {
         errors[`diagnosis.${i}.diagnosis`] = `Must be ${LIMITS.diagnosisNameMax} characters or fewer.`;
+      } else if (seenNames.has(name.toLowerCase())) {
+        errors[`diagnosis.${i}.diagnosis`] = "This diagnosis is already listed.";
       }
-
-      if (!icd10) {
-        errors[`diagnosis.${i}.icd10`] = "ICD-10 code is required.";
-      } else if (!ICD10_PATTERN.test(icd10)) {
-        errors[`diagnosis.${i}.icd10`] = "Use a valid ICD-10 code, e.g. J06.9.";
-      } else if (seenCodes.has(icd10)) {
-        errors[`diagnosis.${i}.icd10`] = "This ICD-10 code is already listed.";
-      }
-      seenCodes.add(icd10);
+      seenNames.add(name.toLowerCase());
 
       if (!DIAGNOSIS_TYPES.includes(type as DiagnosisType)) {
         errors[`diagnosis.${i}.type`] = "Type must be Primary or Secondary.";
       }
 
-      diagnosis.push({ diagnosis: name, icd10, type: type as DiagnosisType });
+      diagnosis.push({ diagnosis: name, type: type as DiagnosisType });
     });
 
     if (!errors.diagnosis) {

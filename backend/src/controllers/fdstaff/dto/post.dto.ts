@@ -176,6 +176,13 @@ export namespace addConsultationRecord {
     patient_id: string;
     service_id: string;
     is_priority: boolean;
+    // Taken at the front desk; numbers or numeric text.
+    // temperature °C (30–45), height cm (30–250), weight kg (1–350).
+    vital_signs: {
+      temperature: number | string;
+      height: number | string;
+      weight: number | string;
+    };
   }
 
   export interface response {

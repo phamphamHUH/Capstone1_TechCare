@@ -287,8 +287,12 @@ export async function addService(
 ) {
   // POST /api/admin/services
   try {
-    const { service_name, price, service_type, service_category, room } =
-      req.body;
+    const { service_name, price, service_type, service_category } = req.body;
+    // Drug tests run on the clinic's own system, not in a room.
+    const room =
+      String(service_type ?? "").trim().toLowerCase() === "drug test"
+        ? req.body.room || "Drug Test"
+        : req.body.room;
 
     if (
       !service_name ||

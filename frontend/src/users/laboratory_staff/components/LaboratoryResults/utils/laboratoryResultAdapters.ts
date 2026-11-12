@@ -278,3 +278,26 @@ export async function releaseResult(
         : undefined,
   };
 }
+
+// The lab's verification step (Pending -> Verified). Release needs it first.
+export async function verifyResult(
+  resultId: string,
+  signal?: AbortSignal,
+): Promise<{ result_id: string; verified_by?: string; verified_at?: string }> {
+  const response = await api.patch(
+    `${test_results_ENDPOINT}/${encodeURIComponent(resultId)}/verify`,
+    undefined,
+    { signal },
+  );
+  const verified = response.data?.result;
+  if (verified?.result_id !== resultId || verified.status !== "Verified") {
+    throw new Error(
+      "The server did not confirm verification. Reload this result before retrying.",
+    );
+  }
+  return {
+    result_id: verified.result_id,
+    verified_by: verified.verified_by ?? undefined,
+    verified_at: verified.verified_at ?? undefined,
+  };
+}

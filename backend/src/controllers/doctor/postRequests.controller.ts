@@ -314,5 +314,5 @@ export async function addPrescription(
 
 // POST /api/doctor/consultations
 // Body: { patient_id, service_id, consultation_type?, doctor_id? (dev only),
-//         presenting_complaint: { hpi }, diagnosis: [{diagnosis, icd10, type}],
+//         presenting_complaint: { hpi }, diagnosis: [{diagnosis, type}],
 //         physical_examination: { general_appearance, heent, ... } }

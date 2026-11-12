@@ -4,6 +4,7 @@ import { sql } from "../../config/db.js";
 import { pool } from "../../config/db.js";
 import bcrypt from "bcryptjs";
 import { calculateAge } from "./utils/calculateAge.js";
+import { readFrontDeskVitals } from "./utils/vitalSigns.js";
 import type { Request, Response } from "express";
 import cloudinary from "../../config/cloudinary.js";
 import {
@@ -534,6 +535,7 @@ export async function addConsultationRecord(
     patient_id,
     service_id,
     is_priority = false,
+    vital_signs,
   } = req.body as addConsultationRecord.body;
   const user_id =
     req.user?.user_id ?? (!ENV.IS_PRODUCTION ? "U-26-1001-0004" : undefined);
@@ -541,6 +543,14 @@ export async function addConsultationRecord(
   if (!patient_id || !user_id || !service_id) {
     return res.status(400).json({
       message: "Patient ID and service ID are required.",
+    } as addConsultationRecord.error);
+  }
+
+  // Temperature, height and weight are taken before every consultation.
+  const vitals = readFrontDeskVitals(vital_signs);
+  if (!vitals.ok) {
+    return res.status(400).json({
+      message: vitals.message,
     } as addConsultationRecord.error);
   }
 
@@ -570,8 +580,8 @@ export async function addConsultationRecord(
       rows: [consultation_record_result],
     } = await client.query(
       `INSERT INTO consultation_records
-     (consultation_record_id, patient_id, service_id, requested_by, queue_id, status, bill_id)
-   VALUES ($1, $2, $3, $4, $5, 'In Queue', $6)
+     (consultation_record_id, patient_id, service_id, requested_by, queue_id, status, bill_id, vital_signs)
+   VALUES ($1, $2, $3, $4, $5, 'In Queue', $6, $7::jsonb)
    RETURNING *`,
       [
         consultation_record_id,
@@ -580,7 +590,16 @@ export async function addConsultationRecord(
         user_id,
         queue_id,
         bill_id,
+        JSON.stringify(vitals.value),
       ],
+    );
+
+    // Keep the patient's latest height and weight on their record.
+    await client.query(
+      `UPDATE patients
+       SET height_cm = $2, weight_kg = $3, updated_at = NOW()
+       WHERE patient_id = $1`,
+      [patient_id, vitals.numbers.height, vitals.numbers.weight],
     );
 
     const bill = await recomputeBillTotals(client, bill_id);

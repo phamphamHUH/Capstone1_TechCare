@@ -370,3 +370,40 @@ export namespace getServiceAnalytics {
     message: string;
   }
 }
+
+// GET /api/admin/analytics/drug-tests?range=today|7d|30d|12mo&tz=<IANA zone>
+// Paid drug tests (billed, never queued): who took one and how many per week.
+export namespace getDrugTestAnalytics {
+  export interface query {
+    range?: string;
+    tz?: string;
+  }
+
+  export interface drugTest {
+    item_id: string;
+    bill_id: string;
+    patient_id: string;
+    patient_name: string | null;
+    service_name: string;
+    paid_at: string; // wall-clock time in tz, "YYYY-MM-DDTHH:MM:SS"
+  }
+
+  export interface week {
+    week_start: string; // Monday, "YYYY-MM-DD" in tz
+    count: number;
+  }
+
+  export interface response {
+    message: string;
+    range: string;
+    start: string;
+    end: string;
+    total: number;
+    weeks: week[];
+    drug_tests: drugTest[];
+  }
+
+  export interface error {
+    message: string;
+  }
+}

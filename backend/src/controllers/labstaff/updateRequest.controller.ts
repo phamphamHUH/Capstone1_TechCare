@@ -7,6 +7,7 @@ import type {
   cancelQueueEntry,
   startLaboratoryAnalysis,
   releaseLaboratoryResult,
+  verifyLaboratoryResult,
 } from "./dto/update.dto.js";
 import { publishQueueChange } from "../../services/queue-sse/index.js";
 import {
@@ -486,6 +487,54 @@ export async function startLaboratoryAnalysis(
   }
 }
 
+// The lab's verification step: a staff member checks the saved result
+// (Pending -> Verified). Release is only allowed after this.
+export async function verifyLaboratoryResult(
+  req: Request,
+  res: Response<verifyLaboratoryResult.response | verifyLaboratoryResult.error>,
+) {
+  try {
+    const { result_id } = req.params;
+    const verifier = (req.user as { user_id?: string } | undefined)?.user_id ?? null;
+
+    if (!result_id) {
+      return res.status(400).json({ message: "Result ID is required." });
+    }
+
+    const [result] = await sql`
+      UPDATE test_results
+      SET
+        status = 'Verified',
+        verified_by = ${verifier},
+        verified_at = NOW(),
+        updated_at = NOW()
+      WHERE result_id = ${result_id}
+        AND status = 'Pending'
+      RETURNING result_id, item_id, status, verified_by, verified_at, updated_at;
+    `;
+
+    if (!result) {
+      const [existing] = await sql`
+        SELECT status FROM test_results WHERE result_id = ${result_id} LIMIT 1
+      `;
+      if (!existing) {
+        return res.status(404).json({ message: "Laboratory result not found." });
+      }
+      return res.status(409).json({
+        message: `Result cannot be verified because its status is ${existing.status}.`,
+      });
+    }
+
+    return res.status(200).json({
+      message: "Laboratory result verified.",
+      result,
+    });
+  } catch (error) {
+    console.error("Unable to verify laboratory result:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
 export async function releaseLaboratoryResult(
   req: Request,
   res: Response<
@@ -501,14 +550,18 @@ export async function releaseLaboratoryResult(
       } as releaseLaboratoryResult.error);
     }
 
+    const releaser = (req.user as { user_id?: string } | undefined)?.user_id ?? null;
+
+    // Only verified results can be released (the clinic verifies first).
     const [result] = await sql`
       UPDATE test_results
       SET
         status = 'Released',
         released_at = NOW(),
+        released_by = ${releaser},
         updated_at = NOW()
       WHERE result_id = ${result_id}
-        AND status = 'Pending'
+        AND status = 'Verified'
       RETURNING result_id, item_id, status, released_at, updated_at;
     `;
 
@@ -527,7 +580,10 @@ export async function releaseLaboratoryResult(
       }
 
       return res.status(409).json({
-        message: `Result cannot be released because its status is ${existing.status}.`,
+        message:
+          existing.status === "Pending"
+            ? "Verify the result before releasing it."
+            : `Result cannot be released because its status is ${existing.status}.`,
       } as releaseLaboratoryResult.error);
     }
 
