@@ -15,11 +15,21 @@ type HeaderProps = {
 function Header({ page, loading, open, setOpen, loadData }: HeaderProps) {
   const rawRole = sessionStorage.getItem("role") ?? "";
 
-  const role =
-    rawRole === "laboratory-staff" || rawRole === "frontdesk-staff"
-      ? rawRole.replace("-", " ") // "laboratorystaff" / "frontdeskstaff"
-      : rawRole;
+  let department = "";
+  try {
+    department = String(
+      JSON.parse(sessionStorage.getItem("user") || "{}").department ?? "",
+    ).trim();
+  } catch {
+    /* corrupted sessionStorage value: ignore */
+  }
 
+  const role =
+    rawRole === "laboratory-staff" && department.toLowerCase() === "imaging"
+      ? "imaging staff"
+      : rawRole === "laboratory-staff" || rawRole === "frontdesk-staff"
+        ? rawRole.replace("-", " ")
+        : rawRole;
   // Queue notifications: doctors and lab staff use the staff endpoint,
   // patients their own. Check rawRole: `role` above is for display only.
   const notificationsPath =
@@ -48,8 +58,12 @@ function Header({ page, loading, open, setOpen, loadData }: HeaderProps) {
         </button>
 
         <div className="flex flex-col min-w-0">
-          <h1 className="text-base sm:text-lg font-semibold truncate">{page}</h1>
-          <h2 className="text-xs sm:text-sm text-gray-500 capitalize truncate">{role}</h2>
+          <h1 className="text-base sm:text-lg font-semibold truncate">
+            {page}
+          </h1>
+          <h2 className="text-xs sm:text-sm text-gray-500 capitalize truncate">
+            {role}
+          </h2>
         </div>
       </div>
 

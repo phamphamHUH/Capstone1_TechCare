@@ -96,9 +96,6 @@ export default function AnalysisList({
   const [priority, setPriority] = useState("");
   const [date, setDate] = useState("");
   const [page, setPage] = useState(1);
-  const roomName = /^Laboratory Room\s/i.test(room)
-    ? room
-    : `Laboratory Room ${Number(room.split("-")[1]) || room}`;
 
   const testNames = useMemo(
     () =>
@@ -186,7 +183,7 @@ export default function AnalysisList({
             Ready for Analysis
           </h2>
           <p className="mt-1 max-w-2xl text-sm leading-relaxed text-gray-500">
-            {roomName}
+            {room}
             {
               " — Requests with completed sample collection, ready for laboratory analysis and result encoding."
             }
@@ -194,7 +191,7 @@ export default function AnalysisList({
         </div>
         <span className="ml-auto hidden items-center gap-1.5 rounded-full bg-sky-50 px-3 py-1 text-xs whitespace-nowrap text-sky-700 xl:flex">
           <i className="size-1.5 rounded-full bg-current" />
-          {roomName}
+          {room}
         </span>
       </div>
       <div className="overflow-hidden rounded-md border border-gray-300">
