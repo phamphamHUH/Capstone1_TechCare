@@ -34,7 +34,7 @@ import {
   type VitalKey,
 } from "../../../../interface/Overview";
 import api from "#lib/axios";
-import { usePersistentState } from "../../../../utils/persistentState";
+import { usePersistentState } from "./utils/persistentState";
 
 type OverviewProps = {
   selectedQueue: QueueEntry | null;

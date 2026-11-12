@@ -98,7 +98,7 @@ TechCare-main/
 │       ├── lib/                 # axios.ts, env.config.ts, ProtectedRoute.tsx, clinicInfo.ts, utils.ts, protectRoute.ts (empty)
 │       ├── interface/           # shared TS types: Activity, Analytics, Billing, FormTemplate, HistoryRecord, Patient, PatientPortal, Queue, Service, User, lab types
 │       ├── services/{queue-sse,notification-sse}/connect*Stream.ts   # SSE clients
-│       ├── utils/               # app-wide helpers: calculateAge, cnhelper, debounce, formats (incl. browserTimeZone), patientRecordPrintTemplate, persistentState
+│       ├── utils/               # helpers used by 2+ roles only: calculateAge, debounce, formats (incl. browserTimeZone), templatePaper. (`cn()` is in lib/utils.ts)
 │       └── users/{admin,doctor,frontdesk_staff,laboratory_staff,patient,test/sse}
 └── tools/                       # standalone ETL (pipeline.py, messydata.ipynb, sample CSVs); not wired into the app
 ```
