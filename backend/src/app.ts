@@ -14,6 +14,7 @@ import patientRoutes from "./routes/patient.route.js";
 import queueRoutes from "./routes/queue.route.js";
 import notificationRoutes from "./routes/notification.route.js";
 import sseTestRoutes from "./routes/tests/sse.routes.js";
+import { apiLimiter } from "./middlewares/rateLimit.middleware.js";
 
 const upload = multer({
   dest: "uploads/",
@@ -24,6 +25,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+// Render puts one proxy in front of the app; trust it so req.ip is the
+// visitor's real IP (the rate limiters count by it).
+app.set("trust proxy", 1);
 const cors_origins = ENV.CORS_ORIGIN.split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
@@ -36,6 +40,9 @@ app.use(
 );
 
 app.use(express.json());
+
+// Rate limits for every API call (see middlewares/rateLimit.middleware.ts).
+app.use("/api", apiLimiter);
 
 // API routes
 
