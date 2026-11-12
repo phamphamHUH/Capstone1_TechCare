@@ -244,8 +244,18 @@ export async function updateFormTemplate(
 ) {
   const { form_id } = req.params;
 
-  const { form_name, form_description, service_id, status, form_components } =
-    req.body as updateFormTemplate.body;
+  const {
+    form_name,
+    form_description,
+    paper_size,
+    service_id,
+    status,
+    form_components,
+  } = req.body as updateFormTemplate.body;
+
+  if (paper_size != null && !["half_long_bond", "a4"].includes(paper_size)) {
+    return res.status(400).json({ message: "Invalid paper size." });
+  }
 
   if (!form_id) {
     return res.status(400).json({
@@ -303,6 +313,7 @@ export async function updateFormTemplate(
         SET
           form_name = ${form_name},
           form_description = ${form_description ?? null},
+          paper_size = ${paper_size ?? checkExisting.paper_size ?? null},
           service_id = ${serviceId},
           status = ${updatedStatus},
           version = version + 1,

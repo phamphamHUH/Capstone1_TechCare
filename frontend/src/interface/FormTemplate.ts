@@ -2,6 +2,7 @@ export interface FormTemplate {
   form_id: string;
   form_name: string;
   form_description?: string;
+  paper_size?: PaperSize | null;
   service_id: string;
   status: string;
   created_by: string;
@@ -9,6 +10,8 @@ export interface FormTemplate {
   updated_at: string;
   components: BuilderComponent[];
 }
+
+export type PaperSize = "half_long_bond" | "a4";
 
 export type ComponentType =
   | "text_field"

@@ -1,4 +1,6 @@
 import { CLINIC_INFO } from "../../../../../lib/clinicInfo";
+import type { PaperSize } from "../../../../../interface/FormTemplate";
+import { PAPER_LABELS } from "../../../../../utils/templatePaper";
 
 // Full portrait long bond sheet; the report occupies only its top half.
 export const REPORT_WIDTH = 816;
@@ -364,6 +366,58 @@ export const REPORT_FRAME_HTML = /* HTML */ `<!doctype html>
     </head>
     <body></body>
   </html>`;
+
+export function reportPaper(paperSize: PaperSize) {
+  return paperSize === "a4"
+    ? { width: 794, height: 1123, label: PAPER_LABELS.a4 }
+    : {
+        width: REPORT_WIDTH,
+        height: REPORT_MIN_HEIGHT,
+        label: REPORT_PAPER_LABEL,
+      };
+}
+
+export function reportFrameHtml(paperSize: PaperSize) {
+  if (paperSize !== "a4") return REPORT_FRAME_HTML;
+  return REPORT_FRAME_HTML.replace(
+    "</style>",
+    `
+    body { width: 794px; min-height: 1123px; padding: 20px 24px 30px; font-size: 14px; line-height: 1.5; }
+    .report-sheet { min-height: 1073px; }
+    .report-header { gap: 10px; align-items: center; justify-content: flex-start; }
+    .logo-frame { width: 158px; height: 174px; border: 3px solid #398ca0; border-top: 0; border-radius: 0 0 24px 24px; overflow: hidden; }
+    .logo { position: static; width: 100%; height: 100%; max-width: 100%; object-fit: contain; }
+    .clinic-details { flex: 1; padding: 14px 10px; text-align: left; background: linear-gradient(100deg, #3294ae, #8cbd49); color: white; }
+    .clinic { color: white; font-size: 22px; line-height: 1.3; letter-spacing: 0.5px; }
+    .clinic-address { font-size: 14px; font-weight: 400; text-transform: none; }
+    .clinic-contact { font-size: 14px; font-weight: 400; }
+    .report-state { margin-top: 10px; }
+    .patient { margin: 52px 42px 0; border: 0; gap: 0 24px; grid-template-columns: 1fr 1fr; font-size: 13px; }
+    .patient > div { border: 0; padding: 0; min-height: 22px; }
+    .patient > div:nth-child(n + 3) { background: none; }
+    .patient dt { text-transform: none; }
+    .report-body { margin: 0 42px; }
+    .report-title { margin: 48px 0 44px; color: #24865e; font-size: 28px; line-height: 1.25; text-decoration: none; }
+    .report-category { display: none; }
+    .section-heading, .field-label { color: #24865e; text-transform: uppercase; font-size: 16px; margin: 12px 0; }
+    .field { padding: 0; margin-bottom: 20px; }
+    .field-value { margin: 20px 0 0 48px; font-size: 16px; min-height: 24px; }
+    .static-text { font-size: 16px; }
+    .notes { margin: 12px 42px 0; }
+    .notes h3 { color: #24865e; text-decoration: none; font-size: 16px; }
+    .notes p { margin: 16px 0 0 48px; }
+    .report-footer { margin: auto 16px 0; padding-top: 64px; }
+    .signatures { display: flex; justify-content: flex-end; }
+    .signatures > div { width: 255px; }
+    .signature-name { min-height: 44px; font-size: 14px; }
+    .signature-role, .license { font-size: 12px; }
+    .report-meta { margin-top: 24px; }
+    .watermark { top: auto; bottom: 18px; left: auto; right: 0; transform: none; width: 240px; height: 240px; opacity: 0.045; }
+    @page { size: A4 portrait; margin: 5mm 6.35mm 8mm; }
+    @media print { body { width: auto; min-height: 0; padding: 0; } .report-sheet { min-height: 283mm; } }
+  </style>`,
+  );
+}
 
 export function reportText(value: unknown): string {
   if (value == null || value === "") {

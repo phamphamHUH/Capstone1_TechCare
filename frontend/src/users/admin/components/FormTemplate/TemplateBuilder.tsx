@@ -7,12 +7,19 @@ import type {
   BuilderComponent,
   ComponentType,
   FormTemplate,
+  PaperSize,
 } from "../../../../interface/FormTemplate";
 import type { ServiceOption } from "../../pages/FormTemplate";
 import ComponentPalette from "./TemplateBuilder/ComponentPalette";
 import BuilderCanvas from "./TemplateBuilder/BuilderCanvas";
 import ComponentSettings from "./TemplateBuilder/ComponentSettings";
 import TemplatePreview from "./TemplatePreview";
+import {
+  defaultPaperSize,
+  isImagingReport,
+  PAPER_LABELS,
+  templatePaperSize,
+} from "../../../../utils/templatePaper";
 
 interface TemplateBuilderProps {
   initialTemplate?: FormTemplate | null;
@@ -51,6 +58,18 @@ export default function TemplateBuilder({
   // category stores the real service_id directly
   const [category, setCategory] = useState(
     initialTemplate?.service_id || services[0]?.service_id || "",
+  );
+  const serviceDescription = (id: string) => {
+    const service = services.find((item) => item.service_id === id);
+    return `${service?.service_name || ""} ${service?.service_category || ""} ${service?.service_type || ""}`;
+  };
+  const [paperSize, setPaperSize] = useState<PaperSize>(() =>
+    initialTemplate
+      ? templatePaperSize(
+          initialTemplate,
+          serviceDescription(initialTemplate.service_id),
+        )
+      : defaultPaperSize(serviceDescription(services[0]?.service_id || "")),
   );
   const [components, setComponents] = useState<BuilderComponent[]>(
     initialTemplate?.components && initialTemplate.components.length > 0
@@ -216,6 +235,7 @@ export default function TemplateBuilder({
     const payload = {
       form_name: templateName,
       form_description: description,
+      paper_size: paperSize,
       status,
       service_id: category,
       created_by: createdBy,
@@ -261,6 +281,48 @@ export default function TemplateBuilder({
   };
 
   const selectedComponent = components.find((c) => c.id === selectedId) || null;
+
+  const addA4Fields = () => {
+    const labels = isImagingReport(
+      `${templateName} ${serviceDescription(category)}`,
+    )
+      ? ["Findings", "Impression"]
+      : ["Certification", "Recommendations"];
+    const existing = components.filter(
+      (component) =>
+        component.id !== "comp_header_default" ||
+        component.label !== "SECTION" ||
+        component.settings.sectionHeader !== "SECTION",
+    );
+    const fields: BuilderComponent[] = labels
+      .filter(
+        (label) =>
+          !existing.some(
+            (component) => component.fieldKey === label.toLowerCase(),
+          ),
+      )
+      .map((label, index) => ({
+        id: `comp_${Date.now()}_${index}`,
+        type: "text_field",
+        label,
+        fieldKey: label.toLowerCase(),
+        order: existing.length + index + 1,
+        settings: {
+          width: "FULL",
+          alignment: "left",
+          showInPreview: true,
+          placeholder: `Enter ${label.toLowerCase()}`,
+        },
+        validation: { inputType: "Text" },
+      }));
+    setComponents(
+      [...existing, ...fields].map((component, index) => ({
+        ...component,
+        order: index + 1,
+      })),
+    );
+    if (fields[0]) setSelectedId(fields[0].id);
+  };
 
   return (
     <div className="flex flex-col gap-5 w-full">
@@ -346,7 +408,12 @@ export default function TemplateBuilder({
             </label>
             <select
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              onChange={(e) => {
+                setCategory(e.target.value);
+                setPaperSize(
+                  defaultPaperSize(serviceDescription(e.target.value)),
+                );
+              }}
               className="max-w-full px-3 py-2 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-sky-400"
             >
               {services.length === 0 && (
@@ -358,6 +425,33 @@ export default function TemplateBuilder({
                 </option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label
+              htmlFor="template-paper-size"
+              className="block text-[11px] font-semibold text-gray-400 uppercase mb-1"
+            >
+              Paper Size
+            </label>
+            <select
+              id="template-paper-size"
+              value={paperSize}
+              onChange={(event) =>
+                setPaperSize(event.target.value as PaperSize)
+              }
+              className="max-w-full px-3 py-2 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-sky-400"
+            >
+              {Object.entries(PAPER_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 max-w-64 text-xs text-gray-500">
+              Half long bond for lab results; A4 for imaging, medical clearance
+              and certificates.
+            </p>
           </div>
 
           <div>
@@ -384,6 +478,21 @@ export default function TemplateBuilder({
       </div>
 
       {/* THREE COLUMN BUILDER WORKSPACE */}
+      {paperSize === "a4" && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm text-emerald-900">
+          <p>
+            A4 uses the clinic letterhead, patient details and physician
+            signature area.
+          </p>
+          <button
+            type="button"
+            onClick={addA4Fields}
+            className="cursor-pointer rounded-md border border-emerald-300 bg-white px-3 py-2 text-xs font-semibold hover:bg-emerald-100"
+          >
+            Add A4 report fields
+          </button>
+        </div>
+      )}
       <div className="flex flex-col xl:flex-row items-stretch gap-5">
         {/* LEFT PALETTE */}
         <ComponentPalette onAddComponent={handleAddComponent} />
@@ -446,6 +555,10 @@ export default function TemplateBuilder({
       {showPreview && (
         <TemplatePreview
           templateName={templateName}
+          paperSize={paperSize}
+          serviceName={
+            services.find((s) => s.service_id === category)?.service_name
+          }
           category={
             services.find((s) => s.service_id === category)?.service_name ||
             "Uncategorized"

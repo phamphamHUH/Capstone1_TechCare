@@ -468,11 +468,16 @@ export async function addFormTemplates(
   const {
     form_name,
     form_description,
+    paper_size,
     status,
     service_id,
     created_by,
     form_components,
   } = req.body;
+
+  if (paper_size != null && !["half_long_bond", "a4"].includes(paper_size)) {
+    return res.status(400).json({ message: "Invalid paper size." });
+  }
 
   if (
     !form_name ||
@@ -511,6 +516,7 @@ export async function addFormTemplates(
         form_id,
         form_name,
         form_description,
+        paper_size,
         service_id,
         status,
         created_by
@@ -519,6 +525,7 @@ export async function addFormTemplates(
         ${form_id},
         ${form_name},
         ${form_description ?? null},
+        ${paper_size ?? null},
         ${service_id},
         ${status ?? "Published"},
         ${created_by}

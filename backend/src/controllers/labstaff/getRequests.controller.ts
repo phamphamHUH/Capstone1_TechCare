@@ -374,6 +374,7 @@ export async function getAvailableFormTemplates(
         ft.form_id,
         ft.form_name,
         ft.form_description,
+        ft.paper_size,
         ft.service_id,
         ft.status,
         s.service_name,

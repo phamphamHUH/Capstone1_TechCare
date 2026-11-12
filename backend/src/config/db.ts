@@ -307,6 +307,7 @@ const TABLES: TableDefinition[] = [
       form_id: "VARCHAR(255) UNIQUE NOT NULL",
       form_name: "VARCHAR(255) NOT NULL",
       form_description: "TEXT",
+      paper_size: "VARCHAR(20) CHECK (paper_size IN ('half_long_bond', 'a4'))",
       service_id: "VARCHAR(255) NOT NULL REFERENCES services(service_id)",
       status: "VARCHAR(50) NOT NULL DEFAULT 'Published'",
       created_by: "VARCHAR(255) NOT NULL REFERENCES users(user_id)",
@@ -469,6 +470,12 @@ async function createTables(): Promise<void> {
     );
 
     // await ensureLaboratoryResultStatus();
+    // Existing installations also need this additive template setting.
+    await sql`
+      ALTER TABLE form_templates
+      ADD COLUMN IF NOT EXISTS paper_size VARCHAR(20)
+      CHECK (paper_size IN ('half_long_bond', 'a4'))
+    `;
     // await sql`
     //   ALTER TABLE consultation_records
     //   ADD COLUMN IF NOT EXISTS cancellation_reason VARCHAR(255)
