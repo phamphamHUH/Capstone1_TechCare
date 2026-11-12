@@ -275,8 +275,8 @@ async function main() {
       const name = personName(i);
       patientIds.push(patientId);
       await client.query(
-        `INSERT INTO patients (patient_id, username, password_hash, first_name, middle_name, last_name, sex, email, contact_number, emergency_contact_name, emergency_contact, address, birthdate, role, civil_status, blood_type, account_status, active, created_at, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'patient',$14,$15,TRUE,FALSE,NOW(),NOW())
+        `INSERT INTO patients (patient_id, username, password_hash, first_name, middle_name, last_name, sex, email, contact_number, guardian_name, guardian_contact, street, barangay, city, province, zip_code, birthdate, role, civil_status, blood_type, account_status, active, created_at, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'Marikina City','Metro Manila','1800',$14,'patient',$15,$16,TRUE,FALSE,NOW(),NOW())
          ON CONFLICT DO NOTHING`,
         [
           patientId,
@@ -290,7 +290,8 @@ async function main() {
           `09${String(180000000 + i).slice(-9)}`,
           `${pick(firstNames, i + 3)} ${name.last}`,
           `09${String(190000000 + i).slice(-9)}`,
-          `${i + 1} ${pick(streets, i)}, Brgy. ${pick(barangays, i)}, Marikina City`,
+          `${i + 1} ${pick(streets, i)}`,
+          pick(barangays, i),
           dateDaysAgo(6500 + (i % 15000)),
           pick(civilStatuses, i),
           pick(bloodTypes, i),
@@ -426,15 +427,14 @@ async function main() {
         const labStatus =
           i % 6 === 0 ? "Completed" : i % 4 === 0 ? "Processing" : "Requested";
         await client.query(
-          `INSERT INTO test_requests (request_id, consultation_record_id, patient_id, requested_by, status, is_paid, is_priority, request_date, estimated_release_date, requested_at, updated_at)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$10) ON CONFLICT DO NOTHING`,
+          `INSERT INTO test_requests (request_id, consultation_record_id, patient_id, requested_by, status, is_priority, request_date, estimated_release_date, requested_at, updated_at)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$9) ON CONFLICT DO NOTHING`,
           [
             requestId,
             consultationId,
             patientId,
             doctor.user_id,
             labStatus,
-            i % 3 !== 0,
             i % 13 === 0,
             dateDaysAgo(daysAgo),
             dateDaysAgo(Math.max(0, daysAgo - 1)),
@@ -510,7 +510,7 @@ async function main() {
         const total = Number(consultationService.price);
         const paid = i % 5 !== 0;
         await client.query(
-          `INSERT INTO bills (bill_id, patient_id, items, discount_pct, total_amount, payment_method, status, receipt_id, created_at, receipt_issued_at, billed_at)
+          `INSERT INTO bills (bill_id, patient_id, items, discount_rate, total_amount, payment_method, status, invoice_id, created_at, invoice_issued_at, billed_at)
            VALUES ($1,$2,$3::jsonb,$4,$5,$6,$7,$8,$9,$10,$9) ON CONFLICT DO NOTHING`,
           [
             billId,
