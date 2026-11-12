@@ -14,6 +14,9 @@ import MessageSSERecieve from "./users/test/sse_message/MessageSSEReceive";
 import MessageSSESend from "./users/test/sse_message/MessageSSESend";
 import QueueSendSSE from "./users/test/sse_queue/QueueSendSSE";
 import QueueReceiveSSE from "./users/test/sse_queue/QueueReceiveSSE";
+import { applyTheme, readSessionTheme } from "./lib/theme";
+
+const AUTH_PAGES = ["/", "/login", "/sign-up", "/set-password"];
 
 function App() {
   const { pathname } = useLocation();
@@ -22,6 +25,8 @@ function App() {
   // sessionStorage before navigate(), so no page reload is needed.
   useEffect(() => {
     document.title = sessionStorage.getItem("role") || "TechCare";
+    // The account's saved theme; the sign-in pages always stay light.
+    applyTheme(AUTH_PAGES.includes(pathname) ? "light" : readSessionTheme());
   }, [pathname]);
 
   return (

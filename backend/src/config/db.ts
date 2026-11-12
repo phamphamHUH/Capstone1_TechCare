@@ -48,6 +48,8 @@ const TABLES: TableDefinition[] = [
       last_login: "TIMESTAMPTZ",
       account_status: "BOOLEAN NOT NULL DEFAULT TRUE",
       profile_photo: "TEXT",
+      // UI theme chosen in Account settings: light | dark | system.
+      theme: "VARCHAR(20) NOT NULL DEFAULT 'light'",
       active: "BOOLEAN NOT NULL DEFAULT FALSE",
       // One-time "set your password" link from the account-created email
       // (SHA-256 of the token, never the token itself).
@@ -109,6 +111,8 @@ const TABLES: TableDefinition[] = [
       last_login: "TIMESTAMPTZ",
       account_status: "BOOLEAN NOT NULL DEFAULT TRUE",
       profile_photo: "TEXT",
+      // UI theme chosen in Account settings: light | dark | system.
+      theme: "VARCHAR(20) NOT NULL DEFAULT 'light'",
       active: "BOOLEAN NOT NULL DEFAULT FALSE",
       // One-time "set your password" link from the account-created email
       // (SHA-256 of the token, never the token itself).
