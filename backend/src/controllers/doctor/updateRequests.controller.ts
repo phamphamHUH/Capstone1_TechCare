@@ -254,7 +254,7 @@ export async function cancelConsultationQueue(
     const {
       rows: [entry],
     } = await client.query(
-      "SELECT * FROM queue_entries WHERE queue_id = $1 AND (queue_id LIKE 'CON-%' OR queue_id LIKE 'CONS-%') FOR UPDATE",
+      "SELECT * FROM queue_entries WHERE queue_id = $1 AND (queue_id LIKE 'CONS-%') FOR UPDATE",
       [queue_id.trim()],
     );
     if (!entry) return await reject(404, "Consultation queue entry not found.");
@@ -320,7 +320,12 @@ export async function cancelConsultationQueue(
     await client.query("COMMIT");
 
     publishQueueChange();
-    void notifyCancelled(entry.patient_id, "consultation", actorId(req), reason.trim());
+    void notifyCancelled(
+      entry.patient_id,
+      "consultation",
+      actorId(req),
+      reason.trim(),
+    );
     return res.status(200).json({
       message: "Consultation request cancelled successfully.",
       queue,
@@ -401,7 +406,7 @@ export async function skipConsultationQueueEntry(
         updated_at = NOW()
       WHERE q.queue_number = ${currentQueueNumber + 1}
         AND LOWER(q.status) = 'waiting'
-        AND (q.queue_id LIKE 'CON-%' OR q.queue_id LIKE 'CONS-%')
+        AND (q.queue_id LIKE 'CONS-%')
         AND q.created_at >= CURRENT_DATE
         AND q.created_at <  CURRENT_DATE + INTERVAL '1 day';
     `;
@@ -420,7 +425,8 @@ export async function skipConsultationQueueEntry(
     `;
 
     publishQueueChange();
-    if (updatedQueue[0]) void notifySkipped(updatedQueue[0].patient_id, "consultation");
+    if (updatedQueue[0])
+      void notifySkipped(updatedQueue[0].patient_id, "consultation");
     return res.status(200).json({
       message: "Queue skipped successfully and returned to the queue.",
       queue: updatedQueue[0],

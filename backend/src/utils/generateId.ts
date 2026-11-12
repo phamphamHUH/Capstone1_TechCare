@@ -360,8 +360,8 @@ export async function generateConsultationQueueId(client: PoolClient) {
   const { rows } = await client.query(
     `SELECT queue_id
      FROM queue_entries
-     WHERE (queue_id LIKE 'CON-%' OR queue_id LIKE 'CONS-%')
-       AND SPLIT_PART(queue_id, '-', 2) ~ '^[0-9]+$' -- skips seed IDs like CON-SEED-000001
+     WHERE queue_id LIKE 'CONS-%'
+       AND SPLIT_PART(queue_id, '-', 2) ~ '^[0-9]+$' -- skips seed IDs like CONS-SEED-000001
      ORDER BY SPLIT_PART(queue_id, '-', 2)::int DESC
      LIMIT 1`,
   );
@@ -369,7 +369,7 @@ export async function generateConsultationQueueId(client: PoolClient) {
   const last = rows[0]?.queue_id;
   const nextNumber = last ? Number(last.split("-")[1]) + 1 : 1;
 
-  return `CON-${String(nextNumber).padStart(4, "0")}`;
+  return `CONS-${String(nextNumber).padStart(4, "0")}`;
 }
 
 export async function generateQueueNumberConsultation(client: PoolClient) {
