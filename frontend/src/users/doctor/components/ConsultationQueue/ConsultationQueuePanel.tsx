@@ -81,6 +81,9 @@ function ConsultationQueuePanel({
     .filter((queue) => {
       const status = queue.status?.toLowerCase();
 
+      // Never show cancelled queues
+      if (status === "cancelled") return false;
+
       const matchesStatus =
         activeMainTab === "all"
           ? status !== "completed"
