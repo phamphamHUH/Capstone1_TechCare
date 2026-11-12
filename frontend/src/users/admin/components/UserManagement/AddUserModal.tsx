@@ -491,7 +491,7 @@ function AddUserModal({ onClose, loadData }: Props) {
               width="w-36"
             />
 
-            <div className="flex items-center gap-2 text-sm text-gray-500">
+            <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500">
               <span className="whitespace-nowrap">Shift Schedule</span>
               <input
                 type="time"

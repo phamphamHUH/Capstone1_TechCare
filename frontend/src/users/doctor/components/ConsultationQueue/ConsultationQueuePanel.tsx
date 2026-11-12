@@ -174,7 +174,7 @@ function ConsultationQueuePanel({
       </div>
 
       {/* SEARCH BAR AND ADDITIONAL FILTERS */}
-      <div className="mb-5 flex w-7/12 flex-wrap items-center gap-2 px-6">
+      <div className="mb-5 flex w-full lg:w-7/12 flex-wrap items-center gap-2 px-4 sm:px-6">
         <div className="relative min-w-55 flex-1 basis-70">
           <Search
             size={17}

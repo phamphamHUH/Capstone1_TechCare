@@ -164,7 +164,7 @@ function AddService({ loadData, onClose, services }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-4/11 bg-white py-4 px-6 shadow-xl rounded-md">
+      <div className="max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-y-auto bg-white py-4 px-4 sm:px-6 shadow-xl rounded-md">
         <div className="mb-5 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-semibold">Add Service</h2>

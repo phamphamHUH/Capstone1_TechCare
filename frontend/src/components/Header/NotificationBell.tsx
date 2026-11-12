@@ -73,7 +73,7 @@ function NotificationRow({
         }`}
       >
         <TypeIcon type={notification.type} />
-        <span className="min-w-0 flex-1">
+        <span className="min-w-0 flex-1 wrap-anywhere">
           <span
             className={`block text-sm ${notification.is_read ? "text-gray-700" : "font-semibold text-gray-900"}`}
           >
@@ -162,7 +162,7 @@ function NotificationBell({ basePath }: NotificationBellProps) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-12 z-50 w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg">
+        <div className="fixed inset-x-4 top-18 z-50 flex max-h-[calc(100dvh-5.5rem)] flex-col overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg sm:absolute sm:inset-x-auto sm:right-0 sm:top-12 sm:w-[min(24rem,calc(100vw-6rem))] sm:max-h-[calc(100dvh-8rem)]">
           <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
             <h3 className="text-sm font-semibold text-gray-900">
               Notifications
@@ -184,7 +184,7 @@ function NotificationBell({ basePath }: NotificationBellProps) {
               You're all caught up.
             </p>
           ) : (
-            <ul className="max-h-[26rem] divide-y divide-gray-100 overflow-y-auto">
+            <ul className="min-h-0 max-h-[26rem] divide-y divide-gray-100 overflow-y-auto overscroll-contain">
               {notifications.map((notification) => (
                 <NotificationRow
                   key={notification.id}

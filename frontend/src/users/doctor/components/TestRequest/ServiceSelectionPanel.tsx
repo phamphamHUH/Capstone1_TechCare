@@ -60,7 +60,7 @@ function ServiceSelectionPanel({
               : " Select Packaged Services"}
         </h1>
         <div className="mb-4 flex w-full flex-wrap items-center gap-2">
-          <div className="relative min-w-55 flex-1 basis-70">
+          <div className="relative min-w-0 flex-1 basis-70">
             <Search
               size={17}
               strokeWidth={1.5}
@@ -75,11 +75,11 @@ function ServiceSelectionPanel({
             />
           </div>
 
-          <label className="relative shrink-0">
+          <label className="relative max-w-full shrink-0">
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as SortOrder)}
-              className="h-9 min-w-25 appearance-none rounded-md border border-gray-300 bg-white px-3 pr-8 text-sm text-gray-600 outline-none focus:border-sky-400"
+              className="h-9 max-w-full min-w-25 appearance-none rounded-md border border-gray-300 bg-white px-3 pr-8 text-sm text-gray-600 outline-none focus:border-sky-400"
             >
               <option value="a-z">Sort: A-Z</option>
               <option value="z-a">Sort: Z-A</option>
@@ -92,11 +92,11 @@ function ServiceSelectionPanel({
             />
           </label>
 
-          <label className="relative shrink-0">
+          <label className="relative max-w-full shrink-0">
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="h-9 min-w-27.5 appearance-none rounded-md border border-gray-300 bg-white px-3 pr-8 text-sm text-gray-600 outline-none focus:border-sky-400"
+              className="h-9 max-w-full min-w-27.5 appearance-none rounded-md border border-gray-300 bg-white px-3 pr-8 text-sm text-gray-600 outline-none focus:border-sky-400"
             >
               <option value="all">Category: All</option>
               {categoryOptions.map((name) => (
@@ -123,17 +123,17 @@ function ServiceSelectionPanel({
               <label
                 key={service.id}
                 htmlFor={service.service_id}
-                className="flex items-center justify-between border border-gray-200 px-4 py-2 rounded-md cursor-pointer transition-all
+                className="flex min-w-0 items-center justify-between gap-3 border border-gray-200 px-4 py-2 rounded-md cursor-pointer transition-all
                 hover:border-blue-300 hover:scale-101 active:scale-100 active:bg-gray-50
                has-checked:border-sky-500 has-checked:bg-sky-50 has-checked:text-blue-500"
               >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-sky-100 rounded-md">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="shrink-0 p-2 bg-sky-100 rounded-md">
                     <Syringe size={20} />
                   </div>
-                  <div className="text-xs">
+                  <div className="min-w-0 wrap-anywhere text-xs">
                     <h1 className="font-bold">{service.service_name}</h1>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <h2>{service.service_category}</h2>
                       <h2>₱{service.price}</h2>
                     </div>
@@ -141,7 +141,7 @@ function ServiceSelectionPanel({
                 </div>
 
                 <input
-                  className="appearance-none size-6 rounded-md border border-gray-600 cursor-pointer
+                  className="appearance-none size-6 shrink-0 rounded-md border border-gray-600 cursor-pointer
                  checked:bg-sky-200 checked:border-sky-200"
                   type="checkbox"
                   name={service.service_name}
@@ -155,7 +155,7 @@ function ServiceSelectionPanel({
         )}
       </div>
 
-      <div className="flex items-center justify-between mt-8 text-xs text-gray-500">
+      <div className="flex flex-wrap items-center justify-between gap-3 mt-8 text-xs text-gray-500">
         <span>
           Showing {from} - {to} of {total} services
         </span>
