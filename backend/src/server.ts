@@ -4,6 +4,7 @@ import { ENV } from "./config/env.js";
 // import { initializeWebSocket } from "./websocket.js";
 import { closeAllQueueStreams } from "./services/queue-sse/index.js";
 import { closeAllNotificationStreams } from "./services/notification-sse/index.js";
+import { startActivityRetention } from "./services/activity-retention/index.js";
 
 // IMPORTANT: Render needs process.env.PORT
 
@@ -23,6 +24,9 @@ async function initializeServer() {
     const server = app.listen(ENV.PORT, () => {
       console.log(`Server is up and running on http://localhost:${ENV.PORT}`);
     });
+
+    // Delete activity older than 3 months (now, then daily).
+    startActivityRetention();
     // initializeWebSocket(server);
 
     // When Render deploys (or you press Ctrl+C) the server is told to stop.
