@@ -221,7 +221,6 @@ function ActiveConsultation({
                 <MedicalHistoryTab
                   key={selectedQueue.patient_id}
                   patientId={selectedQueue.patient_id}
-                  onReturn={() => setActiveTab("overview")}
                 />
               )}
             </section>

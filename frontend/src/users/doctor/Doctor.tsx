@@ -5,7 +5,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { LayoutGrid, ListOrdered, FileText, Stethoscope } from "lucide-react";
 import { useSearchParams } from "react-router";
 import ConsultationQueue from "./pages/ConsultationQueue";
-import MedicalHistory from "./pages/MedicalHistory";
 import DoctorDashboard from "./pages/DoctorDashboard";
 import type { Service } from "../../interface/Service";
 import type { QueueEntry } from "../../interface/Queue";

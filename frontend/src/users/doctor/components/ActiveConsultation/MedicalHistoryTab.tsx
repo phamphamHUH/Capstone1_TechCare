@@ -13,10 +13,9 @@ import ErrorMessage from "#components/ErrorMessage";
 
 type MedicalHistoryTabProps = {
   patientId: string | null;
-  onReturn: () => void;
 };
 
-function MedicalHistoryTab({ patientId, onReturn }: MedicalHistoryTabProps) {
+function MedicalHistoryTab({ patientId }: MedicalHistoryTabProps) {
   const [selectedRecord, setSelectedRecord] = useState<HistoryRecord | null>(
     null,
   );
