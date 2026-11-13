@@ -26,10 +26,17 @@ import type {
   addConsultationRecord,
 } from "./dto/post.dto.js";
 import { publishQueueChange } from "../../services/queue-sse/index.js";
-import { actorId, notifyPriorityPatient, notifyQueued } from "../../services/notifications/index.js";
+import {
+  actorId,
+  notifyPriorityPatient,
+  notifyQueued,
+} from "../../services/notifications/index.js";
 import { sendEmail } from "../../services/email/sendEmail.js";
 import { patientAccountCreatedEmail } from "../../services/email/emailTemplates.js";
-import { createPasswordLink, PASSWORD_LINK_DAYS } from "../../utils/passwordLink.js";
+import {
+  createPasswordLink,
+  PASSWORD_LINK_DAYS,
+} from "../../utils/passwordLink.js";
 import { recomputeBillTotals } from "../../utils/recomputeBills.js";
 import { getOrCreateOpenBill } from "../../utils/getOrCreateBill.js";
 export async function addPatient(

@@ -9,6 +9,7 @@ import {
   dbComponentToBuilderComponent,
   type FormTemplate as FormTemplateData,
 } from "../../../interface/FormTemplate";
+import { isAxiosError } from "axios";
 
 export interface ServiceOption {
   service_id: string;
@@ -142,13 +143,16 @@ export default function FormTemplate({
   const handleDeleteTemplate = async (formId: string) => {
     const previous = formTemplates;
     setFormTemplates((prev) => prev.filter((t) => t.form_id !== formId));
-
     try {
       await api.delete(`/api/admin/form-templates/${formId}`);
     } catch (error) {
       console.error("Error deleting template:", error);
-      setFormTemplates(previous); // roll back
-      setFetchError("Failed to delete template. Please try again.");
+      setFormTemplates(previous);
+      setFetchError(
+        isAxiosError<{ message?: string }>(error)
+          ? (error.response?.data?.message ?? "Failed to delete draft.")
+          : "Failed to delete draft.",
+      );
     }
   };
 

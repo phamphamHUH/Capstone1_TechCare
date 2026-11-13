@@ -309,11 +309,13 @@ const TABLES: TableDefinition[] = [
     columns: {
       id: "SERIAL PRIMARY KEY",
       form_id: "VARCHAR(255) UNIQUE NOT NULL",
+      template_key: "VARCHAR(255) NOT NULL", // NEW
       form_name: "VARCHAR(255) NOT NULL",
       form_description: "TEXT",
       paper_size: "VARCHAR(20) CHECK (paper_size IN ('half_long_bond', 'a4'))",
       service_id: "VARCHAR(255) NOT NULL REFERENCES services(service_id)",
-      status: "VARCHAR(50) NOT NULL DEFAULT 'Published'",
+      status:
+        "VARCHAR(50) NOT NULL DEFAULT 'Published' CONSTRAINT form_templates_status_chk CHECK (status IN ('Draft', 'Published', 'Archived'))", // CHANGED
       created_by: "VARCHAR(255) NOT NULL REFERENCES users(user_id)",
       version: "INTEGER NOT NULL DEFAULT 1",
       created_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
