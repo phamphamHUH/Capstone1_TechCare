@@ -2,7 +2,11 @@ import { sql } from "../../../config/db.js";
 
 // Shared by the bill list and the bill details so both always agree.
 // Legacy "Unpaid" rows come out as "Pending". The stored value is left alone.
-export function selectBills(billId: string | null, days: number | null = null) {
+export function selectBills(
+  billId: string | null,
+  days: number | null = null,
+  patientId: string | null = null,
+) {
   return sql`
     SELECT b.bill_id, b.patient_id, b.items, b.discount_type, b.discount_amount, b.payment_method,
       b.reference_num, b.invoice_id, b.paid_at, b.created_at,
@@ -57,6 +61,7 @@ export function selectBills(billId: string | null, days: number | null = null) {
     ) lab ON TRUE
     WHERE LOWER(TRIM(b.status)) IN ('pending', 'unpaid', 'paid')
       AND (${billId}::text IS NULL OR b.bill_id = ${billId})
+      AND (${patientId}::text IS NULL OR b.patient_id = ${patientId})
       AND (${days}::int IS NULL
            OR b.created_at >= NOW() - make_interval(days => ${days}::int))
     ORDER BY CASE WHEN LOWER(TRIM(b.status)) = 'paid' THEN 1 ELSE 0 END, COALESCE(b.paid_at, b.created_at) DESC

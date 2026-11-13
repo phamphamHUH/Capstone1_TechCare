@@ -26,17 +26,10 @@ export function formatPatientAddress(patient: {
   barangay?: string;
   city?: string;
   province?: string;
-  zip_code?: string;
   address?: string;
 }) {
   return (
-    [
-      patient.street,
-      patient.barangay,
-      patient.city,
-      patient.province,
-      patient.zip_code,
-    ]
+    [patient.street, patient.barangay, patient.city, patient.province]
       .map((part) => part?.trim())
       .filter(Boolean)
       .join(", ") ||
@@ -73,9 +66,7 @@ export function formatLabDate(value: string) {
   }
 
   const date = new Date(
-    /(Z|[+-]\d{2}:?\d{2})$/i.test(value)
-      ? value
-      : value.replace(" ", "T"), // no offset: already the viewer's local time
+    /(Z|[+-]\d{2}:?\d{2})$/i.test(value) ? value : value.replace(" ", "T"), // no offset: already the viewer's local time
   );
 
   if (!Number.isFinite(date.getTime())) {

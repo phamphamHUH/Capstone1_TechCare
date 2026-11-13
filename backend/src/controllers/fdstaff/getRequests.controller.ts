@@ -12,6 +12,8 @@ import type {
   getMedicalHistoryFull,
   getBills,
   getBillDetails,
+  getPatientPaymentHistory,
+  getPatientMedicalHistory,
 } from "./dto/get.dto.js";
 
 export async function getAllPatients(
@@ -440,6 +442,37 @@ export async function getBillDetails(
     return res.status(500).json({
       message: "Bill details could not be loaded.",
     });
+  }
+}
+
+export async function getPatientPaymentHistory(
+  req: Request,
+  res: Response<
+    getPatientPaymentHistory.response | getPatientPaymentHistory.error
+  >,
+) {
+  // GET /api/fdstaff/patients/:patient_id/payment-history
+  const patient_id = String(req.params.patient_id);
+
+  try {
+    const rows = await selectBills(null, null, patient_id);
+
+    // Newest first, regardless of paid or pending
+    const time = (r: Record<string, any>) =>
+      new Date(r.paid_at ?? r.created_at).getTime();
+
+    const bills = rows
+      .sort((a, b) => time(b) - time(a))
+      .map(
+        ({ items, ...bill }) => bill,
+      ) as unknown as getPatientPaymentHistory.bill[];
+
+    return res.status(200).json({ bills });
+  } catch (error) {
+    console.error("Unable to load payment history:", error);
+    return res.status(500).json({
+      message: "Payment history could not be loaded.",
+    } as getPatientMedicalHistory.error);
   }
 }
 

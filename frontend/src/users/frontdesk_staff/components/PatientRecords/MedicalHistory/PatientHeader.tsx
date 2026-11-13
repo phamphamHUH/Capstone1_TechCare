@@ -1,5 +1,5 @@
-import type { Patient } from "../../../../interface/Patient";
-import calculateAge from "../../../../utils/calculateAge";
+import type { Patient } from "../../../../../interface/Patient";
+import calculateAge from "../../../../../utils/calculateAge";
 
 type PatientHeaderProps = {
   patient: Patient;
@@ -12,8 +12,6 @@ function PatientHeader({ patient }: PatientHeaderProps) {
 
   const initials = `${patient.first_name.charAt(0)}${patient.last_name.charAt(0)}`;
 
-  // Birthdate is a calendar date, not a moment: keep the clinic zone so
-  // every viewer sees the same day.
   const dob = new Date(patient.birthdate).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
@@ -21,14 +19,8 @@ function PatientHeader({ patient }: PatientHeaderProps) {
     timeZone: "Asia/Manila",
   });
 
-  const age = calculateAge(patient.birthdate);
-
-  const isSeniorCitizen = false;
-  // TODO: replace with a real patient field
-  const isPWD = false;
-
   return (
-    <div className="flex flex-wrap justify-between gap-3 border mx-4 sm:mx-6 mt-5 px-4 sm:px-5 py-3 border-gray-200 rounded-md shadow-lg">
+    <div className="flex flex-wrap justify-between gap-3 border mx-4 sm:mx-6 mt-5 px-4 sm:px-5 py-3 border-gray-200 rounded-md shadow-sm">
       <div className="flex min-w-0 items-center gap-3 sm:gap-4">
         <div className="relative h-14 w-14 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-full bg-gray-100">
           {patient.image_url ? (
@@ -51,12 +43,12 @@ function PatientHeader({ patient }: PatientHeaderProps) {
             </span>
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
-            {isSeniorCitizen && (
+            {calculateAge(patient.birthdate) >= 60 && (
               <span className="rounded-full text-xs bg-sky-100 px-3 py-0.5 text-sky-600">
                 Senior Citizen
               </span>
             )}
-            {isPWD && (
+            {patient.is_pwd && (
               <span className="rounded-full text-xs bg-orange-100 px-3 py-0.5 text-orange-600">
                 PWD
               </span>
@@ -65,7 +57,7 @@ function PatientHeader({ patient }: PatientHeaderProps) {
           <div className="flex gap-2 text-sm">
             <span>{patient.sex}</span>
             <span className="text-gray-400">|</span>
-            <span>{age} years old</span>
+            <span>{calculateAge(patient.birthdate)} years old</span>
             <span className="text-gray-400">|</span>
             <span>{dob}</span>
             <span className="text-gray-400">|</span>
