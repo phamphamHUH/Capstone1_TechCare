@@ -1,5 +1,6 @@
 import EmptyState from "../../../../components/EmptyState";
 import { LoadingSpinner } from "../../../../components/LoadingScreen";
+import ServiceCategoryIcon from "../../../../components/ServiceCategoryIcon";
 import { useMemo, useState } from "react";
 import api from "#lib/axios";
 import type { FormTemplate } from "../../../../interface/FormTemplate";
@@ -43,6 +44,14 @@ export default function TemplateLibrary({
     const map: Record<string, string> = {};
     services.forEach((s) => {
       map[s.service_id] = s.service_name;
+    });
+    return map;
+  }, [services]);
+
+  const serviceIdToService = useMemo(() => {
+    const map: Record<string, ServiceOption> = {};
+    services.forEach((s) => {
+      map[s.service_id] = s;
     });
     return map;
   }, [services]);
@@ -258,8 +267,14 @@ export default function TemplateLibrary({
                   }`}
                 >
                   <div>
-                    {/* Blue circle placeholder */}
-                    <div className="w-10 h-10 rounded-full bg-sky-300/80 mb-3" />
+                    {/* Blue circle with category icon */}
+                    <div className="w-10 h-10 rounded-full bg-sky-300/80 mb-3 flex items-center justify-center text-sky-800">
+                      <ServiceCategoryIcon
+                        service={serviceIdToService[tpl.service_id]}
+                        category={getCategoryName(tpl.service_id)}
+                        size={20}
+                      />
+                    </div>
                     <h4 className="font-bold text-gray-900 text-xs truncate">
                       {tpl.form_name}
                     </h4>
@@ -350,7 +365,13 @@ export default function TemplateLibrary({
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-sky-200/80 flex-shrink-0" />
+                <div className="w-12 h-12 rounded-full bg-sky-200/80 flex-shrink-0 flex items-center justify-center text-sky-800">
+                  <ServiceCategoryIcon
+                    service={serviceIdToService[selectedTemplate.service_id]}
+                    category={getCategoryName(selectedTemplate.service_id)}
+                    size={24}
+                  />
+                </div>
                 <div>
                   <h4 className="font-bold text-gray-900 text-sm">
                     {selectedTemplate.form_name}
