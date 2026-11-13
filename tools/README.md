@@ -1,1 +1,0 @@
-# Testing and example on how to initialize an ETL pipeline to handle messy existing medical records.
