@@ -1,5 +1,5 @@
 import { sql } from "../../config/db.js";
-import cloudinary from "../../config/cloudinary.js";
+import { uploadImage } from "../../config/s3.js";
 import bcrypt from "bcryptjs";
 import { registerFormComponentTypes } from "./utils/formComponentTypes.js";
 import type { Request, Response } from "express";
@@ -61,11 +61,7 @@ export async function updateUser(
     let profilePhoto: string | null = null;
 
     if (req.file) {
-      const uploadResult = await cloudinary.uploader.upload(req.file.path, {
-        folder: "techcare/user_photos",
-      });
-
-      profilePhoto = uploadResult.secure_url;
+      profilePhoto = await uploadImage(req.file, "techcare/user_photos");
     }
 
     // =========================
@@ -238,12 +234,8 @@ export async function updateUserStatus(
 // UPDATE FORM TEMPLATE
 // =========================
 
-export async function updateFormTemplate(
-  req: Request,
-  res: Response<updateFormTemplate.response | updateFormTemplate.error>,
-) {
+export async function updateFormTemplate(req: Request, res: Response) {
   const { form_id } = req.params;
-
   const {
     form_name,
     form_description,
@@ -251,125 +243,152 @@ export async function updateFormTemplate(
     service_id,
     status,
     form_components,
-  } = req.body as updateFormTemplate.body;
+    created_by,
+  } = req.body;
 
-  if (paper_size != null && !["half_long_bond", "a4"].includes(paper_size)) {
+  if (!form_id)
+    return res.status(400).json({ message: "form_id is required." });
+  if (paper_size != null && !["half_long_bond", "a4"].includes(paper_size))
     return res.status(400).json({ message: "Invalid paper size." });
-  }
-
-  if (!form_id) {
-    return res.status(400).json({
-      message: "form_id is required.",
-    } as updateFormTemplate.error);
-  }
-
+  if (status != null && !["Draft", "Published"].includes(status))
+    return res
+      .status(400)
+      .json({ message: "Status must be Draft or Published." });
   if (
     !form_name?.trim() ||
     !Array.isArray(form_components) ||
     form_components.length === 0
-  ) {
-    return res.status(400).json({
-      message: "Required fields missing.",
-    } as updateFormTemplate.error);
-  }
+  )
+    return res.status(400).json({ message: "Required fields missing." });
+
+  const keys = form_components.map((c: any) => c.field_key);
+  if (new Set(keys).size !== keys.length)
+    return res
+      .status(400)
+      .json({ message: "Field keys must be unique within a template." });
 
   try {
-    const [checkExisting] = await sql`
-      SELECT *
-      FROM form_templates
-      WHERE form_id = ${form_id}
-    `;
+    const [existing] =
+      await sql`SELECT * FROM form_templates WHERE form_id = ${form_id}`;
+    if (!existing)
+      return res.status(404).json({ message: "Form template not found." });
 
-    if (!checkExisting) {
-      return res.status(404).json({
-        message: "Form template not found.",
-      } as updateFormTemplate.error);
+    const serviceId = service_id ?? existing.service_id;
+    const targetStatus: "Draft" | "Published" =
+      status ?? (existing.status === "Published" ? "Published" : "Draft");
+    const publishing = targetStatus === "Published";
+    const inPlace = existing.status === "Draft";
+    const actor =
+      (req as any).user?.user_id ?? created_by ?? existing.created_by; // adjust to your auth
+
+    // Service can only change while the template has never been published
+    if (serviceId !== existing.service_id) {
+      const [{ count }] = await sql`
+        SELECT COUNT(*)::int AS count FROM form_templates
+        WHERE template_key = ${existing.template_key} AND status <> 'Draft'`;
+      if (count > 0)
+        return res.status(409).json({
+          message:
+            "This template has published versions, so its service cannot be changed.",
+        });
     }
 
-    const serviceId = service_id ?? checkExisting.service_id;
-    const updatedStatus = status ?? checkExisting.status;
-
-    if (updatedStatus === "Published") {
-      const [published] = await sql`
-        SELECT form_id
-        FROM form_templates
-        WHERE service_id = ${serviceId}
-          AND status = 'Published'
-          AND form_id <> ${form_id}
-      `;
-
-      if (published) {
+    // A different template must not be live for this service
+    if (publishing) {
+      const [other] = await sql`
+        SELECT form_id FROM form_templates
+        WHERE service_id = ${serviceId} AND status = 'Published'
+          AND template_key <> ${existing.template_key}`;
+      if (other)
         return res.status(400).json({
-          message: "An active form template already exists for this service.",
-        } as updateFormTemplate.error);
-      }
+          message:
+            "A different published template already exists for this service.",
+        });
     }
 
-    const results = await sql.transaction([
-      registerFormComponentTypes(),
+    let savedId = form_id;
+    let nextVersion = existing.version;
+    if (!inPlace) {
+      const [{ max }] = await sql`
+        SELECT MAX(version)::int AS max FROM form_templates WHERE template_key = ${existing.template_key}`;
+      savedId = `F-${Date.now()}`;
+      nextVersion = (max ?? existing.version) + 1;
+    }
 
-      sql`
-        UPDATE form_templates
-        SET
-          form_name = ${form_name},
-          form_description = ${form_description ?? null},
-          paper_size = ${paper_size ?? checkExisting.paper_size ?? null},
-          service_id = ${serviceId},
-          status = ${updatedStatus},
-          version = version + 1,
-          updated_at = CURRENT_TIMESTAMP
-        WHERE form_id = ${form_id}
-        RETURNING *
-      `,
+    const steps: any[] = [registerFormComponentTypes()];
 
-      sql`
-        DELETE FROM form_components
-        WHERE form_id = ${form_id}
-      `,
+    // Archive the live version only when publishing
+    if (publishing) {
+      steps.push(sql`
+        UPDATE form_templates SET status = 'Archived', updated_at = CURRENT_TIMESTAMP
+        WHERE template_key = ${existing.template_key}
+          AND status = 'Published' AND form_id <> ${savedId}`);
+    }
 
-      ...form_components.map((component, index) => {
-        const form_component_id = `FC-${form_id}-${index}`;
+    const templateIndex = steps.length;
+    if (inPlace) {
+      steps.push(
+        sql`
+          UPDATE form_templates SET
+            form_name = ${form_name}, form_description = ${form_description ?? null},
+            paper_size = ${paper_size ?? existing.paper_size ?? null},
+            service_id = ${serviceId}, status = ${targetStatus},
+            updated_at = CURRENT_TIMESTAMP
+          WHERE form_id = ${form_id}
+          RETURNING *`,
+        sql`DELETE FROM form_components WHERE form_id = ${form_id}`,
+      );
+    } else {
+      steps.push(sql`
+        INSERT INTO form_templates (
+          form_id, template_key, form_name, form_description, paper_size,
+          service_id, status, created_by, version
+        ) VALUES (
+          ${savedId}, ${existing.template_key}, ${form_name}, ${form_description ?? null},
+          ${paper_size ?? existing.paper_size ?? null}, ${serviceId}, ${targetStatus},
+          ${actor}, ${nextVersion}
+        ) RETURNING *`);
+    }
 
-        return sql`
-          INSERT INTO form_components (
-            form_component_id,
-            form_id,
-            type_id,
-            label,
-            field_key,
-            display_order,
-            settings,
-            validation
-          )
-          VALUES (
-            ${form_component_id},
-            ${form_id},
-            ${component.type_id},
-            ${component.label},
-            ${component.field_key},
-            ${component.display_order},
-            ${JSON.stringify(component.settings ?? null)}::jsonb,
-            ${JSON.stringify(component.validation ?? null)}::jsonb
-          )
-          RETURNING *
-        `;
-      }),
-    ]);
+    steps.push(
+      ...form_components.map(
+        (c: any, index: number) => sql`
+      INSERT INTO form_components (
+        form_component_id, form_id, type_id, label, field_key,
+        display_order, settings, validation
+      ) VALUES (
+        ${`FC-${savedId}-${index}`}, ${savedId}, ${c.type_id}, ${c.label}, ${c.field_key},
+        ${c.display_order},
+        ${JSON.stringify(c.settings ?? null)}::jsonb,
+        ${JSON.stringify(c.validation ?? null)}::jsonb
+      ) RETURNING *`,
+      ),
+    );
 
-    const [formUpdated] = results[1];
-    const componentsUpdated = results.slice(3).flat();
+    const results = await sql.transaction(steps);
+    const [formUpdated] = results[templateIndex];
+    const componentsUpdated = results
+      .slice(templateIndex + (inPlace ? 2 : 1))
+      .flat();
 
     return res.status(200).json({
-      message: "Form template updated successfully",
-      formUpdated: formUpdated as updateFormTemplate.template,
-      componentsUpdated: componentsUpdated as updateFormTemplate.component[],
-    } as updateFormTemplate.response);
-  } catch (error) {
+      message: inPlace
+        ? "Form template updated successfully"
+        : `Saved as version ${formUpdated.version}`,
+      formUpdated,
+      componentsUpdated,
+    });
+  } catch (error: any) {
+    if (error?.code === "23505") {
+      const isDraft = String(error.constraint ?? "").includes("one_draft");
+      return res.status(409).json({
+        message: isDraft
+          ? "A draft of this template already exists. Edit that draft instead."
+          : "A published template already exists for this service.",
+      });
+    }
     console.error("UPDATE FORM TEMPLATE ERROR:", error);
-
-    return res.status(500).json({
-      message: "Internal Server Error",
-    } as updateFormTemplate.error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 }
 

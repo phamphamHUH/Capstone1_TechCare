@@ -27,7 +27,10 @@ type ServiceListProps = {
   selectedServices: string[];
   patientId: string | null;
   // Prefills height and weight for consultation vital signs.
-  patientMeasurements?: { height_cm?: number | null; weight_kg?: number | null } | null;
+  patientMeasurements?: {
+    height_cm?: number | null;
+    weight_kg?: number | null;
+  } | null;
   onToggleService: (serviceId: string) => void;
   onClearAll: () => void;
   onSubmitted?: () => void | Promise<void>;
@@ -61,11 +64,14 @@ function ServiceList({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<{
     requestId?: string;
+    queueId?: string;
     count: number;
   } | null>(null);
   // Imaging and drug tests go through the same test-request endpoint as lab.
   const isLabRequest =
-    activeTab === "laboratory" || activeTab === "imaging" || activeTab === "drug test";
+    activeTab === "laboratory" ||
+    activeTab === "imaging" ||
+    activeTab === "drug test";
   const isTestRequest = isLabRequest || activeTab === "package";
 
   const servicesList = selectedServices
@@ -133,6 +139,7 @@ function ServiceList({
 
         setSuccess({
           requestId: res.data.consultation_record?.consultation_record_id,
+          queueId: res.data.queue?.queue_id,
           count: 1,
         });
       }
@@ -299,7 +306,10 @@ function ServiceList({
             `${success.count} ${
               activeTab === "package" ? "package" : `${activeTab} service`
             }${success.count === 1 ? "" : "s"} added successfully.` +
-            (success.requestId ? ` Request ID: ${success.requestId}` : "")
+            (success.requestId ? `\nRequest ID: ${success.requestId}` : "") +
+            (isConsultation && success.queueId
+              ? `\nQueue ID: ${success.queueId}`
+              : "")
           }
           icon={<CheckCircle2 size={36} />}
           closeOnOverlayClick

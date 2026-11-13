@@ -27,12 +27,12 @@ function PatientTable({
   };
   return (
     <div className="max-h-105 overflow-auto bg-white">
-      <table className="min-w-[960px] w-full text-sm">
+      <table className="min-w-240 w-full text-sm">
         <colgroup>
-          <col className="w-8/35" />
+          <col className="w-6/35" />
           <col className="w-5/35" />
+          <col className="w-9/35" />
           <col className="w-5/35" />
-          <col className="w-7/35" />
           <col className="w-2/35" />
           <col className="w-4/35" />
           <col className="w-4/35" />
@@ -73,7 +73,7 @@ function PatientTable({
                 >
                   <td className="px-4 py-1 flex items-center gap-5">
                     <div className="relative h-10 w-10 overflow-hidden rounded-full bg-gray-100">
-                      {patient.image_url ? (
+                      {patient ? (
                         <img
                           src={patient.image_url}
                           alt={fullName}
@@ -107,7 +107,7 @@ function PatientTable({
                   </td>
 
                   <td className="px-4 py-1 text-gray-700 text-center">
-                    <div>{formatAge(patient.birthdate , age)}</div>
+                    <div>{formatAge(patient.birthdate, age)}</div>
                     <div className="text-xs text-gray-400">{birthday}</div>
                   </td>
 
@@ -149,7 +149,16 @@ function PatientTable({
             })
           ) : (
             <tr>
-              <td colSpan={7} className="p-4"><EmptyState compact message={loadFailed ? "Patient records are unavailable." : "No patients found."} /></td>
+              <td colSpan={7} className="p-4">
+                <EmptyState
+                  compact
+                  message={
+                    loadFailed
+                      ? "Patient records are unavailable."
+                      : "No patients found."
+                  }
+                />
+              </td>
             </tr>
           )}
         </tbody>

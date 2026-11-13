@@ -24,7 +24,7 @@ const TYPE_STYLE: Record<
   cancellation: { icon: Ban, className: "bg-red-50 text-red-700" },
   queued: { icon: ListOrdered, className: "bg-sky-50 text-sky-700" },
   called: { icon: BellRing, className: "bg-green-50 text-green-700" },
-  skipped: { icon: RotateCcw, className: "bg-violet-50 text-violet-700" },
+  skipped: { icon: RotateCcw, className: "bg-slate-100 text-slate-700" },
 };
 
 function timeAgo(value: string) {

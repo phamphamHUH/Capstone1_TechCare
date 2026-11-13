@@ -66,6 +66,7 @@ export type PaymentResult = {
   already_paid: boolean;
   queued: boolean;
   has_laboratory_items: boolean;
+  queues: PaymentQueue;
 };
 
 export type PaymentOutcome =
@@ -75,7 +76,13 @@ export type PaymentOutcome =
       alreadyPaid: boolean;
       invoiceReady: boolean;
       forwarded: boolean;
+      queues: PaymentQueue[];
     };
+
+export type PaymentQueue = {
+  queue_id: string;
+  queue_number: number;
+};
 
 export type BillingStatistics = {
   total: number;

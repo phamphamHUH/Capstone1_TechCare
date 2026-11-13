@@ -1,10 +1,12 @@
 export interface FormTemplate {
   form_id: string;
+  template_key?: string;
   form_name: string;
   form_description?: string;
   paper_size?: PaperSize | null;
   service_id: string;
-  status: string;
+  status: TemplateStatus;
+  version?: number;
   created_by: string;
   created_at: string;
   updated_at: string;

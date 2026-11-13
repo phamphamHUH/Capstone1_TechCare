@@ -486,3 +486,44 @@ export namespace getPatientMedicalHistory {
     message: string;
   }
 }
+
+export namespace getPatientPaymentHistory {
+  export type LaboratoryStatus =
+    | "No laboratory tests"
+    | "Waiting for payment"
+    | "Needs forwarding"
+    | "Forwarded";
+
+  export type bill = {
+    bill_id: string;
+    patient_id: string;
+    patient_name: string;
+    status: "Paid" | "Pending";
+    subtotal: number;
+    discount_type: string | null;
+    discount_amount: number;
+    total_amount: number;
+    payment_method: string;
+    reference_num: string | null;
+    invoice_id: string | null;
+    paid_at: string | null;
+    created_at: string;
+    received_by: string | null;
+    services: string[];
+    laboratory_status: LaboratoryStatus;
+    is_priority: boolean;
+    sex: string | null;
+    birthdate: string | null;
+    age: number | null;
+    is_senior: boolean;
+    is_pwd: boolean;
+  };
+
+  export type response = {
+    bills: bill[];
+  };
+
+  export type error = {
+    message: string;
+  };
+}

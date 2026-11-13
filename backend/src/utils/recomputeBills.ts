@@ -1,4 +1,4 @@
-import type { PoolClient } from "@neondatabase/serverless";
+import type { PoolClient } from "pg";
 
 export async function recomputeBillTotals(client: PoolClient, bill_id: string) {
   const {

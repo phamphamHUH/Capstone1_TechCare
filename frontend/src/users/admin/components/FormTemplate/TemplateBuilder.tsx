@@ -44,6 +44,14 @@ const DEFAULT_NEW_COMPONENTS: BuilderComponent[] = [
   },
 ];
 
+// Returns base, or base_2, base_3... so field keys never collide.
+function uniqueKey(base: string, existing: string[]) {
+  if (!existing.includes(base)) return base;
+  let n = 2;
+  while (existing.includes(`${base}_${n}`)) n++;
+  return `${base}_${n}`;
+}
+
 export default function TemplateBuilder({
   initialTemplate,
   services,
@@ -85,6 +93,11 @@ export default function TemplateBuilder({
   const [isSaving, setIsSaving] = useState(false);
 
   const isEditMode = Boolean(initialTemplate);
+  const existingStatus = initialTemplate?.status;
+  // Editing a Published or Archived version always creates a new version.
+  const createsNewVersion = isEditMode && existingStatus !== "Draft";
+  // The service is locked once a template has been published.
+  const serviceLocked = createsNewVersion;
 
   const handleAddComponent = (type: ComponentType, targetIndex?: number) => {
     const tempId = `comp_${Date.now()}_${Math.random()
@@ -107,7 +120,10 @@ export default function TemplateBuilder({
       id: tempId,
       type,
       label: defaultLabels[type] || "New Component",
-      fieldKey: `field_${Date.now().toString().slice(-4)}`,
+      fieldKey: uniqueKey(
+        `field_${Date.now().toString().slice(-4)}`,
+        components.map((c) => c.fieldKey),
+      ),
       order: components.length + 1,
       settings: {
         width:
@@ -176,7 +192,10 @@ export default function TemplateBuilder({
       ...source,
       id: newId,
       label: `${source.label} (Copy)`,
-      fieldKey: `${source.fieldKey}_copy`,
+      fieldKey: uniqueKey(
+        `${source.fieldKey}_copy`,
+        components.map((c) => c.fieldKey),
+      ),
       settings: { ...source.settings },
       validation: { ...source.validation },
     };
@@ -229,6 +248,16 @@ export default function TemplateBuilder({
       return;
     }
 
+    const keys = components.map((c) => c.fieldKey);
+    if (keys.some((k) => !k.trim())) {
+      setNoticeMessage("Every component needs a field key.");
+      return;
+    }
+    if (new Set(keys).size !== keys.length) {
+      setNoticeMessage("Each component needs a unique field key.");
+      return;
+    }
+
     const createdBy =
       initialTemplate?.created_by || getCurrentUserId() || "ADMIN";
 
@@ -252,12 +281,21 @@ export default function TemplateBuilder({
     setIsSaving(true);
     try {
       if (isEditMode && initialTemplate?.form_id) {
-        // Uses PUT /api/admin/form-templates/:form_id
+        // PUT /api/admin/form-templates/:form_id
+        // Draft: updated in place. Published/Archived: saved as version n+1.
         await api.put(
           `/api/admin/form-templates/${initialTemplate.form_id}`,
           payload,
         );
-        setNoticeMessage("Template updated successfully.");
+        setNoticeMessage(
+          createsNewVersion
+            ? status === "Published"
+              ? "Saved as a new published version. The previous version was archived."
+              : "Saved as a new draft version. The live version is unchanged."
+            : status === "Published"
+              ? "Draft published successfully."
+              : "Draft updated successfully.",
+        );
       } else {
         await api.post("/api/admin/form-templates", payload);
         setNoticeMessage(
@@ -324,6 +362,13 @@ export default function TemplateBuilder({
     if (fields[0]) setSelectedId(fields[0].id);
   };
 
+  const draftLabel = createsNewVersion ? "Save as Draft Version" : "Save Draft";
+  const publishLabel = createsNewVersion
+    ? existingStatus === "Archived"
+      ? "Publish as New Version"
+      : "Publish New Version"
+    : "Publish Template";
+
   return (
     <div className="flex flex-col gap-5 w-full">
       {/* Notice Banner */}
@@ -370,8 +415,7 @@ export default function TemplateBuilder({
       {/* Top Header Card */}
       <div className="bg-white border border-gray-200 rounded-md p-5 shadow-sm flex flex-col 2xl:flex-row items-stretch 2xl:items-center justify-between gap-4">
         <div className="flex items-center gap-4 flex-1 min-w-0">
-          {/* Blue placeholder square */}
-          <div className="w-12 h-12 rounded-md bg-sky-400 flex-shrink-0" />
+          <div className="w-12 h-12 rounded-md bg-sky-400 shrink-0" />
 
           <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
@@ -408,13 +452,19 @@ export default function TemplateBuilder({
             </label>
             <select
               value={category}
+              disabled={serviceLocked}
+              title={
+                serviceLocked
+                  ? "The service cannot be changed once a template has been published."
+                  : undefined
+              }
               onChange={(e) => {
                 setCategory(e.target.value);
                 setPaperSize(
                   defaultPaperSize(serviceDescription(e.target.value)),
                 );
               }}
-              className="max-w-full px-3 py-2 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-sky-400"
+              className="max-w-full px-3 py-2 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-sky-400 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed"
             >
               {services.length === 0 && (
                 <option value="">No services available</option>
@@ -459,7 +509,8 @@ export default function TemplateBuilder({
               Status
             </label>
             <span className="inline-block px-3 py-1.5 bg-gray-100 text-gray-600 rounded-md text-xs font-bold uppercase tracking-wider">
-              {initialTemplate?.status || "Draft"}
+              {existingStatus || "Draft"}
+              {initialTemplate?.version ? ` · v${initialTemplate.version}` : ""}
             </span>
           </div>
 
@@ -476,6 +527,15 @@ export default function TemplateBuilder({
           </div>
         </div>
       </div>
+
+      {/* New version notice */}
+      {createsNewVersion && (
+        <div className="rounded-md border border-sky-200 bg-sky-50 px-5 py-3 text-sm text-sky-900">
+          {existingStatus === "Archived"
+            ? "You are opening an archived version. Saving creates a new version and leaves this one unchanged."
+            : `Editing creates version ${(initialTemplate?.version ?? 1) + 1}. Publishing it archives the current version; existing results keep the version they were encoded with.`}
+        </div>
+      )}
 
       {/* THREE COLUMN BUILDER WORKSPACE */}
       {paperSize === "a4" && (
@@ -494,10 +554,8 @@ export default function TemplateBuilder({
         </div>
       )}
       <div className="flex flex-col xl:flex-row items-stretch gap-5">
-        {/* LEFT PALETTE */}
         <ComponentPalette onAddComponent={handleAddComponent} />
 
-        {/* CENTER CANVAS */}
         <BuilderCanvas
           components={components}
           selectedId={selectedId}
@@ -508,7 +566,6 @@ export default function TemplateBuilder({
           onDropFromPalette={handleAddComponent}
         />
 
-        {/* RIGHT SETTINGS PANEL */}
         <ComponentSettings
           component={selectedComponent}
           onUpdateComponent={handleUpdateComponent}
@@ -521,7 +578,11 @@ export default function TemplateBuilder({
       <div className="bg-white border border-gray-200 rounded-md px-6 py-4 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
           <CheckCircle2 size={16} className="text-emerald-500" />
-          <span>Save a draft or publish to save your changes.</span>
+          <span>
+            {createsNewVersion
+              ? "Save a draft version or publish a new version."
+              : "Save a draft or publish to save your changes."}
+          </span>
         </div>
 
         <div className="flex w-full flex-wrap items-center justify-center gap-3 sm:w-auto">
@@ -538,7 +599,7 @@ export default function TemplateBuilder({
             disabled={isSaving}
             className="px-5 py-2.5 rounded-md border border-sky-300 hover:bg-sky-50 text-sky-700 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSaving ? "Saving..." : "Save Draft"}
+            {isSaving ? "Saving..." : draftLabel}
           </button>
           <button
             type="button"
@@ -546,7 +607,7 @@ export default function TemplateBuilder({
             disabled={isSaving}
             className="px-5 py-2.5 rounded-md bg-sky-500 hover:bg-sky-600 active:bg-sky-700 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSaving ? "Saving..." : "Publish Template"}
+            {isSaving ? "Saving..." : publishLabel}
           </button>
         </div>
       </div>

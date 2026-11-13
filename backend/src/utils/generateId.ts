@@ -1,5 +1,5 @@
 import { sql } from "../config/db.js";
-import type { PoolClient } from "@neondatabase/serverless";
+import type { PoolClient } from "pg";
 
 export async function generateUserId() {
   const now = new Date();

@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Camera, UserRound } from "lucide-react";
 import { LoadingSpinner } from "../../../LoadingScreen";
 import { fullName, isPatient, photoOf, type AccountUser } from "./utils/accountFields";
@@ -8,14 +8,19 @@ const TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 type ProfilePhotoProps = {
   user: AccountUser;
+  /** Local preview of a picked photo that is saved when Done is pressed. */
+  preview: string | null;
   uploading: boolean;
   onPick: (file: File) => void;
   onInvalid: (message: string) => void;
 };
 
-function ProfilePhoto({ user, uploading, onPick, onInvalid }: ProfilePhotoProps) {
+function ProfilePhoto({ user, preview, uploading, onPick, onInvalid }: ProfilePhotoProps) {
   const input = useRef<HTMLInputElement>(null);
-  const photo = photoOf(user);
+  const photo = preview || photoOf(user);
+  // A saved link that no longer loads shows the placeholder instead of alt text.
+  const [brokenSrc, setBrokenSrc] = useState("");
+  const broken = !!photo && brokenSrc === photo;
 
   function handleFile(file: File | undefined) {
     if (!file) return;
@@ -31,10 +36,11 @@ function ProfilePhoto({ user, uploading, onPick, onInvalid }: ProfilePhotoProps)
   return (
     <div className="flex items-center gap-4">
       <div className="relative size-20 shrink-0">
-        {photo ? (
+        {photo && !broken ? (
           <img
             src={photo}
             alt="Profile"
+            onError={() => setBrokenSrc(photo)}
             className="size-20 rounded-full border border-gray-300 object-cover"
           />
         ) : (
@@ -66,6 +72,9 @@ function ProfilePhoto({ user, uploading, onPick, onInvalid }: ProfilePhotoProps)
           <Camera size={15} strokeWidth={1.7} />
           {uploading ? "Uploading..." : "Change photo"}
         </button>
+        {preview && !uploading && (
+          <p className="mt-1 text-xs text-gray-500">Press Done to save the new photo.</p>
+        )}
         <input
           ref={input}
           type="file"

@@ -20,6 +20,10 @@ function SidebarUserMenu() {
     return storedUser ? JSON.parse(storedUser) : null;
   });
 
+  // A saved photo link that no longer loads falls back to the icon.
+  const photo = user?.profile_photo || user?.image_url || "";
+  const [brokenPhoto, setBrokenPhoto] = useState("");
+
   // Close the menu when clicking anywhere outside of it.
   useEffect(() => {
     if (!menuOpen) return;
@@ -102,10 +106,11 @@ function SidebarUserMenu() {
           menuOpen ? "bg-gray-100" : ""
         }`}
       >
-        {user.profile_photo || user.image_url ? (
+        {photo && photo !== brokenPhoto ? (
           <img
-            src={(user.profile_photo || user.image_url) ?? undefined}
+            src={photo}
             alt="profile"
+            onError={() => setBrokenPhoto(photo)}
             className="w-10 h-10 shrink-0 rounded-full border object-cover"
           />
         ) : (

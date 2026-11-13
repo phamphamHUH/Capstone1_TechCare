@@ -22,7 +22,7 @@ const STATUSES = ["Requested", "Processing", "Completed", "Released"];
 const STATUS_COLORS: Record<string, string> = {
   released: "bg-green-100 text-green-700",
   completed: "bg-sky-100 text-sky-700",
-  processing: "bg-indigo-100 text-indigo-700",
+  processing: "bg-gray-100 text-gray-700",
   requested: "bg-amber-100 text-amber-700",
   pending: "bg-slate-200 text-slate-700",
 };

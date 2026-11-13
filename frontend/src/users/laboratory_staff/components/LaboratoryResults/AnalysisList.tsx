@@ -31,7 +31,7 @@ export function CategoryBadge({
     Normal: "bg-gray-100 text-gray-600",
     "Senior Citizen": "bg-amber-50 text-amber-700",
     Pregnant: "bg-pink-50 text-pink-700",
-    PWD: "bg-purple-50 text-purple-700",
+    PWD: "bg-orange-50 text-orange-700",
     Priority: "bg-orange-50 text-orange-700",
   };
 

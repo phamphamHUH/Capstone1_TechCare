@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs";
 import { calculateAge } from "./utils/calculateAge.js";
 import { readFrontDeskVitals } from "./utils/vitalSigns.js";
 import type { Request, Response } from "express";
-import cloudinary from "../../config/cloudinary.js";
+import { uploadImage } from "../../config/s3.js";
 import {
   generateConsultationQueueId,
   generateLaboratoryQueueId,
@@ -26,10 +26,17 @@ import type {
   addConsultationRecord,
 } from "./dto/post.dto.js";
 import { publishQueueChange } from "../../services/queue-sse/index.js";
-import { actorId, notifyPriorityPatient, notifyQueued } from "../../services/notifications/index.js";
+import {
+  actorId,
+  notifyPriorityPatient,
+  notifyQueued,
+} from "../../services/notifications/index.js";
 import { sendEmail } from "../../services/email/sendEmail.js";
 import { patientAccountCreatedEmail } from "../../services/email/emailTemplates.js";
-import { createPasswordLink, PASSWORD_LINK_DAYS } from "../../utils/passwordLink.js";
+import {
+  createPasswordLink,
+  PASSWORD_LINK_DAYS,
+} from "../../utils/passwordLink.js";
 import { recomputeBillTotals } from "../../utils/recomputeBills.js";
 import { getOrCreateOpenBill } from "../../utils/getOrCreateBill.js";
 export async function addPatient(
@@ -44,6 +51,7 @@ export async function addPatient(
       last_name,
       suffix,
       sex,
+      is_pwd,
       email,
       street,
       barangay,
@@ -85,6 +93,10 @@ export async function addPatient(
       } as addPatient.error);
     }
 
+    // Multipart form data arrives as the string "true"/"false", while a JSON
+    // body may send a real boolean. String() handles both without a type error.
+    const isPwd = String(is_pwd) === "true";
+
     // Check if patient already exists
     const existingPatient = await sql`
       SELECT *
@@ -110,13 +122,10 @@ export async function addPatient(
     const hashedPassword = await bcrypt.hash(password, 10);
     const passwordLink = email ? createPasswordLink() : null;
 
-    // Upload photo to Cloudinary if one was attached (multer puts it on req.file)
+    // Upload photo to S3 if one was attached (multer puts it on req.file)
     let imageUrl: string | null = null;
     if (req.file) {
-      const uploadResult = await cloudinary.uploader.upload(req.file.path, {
-        folder: "techcare/patients",
-      });
-      imageUrl = uploadResult.secure_url;
+      imageUrl = await uploadImage(req.file, "techcare/patients");
     }
 
     const response = await sql`
@@ -129,6 +138,7 @@ export async function addPatient(
         last_name,
         suffix,
         sex,
+        is_pwd,
         email,
         street,
         barangay,
@@ -165,6 +175,7 @@ export async function addPatient(
         ${last_name},
         ${suffix ?? null},
         ${sex},
+        ${isPwd},
         ${email},
         ${street},
         ${barangay},

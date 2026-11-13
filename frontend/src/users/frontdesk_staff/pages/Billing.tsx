@@ -13,6 +13,7 @@ import type {
   BillingStatistics,
   PaymentOptions,
   PaymentOutcome,
+  PaymentQueue,
   PaymentResult,
 } from "../../../interface/Billing";
 import { peso } from "../../../utils/formats";
@@ -47,6 +48,7 @@ function Billing({ bills, loading, error, loadData }: BillingProps) {
     () => bills.filter((bill) => bill.status === "Pending"),
     [bills],
   );
+
   const paid = useMemo(
     () => bills.filter((bill) => bill.status === "Paid"),
     [bills],
@@ -63,6 +65,7 @@ function Billing({ bills, loading, error, loadData }: BillingProps) {
 
   const visibleBills = useMemo(() => {
     const q = search.trim().toLowerCase();
+
     return (tab === "queue" ? pending : paid).filter(
       (bill) =>
         !q ||
@@ -77,6 +80,7 @@ function Billing({ bills, loading, error, loadData }: BillingProps) {
     setActionError("");
     setNotice(null);
     setOpening(true);
+
     try {
       const { data } = await api.get<BillDetails>(
         `/api/fdstaff/billings/${bill.bill_id}/details`,
@@ -100,7 +104,8 @@ function Billing({ bills, loading, error, loadData }: BillingProps) {
     setNotice(null);
   }
 
-  // Paying and retrying forwarding use the same endpoint. A paid bill is never charged twice.
+  // Paying and retrying forwarding use the same endpoint.
+  // A paid bill is never charged twice.
   async function submitPayment(
     billId: string,
     body: Partial<PaymentOptions>,
@@ -108,13 +113,16 @@ function Billing({ bills, loading, error, loadData }: BillingProps) {
     setSubmitting(true);
     setActionError("");
     setNotice(null);
+
     let result: PaymentResult;
+
     try {
       const { data } = await api.patch<PaymentResult>(
         `/api/fdstaff/billings/${billId}/pay`,
         body,
       );
       result = data;
+      console.log("PAY RESPONSE", data);
     } catch (cause) {
       setActionError(
         errorMessage(
@@ -134,49 +142,80 @@ function Billing({ bills, loading, error, loadData }: BillingProps) {
       return { status: "failed" };
     }
 
+    // Preserve queues from the payment/forwarding response.
+    // Accepts a single queue or an array, so the type always matches.
+    const rawQueues = result.queues as
+      | PaymentQueue
+      | PaymentQueue[]
+      | undefined;
+    const queues: PaymentQueue[] = Array.isArray(rawQueues)
+      ? rawQueues
+      : rawQueues
+        ? [rawQueues]
+        : [];
+
     const lab = result.has_laboratory_items
       ? " Laboratory tests are in the queue."
       : "";
-    if (!result.queued) setNotice({ tone: "warning", text: result.message });
-    else if (result.already_paid)
-      setNotice({ tone: "success", text: `No new charge was recorded.${lab}` });
-    else
+
+    if (!result.queued) {
+      setNotice({
+        tone: "warning",
+        text: result.message,
+      });
+    } else if (result.already_paid) {
       setNotice({
         tone: "success",
-        text: `Payment recorded.${result.change > 0 ? ` Change: ${peso(result.change)}.` : ""}${lab}`,
+        text: `No new charge was recorded.${lab}`,
       });
+    } else {
+      setNotice({
+        tone: "success",
+        text: `Payment recorded.${
+          result.change > 0 ? ` Change: ${peso(result.change)}.` : ""
+        }${lab}`,
+      });
+    }
 
-    // The payment is saved by now, so a failed refresh must not look like a failed payment.
+    // Payment is saved, so refresh failures must not look like payment failures.
     const [detailResponse, listResponse] = await Promise.allSettled([
       api.get<BillDetails>(`/api/fdstaff/billings/${billId}/details`),
       loadData(),
     ]);
+
     let invoiceReady = false;
+
     if (detailResponse.status === "fulfilled") {
       const data = detailResponse.value.data;
+
       if (
         data?.bill?.bill_id === billId &&
         data.bill.status === "Paid" &&
         Array.isArray(data.items)
       ) {
         setDetails(data);
+
         invoiceReady = Boolean(
           data.bill.payment_method &&
           data.bill.payment_method !== "Not recorded",
         );
       }
     }
+
     if (!invoiceReady || listResponse.status === "rejected") {
       setActionError(
         "The payment is saved, but this page could not refresh. Use Back and Refresh to see the latest status.",
       );
     }
+
     setSubmitting(false);
+
     return {
       status: "recorded",
       alreadyPaid: Boolean(result.already_paid),
       invoiceReady,
       forwarded: Boolean(result.queued && result.has_laboratory_items),
+      queues,
     };
   }
 
@@ -199,22 +238,36 @@ function Billing({ bills, loading, error, loadData }: BillingProps) {
   }
 
   const tabs: { id: Tab; label: string; count: number }[] = [
-    { id: "queue", label: "Pending Billing Queue", count: pending.length },
-    { id: "history", label: "Paid Payment History", count: paid.length },
+    {
+      id: "queue",
+      label: "Pending Billing Queue",
+      count: pending.length,
+    },
+    {
+      id: "history",
+      label: "Paid Payment History",
+      count: paid.length,
+    },
   ];
 
   return (
-    <main className="min-w-0 flex-1 px-4 sm:px-6" aria-label="Front desk billing">
+    <main
+      className="min-w-0 flex-1 px-4 sm:px-6"
+      aria-label="Front desk billing"
+    >
       <h1 className="text-2xl font-bold">Billing &amp; Payments</h1>
+
       <p className="text-sm font-light text-gray-600">
         Review patient bills, record payments, and forward paid laboratory
         tests.
       </p>
 
       {error && <ErrorMessage className="mt-4">{error}</ErrorMessage>}
+
       {actionError && (
         <ErrorMessage className="mt-4">{actionError}</ErrorMessage>
       )}
+
       {stats.awaitingLaboratory > 0 && (
         <p className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
           {stats.awaitingLaboratory} paid{" "}
@@ -244,17 +297,23 @@ function Billing({ bills, loading, error, loadData }: BillingProps) {
               role="tab"
               aria-selected={tab === id}
               onClick={() => setTab(id)}
-              className={`cursor-pointer rounded-md border px-3 py-1.5 text-sm font-medium ${tab === id ? "border-sky-500 bg-sky-50 text-sky-700" : "border-gray-300 text-gray-600 hover:bg-gray-50"}`}
+              className={`cursor-pointer rounded-md border px-3 py-1.5 text-sm font-medium ${
+                tab === id
+                  ? "border-sky-500 bg-sky-50 text-sky-700"
+                  : "border-gray-300 text-gray-600 hover:bg-gray-50"
+              }`}
             >
               {label} ({count})
             </button>
           ))}
         </div>
+
         <label className="relative min-w-60 flex-1">
           <Search
             size={16}
             className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
           />
+
           <input
             type="search"
             aria-label="Search bills"
@@ -264,6 +323,7 @@ function Billing({ bills, loading, error, loadData }: BillingProps) {
             className="h-9 w-full rounded-sm border border-gray-300 pl-9 pr-3 text-sm outline-none focus:border-sky-400"
           />
         </label>
+
         <button
           type="button"
           disabled={loading}
