@@ -13,6 +13,24 @@ function writeEvent(res: Response, event: string, data: unknown[]) {
   res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
 }
 
+// Every 25 s, send each open screen a small "ping" event. It keeps proxies
+// (like Render's) from closing a quiet connection, and it lets the browser
+// notice a dead one: if pings stop arriving, the browser reconnects.
+const PING_EVERY_MS = 25_000;
+setInterval(() => {
+  for (const [client] of clients) {
+    if (client.writableEnded || client.destroyed) {
+      clients.delete(client);
+      continue;
+    }
+    try {
+      writeEvent(client, "ping", []);
+    } catch {
+      clients.delete(client);
+    }
+  }
+}, PING_EVERY_MS).unref(); // unref: never keeps the server from shutting down
+
 export function addClient(res: Response, recipient: Recipient) {
   clients.set(res, recipient);
 
