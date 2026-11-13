@@ -1,4 +1,4 @@
-import type { PoolClient } from "@neondatabase/serverless";
+import type { PoolClient } from "pg";
 import { generateBillId } from "./generateId.js";
 
 export async function getOrCreateOpenBill(

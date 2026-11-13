@@ -25,7 +25,7 @@ vi.mock("../../config/db.js", () => {
   return { sql, pool: { connect: async () => ({ query, release() {} }) } };
 });
 vi.mock("../../config/env.js", () => ({ ENV: { IS_PRODUCTION: false } }));
-vi.mock("../../config/cloudinary.js", () => ({ default: {} }));
+vi.mock("../../config/s3.js", () => ({ uploadImage: vi.fn() }));
 vi.mock("../../services/queue-sse/index.js", () => ({
   publishQueueChange: vi.fn(),
 }));

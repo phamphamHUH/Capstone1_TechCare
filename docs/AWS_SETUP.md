@@ -1,178 +1,143 @@
-# AWS Setup — RDS (Database) + S3 (File Storage)
+# AWS Setup (Database + Image Uploads)
 
-This records how TechCare's AWS infrastructure was created, so it can be reproduced or
-recreated later. The account is on the **AWS Free plan** ($100 credit, ~182 days),
-locked to **Asia Pacific (Sydney) ap-southeast-2**. Stay on free-tier-eligible options
-everywhere — never click "Upgrade plan" / "Activate advanced features".
+TechCare uses AWS the same way it used Neon and Cloudinary:
 
-The server (Express backend) is **not** deployed to AWS yet — only the database and
-file storage. The backend currently still runs wherever it's hosted today and connects
-out to these two AWS services.
+| Before | Now | What the app needs |
+|---|---|---|
+| Neon (database) | **Amazon RDS** PostgreSQL | one `DATABASE_URL` |
+| Cloudinary (photos) | **Amazon S3** bucket | 4 `AWS_*` values |
+
+The Express server is not on AWS yet; it runs where it always did.
 
 ---
 
-## Part 1 — Database: Amazon RDS (PostgreSQL)
+## 1. Use it (the only part most people need)
 
-Replaces Neon as the Postgres host.
+Put this in `backend/.env` (ask the team lead for the real values; never commit them):
 
-### 1. Open RDS
-AWS Console → search **RDS** → **Databases** → **Create database**.
-(Use the full **"Create database"** form under "Create with full configuration", not
-"Easy create" — Easy create hides the public-access, security-group, and initial
-database name settings we need.)
+```bash
+DATABASE_URL=postgresql://postgres:PASSWORD@ENDPOINT:5432/techcare?sslmode=require
 
-### 2. Engine options
-- **Engine type:** PostgreSQL
-- **Engine version:** latest available (e.g. 18.3-R2)
-- **Enable RDS Extended Support:** leave **unchecked** (this is a paid add-on)
-
-### 3. Templates
-- **Free tier**
-
-### 4. Availability and durability
-- **Single-AZ DB instance (1 instance)** — do not pick Multi-AZ or Aurora, those aren't free tier
-
-### 5. Settings
-- **DB instance identifier:** `techcare-db`
-- **Master username:** `postgres`
-- **Credentials management:** Self managed
-- **Master password:** set a strong password and **save it** (password manager / secure note) — you cannot retrieve it later, only reset it
-- **Database authentication options:** Password authentication
-
-### 6. Instance configuration
-- **DB instance class:** Burstable classes → **`db.t4g.micro`** (free tier eligible)
-
-### 7. Storage
-- **Storage type:** General Purpose SSD (**gp2**) — gp2, not gp3, is the type actually covered by RDS free tier
-- **Allocated storage:** 20 GiB
-- **Storage autoscaling:** leave unchecked / default (don't need it)
-
-### 8. Connectivity
-- **Compute resource:** Don't connect to an EC2 compute resource
-- **VPC:** Default VPC
-- **Public access: Yes** — required since the backend isn't on AWS yet and needs to reach this database over the internet
-- **VPC security group:** Create new → name it `techcare-db-sg`
-- **RDS Proxy:** leave **unchecked** (this has additional cost)
-- **Certificate authority:** leave default (`rds-ca-rsa2048-g1`)
-
-### 9. Additional configuration
-- **Initial database name:** `techcare` — **do not skip this field**. If left blank,
-  RDS creates the server but no actual database inside it.
-- **DB parameter group / Option group:** leave default
-- **Enable encryption:** leave checked (no extra cost)
-- **Backup:**
-  - Enable automated backup: checked
-  - Backup retention period: **1 day** (keep low — free tier backup storage is limited)
-  - Backup replication to another region: leave **unchecked**
-- **Maintenance:**
-  - Enable auto minor version upgrade: checked
-  - Maintenance window: No preference
-- **Enable deletion protection:** leave **unchecked** while still setting things up (turn
-  this on later once the database holds real data you don't want accidentally deleted —
-  Modify → check the box → Apply)
-
-### 10. Create
-Click **Create database**. Provisioning takes 5–10 minutes. Status goes
-**Creating** → **Backing-up** (first automatic backup) → **Available**.
-
-### 11. Open the firewall for your IP
-RDS auto-creates one inbound rule on `techcare-db-sg` for your current IP during
-creation. Confirm it, rather than adding a duplicate:
-
-1. RDS → `techcare-db` → **Connectivity & security** tab → click the security group
-   link (`techcare-db-sg`).
-2. This opens **EC2 → Security Groups**. Click the group's ID/checkbox to expand it.
-3. **Inbound rules** tab → should show exactly **one** rule:
-   Type `PostgreSQL`, Port `5432`, Source = your public IP (`x.x.x.x/32`).
-   If there are two identical rows, delete one, keep one, **Save rules**.
-4. **Leave Outbound rules untouched** — must stay **All traffic → 0.0.0.0/0 (Anywhere)**.
-   Do not change outbound to "My IP"; that would block the database from reaching
-   AWS's own services.
-
-> If your home/office internet IP changes later (common with ISPs that don't give a
-> static IP), you'll need to come back here and update the inbound rule's source to the
-> new IP, or the app will get connection timeouts.
-
-### 12. Get the connection string
-RDS → `techcare-db` → **Connectivity & security** tab → copy the **Endpoint** (e.g.
-`techcare-db.xxxxxxxxxxxx.ap-southeast-2.rds.amazonaws.com`) and **Port** (`5432`).
-
-```
-DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@YOUR_ENDPOINT:5432/techcare?sslmode=require
+AWS_REGION=ap-southeast-2
+AWS_S3_BUCKET=techcare-clinic-uploads
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
 ```
 
-### 13. Browsing the database (there's no built-in Neon-style table browser on RDS)
-Use an external Postgres client with the same host/port/username/password/database:
-- **VS Code** — install the "PostgreSQL" extension (Microsoft) or "SQLTools" +
-  PostgreSQL driver, Add Connection, browse tables / run queries in-editor.
-- **DBeaver** (free desktop app, dbeaver.io) — closest to Neon's browsing experience.
-- **psql** CLI — `psql "postgresql://postgres:PASSWORD@ENDPOINT:5432/techcare?sslmode=require"`
+Run the backend as usual (`npm run dev`). That's it.
 
-### 14. Code change still required
-`backend/src/config/db.ts` currently uses `@neondatabase/serverless`, which only
-works with Neon's own HTTP/WebSocket proxy — it cannot connect to RDS. This must be
-swapped to the `pg` package (keeping the same `sql`/`pool` interface so controllers
-don't need to change) before the app can actually use this database. Not done yet.
+- Uploaded photos get a normal link (`https://techcare-clinic-uploads.s3.ap-southeast-2.amazonaws.com/...`),
+  saved in the database and shown with `<img src>`, just like Cloudinary links.
+- Old photos still have Cloudinary links and keep working.
+- To browse and manage the database and photos day to day (tables, SQL, backups,
+  password, photos), see **[AWS_MANAGE.md](AWS_MANAGE.md)**.
 
 ---
 
-## Part 2 — File storage: Amazon S3
+## 2. How it was set up in the AWS console
 
-Replaces Cloudinary for uploaded images (profile photos, lab result images, etc.)
+Account is on the **Free plan** (Sydney region only). Never click "Upgrade plan" or
+"Activate advanced features".
 
-### 1. Open S3
-AWS Console → search **S3** → **Create bucket**.
+### Database (RDS)
+RDS → **Create database** → "Create with **full** configuration":
+- PostgreSQL, template **Free tier**, **Single-AZ**
+- Identifier `techcare-db`, username `postgres`, **self managed** password (long + random)
+- `db.t4g.micro`, **gp2 20 GiB**
+- **Public access: Yes**, new security group `techcare-db-sg`
+- Additional configuration → **Initial database name: `techcare`**
+- Backup 1 day; leave everything that says Proxy / Extended Support / Enhanced Monitoring **off**
 
-### 2. General configuration
-- **AWS Region:** Asia Pacific (Sydney) ap-southeast-2 — must match the RDS region
-- **Bucket type:** General purpose
-- **Bucket name:** any globally-unique, lowercase name, e.g. `techcare-clinic-uploads`
-  (bucket names are unique across *all* AWS accounts worldwide, not just yours — if
-  taken, add digits/words until it's free)
+Then open it to the internet like Neon: RDS → `techcare-db` → Connectivity & security →
+click `techcare-db-sg` → **Inbound rules → Edit**: PostgreSQL, port 5432,
+source **Anywhere-IPv4 (0.0.0.0/0)** → Save. The password is what protects it, same as Neon.
 
-### 3. Object Ownership
-- **ACLs disabled (recommended)**
+Connection string: copy **Endpoint** from Connectivity & security into
+`postgresql://postgres:PASSWORD@ENDPOINT:5432/techcare?sslmode=require`.
 
-### 4. Block Public Access settings for this bucket
-- **Block all public access: checked** — these are patient/staff photos, must stay private
+### Photos (S3)
+S3 → **Create bucket** `techcare-clinic-uploads`, Sydney, defaults otherwise.
 
-### 5. Bucket Versioning
-- **Disable** (versioning keeps every past version of every file — more storage, more cost)
+Make photos viewable by link, like Cloudinary:
+1. Bucket → **Permissions** → Block public access → **Edit** → uncheck **Block all public access** → Save → type `confirm`.
+2. Same tab → **Bucket policy** → Edit → paste → Save:
+   ```json
+   {
+     "Version": "2012-10-17",
+     "Statement": [{
+       "Effect": "Allow",
+       "Principal": "*",
+       "Action": "s3:GetObject",
+       "Resource": "arn:aws:s3:::techcare-clinic-uploads/techcare/*"
+     }]
+   }
+   ```
+   Anyone with a photo's link can view it. Nobody can list, upload, or delete without the key.
 
-### 6. Default encryption
-- **Server-side encryption with Amazon S3 managed keys (SSE-S3)** (free)
-- **Bucket Key: Enable** (reduces encryption overhead, free)
+### App key (IAM)
+S3 has no username/password, so the backend gets its own AWS login:
+1. IAM → Users → **Create user** `techcare-app` (no console access, no policies).
+2. `techcare-app` → Permissions → Add permissions → **Create inline policy** → JSON:
+   ```json
+   {
+     "Version": "2012-10-17",
+     "Statement": [{
+       "Effect": "Allow",
+       "Action": ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"],
+       "Resource": "arn:aws:s3:::techcare-clinic-uploads/*"
+     }]
+   }
+   ```
+3. Security credentials → **Create access key** → "Application running outside AWS" →
+   download the `.csv`. Those two values are `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`.
 
-### 7. Create
-Click **Create bucket**.
-
-### 8. Code changes still required
-- 6 places in the backend currently call `cloudinary.uploader.upload(...)`
-  (`backend/src/controllers/admin/postRequests.controller.ts`,
-  `updateRequests.controller.ts`, `backend/src/controllers/auth/updateRequests.controller.ts`,
-  `backend/src/controllers/fdstaff/postRequests.controller.ts`,
-  `updateRequests.controller.ts`, `backend/src/controllers/test.controller.ts`).
-  These need to be replaced with an S3 upload helper built on `@aws-sdk/client-s3`.
-- Need an **IAM user** scoped to only `s3:PutObject` / `s3:GetObject` (/ `s3:DeleteObject`)
-  on this one bucket's ARN, with an access key pair for the app to use — not created yet.
-- Env vars to add once that IAM user exists:
-  ```
-  AWS_REGION=ap-southeast-2
-  AWS_S3_BUCKET=techcare-clinic-uploads
-  AWS_ACCESS_KEY_ID=...
-  AWS_SECRET_ACCESS_KEY=...
-  ```
+This key can only touch that one bucket. If it leaks, delete it there and make a new one.
 
 ---
 
-## Status as of this write-up
-- [x] AWS account created, Free plan, region locked to Sydney
-- [x] RDS PostgreSQL instance `techcare-db` created, Available, free tier
-- [x] Security group inbound rule confirmed (port 5432, own IP only)
-- [x] S3 bucket `techcare-clinic-uploads` created, private, free tier
-- [ ] Swap `@neondatabase/serverless` → `pg` in `backend/src/config/db.ts`
-- [ ] Migrate existing Neon data to RDS via `pg_dump` / `pg_restore`
-- [ ] Create IAM user + access keys scoped to the S3 bucket
-- [ ] Replace 6 Cloudinary upload calls with an S3 upload helper
-- [ ] Update `backend/.env` with `DATABASE_URL` (RDS) and `AWS_*` vars
-- [ ] Move the Express server itself onto AWS (not started — deferred)
+## 3. What changed in the code
+
+- **Database driver**: `@neondatabase/serverless` only works with Neon, so it was
+  replaced with `pg` in `backend/src/config/pgClient.ts`. It keeps the same
+  `sql\`...\``, `sql.query()`, `sql.transaction()` and `pool` the code already used, so
+  no queries changed. Works with RDS, Neon, or local Postgres.
+- **Uploads**: the 6 `cloudinary.uploader.upload(...)` calls became
+  `uploadImage(req.file, folder)` from `backend/src/config/s3.ts`, which returns the link to save.
+- Removed: `config/cloudinary.ts`, the `cloudinary` package, `CLOUDINARY_*` env vars.
+
+---
+
+## 4. Moving the data from Neon to RDS (one time, not done yet)
+
+Needs PostgreSQL command-line tools **v18+** installed.
+
+```bash
+pg_dump "NEON_URL" -Fc --no-owner --no-acl -f techcare.dump
+pg_restore --no-owner --no-acl -d "RDS_URL" techcare.dump
+```
+
+Then set `DATABASE_URL` to the RDS URL. Delete `techcare.dump` afterward (it has every
+patient record). To go back to Neon, just change `DATABASE_URL` back.
+
+---
+
+## 5. If something breaks
+
+| Problem | Fix |
+|---|---|
+| Can't connect / timeout | Inbound rule must be PostgreSQL, 5432, `0.0.0.0/0` |
+| `password authentication failed` | Wrong password; special characters like `@` must be written as `%40` |
+| `database "techcare" does not exist` | Initial database name was skipped; run `CREATE DATABASE techcare;` |
+| Upload fails `AccessDenied` / `InvalidAccessKeyId` | Check the 2 keys and the inline policy |
+| Photo link shows `AccessDenied` | Bucket policy (section 2, Photos step 2) missing |
+| "Region unavailable" popup | Free plan is Sydney only; click "Return to Sydney" |
+
+---
+
+## Status
+- [x] RDS `techcare-db`, S3 `techcare-clinic-uploads`, IAM `techcare-app` created
+- [x] Code switched to `pg` and S3
+- [ ] Inbound rule → `0.0.0.0/0`; bucket public-read policy
+- [ ] Fill AWS keys in `backend/.env`, test a photo upload
+- [ ] Copy Neon data to RDS, switch `DATABASE_URL`
+- [ ] Same env vars on Render before deploying

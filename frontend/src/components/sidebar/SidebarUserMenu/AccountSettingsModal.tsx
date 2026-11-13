@@ -29,6 +29,10 @@ function AccountSettingsModal({
   onUserChange,
 }: AccountSettingsModalProps) {
   const [uploading, setUploading] = useState(false);
+  // A picked photo waits here (with a local preview) until Done is pressed.
+  const [pendingPhoto, setPendingPhoto] = useState<{ file: File; preview: string } | null>(
+    null,
+  );
   const [savingTheme, setSavingTheme] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -61,7 +65,17 @@ function AccountSettingsModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
-  async function changePhoto(file: File) {
+  function replacePending(file: File | null) {
+    if (pendingPhoto) URL.revokeObjectURL(pendingPhoto.preview);
+    setPendingPhoto(file ? { file, preview: URL.createObjectURL(file) } : null);
+  }
+
+  function pickPhoto(file: File) {
+    setError(null);
+    replacePending(file);
+  }
+
+  async function uploadPhoto(file: File) {
     setError(null);
     setUploading(true);
     try {
@@ -69,8 +83,10 @@ function AccountSettingsModal({
       form.append("image", file); // must match upload.single("image")
       const { data } = await api.patch<{ user: AccountUser }>("/api/auth/me", form);
       saveUser(data.user);
+      return true;
     } catch (cause) {
       setError(errorText(cause, "The photo could not be uploaded. Please try again."));
+      return false;
     } finally {
       setUploading(false);
     }
@@ -94,9 +110,17 @@ function AccountSettingsModal({
     }
   }
 
+  // Closing with X / overlay discards an unsaved photo.
   function close() {
     setError(null);
+    replacePending(null);
     onClose();
+  }
+
+  // Done saves the picked photo (if any); stays open if the upload fails.
+  async function done() {
+    if (pendingPhoto && !(await uploadPhoto(pendingPhoto.file))) return;
+    close();
   }
 
   return (
@@ -109,10 +133,17 @@ function AccountSettingsModal({
       error={error}
       closeOnOverlayClick
       className="max-w-[600px]"
-      actions={[{ label: "Done", onClick: close }]}
+      busy={uploading}
+      actions={[{ label: "Done", onClick: done, pendingLabel: "Saving..." }]}
     >
       <div className="space-y-5">
-        <ProfilePhoto user={user} uploading={uploading} onPick={changePhoto} onInvalid={setError} />
+        <ProfilePhoto
+          user={user}
+          preview={pendingPhoto?.preview ?? null}
+          uploading={uploading}
+          onPick={pickPhoto}
+          onInvalid={setError}
+        />
 
         <section aria-labelledby="account-details-heading">
           <h3

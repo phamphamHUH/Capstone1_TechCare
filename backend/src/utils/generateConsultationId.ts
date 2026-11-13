@@ -1,4 +1,4 @@
-import type { PoolClient } from "@neondatabase/serverless";
+import type { PoolClient } from "pg";
 
 // CR-YY-MMDD-NNNN, same scheme as LR-/LI- in generateId.ts. Call inside a
 // transaction that already holds the advisory lock (see consultation controller).

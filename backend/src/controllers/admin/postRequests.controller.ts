@@ -1,5 +1,5 @@
 import { sql } from "../../config/db.js";
-import cloudinary from "../../config/cloudinary.js";
+import { uploadImage } from "../../config/s3.js";
 import bcrypt from "bcryptjs";
 import { registerFormComponentTypes } from "./utils/formComponentTypes.js";
 import { NextFunction, Request, Response } from "express";
@@ -134,11 +134,7 @@ export async function addUser(
     let profile_photo: string | null = null;
 
     if (req.file) {
-      const uploadResult = await cloudinary.uploader.upload(req.file.path, {
-        folder: "techcare/user_photos",
-      });
-
-      profile_photo = uploadResult.secure_url;
+      profile_photo = await uploadImage(req.file, "techcare/user_photos");
     }
 
     // =========================

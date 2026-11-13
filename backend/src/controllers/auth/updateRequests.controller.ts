@@ -2,7 +2,7 @@
 import type { Request, Response } from "express";
 import { sql } from "../../config/db.js";
 import fs from "fs/promises";
-import cloudinary from "../../config/cloudinary.js";
+import { uploadImage } from "../../config/s3.js";
 import type { AccountRef } from "../../middlewares/account.middleware.js";
 import type { logout, updateMyAccount } from "./dto/update.dto.js";
 
@@ -66,13 +66,12 @@ export async function updateMyAccount(
 
     let photo: string | null = null;
     if (req.file) {
-      const upload = await cloudinary.uploader.upload(req.file.path, {
-        folder:
-          account.type === "patient"
-            ? "techcare/patient_photos"
-            : "techcare/user_photos",
-      });
-      photo = upload.secure_url;
+      photo = await uploadImage(
+        req.file,
+        account.type === "patient"
+          ? "techcare/patient_photos"
+          : "techcare/user_photos",
+      );
     }
 
     // Patients keep their photo in image_url (set by the front desk);
