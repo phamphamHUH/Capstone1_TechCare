@@ -30,7 +30,11 @@ export function connectQueueStream({
       headers: {
         Authorization: `Bearer ${sessionStorage.getItem("token") ?? ""}`,
       },
-      openWhenHidden: true,
+      // Only the tab you are looking at keeps the stream open. Browsers allow
+      // ~6 connections per site over plain HTTP (local dev), so streams in
+      // background tabs would block API calls. Coming back reopens it, and the
+      // "initial" event reloads the data, so nothing is missed.
+      openWhenHidden: false,
       async onopen(response) {
         const isStream = response.headers
           .get("content-type")
