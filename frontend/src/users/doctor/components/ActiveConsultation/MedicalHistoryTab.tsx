@@ -8,7 +8,7 @@ import { useDebounce } from "../../../../utils/debounce";
 import axios from "axios";
 import api from "#lib/axios";
 import HistoryTimeline from "#components/MedicalHistory/HistoryTimeline";
-import VisitDetails from "#components/MedicalHistory/VisitDetails";
+import VisitDetails from "./MedicalHistoryTab/VisitDetails";
 import ErrorMessage from "#components/ErrorMessage";
 
 type MedicalHistoryTabProps = {
@@ -198,10 +198,7 @@ function MedicalHistoryTab({ patientId }: MedicalHistoryTabProps) {
       </main>
 
       <aside className="col-span-2 border shadow-lg rounded-md px-5 py-6 border-gray-200 sticky top-5">
-        <VisitDetails
-          selectedRecord={selectedRecord}
-          detailsUrl="/api/doctor/medical-history"
-        />
+        <VisitDetails selectedRecord={selectedRecord} />
       </aside>
     </div>
   );

@@ -16,7 +16,7 @@ import {
   ReadOnlyField,
   Section,
   Tile,
-} from "../../components/ActiveConsultation/Overview/FormParts";
+} from "./Overview/FormParts";
 import DiagnosisSection from "./Overview/DiagnosisSection";
 import {
   CONSULTATION_TYPES,

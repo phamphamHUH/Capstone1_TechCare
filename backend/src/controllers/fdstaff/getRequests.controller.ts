@@ -534,11 +534,12 @@ export async function getMedicalHistory(
       SELECT *, COUNT(*) OVER() AS total_count
       FROM history
       WHERE TRUE
-        ${search ? sql`AND service_name ILIKE ${"%" + search + "%"}` : sql``}
-        ${service_category ? sql`AND LOWER(service_category) = LOWER(${service_category})` : sql``}
-        ${status ? sql`AND LOWER(REPLACE(status, ' ', '-')) = LOWER(${status})` : sql``}
-        ${start_date ? sql`AND occurred_at >= ${start_date}::date` : sql``}
-        ${end_date ? sql`AND occurred_at < (${end_date}::date + INTERVAL '1 day')` : sql``}
+        -- Optional filters: a NULL parameter turns the filter off.
+        AND (${search || null}::text IS NULL OR service_name ILIKE '%' || ${search || null}::text || '%')
+        AND (${service_category || null}::text IS NULL OR LOWER(service_category) = LOWER(${service_category || null}::text))
+        AND (${status || null}::text IS NULL OR LOWER(REPLACE(status, ' ', '-')) = LOWER(${status || null}::text))
+        AND (${start_date || null}::date IS NULL OR occurred_at >= ${start_date || null}::date)
+        AND (${end_date || null}::date IS NULL OR occurred_at < ${end_date || null}::date + INTERVAL '1 day')
       ORDER BY occurred_at DESC
       LIMIT ${limitNum} OFFSET ${offset}
     `;

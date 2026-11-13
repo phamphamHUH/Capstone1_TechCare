@@ -9,16 +9,9 @@ import type { HistoryRecord } from "../../interface/HistoryRecord";
 
 type Json = string | number | boolean | null | Json[] | { [k: string]: Json };
 
-// Front desk endpoint: one row per test_results row, tests in a JSONB array.
-// Doctor endpoint: one row per test, `result_value` = "Name: result",
-// result_id = "<test_results id>-<index>".
 type LabResultRow = {
   result_id: string | number;
-  results?: Json; // JSONB array (front desk shape)
-  result_value?: string | null; // doctor shape
-  unit?: string | null;
-  reference_range?: string | null;
-  flag?: string | null;
+  results: Json; // JSONB array
   remarks: string | null;
   image_url: string | null;
 };
@@ -167,53 +160,6 @@ const toRows = (results: Json) =>
       flag: pick(r, ["flag", "interpretation", "remarks"]),
     }));
 
-type LabLine = ReturnType<typeof toRows>[number];
-type LabGroup = {
-  key: string;
-  lines: LabLine[];
-  remarks: string | null;
-  image_url: string | null;
-};
-
-// Turns either endpoint's lab results into one table per test_results row.
-function toLabGroups(results: LabResultRow[]): LabGroup[] {
-  const groups = new Map<string, LabGroup>();
-
-  for (const res of results) {
-    if (res.results !== undefined) {
-      groups.set(String(res.result_id), {
-        key: String(res.result_id),
-        lines: toRows(res.results),
-        remarks: res.remarks,
-        image_url: res.image_url,
-      });
-      continue;
-    }
-
-    const key = String(res.result_id).replace(/-\d+$/, "");
-    const group = groups.get(key) ?? {
-      key,
-      lines: [],
-      remarks: null,
-      image_url: null,
-    };
-    const text = res.result_value ?? "";
-    const split = text.indexOf(": ");
-    group.lines.push({
-      test: split >= 0 ? text.slice(0, split) : null,
-      value: split >= 0 ? text.slice(split + 2) : text || null,
-      unit: res.unit ?? null,
-      range: res.reference_range ?? null,
-      flag: res.flag ?? null,
-    });
-    group.remarks ??= res.remarks;
-    group.image_url ??= res.image_url;
-    groups.set(key, group);
-  }
-
-  return [...groups.values()];
-}
-
 function Row({
   label,
   children,
@@ -264,11 +210,8 @@ function Section({
 
 function VisitDetails({
   selectedRecord,
-  // Each role reads details from its own endpoint.
-  detailsUrl = "/api/fdstaff/patients/medical-history/details",
 }: {
   selectedRecord: HistoryRecord | null;
-  detailsUrl?: string;
 }) {
   const [fetched, setFetched] = useState<Fetched | null>(null);
   const recordId = selectedRecord?.record_id ?? null;
@@ -279,9 +222,10 @@ function VisitDetails({
     const controller = new AbortController();
 
     api
-      .get(`${detailsUrl}/${recordType}/${recordId}`, {
-        signal: controller.signal,
-      })
+      .get(
+        `/api/fdstaff/patients/medical-history/details/${recordType}/${recordId}`,
+        { signal: controller.signal },
+      )
       .then((res) => {
         const body = res.data;
         if (!body || typeof body !== "object" || !("record_type" in body)) {
@@ -299,7 +243,7 @@ function VisitDetails({
       });
 
     return () => controller.abort();
-  }, [recordId, recordType, detailsUrl]);
+  }, [recordId, recordType]);
 
   if (!selectedRecord) {
     return (
@@ -396,10 +340,10 @@ function VisitDetails({
           {details.results.length === 0 ? (
             <EmptyState message="No results yet." />
           ) : (
-            toLabGroups(details.results).map((res) => {
-              const rows = res.lines;
+            details.results.map((res) => {
+              const rows = toRows(res.results);
               return (
-                <div key={res.key} className="mb-3 last:mb-0">
+                <div key={res.result_id} className="mb-3 last:mb-0">
                   <div className="overflow-x-auto rounded-md border border-gray-200">
                     <table className="min-w-[420px] w-full text-left text-xs">
                       <thead>
