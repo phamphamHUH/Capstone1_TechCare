@@ -2,6 +2,7 @@ import {
   dbComponentToBuilderComponent,
   type BuilderComponent,
   type PaperSize,
+  type TemplateStatus,
 } from "../interface/FormTemplate";
 import type {
   LaboratoryReportData,
@@ -24,7 +25,7 @@ export type MedicalDocumentTemplate = {
   service_id: string;
   service_name: string;
   service_category: string;
-  status: string;
+  status: TemplateStatus;
   version?: number;
   document_type: MedicalDocumentType;
   components: BuilderComponent[];
