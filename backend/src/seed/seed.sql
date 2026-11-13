@@ -214,14 +214,14 @@ INSERT INTO form_component_types (type_id, type_name, data_type) VALUES
 ON CONFLICT DO NOTHING;
 
 -- form_templates  (one Published template per lab service)
-INSERT INTO form_templates (form_id, form_name, form_description, service_id, status, created_by, version, created_at, updated_at) VALUES
-  ('F-1790906400000', 'Complete Blood Count', 'Routine automated hematology examination.', 'S-26-10-004', 'Published', 'U-26-1001-0001', 1, '2026-10-02 02:00:00', '2026-10-02 02:00:00'),
-  ('F-1790906460000', 'Urinalysis', 'Physical, chemical and microscopic examination of urine.', 'S-26-10-006', 'Published', 'U-26-1001-0001', 1, '2026-10-02 02:00:00', '2026-10-02 02:00:00'),
-  ('F-1790906520000', 'Fasting Blood Sugar', 'Plasma glucose after at least 8 hours of fasting.', 'S-26-10-008', 'Published', 'U-26-1001-0001', 1, '2026-10-02 02:00:00', '2026-10-02 02:00:00'),
-  ('F-1790906580000', 'Lipid Profile', 'Total cholesterol, triglycerides, HDL and LDL.', 'S-26-10-009', 'Published', 'U-26-1001-0001', 1, '2026-10-02 02:00:00', '2026-10-02 02:00:00'),
-  ('F-1790906640000', 'Creatinine', 'Serum creatinine for renal function.', 'S-26-10-010', 'Published', 'U-26-1001-0001', 1, '2026-10-02 02:00:00', '2026-10-02 02:00:00'),
-  ('F-1790906700000', 'Uric Acid', 'Serum uric acid.', 'S-26-10-011', 'Published', 'U-26-1001-0001', 1, '2026-10-02 02:00:00', '2026-10-02 02:00:00'),
-  ('F-1790906760000', 'Chest X-Ray (PA View)', 'Radiographic report of the chest.', 'S-26-10-012', 'Published', 'U-26-1001-0001', 1, '2026-10-02 02:00:00', '2026-10-02 02:00:00')
+INSERT INTO form_templates (form_id, template_key, form_name, form_description, service_id, status, created_by, version, created_at, updated_at) VALUES
+  ('F-1790906400000', 'F-1790906400000', 'Complete Blood Count', 'Routine automated hematology examination.', 'S-26-10-004', 'Published', 'U-26-1001-0001', 1, '2026-10-02 02:00:00', '2026-10-02 02:00:00'),
+  ('F-1790906460000', 'F-1790906460000', 'Urinalysis', 'Physical, chemical and microscopic examination of urine.', 'S-26-10-006', 'Published', 'U-26-1001-0001', 1, '2026-10-02 02:00:00', '2026-10-02 02:00:00'),
+  ('F-1790906520000', 'F-1790906520000', 'Fasting Blood Sugar', 'Plasma glucose after at least 8 hours of fasting.', 'S-26-10-008', 'Published', 'U-26-1001-0001', 1, '2026-10-02 02:00:00', '2026-10-02 02:00:00'),
+  ('F-1790906580000', 'F-1790906580000', 'Lipid Profile', 'Total cholesterol, triglycerides, HDL and LDL.', 'S-26-10-009', 'Published', 'U-26-1001-0001', 1, '2026-10-02 02:00:00', '2026-10-02 02:00:00'),
+  ('F-1790906640000', 'F-1790906640000', 'Creatinine', 'Serum creatinine for renal function.', 'S-26-10-010', 'Published', 'U-26-1001-0001', 1, '2026-10-02 02:00:00', '2026-10-02 02:00:00'),
+  ('F-1790906700000', 'F-1790906700000', 'Uric Acid', 'Serum uric acid.', 'S-26-10-011', 'Published', 'U-26-1001-0001', 1, '2026-10-02 02:00:00', '2026-10-02 02:00:00'),
+  ('F-1790906760000', 'F-1790906760000', 'Chest X-Ray (PA View)', 'Radiographic report of the chest.', 'S-26-10-012', 'Published', 'U-26-1001-0001', 1, '2026-10-02 02:00:00', '2026-10-02 02:00:00')
 ON CONFLICT DO NOTHING;
 
 -- form_components
