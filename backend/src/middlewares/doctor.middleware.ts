@@ -7,12 +7,12 @@ function doctorMiddleware(req: Request, res: Response, next: NextFunction) {
       return res.status(401).json({ message: "Unauthorized" });
     }
     if (req.user.role !== "doctor") {
-      return res.status(403).json({ message: "Invalid role" });
+      return res.status(401).json({ message: "Invalid role" });
     }
 
     next();
   } catch {
-    res.status(403).json({ message: "Invalid role" });
+    res.status(401).json("invalid role");
   }
 }
 

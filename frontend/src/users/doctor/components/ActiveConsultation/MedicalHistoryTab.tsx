@@ -49,7 +49,7 @@ function MedicalHistoryTab({ patientId }: MedicalHistoryTabProps) {
     const controller = new AbortController();
 
     api
-      .get(`/api/fdstaff/patients/medical-history/${key}`, {
+      .get(`/api/doctor/medical-history/${key}`, {
         signal: controller.signal,
       })
       .then((res) => {
@@ -198,7 +198,10 @@ function MedicalHistoryTab({ patientId }: MedicalHistoryTabProps) {
       </main>
 
       <aside className="col-span-2 border shadow-lg rounded-md px-5 py-6 border-gray-200 sticky top-5">
-        <VisitDetails selectedRecord={selectedRecord} />
+        <VisitDetails
+          selectedRecord={selectedRecord}
+          detailsUrl="/api/doctor/medical-history"
+        />
       </aside>
     </div>
   );

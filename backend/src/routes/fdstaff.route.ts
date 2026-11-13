@@ -1,4 +1,4 @@
-import { Router, type NextFunction, type Request, type Response } from "express";
+import { Router } from "express";
 import { ENV } from "../config/env.js";
 import { getAllservices } from "../controllers/admin/getRequests.controller.js";
 import {
@@ -37,28 +37,6 @@ import fdstaffMiddleware from "../middlewares/fdstaff.middleware.js";
 
 const router = Router();
 
-// The doctor's Active Consultation > Medical History tab (and the shared
-// VisitDetails panel) reads these two. Registered before the fdstaff-only
-// guard below so doctors can read them too; nobody else can.
-function frontdeskOrDoctor(req: Request, res: Response, next: NextFunction) {
-  const role = req.user?.role;
-  if (role === "frontdesk-staff" || role === "doctor") return next();
-  return res.status(403).json({ message: "Invalid role" });
-}
-const sharedHistoryGuard = ENV.IS_PRODUCTION
-  ? [authMiddleware, frontdeskOrDoctor]
-  : [];
-router.get(
-  "/patients/medical-history/details/:record_type/:record_id",
-  ...sharedHistoryGuard,
-  getMedicalHistoryDetails,
-);
-router.get(
-  "/patients/medical-history/:patient_id",
-  ...sharedHistoryGuard,
-  getMedicalHistory,
-);
-
 if (ENV.IS_PRODUCTION) {
   router.use(authMiddleware, fdstaffMiddleware);
   console.log("FD Staff routes enabled");
@@ -74,6 +52,11 @@ router.get("/patients/:patient_id/print", getPrintablePatientRecord);
 router.get("/patients/:patient_id/medical-history", getPatientMedicalHistory);
 router.get("/queue-requests", getQueueRequests);
 router.get("/patients/:patient_id/payment-history", getPatientPaymentHistory);
+router.get("/patients/medical-history/:patient_id", getMedicalHistory);
+router.get(
+  "/patients/medical-history/details/:record_type/:record_id",
+  getMedicalHistoryDetails,
+);
 
 // POST requests
 router.post("/patients", upload.single("image"), addPatient);

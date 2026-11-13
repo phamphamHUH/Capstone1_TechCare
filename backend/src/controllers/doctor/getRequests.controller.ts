@@ -229,8 +229,8 @@ export async function getMedicalHistory(
       FROM history
       WHERE TRUE
         ${search ? sql`AND service_name ILIKE ${"%" + search + "%"}` : sql``}
-        ${service_category ? sql`AND service_category = ${service_category}` : sql``}
-        ${status ? sql`AND status = ${status}` : sql``}
+        ${service_category ? sql`AND LOWER(service_category) = LOWER(${service_category})` : sql``}
+        ${status ? sql`AND LOWER(REPLACE(status, ' ', '-')) = LOWER(REPLACE(${status}, ' ', '-'))` : sql``}
         ${start_date ? sql`AND occurred_at >= ${start_date}::date` : sql``}
         ${end_date ? sql`AND occurred_at < (${end_date}::date + INTERVAL '1 day')` : sql``}
       ORDER BY occurred_at DESC
