@@ -154,6 +154,43 @@ function SelectField({
   );
 }
 
+function ToggleField({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <div className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-black-700">
+      <span>{label}</span>
+      <div className="flex h-11 items-center gap-3">
+        <button
+          type="button"
+          role="switch"
+          aria-checked={checked}
+          aria-label={label}
+          onClick={() => onChange(!checked)}
+          className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+            checked ? "bg-sky-500" : "bg-slate-300"
+          }`}
+        >
+          <span
+            className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+              checked ? "translate-x-5" : "translate-x-0.5"
+            }`}
+          />
+        </button>
+        <span className="text-sm font-normal text-slate-600">
+          {checked ? "Yes" : "No"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function Section({
   number,
   title,
@@ -228,6 +265,7 @@ const ROW_5 = "grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2 lg:grid-cols-5";
 function PatientRegistration({ loadData }: PatientRegistrationProps) {
   const [formError, setFormError] = useState("");
   const [form, setForm] = useState<FormState>(initialForm);
+  const [isPwd, setIsPwd] = useState(false);
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -262,6 +300,7 @@ function PatientRegistration({ loadData }: PatientRegistrationProps) {
   // True when there is anything to lose, so Clear only asks when it matters
   const hasData =
     image !== null ||
+    isPwd ||
     relationshipChoice !== "" ||
     allergyChecks.length > 0 ||
     conditionChecks.length > 0 ||
@@ -304,6 +343,7 @@ function PatientRegistration({ loadData }: PatientRegistrationProps) {
 
   function resetForm() {
     setForm(initialForm);
+    setIsPwd(false);
     setRelationshipChoice("");
     setAllergyChecks([]);
     setOtherAllergies("");
@@ -358,6 +398,9 @@ function PatientRegistration({ loadData }: PatientRegistrationProps) {
       Object.entries(payload).forEach(([key, value]) => {
         if (value) formData.append(key, value);
       });
+      // FormData only carries strings, so send an explicit "true"/"false".
+      // Appended outside the loop above so "false" is never skipped.
+      formData.append("is_pwd", isPwd ? "true" : "false");
       if (image) formData.append("image", image);
 
       const response = await api.post("/api/fdstaff/patients", formData);
@@ -493,7 +536,7 @@ function PatientRegistration({ loadData }: PatientRegistrationProps) {
               />
             </div>
 
-            {/* Existing fields */}
+            {/* Height, Weight, PWD */}
             <div className={ROW_5}>
               <Field
                 label="Height (cm) *"
@@ -506,6 +549,11 @@ function PatientRegistration({ loadData }: PatientRegistrationProps) {
                 value={form.weight_kg}
                 onChange={set("weight_kg")}
                 type="number"
+              />
+              <ToggleField
+                label="Person With Disability"
+                checked={isPwd}
+                onChange={setIsPwd}
               />
             </div>
           </Section>

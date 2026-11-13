@@ -100,8 +100,7 @@ function Overview({
   // Measured at the front desk (read-only here).
   const height = Number(selectedQueue?.vital_signs?.height);
   const weight = Number(selectedQueue?.vital_signs?.weight);
-  const bmi =
-    height > 0 && weight > 0 ? weight / (height / 100) ** 2 : null;
+  const bmi = height > 0 && weight > 0 ? weight / (height / 100) ** 2 : null;
   const [notes, setNotes] = usePersistentState<Record<NoteKey, string>>(
     k("notes"),
     {
@@ -335,8 +334,8 @@ function Overview({
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              <Tile label="Height">Not Recorded</Tile>
-              <Tile label="Weight">Not Recorded</Tile>
+              <Tile label="Height">{height}</Tile>
+              <Tile label="Weight">{weight}</Tile>
               {VISIT_TILES.map((t) => (
                 <Tile key={t.label} label={t.label}>
                   {t.get(selectedQueue)}
@@ -402,12 +401,7 @@ function Overview({
                 </div>
               ))}
               {/* Height and weight come from the front desk */}
-              <Tile label="Height" className="bg-gray-50">
-                {height > 0 ? `${height} cm` : "Not Recorded"}
-              </Tile>
-              <Tile label="Weight" className="bg-gray-50">
-                {weight > 0 ? `${weight} kg` : "Not Recorded"}
-              </Tile>
+
               <Tile label="BMI" className="bg-gray-50">
                 {bmi ? bmi.toFixed(1) : "Not Recorded"}
               </Tile>
