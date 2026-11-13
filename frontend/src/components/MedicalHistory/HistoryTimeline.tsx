@@ -24,8 +24,8 @@ const normalizeStatus = (s: string) =>
 const statusStyles: Record<string, string> = {
   requested: "bg-amber-500 text-white",
   waiting: "bg-gray-400 text-white",
-  collected: "bg-violet-500 text-white",
-  "in-progress": "bg-indigo-500 text-white",
+  collected: "bg-teal-500 text-white",
+  "in-progress": "bg-gray-500 text-white",
   completed: "bg-sky-500 text-white",
   released: "bg-green-500 text-white",
   cancelled: "bg-red-500 text-white",
@@ -112,13 +112,7 @@ function HistoryTimeline({
                   </p>
                 </div>
 
-                <div
-                  className={`flex size-10 shrink-0 items-center justify-center rounded-md ${
-                    isLab
-                      ? "bg-gray-100 text-gray-600"
-                      : "bg-indigo-50 text-indigo-500"
-                  }`}
-                >
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-sky-50 text-sky-600">
                   <Icon size={20} strokeWidth={1.75} />
                 </div>
 
