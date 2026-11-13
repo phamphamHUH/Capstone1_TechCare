@@ -1,9 +1,10 @@
-import { ChevronUp, LogOut, Settings, UserRound } from "lucide-react";
+import { ChevronUp, LogOut, Settings } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import api from "../../lib/axios";
 import AccountSettingsModal from "./SidebarUserMenu/AccountSettingsModal";
-import type { AccountUser } from "./SidebarUserMenu/AccountSettingsModal/utils/accountFields";
+import type { AccountUser } from "../../interface/Account";
+import ProfileAvatar from "./ProfileAvatar";
 
 // Profile card shown at the bottom of the sidebar.
 // Clicking it opens a small menu with Settings and Logout.
@@ -19,10 +20,6 @@ function SidebarUserMenu() {
     const storedUser = sessionStorage.getItem("user");
     return storedUser ? JSON.parse(storedUser) : null;
   });
-
-  // A saved photo link that no longer loads falls back to the icon.
-  const photo = user?.profile_photo || user?.image_url || "";
-  const [brokenPhoto, setBrokenPhoto] = useState("");
 
   // Close the menu when clicking anywhere outside of it.
   useEffect(() => {
@@ -106,21 +103,7 @@ function SidebarUserMenu() {
           menuOpen ? "bg-gray-100" : ""
         }`}
       >
-        {photo && photo !== brokenPhoto ? (
-          <img
-            src={photo}
-            alt="profile"
-            onError={() => setBrokenPhoto(photo)}
-            className="w-10 h-10 shrink-0 rounded-full border object-cover"
-          />
-        ) : (
-          <div
-            aria-hidden="true"
-            className="w-10 h-10 shrink-0 rounded-full border bg-gray-100 text-gray-500 flex items-center justify-center"
-          >
-            <UserRound size={20} strokeWidth={1.5} />
-          </div>
-        )}
+        <ProfileAvatar user={user} size={40} iconSize={20} />
 
         <div className="flex min-w-0 flex-1 flex-col">
           <p className="truncate text-sm font-semibold">{fullName}</p>

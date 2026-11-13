@@ -7,7 +7,7 @@ import { applyTheme, type Theme } from "../../../lib/theme";
 import AccountDetails from "./AccountSettingsModal/AccountDetails";
 import ProfilePhoto from "./AccountSettingsModal/ProfilePhoto";
 import ThemePicker from "./AccountSettingsModal/ThemePicker";
-import type { AccountUser } from "./AccountSettingsModal/utils/accountFields";
+import type { AccountUser } from "../../../interface/Account";
 
 type AccountSettingsModalProps = {
   isOpen: boolean;

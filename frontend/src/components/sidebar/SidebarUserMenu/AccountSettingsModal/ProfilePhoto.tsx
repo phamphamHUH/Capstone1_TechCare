@@ -1,7 +1,9 @@
-import { useRef, useState } from "react";
-import { Camera, UserRound } from "lucide-react";
+import { useRef } from "react";
+import { Camera } from "lucide-react";
 import { LoadingSpinner } from "../../../LoadingScreen";
-import { fullName, isPatient, photoOf, type AccountUser } from "./utils/accountFields";
+import type { AccountUser } from "../../../../interface/Account";
+import ProfileAvatar from "../../ProfileAvatar";
+import { fullName, isPatient } from "./utils/accountFields";
 
 const MAX_BYTES = 5 * 1024 * 1024; // same limit as the server's multer config
 const TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -17,10 +19,6 @@ type ProfilePhotoProps = {
 
 function ProfilePhoto({ user, preview, uploading, onPick, onInvalid }: ProfilePhotoProps) {
   const input = useRef<HTMLInputElement>(null);
-  const photo = preview || photoOf(user);
-  // A saved link that no longer loads shows the placeholder instead of alt text.
-  const [brokenSrc, setBrokenSrc] = useState("");
-  const broken = !!photo && brokenSrc === photo;
 
   function handleFile(file: File | undefined) {
     if (!file) return;
@@ -36,21 +34,7 @@ function ProfilePhoto({ user, preview, uploading, onPick, onInvalid }: ProfilePh
   return (
     <div className="flex items-center gap-4">
       <div className="relative size-20 shrink-0">
-        {photo && !broken ? (
-          <img
-            src={photo}
-            alt="Profile"
-            onError={() => setBrokenSrc(photo)}
-            className="size-20 rounded-full border border-gray-300 object-cover"
-          />
-        ) : (
-          <div
-            aria-hidden="true"
-            className="flex size-20 items-center justify-center rounded-full border border-gray-300 bg-gray-100 text-gray-500"
-          >
-            <UserRound size={36} strokeWidth={1.5} />
-          </div>
-        )}
+        <ProfileAvatar user={user} src={preview} size={80} iconSize={36} />
         {uploading && (
           <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 text-white">
             <LoadingSpinner size={22} />
