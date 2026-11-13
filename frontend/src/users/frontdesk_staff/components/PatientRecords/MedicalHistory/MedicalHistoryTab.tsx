@@ -3,11 +3,11 @@ import { ChevronDown, Search, Calendar } from "lucide-react";
 import type {
   HistoryRecord,
   Result,
-} from "../../../../interface/HistoryRecord";
+} from "../../../../../interface/HistoryRecord";
 import VisitDetails from "#components/MedicalHistory/VisitDetails";
 import api from "#lib/axios";
 import axios from "axios";
-import { useDebounce } from "../../../../utils/debounce";
+import { useDebounce } from "../../../../../utils/debounce";
 import HistoryTimeline from "#components/MedicalHistory/HistoryTimeline";
 import ErrorMessage from "#components/ErrorMessage";
 

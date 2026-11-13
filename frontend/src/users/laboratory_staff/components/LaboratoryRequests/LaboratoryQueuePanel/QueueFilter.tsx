@@ -21,7 +21,7 @@ function QueueFilters({
   setPriority,
 }: QueueFiltersProps) {
   return (
-    <div className="mb-4 flex w-full lg:w-7/12 flex-wrap items-center gap-2 px-4 sm:px-6">
+    <div className="mb-5 mt-5 flex w-full lg:w-7/12 flex-wrap items-center gap-2 px-4 sm:px-6">
       <div className="relative min-w-55 flex-1 basis-70">
         <Search
           size={17}
@@ -32,7 +32,7 @@ function QueueFilters({
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search..."
+          placeholder="Queue ID, Patient ID, Patient Name..."
           className="h-9 w-full rounded-md border border-gray-300 bg-white pl-9 pr-3 text-sm text-gray-700 outline-none transition focus:border-sky-400 focus:ring-1 focus:ring-sky-100"
         />
       </div>

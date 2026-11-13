@@ -254,9 +254,10 @@ export async function skipQueueEntry(
       } as skipQueueEntry.error);
     }
 
-    // Find the patient's current queue entry.
-    // The room now comes from the lab items attached to this queue,
-    // since queue_entries no longer has a service_id.
+    // Find the patient's current queue entry. The EXISTS check makes sure this
+    // is a laboratory queue and not a consultation one. The room comes from
+    // the lab items attached to this queue, since queue_entries no longer has
+    // a service_id.
     const queue = await sql`
       SELECT
         qe.queue_id,
@@ -272,10 +273,15 @@ export async function skipQueueEntry(
         ) AS room
       FROM queue_entries qe
       WHERE qe.queue_id = ${queue_id}
+        AND EXISTS (
+          SELECT 1
+          FROM test_request_items tri
+          WHERE tri.queue_id = qe.queue_id
+        )
       LIMIT 1;
     `;
 
-    // Stop if the queue entry doesn't exist.
+    // Stop if the queue entry doesn't exist (or isn't a laboratory queue).
     if (queue.length === 0) {
       return res.status(404).json({
         message: "Queue entry not found.",
@@ -284,16 +290,20 @@ export async function skipQueueEntry(
 
     const { queue_number: currentQueueNumber, room, status } = queue[0];
 
-    // Only waiting or serving entries can be skipped.
-    if (!["waiting", "serving"].includes(String(status).toLowerCase())) {
+    // Only waiting, serving or skipped entries can be skipped.
+    if (
+      !["waiting", "serving", "skipped"].includes(
+        String(status).trim().toLowerCase(),
+      )
+    ) {
       return res.status(409).json({
         message: `Queue entry cannot be skipped because its status is ${status}.`,
       } as skipQueueEntry.error);
     }
 
     // Move the next waiting patient forward by one position.
-    // "Same queue" means: same type (LAB- or IMG-, numbered separately)
-    // with items in the same room.
+    // "Same queue" means: same type (LAB- or IMG-, numbered separately),
+    // items in the same room, and created today.
     await sql`
       UPDATE queue_entries q
       SET
@@ -302,6 +312,8 @@ export async function skipQueueEntry(
       WHERE q.queue_number = ${currentQueueNumber + 1}
         AND LOWER(q.status) = 'waiting'
         AND LEFT(q.queue_id, 4) = LEFT(${queue_id}, 4)
+        AND q.created_at >= CURRENT_DATE
+        AND q.created_at <  CURRENT_DATE + INTERVAL '1 day'
         AND EXISTS (
           SELECT 1
           FROM test_request_items tri
@@ -322,8 +334,10 @@ export async function skipQueueEntry(
       WHERE queue_id = ${queue_id}
       RETURNING *;
     `;
+
     publishQueueChange();
-    if (updatedQueue[0]) void notifySkipped(updatedQueue[0].patient_id, "laboratory");
+    if (updatedQueue[0])
+      void notifySkipped(updatedQueue[0].patient_id, "laboratory");
     return res.status(200).json({
       message: "Queue skipped successfully and returned to the queue.",
       queue: updatedQueue[0],
@@ -419,7 +433,12 @@ export async function cancelQueueEntry(
     `;
 
     publishQueueChange();
-    void notifyCancelled(updatedQueue[0].patient_id, "laboratory", actorId(req), cancellationReason);
+    void notifyCancelled(
+      updatedQueue[0].patient_id,
+      "laboratory",
+      actorId(req),
+      cancellationReason,
+    );
     return res.status(200).json({
       message: "Queue cancelled successfully.",
       queue: updatedQueue[0],
@@ -495,7 +514,8 @@ export async function verifyLaboratoryResult(
 ) {
   try {
     const { result_id } = req.params;
-    const verifier = (req.user as { user_id?: string } | undefined)?.user_id ?? null;
+    const verifier =
+      (req.user as { user_id?: string } | undefined)?.user_id ?? null;
 
     if (!result_id) {
       return res.status(400).json({ message: "Result ID is required." });
@@ -518,7 +538,9 @@ export async function verifyLaboratoryResult(
         SELECT status FROM test_results WHERE result_id = ${result_id} LIMIT 1
       `;
       if (!existing) {
-        return res.status(404).json({ message: "Laboratory result not found." });
+        return res
+          .status(404)
+          .json({ message: "Laboratory result not found." });
       }
       return res.status(409).json({
         message: `Result cannot be verified because its status is ${existing.status}.`,
@@ -550,7 +572,8 @@ export async function releaseLaboratoryResult(
       } as releaseLaboratoryResult.error);
     }
 
-    const releaser = (req.user as { user_id?: string } | undefined)?.user_id ?? null;
+    const releaser =
+      (req.user as { user_id?: string } | undefined)?.user_id ?? null;
 
     // Only verified results can be released (the clinic verifies first).
     const [result] = await sql`

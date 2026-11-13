@@ -25,7 +25,7 @@ const statusStyles: Record<string, string> = {
   requested: "bg-amber-500 text-white",
   waiting: "bg-gray-400 text-white",
   collected: "bg-violet-500 text-white",
-  "in-progress": "bg-indigo-500 text-white",
+  "in-progress": "bg-gray-500 text-white",
   completed: "bg-sky-500 text-white",
   released: "bg-green-500 text-white",
   cancelled: "bg-red-500 text-white",
