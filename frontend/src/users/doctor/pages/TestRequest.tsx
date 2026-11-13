@@ -278,6 +278,9 @@ function TestRequest({
                 services={services}
                 selectedServices={selectedServices}
                 patientId={selectedQueue?.patient_id ?? null}
+                consultationRecordId={
+                  selectedQueue?.consultation_record_id ?? null
+                }
                 onToggleService={toggleService}
                 onClearAll={clearServices}
                 onSubmitted={async () => {

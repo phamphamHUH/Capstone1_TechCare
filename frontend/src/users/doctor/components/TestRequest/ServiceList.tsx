@@ -10,6 +10,8 @@ type ServiceListProps = {
   activeTab: string;
   selectedServices: string[];
   patientId: string | null;
+  // The active consultation the tests are ordered from.
+  consultationRecordId: string | null;
   onToggleService: (serviceId: string) => void;
   onClearAll: () => void;
   onSubmitted?: () => void | Promise<void>;
@@ -20,6 +22,7 @@ function ServiceList({
   activeTab,
   selectedServices,
   patientId,
+  consultationRecordId,
   onToggleService,
   onClearAll,
   onSubmitted,
@@ -61,18 +64,20 @@ function ServiceList({
         activeTab === "package"
           ? {
               patient_id: patientId,
+              consultation_record_id: consultationRecordId,
               packages: selectedServices.map((package_id) => ({
                 package_id,
               })),
             }
           : {
               patient_id: patientId,
+              consultation_record_id: consultationRecordId,
               services: selectedServices.map((service_id) => ({
                 service_id,
               })),
             };
 
-      const res = await api.post("/api/fdstaff/laboratory-requests", body);
+      const res = await api.post("/api/doctor/test-requests", body);
 
       setSuccess({
         requestId: (Array.isArray(res.data.request)

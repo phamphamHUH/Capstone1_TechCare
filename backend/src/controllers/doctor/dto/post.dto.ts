@@ -23,6 +23,31 @@ export namespace addLaboratoryRequest {
   }
 }
 
+// POST /api/doctor/test-requests (Test Request page: laboratory, imaging, packages)
+export namespace addTestRequest {
+  export interface body {
+    patient_id: string;
+    // The active consultation the tests are ordered from (optional).
+    consultation_record_id?: string | null;
+    // At least one service or one package.
+    services?: { service_id: string }[];
+    packages?: { package_id: string }[];
+    doctor_id?: string; // outside production only (see resolveDoctorId)
+  }
+
+  export interface response {
+    message: string;
+    request: Record<string, unknown>[];
+    items: Record<string, unknown>[];
+    bill: Record<string, unknown>;
+    is_new_bill: boolean;
+  }
+
+  export interface error {
+    message: string;
+  }
+}
+
 export namespace addPrescriptions {
   export interface item {
     name: string;
