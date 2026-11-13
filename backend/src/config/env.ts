@@ -19,9 +19,15 @@ export const ENV = {
   JWT_REFRESH_EXPIRES_IN: (process.env.JWT_REFRESH_EXPIRES_IN ||
     "7d") as SignOptions["expiresIn"],
 
-  CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
-  CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
-  CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
+  // Image uploads (Amazon S3). AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+  // are read by the AWS SDK directly from the environment.
+  AWS_REGION: process.env.AWS_REGION || "ap-southeast-2",
+  AWS_S3_BUCKET: process.env.AWS_S3_BUCKET || "",
+
+  // Replaced by S3 above.
+  // CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
+  // CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
+  // CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
   DEV_DOCTOR_LOGIN: process.env.DEV_DOCTOR_LOGIN === "true",
 
   // Email (Brevo). Without BREVO_API_KEY, emails are printed to the console.

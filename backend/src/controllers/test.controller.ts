@@ -24,7 +24,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { sql } from "../config/db.js";
-import cloudinary from "../config/cloudinary.js";
+import { uploadImage as uploadToS3 } from "../config/s3.js";
 
 export async function signIn(req: Request, res: Response, next: NextFunction) {
   const user = req.body;
@@ -79,14 +79,9 @@ export async function uploadImage(req: Request, res: Response) {
       });
     }
 
-    const result = await cloudinary.uploader.upload(req.file.path, {
-      folder: "techcare",
-    });
+    const url = await uploadToS3(req.file, "techcare");
 
-    return res.status(200).json({
-      url: result.secure_url,
-      public_id: result.public_id,
-    });
+    return res.status(200).json({ url });
   } catch (err) {
     return res.status(500).json(err);
   }

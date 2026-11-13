@@ -1,5 +1,5 @@
 import { sql, pool } from "../../config/db.js";
-import type { PoolClient } from "@neondatabase/serverless";
+import type { PoolClient } from "pg";
 import type { Request, Response } from "express";
 import type {
   acceptConsultationQueue,

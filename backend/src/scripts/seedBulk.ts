@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { randomUUID } from "crypto";
-import type { PoolClient } from "@neondatabase/serverless";
+import type { PoolClient } from "pg";
 import { ENV } from "../config/env.js";
 import { connectNeon, pool } from "../config/db.js";
 import { recomputeBillTotals } from "../utils/recomputeBills.js";

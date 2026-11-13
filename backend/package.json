@@ -20,9 +20,8 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "@neondatabase/serverless": "^1.1.0",
+    "@aws-sdk/client-s3": "^3.1168.0",
     "bcryptjs": "^3.0.3",
-    "cloudinary": "^2.10.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
@@ -31,6 +30,7 @@
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.2.0",
     "nodemon": "^3.1.14",
+    "pg": "^8.23.1",
     "ws": "^8.21.0"
   },
   "devDependencies": {
@@ -40,6 +40,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.2.0",
     "@types/node": "^25.9.3",
+    "@types/pg": "^8.23.1",
     "@types/supertest": "^7.2.1",
     "@types/ws": "^8.18.1",
     "supertest": "^7.2.2",

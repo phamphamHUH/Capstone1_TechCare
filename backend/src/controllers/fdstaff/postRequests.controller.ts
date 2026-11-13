@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs";
 import { calculateAge } from "./utils/calculateAge.js";
 import { readFrontDeskVitals } from "./utils/vitalSigns.js";
 import type { Request, Response } from "express";
-import cloudinary from "../../config/cloudinary.js";
+import { uploadImage } from "../../config/s3.js";
 import {
   generateConsultationQueueId,
   generateLaboratoryQueueId,
@@ -117,13 +117,10 @@ export async function addPatient(
     const hashedPassword = await bcrypt.hash(password, 10);
     const passwordLink = email ? createPasswordLink() : null;
 
-    // Upload photo to Cloudinary if one was attached (multer puts it on req.file)
+    // Upload photo to S3 if one was attached (multer puts it on req.file)
     let imageUrl: string | null = null;
     if (req.file) {
-      const uploadResult = await cloudinary.uploader.upload(req.file.path, {
-        folder: "techcare/patients",
-      });
-      imageUrl = uploadResult.secure_url;
+      imageUrl = await uploadImage(req.file, "techcare/patients");
     }
 
     const response = await sql`

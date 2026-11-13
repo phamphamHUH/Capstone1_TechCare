@@ -1,14 +1,12 @@
-import { neon, Pool } from "@neondatabase/serverless";
 import { ENV } from "./env.js";
+import { createDatabase } from "./pgClient.js";
 
 if (!ENV.DATABASE_URL) {
   throw new Error("DATABASE_URL is not defined");
 }
 
-export const sql = neon(ENV.DATABASE_URL);
-export const pool = new Pool({
-  connectionString: ENV.DATABASE_URL,
-});
+// Works with Amazon RDS, Neon, or a local Postgres (see pgClient.ts).
+export const { sql, pool } = createDatabase(ENV.DATABASE_URL);
 
 // =======================================================================
 // TABLE DEFINITIONS

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import bcrypt from "bcryptjs";
-import cloudinary from "../../config/cloudinary.js";
+import { uploadImage } from "../../config/s3.js";
 import { sql, pool } from "../../config/db.js";
 import {
   generateImagingQueueId,
@@ -114,10 +114,7 @@ export async function updatePatient(
 
     let imageUrl: string | null = null;
     if (req.file) {
-      const uploaded = await cloudinary.uploader.upload(req.file.path, {
-        folder: "techcare/patients",
-      });
-      imageUrl = uploaded.secure_url;
+      imageUrl = await uploadImage(req.file, "techcare/patients");
     }
 
     const [updatedPatient] = await sql`
