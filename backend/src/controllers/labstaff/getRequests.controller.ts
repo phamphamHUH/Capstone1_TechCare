@@ -389,7 +389,7 @@ export async function getAvailableFormTemplates(
         ), '[]'::jsonb) AS components
       FROM form_templates ft
       JOIN services s ON s.service_id = ft.service_id
-      WHERE ft.status = 'Published'
+      WHERE ft.status = 'Published' AND s.active = true
       ORDER BY ft.version DESC, ft.form_name ASC
     `;
 

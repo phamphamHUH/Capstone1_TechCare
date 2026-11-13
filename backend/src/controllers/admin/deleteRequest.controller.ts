@@ -2,46 +2,35 @@ import type { Request, Response } from "express";
 import { sql } from "../../config/db.js";
 import type { deleteTemplate } from "./dto/delete.dto.js";
 
-export async function deleteTemplate(
-  req: Request,
-  res: Response<deleteTemplate.response | deleteTemplate.error>,
-) {
+export async function deleteTemplate(req: Request, res: Response) {
+  const { form_id } = req.params;
+  if (!form_id)
+    return res.status(400).json({ message: "Form ID is required." });
+
   try {
-    const { form_id } = req.params;
+    const [, deleted] = await sql.transaction([
+      sql`DELETE FROM form_components
+          WHERE form_id = ${form_id}
+            AND EXISTS (SELECT 1 FROM form_templates WHERE form_id = ${form_id} AND status = 'Draft')`,
+      sql`DELETE FROM form_templates WHERE form_id = ${form_id} AND status = 'Draft' RETURNING *`,
+    ]);
 
-    if (!form_id) {
-      return res.status(400).json({
-        message: "Form ID is required.",
-      });
+    if (deleted.length === 0) {
+      const [exists] =
+        await sql`SELECT status FROM form_templates WHERE form_id = ${form_id}`;
+      return exists
+        ? res.status(409).json({
+            message:
+              "Only draft templates can be deleted. Published and archived versions are kept as history.",
+          })
+        : res.status(404).json({ message: "Form template not found." });
     }
-
-    await sql`
-      DELETE FROM form_components
-      WHERE form_id = ${form_id}
-    `;
-
-    const [template] = await sql`
-      DELETE FROM form_templates
-      WHERE form_id = ${form_id}
-      RETURNING *
-    `;
-
-    if (!template) {
-      return res.status(404).json({
-        message: "Form template not found.",
-      });
-    }
-
-    return res.status(200).json({
-      message: "Form template deleted successfully!",
-      template: template as deleteTemplate.template,
-    });
+    return res
+      .status(200)
+      .json({ message: "Draft deleted.", template: deleted[0] });
   } catch (error) {
     console.error("Error deleting form template:", error);
-
-    return res.status(500).json({
-      message: "Internal server error.",
-    });
+    return res.status(500).json({ message: "Internal server error." });
   }
 }
 
