@@ -79,7 +79,7 @@ const TABLES: TableDefinition[] = [
       suffix: "VARCHAR(20)",
       sex: "VARCHAR(20) NOT NULL",
       is_pwd: "BOOLEAN NOT NULL DEFAULT FALSE",
-      email: "VARCHAR(255) NOT NULL UNIQUE",
+      email: "VARCHAR(255) UNIQUE", // optional for patients; unique when given
       contact_number: "VARCHAR(20) NOT NULL",
       guardian_name: "VARCHAR(255)",
       guardian_relationship: "VARCHAR(255)",
@@ -528,6 +528,9 @@ async function createTables(): Promise<void> {
         END IF;
       END $$
     `;
+    // Patient email became optional (still UNIQUE; any number of NULLs is
+    // allowed). Existing databases were created with NOT NULL. Safe to rerun.
+    await sql`ALTER TABLE patients ALTER COLUMN email DROP NOT NULL`;
 
     console.log("Database initialized successfully");
   } catch (error) {
