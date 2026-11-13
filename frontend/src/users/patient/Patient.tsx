@@ -13,7 +13,6 @@ import SideBar from "../../components/SideBar";
 import { SidebarNavContext } from "../../components/sidebar/utils/sidebarNav";
 import MedicalHistory from "./pages/MedicalHistory";
 import Prescriptions from "./pages/Prescriptions";
-import MedicalDocuments from "./pages/MedicalDocuments";
 import QueueTracking from "./pages/QueueTracking";
 import PatientDashboard from "./pages/PatientDashboard";
 import type { PatientSessionUser } from "../../interface/PatientPortal";
@@ -23,8 +22,7 @@ type PatientPage =
   | "medical-history"
   | "queue-tracking"
   | "laboratory-results"
-  | "prescriptions"
-  | "medical-documents";
+  | "prescriptions";
 
 function readLoggedInPatient(): PatientSessionUser | null {
   const stored = sessionStorage.getItem("user");
@@ -134,10 +132,7 @@ function Patient() {
           />
           <main className="space-y-6 px-4 pb-6 sm:px-6">
             {activePage === "dashboard" && (
-              <PatientDashboard
-                patient={patient}
-                setPage={setPage}
-              />
+              <PatientDashboard patient={patient} setPage={setPage} />
             )}
             {activePage === "queue-tracking" && (
               <QueueTracking
@@ -166,13 +161,6 @@ function Patient() {
                 refreshKey={refreshKey}
                 onLoadingChange={setLoading}
                 consultationId={consultationId}
-              />
-            )}
-            {activePage === "medical-documents" && (
-              <MedicalDocuments
-                patient={patient}
-                refreshKey={refreshKey}
-                onLoadingChange={setLoading}
               />
             )}
           </main>

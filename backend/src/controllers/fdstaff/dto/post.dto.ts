@@ -17,6 +17,7 @@ export namespace addPatient {
     civil_status: string | null;
     blood_type: string | null;
     birthdate: string;
+    is_pwd: boolean;
     guardian_name?: string | null;
     guardian_relationship?: string | null;
     guardian_contact?: string | null;
@@ -54,6 +55,7 @@ export namespace addPatient {
     guardian_relationship?: string | null;
     guardian_contact?: string | null;
     allergies?: string | null;
+    is_pwd: boolean;
     existing_conditions?: string | null;
     current_medications?: string | null;
     previous_surgeries?: string | null;

@@ -51,6 +51,7 @@ export async function addPatient(
       last_name,
       suffix,
       sex,
+      is_pwd,
       email,
       street,
       barangay,
@@ -91,6 +92,10 @@ export async function addPatient(
           "First name, last name, birthdate, sex, email, and contact number are required.",
       } as addPatient.error);
     }
+
+    // Multipart form data arrives as the string "true"/"false", while a JSON
+    // body may send a real boolean. String() handles both without a type error.
+    const isPwd = String(is_pwd) === "true";
 
     // Check if patient already exists
     const existingPatient = await sql`
@@ -136,6 +141,7 @@ export async function addPatient(
         last_name,
         suffix,
         sex,
+        is_pwd,
         email,
         street,
         barangay,
@@ -172,6 +178,7 @@ export async function addPatient(
         ${last_name},
         ${suffix ?? null},
         ${sex},
+        ${isPwd},
         ${email},
         ${street},
         ${barangay},

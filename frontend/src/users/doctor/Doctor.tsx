@@ -2,7 +2,7 @@ import SideBar from "#components/SideBar";
 import { SidebarNavContext } from "../../components/sidebar/utils/sidebarNav";
 import Header from "#components/Header";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { LayoutGrid, ListOrdered, FileText, FileCheck2, Stethoscope } from "lucide-react";
+import { LayoutGrid, ListOrdered, FileText, Stethoscope } from "lucide-react";
 import { useSearchParams } from "react-router";
 import ConsultationQueue from "./pages/ConsultationQueue";
 import DoctorDashboard from "./pages/DoctorDashboard";
@@ -11,7 +11,6 @@ import type { QueueEntry } from "../../interface/Queue";
 import api from "#lib/axios";
 import ActiveConsultation from "./pages/ActiveConsultation";
 import TestRequest from "./pages/TestRequest";
-import MedicalDocuments from "./pages/MedicalDocuments";
 
 function Doctor() {
   const [open, setOpen] = useState(
@@ -68,11 +67,6 @@ function Doctor() {
       page: "test-request",
       label: "Test Request",
       icon: <FileText size={20} />,
-    },
-    {
-      page: "medical-documents",
-      label: "Medical Documents",
-      icon: <FileCheck2 size={20} />,
     },
   ];
 
@@ -179,7 +173,6 @@ function Doctor() {
           />
 
           <div className="pb-6">
-            {page === "medical-documents" && <MedicalDocuments refreshKey={documentsRefreshKey} />}
             {page === "dashboard" && (
               <DoctorDashboard
                 room={room}
