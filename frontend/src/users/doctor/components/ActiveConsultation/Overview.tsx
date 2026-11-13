@@ -334,8 +334,8 @@ function Overview({
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              <Tile label="Height">{height}</Tile>
-              <Tile label="Weight">{weight}</Tile>
+              <Tile label="Height">{height > 0 ? height : "No record"}</Tile>
+              <Tile label="Weight">{weight > 0 ? weight : "No record"}</Tile>
               {VISIT_TILES.map((t) => (
                 <Tile key={t.label} label={t.label}>
                   {t.get(selectedQueue)}
