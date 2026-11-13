@@ -112,13 +112,7 @@ function HistoryTimeline({
                   </p>
                 </div>
 
-                <div
-                  className={`flex size-10 shrink-0 items-center justify-center rounded-md ${
-                    isLab
-                      ? "bg-gray-100 text-gray-600"
-                      : "bg-indigo-50 text-indigo-500"
-                  }`}
-                >
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-sky-50 text-sky-600">
                   <Icon size={20} strokeWidth={1.75} />
                 </div>
 

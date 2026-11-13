@@ -229,7 +229,7 @@ function PatientMedicalHistory({
       </div>
 
       {/* Patient Header Card */}
-      <div className="px-4 sm:px-6 py-6 sm:py-8 bg-gradient-to-r from-blue-50 to-indigo-50">
+      <div className="px-4 sm:px-6 py-6 sm:py-8 bg-gradient-to-r from-blue-50 to-sky-50">
         <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
           {/* Patient Image */}
           <div className="flex-shrink-0">

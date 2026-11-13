@@ -62,8 +62,8 @@ const normalizeStatus = (s: string) =>
 const badgeStyles: Record<string, string> = {
   requested: "bg-amber-500",
   waiting: "bg-gray-400",
-  collected: "bg-violet-500",
-  "in-progress": "bg-indigo-500",
+  collected: "bg-teal-500",
+  "in-progress": "bg-gray-500",
   completed: "bg-sky-500",
   released: "bg-green-500",
   cancelled: "bg-red-500",
@@ -72,8 +72,8 @@ const badgeStyles: Record<string, string> = {
 const dotTextStyles: Record<string, string> = {
   requested: "text-amber-600 before:bg-amber-500",
   waiting: "text-gray-600 before:bg-gray-400",
-  collected: "text-violet-600 before:bg-violet-500",
-  "in-progress": "text-indigo-600 before:bg-indigo-500",
+  collected: "text-teal-600 before:bg-teal-500",
+  "in-progress": "text-gray-600 before:bg-gray-500",
   completed: "text-sky-600 before:bg-sky-500",
   released: "text-green-600 before:bg-green-500",
   cancelled: "text-red-600 before:bg-red-500",
@@ -279,11 +279,7 @@ function VisitDetails({
       </div>
 
       <div className="mt-4 flex items-center gap-3 pb-4">
-        <div
-          className={`flex size-12 shrink-0 items-center justify-center rounded-md ${
-            isLab ? "bg-gray-100 text-gray-600" : "bg-indigo-50 text-indigo-500"
-          }`}
-        >
+        <div className="flex size-12 shrink-0 items-center justify-center rounded-md bg-sky-50 text-sky-600">
           <Icon size={22} strokeWidth={1.75} />
         </div>
         <div className="min-w-0">
@@ -399,7 +395,7 @@ function VisitDetails({
                       href={res.image_url}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-1 block text-xs text-indigo-600 underline"
+                      className="mt-1 block text-xs text-sky-600 underline"
                     >
                       View image
                     </a>

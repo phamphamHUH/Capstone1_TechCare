@@ -42,7 +42,7 @@ function SSESend() {
           <button
             type="submit"
             disabled={!message.trim() || loading}
-            className="rounded-md bg-indigo-500 px-4 py-2 disabled:opacity-40"
+            className="rounded-md bg-sky-500 px-4 py-2 disabled:opacity-40"
           >
             {loading ? "Sending..." : "Send message"}
           </button>

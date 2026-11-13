@@ -1,5 +1,6 @@
 import EmptyState from "../../../../components/EmptyState";
 import { LoadingSpinner } from "../../../../components/LoadingScreen";
+import ServiceCategoryIcon from "../../../../components/ServiceCategoryIcon";
 import { useMemo, useState } from "react";
 import api from "#lib/axios";
 import type { FormTemplate } from "../../../../interface/FormTemplate";
@@ -62,6 +63,14 @@ export default function TemplateLibrary({
     const map: Record<string, string> = {};
     services.forEach((s) => {
       map[s.service_id] = s.service_name;
+    });
+    return map;
+  }, [services]);
+
+  const serviceIdToService = useMemo(() => {
+    const map: Record<string, ServiceOption> = {};
+    services.forEach((s) => {
+      map[s.service_id] = s;
     });
     return map;
   }, [services]);

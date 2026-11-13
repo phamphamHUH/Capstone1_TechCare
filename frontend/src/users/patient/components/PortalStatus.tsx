@@ -6,7 +6,7 @@ const colors: Record<string, string> = {
   waiting: "bg-amber-100 text-amber-700",
   requested: "bg-amber-100 text-amber-700",
   skipped: "bg-orange-100 text-orange-700",
-  "in progress": "bg-indigo-100 text-indigo-700",
+  "in progress": "bg-gray-100 text-gray-700",
   cancelled: "bg-red-100 text-red-700",
 };
 

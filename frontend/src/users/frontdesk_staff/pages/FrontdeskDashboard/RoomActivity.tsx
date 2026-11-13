@@ -88,7 +88,7 @@ function RoomActivity({ queues }: { queues: QueueEntry[] }) {
                         </span>
                       )}
                       {q.status.toLowerCase() === "skipped" && (
-                        <span className="ml-1 text-xs text-violet-700">
+                        <span className="ml-1 text-xs text-slate-600">
                           Skipped
                         </span>
                       )}
