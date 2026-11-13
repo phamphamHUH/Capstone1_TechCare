@@ -108,7 +108,8 @@ export async function updateMyAccount(
     console.error("Error updating account:", error);
     return res.status(500).json({ message: "Internal server error" });
   } finally {
-    // multer wrote the upload to a temp file; it's on Cloudinary now.
+    // multer wrote the upload to a temp file; uploadImage already removes it
+    // after sending it to S3, so this only cleans up if the upload failed early.
     if (req.file) await fs.unlink(req.file.path).catch(() => {});
   }
 }

@@ -1,17 +1,6 @@
-export type AccountUser = {
-  user_id?: string;
-  patient_id?: string;
-  role?: string;
-  first_name?: string;
-  middle_name?: string | null;
-  last_name?: string;
-  suffix?: string | null;
-  email?: string;
-  profile_photo?: string | null;
-  image_url?: string | null;
-  theme?: string;
-  [key: string]: unknown;
-};
+import type { AccountUser } from "../../../../../interface/Account";
+
+export type { AccountUser };
 
 export type AccountField = { label: string; value: string };
 

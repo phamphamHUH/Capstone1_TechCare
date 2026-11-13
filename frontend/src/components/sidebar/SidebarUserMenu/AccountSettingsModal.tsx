@@ -7,7 +7,7 @@ import { applyTheme, type Theme } from "../../../lib/theme";
 import AccountDetails from "./AccountSettingsModal/AccountDetails";
 import ProfilePhoto from "./AccountSettingsModal/ProfilePhoto";
 import ThemePicker from "./AccountSettingsModal/ThemePicker";
-import type { AccountUser } from "./AccountSettingsModal/utils/accountFields";
+import type { AccountUser } from "../../../interface/Account";
 
 type AccountSettingsModalProps = {
   isOpen: boolean;
@@ -33,8 +33,10 @@ function AccountSettingsModal({
   const [pendingPhoto, setPendingPhoto] = useState<{ file: File; preview: string } | null>(
     null,
   );
-  const [savingTheme, setSavingTheme] = useState(false);
+  // A picked theme is previewed right away but only saved on Done.
+  const [pendingTheme, setPendingTheme] = useState<Theme | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const savedTheme = (user.theme as Theme | undefined) ?? "light";
 
   // Keep the session copy and the menu in step with the server.
   function saveUser(next: AccountUser) {
@@ -75,58 +77,55 @@ function AccountSettingsModal({
     replacePending(file);
   }
 
-  async function uploadPhoto(file: File) {
+  // Preview only: the page switches theme now, the account is updated on Done.
+  function pickTheme(theme: Theme) {
+    setError(null);
+    applyTheme(theme);
+    setPendingTheme(theme === savedTheme ? null : theme);
+  }
+
+  // Send the picked photo and/or theme in one request.
+  async function saveChanges(photo: File | null, theme: Theme | null) {
     setError(null);
     setUploading(true);
     try {
       const form = new FormData();
-      form.append("image", file); // must match upload.single("image")
+      if (photo) form.append("image", photo); // must match upload.single("image")
+      if (theme) form.append("theme", theme);
       const { data } = await api.patch<{ user: AccountUser }>("/api/auth/me", form);
       saveUser(data.user);
       return true;
     } catch (cause) {
-      setError(errorText(cause, "The photo could not be uploaded. Please try again."));
+      setError(errorText(cause, "Your changes could not be saved. Please try again."));
       return false;
     } finally {
       setUploading(false);
     }
   }
 
-  async function changeTheme(theme: Theme) {
-    const previous = (user.theme as Theme | undefined) ?? "light";
-    if (theme === previous) return;
-    setError(null);
-    applyTheme(theme);
-    saveUser({ ...user, theme });
-    setSavingTheme(true);
-    try {
-      await api.patch("/api/auth/me", { theme });
-    } catch (cause) {
-      applyTheme(previous);
-      saveUser({ ...user, theme: previous });
-      setError(errorText(cause, "The theme could not be saved. Please try again."));
-    } finally {
-      setSavingTheme(false);
-    }
-  }
-
-  // Closing with X / overlay discards an unsaved photo.
-  function close() {
+  // Closing with X / overlay discards unsaved changes (the previewed theme
+  // goes back to the saved one). After a successful Done, nothing reverts.
+  function close(discard = true) {
     setError(null);
     replacePending(null);
+    if (discard && pendingTheme) applyTheme(savedTheme);
+    setPendingTheme(null);
     onClose();
   }
 
-  // Done saves the picked photo (if any); stays open if the upload fails.
+  // Done saves the picked photo and theme; stays open if saving fails.
   async function done() {
-    if (pendingPhoto && !(await uploadPhoto(pendingPhoto.file))) return;
-    close();
+    if (pendingPhoto || pendingTheme) {
+      const saved = await saveChanges(pendingPhoto?.file ?? null, pendingTheme);
+      if (!saved) return;
+    }
+    close(false);
   }
 
   return (
     <UniversalModal
       isOpen={isOpen}
-      onClose={close}
+      onClose={() => close()}
       title="Account settings"
       description="Your account details, profile photo and display theme."
       icon={<Settings size={30} strokeWidth={1.7} />}
@@ -163,9 +162,9 @@ function AccountSettingsModal({
             Theme
           </h3>
           <ThemePicker
-            value={(user.theme as Theme | undefined) ?? "light"}
-            onChange={changeTheme}
-            disabled={savingTheme}
+            value={pendingTheme ?? savedTheme}
+            onChange={pickTheme}
+            disabled={uploading}
           />
         </section>
       </div>
