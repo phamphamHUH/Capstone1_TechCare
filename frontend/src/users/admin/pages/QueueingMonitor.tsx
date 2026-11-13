@@ -124,7 +124,7 @@ function QueueingMonitor(_props: QueueingMonitorProps) {
       {/* BOARD: one column per service type */}
       {error && <ErrorMessage className="mb-3">{error}</ErrorMessage>}
       <div
-        className={`grid flex-1 gap-3 lg:grid-cols-2 ${isLive ? "" : "opacity-50"}`}
+        className={`grid flex-1 gap-3 lg:grid-cols-3 ${isLive ? "" : "opacity-50"}`}
       >
         <QueueColumn
           title="Consultation"
@@ -136,6 +136,12 @@ function QueueingMonitor(_props: QueueingMonitorProps) {
           title="Laboratory"
           entries={queueEntries.filter(
             (entry) => entry.service_type === "laboratory",
+          )}
+        />
+        <QueueColumn
+          title="Imaging"
+          entries={queueEntries.filter(
+            (entry) => entry.service_type === "imaging",
           )}
         />
       </div>

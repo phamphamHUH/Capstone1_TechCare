@@ -26,7 +26,9 @@ import type {
 import { formatAge, formatDateTime, peso } from "../../../../utils/formats";
 import InvoiceDocument from "./InvoiceDocument";
 import { printInvoice } from "./utils/invoicePrint";
-import BillingModal, { type BillingModalKind } from "./ProcessPayment/BillingModal";
+import BillingModal, {
+  type BillingModalKind,
+} from "./ProcessPayment/BillingModal";
 import InvoicePreview from "./ProcessPayment/InvoicePreview";
 
 type ProcessPaymentProps = {
@@ -41,8 +43,10 @@ type ProcessPaymentProps = {
 };
 
 const cardClass = "rounded-md border border-gray-200 bg-white p-4";
+
 const fieldClass =
   "h-9 w-full rounded-sm border border-gray-300 bg-white px-3 text-sm text-gray-600 outline-none focus:border-sky-400 disabled:bg-gray-100";
+
 const round2 = (value: number) => Math.round(value * 100) / 100;
 
 const isPackage = (item: BillItem) => item.line_type === "package";
@@ -120,10 +124,8 @@ function ProcessPayment({
   );
 
   const billableItems = chargeableItems(items);
-  const componentItems = packageComponents(items);
 
-  // Package components are display-only. Only standalone services and
-  // package lines contribute to the subtotal.
+  // Package components are display-only.
   const subtotal = round2(
     billableItems.reduce(
       (sum, item) => sum + Number(item.price) * (item.quantity ?? 1),
@@ -198,6 +200,10 @@ function ProcessPayment({
 
       if (outcome.status === "recorded" && outcome.forwarded) {
         forwardedFromRetry.current = true;
+
+        // Save the returned queues for the forwarding success modal.
+        setPaymentOutcome(outcome);
+
         setModalError("");
         setModal("forwarded");
       }
@@ -223,16 +229,13 @@ function ProcessPayment({
       );
       setModal(null);
     } catch (cause) {
-      setPrintError(
+      const message =
         cause instanceof Error
           ? cause.message
-          : "Unable to print the invoice. Please try again.",
-      );
-      setModalError(
-        cause instanceof Error
-          ? cause.message
-          : "Unable to print the invoice. Please try again.",
-      );
+          : "Unable to print the invoice. Please try again.";
+
+      setPrintError(message);
+      setModalError(message);
     } finally {
       setPrinting(false);
     }
@@ -246,6 +249,7 @@ function ProcessPayment({
 
     try {
       const { downloadInvoicePdf } = await import("./utils/invoicePdf");
+
       await downloadInvoicePdf(
         invoiceRef.current,
         bill.invoice_id || bill.bill_id,
@@ -336,6 +340,7 @@ function ProcessPayment({
             ? "Process Payment"
             : "Payment Details"}
       </h1>
+
       <p className="text-sm font-light text-gray-600">
         {isPending
           ? "Review services, apply eligible discounts, and record the patient's payment."
@@ -401,6 +406,7 @@ function ProcessPayment({
                       Senior Citizen
                     </span>
                   )}
+
                   {bill.is_pwd && (
                     <span className="rounded-full bg-orange-100 px-3 py-0.5 text-orange-700">
                       PWD
@@ -828,6 +834,7 @@ function ProcessPayment({
           modalError || (modal === "payment" || modal === "failed" ? error : "")
         }
         alreadyPaid={paymentOutcome?.alreadyPaid}
+        queues={paymentOutcome?.queues ?? []}
         returnFocusRef={returnFocusRef}
         finalFocus={() =>
           focusPreviewOnClose.current

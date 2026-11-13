@@ -21,7 +21,11 @@ import type {
 import { MIN_PASSWORD_LENGTH } from "../../utils/password.js";
 import { sendEmailToPatient } from "../../services/email/sendEmail.js";
 import { paymentReceiptEmail } from "../../services/email/emailTemplates.js";
-import { actorId, notifyPriorityPatient, notifyQueued } from "../../services/notifications/index.js";
+import {
+  actorId,
+  notifyPriorityPatient,
+  notifyQueued,
+} from "../../services/notifications/index.js";
 
 export async function updatePatient(
   req: Request,
@@ -157,7 +161,8 @@ export async function updatePatient(
     const age = calculateAge(updatedPatient.birthdate);
 
     // Don't send the password hash to the client.
-    const { password_hash, password_token_hash, ...safePatient } = updatedPatient;
+    const { password_hash, password_token_hash, ...safePatient } =
+      updatedPatient;
 
     return res.status(200).json({
       message: "Patient updated successfully.",
@@ -617,10 +622,12 @@ export async function confirmPayment(
           paidAt: paid.paid_at,
           paymentMethod: paid.payment_method,
           referenceNumber: paid.reference_num,
-          items: (Array.isArray(paid.items) ? paid.items : []).map((item: Record<string, any>) => ({
-            name: String(item.service_name ?? "Service"),
-            amount: Number(item.price ?? 0) * Number(item.quantity ?? 1),
-          })),
+          items: (Array.isArray(paid.items) ? paid.items : []).map(
+            (item: Record<string, any>) => ({
+              name: String(item.service_name ?? "Service"),
+              amount: Number(item.price ?? 0) * Number(item.quantity ?? 1),
+            }),
+          ),
           discountLabel: paid.discount_type,
           discountAmount: Number(paid.discount_amount ?? 0),
           total: Number(paid.total_amount ?? 0),
@@ -654,7 +661,9 @@ export async function confirmPayment(
         [bill_id],
       );
       // Drug tests never go to the lab, so they don't count here.
-      has_laboratory_items = labItems.some((item) => item.service_type !== "drug test");
+      has_laboratory_items = labItems.some(
+        (item) => item.service_type !== "drug test",
+      );
 
       // Drug tests are billed but never queued: the clinic runs them on its
       // own system. Paying the bill completes them; the admin counts them in
@@ -785,11 +794,30 @@ export async function confirmPayment(
         void notifyQueued(patient_id, "laboratory", queue_number);
       }
       for (const { patient_id, room } of priorityRooms) {
-        void notifyPriorityPatient(patient_id, "laboratory", actorId(req), room);
+        void notifyPriorityPatient(
+          patient_id,
+          "laboratory",
+          actorId(req),
+          room,
+        );
       }
     }
 
+    const { rows: queues } = await client.query<{
+      queue_id: string;
+      queue_number: number;
+    }>(
+      `SELECT DISTINCT q.queue_id, q.queue_number
+   FROM queue_entries q
+   JOIN test_request_items tri ON tri.queue_id = q.queue_id
+   WHERE tri.bill_id = $1
+     AND LOWER(TRIM(tri.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+   ORDER BY q.queue_id`,
+      [bill_id],
+    );
+
     const { is_senior, is_pwd, ...savedBill } = bill;
+
     return res.status(200).json({
       message:
         forwardingError ||
@@ -801,6 +829,7 @@ export async function confirmPayment(
       already_paid,
       queued,
       has_laboratory_items,
+      queues,
     });
   } catch (error) {
     await client.query("ROLLBACK").catch(console.error);
