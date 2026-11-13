@@ -36,7 +36,9 @@ import { patientAccountCreatedEmail } from "../../services/email/emailTemplates.
 import {
   createPasswordLink,
   PASSWORD_LINK_DAYS,
+  unusablePassword,
 } from "../../utils/passwordLink.js";
+import { MIN_PASSWORD_LENGTH } from "../../utils/password.js";
 import { recomputeBillTotals } from "../../utils/recomputeBills.js";
 import { getOrCreateOpenBill } from "../../utils/getOrCreateBill.js";
 export async function addPatient(
@@ -52,7 +54,6 @@ export async function addPatient(
       suffix,
       sex,
       is_pwd,
-      email,
       street,
       barangay,
       city,
@@ -75,21 +76,47 @@ export async function addPatient(
       family_medical_history,
       smoking_status,
       alcohol_consumption,
+      password_mode,
+      password,
     } = req.body as addPatient.body;
+
+    // Email is optional; when given it must be unique (checked below).
+    const email =
+      typeof req.body?.email === "string" && req.body.email.trim()
+        ? req.body.email.trim()
+        : null;
 
     // Validate required fields (matches NOT NULL columns on `patients`;
     // civil_status has a DB default so it's optional here)
-    if (
-      !first_name ||
-      !last_name ||
-      !birthdate ||
-      !sex ||
-      !email ||
-      !contact_number
-    ) {
+    if (!first_name || !last_name || !birthdate || !sex || !contact_number) {
       return res.status(400).json({
         message:
-          "First name, last name, birthdate, sex, email, and contact number are required.",
+          "First name, last name, birthdate, sex, and contact number are required.",
+      } as addPatient.error);
+    }
+
+    // How the patient gets a password:
+    //   "frontdesk": the front desk sets it now (emailed to the patient if
+    //                they have an email).
+    //   "link":      the patient creates it from an emailed link (needs an
+    //                email; they can't log in until it's set).
+    if (password_mode !== "frontdesk" && password_mode !== "link") {
+      return res.status(400).json({
+        message: "Choose how the patient gets a password.",
+      } as addPatient.error);
+    }
+    if (password_mode === "link" && !email) {
+      return res.status(400).json({
+        message:
+          "An email address is needed to send a password link. Set the password at the front desk instead.",
+      } as addPatient.error);
+    }
+    if (
+      password_mode === "frontdesk" &&
+      (typeof password !== "string" || password.length < MIN_PASSWORD_LENGTH)
+    ) {
+      return res.status(400).json({
+        message: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`,
       } as addPatient.error);
     }
 
@@ -99,28 +126,39 @@ export async function addPatient(
 
     // Check if patient already exists
     const existingPatient = await sql`
-      SELECT *
+      SELECT 1
       FROM patients
       WHERE last_name = ${last_name}
         AND first_name = ${first_name}
         AND birthdate = ${birthdate}
         AND contact_number = ${contact_number}
-        AND email = ${email}
     `;
     if (existingPatient.length > 0) {
       return res.status(400).json({
         message:
-          "A patient with the same name, contact number, email, and date of birth already exists.",
+          "A patient with the same name, contact number, and date of birth already exists.",
       } as addPatient.error);
+    }
+
+    if (email) {
+      const emailTaken = await sql`
+        SELECT 1 FROM patients WHERE LOWER(email) = LOWER(${email})
+      `;
+      if (emailTaken.length > 0) {
+        return res.status(409).json({
+          message: "Another patient already uses this email.",
+        } as addPatient.error);
+      }
     }
 
     const patientId = await generatePatientId();
 
-    // The front desk password (the last name; the front desk can reset it).
-    // Patients with an email also get a link to change it to their own.
-    const password = last_name;
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const passwordLink = email ? createPasswordLink() : null;
+    // "link": a password nobody knows until the patient sets theirs.
+    const passwordLink = password_mode === "link" ? createPasswordLink() : null;
+    const hashedPassword = await bcrypt.hash(
+      password_mode === "frontdesk" ? (password as string) : unusablePassword(),
+      10,
+    );
 
     // Upload photo to S3 if one was attached (multer puts it on req.file)
     let imageUrl: string | null = null;
@@ -209,17 +247,24 @@ export async function addPatient(
     const age = calculateAge(birthdate);
 
     // =========================
-    // WELCOME EMAIL WITH "CHANGE YOUR PASSWORD" LINK
+    // WELCOME EMAIL (front desk password, or "create your password" link)
     // =========================
-    // Not awaited: the patient shouldn't wait on the email provider.
-    if (email && passwordLink) {
+    // Only for patients with an email. Not awaited: the front desk
+    // shouldn't wait on the email provider.
+    if (email) {
       void sendEmail(
         patientAccountCreatedEmail(
           email,
           first_name,
           patientId,
-          passwordLink.url,
-          PASSWORD_LINK_DAYS,
+          passwordLink
+            ? {
+                setPasswordLink: {
+                  url: passwordLink.url,
+                  days: PASSWORD_LINK_DAYS,
+                },
+              }
+            : { password: password as string },
         ),
       );
     }
@@ -232,6 +277,12 @@ export async function addPatient(
       patient: { ...safePatient, age } as unknown as addPatient.patient,
     } as addPatient.response);
   } catch (error: any) {
+    // 23505 = unique violation (two registrations with the same email at once).
+    if (error?.code === "23505") {
+      return res.status(409).json({
+        message: "Another patient already uses this email.",
+      } as addPatient.error);
+    }
     console.dir(error, { depth: null });
     return res
       .status(500)

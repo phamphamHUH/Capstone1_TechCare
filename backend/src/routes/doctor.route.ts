@@ -13,6 +13,7 @@ import { getReleasedLaboratoryResults } from "../controllers/labstaff/getRequest
 import {
   addLaboratoryRequest,
   addPrescription,
+  addTestRequest,
 } from "../controllers/doctor/postRequests.controller.js";
 import {
   getConsultationQueueDetails,
@@ -40,6 +41,7 @@ if (ENV.IS_PRODUCTION) {
 }
 // POST requests
 router.post("/laboratory-requests", addLaboratoryRequest);
+router.post("/test-requests", addTestRequest);
 router.post("/prescriptions", addPrescription);
 // GET requests
 router.get(

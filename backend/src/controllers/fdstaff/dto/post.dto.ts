@@ -5,7 +5,11 @@ export namespace addPatient {
     last_name: string;
     suffix?: string | null;
     sex: string;
-    email: string;
+    email?: string | null; // optional; unique when given
+    // "frontdesk": the front desk sets `password` now (emailed if there's an
+    // email). "link": the patient gets a set-password link (needs an email).
+    password_mode: "frontdesk" | "link";
+    password?: string; // only for "frontdesk", at least 8 characters
     street: string;
     barangay: string | null;
     city: string | null;
@@ -39,7 +43,7 @@ export namespace addPatient {
     last_name: string;
     suffix?: string | null;
     sex: string;
-    email: string;
+    email: string | null;
     street: string;
     barangay: string | null;
     city: string | null;

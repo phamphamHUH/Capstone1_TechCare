@@ -8,7 +8,7 @@ import { useDebounce } from "../../../../utils/debounce";
 import axios from "axios";
 import api from "#lib/axios";
 import HistoryTimeline from "#components/MedicalHistory/HistoryTimeline";
-import VisitDetails from "#components/MedicalHistory/VisitDetails";
+import VisitDetails from "./MedicalHistoryTab/VisitDetails";
 import ErrorMessage from "#components/ErrorMessage";
 
 type MedicalHistoryTabProps = {
@@ -49,7 +49,7 @@ function MedicalHistoryTab({ patientId }: MedicalHistoryTabProps) {
     const controller = new AbortController();
 
     api
-      .get(`/api/fdstaff/patients/medical-history/${key}`, {
+      .get(`/api/doctor/medical-history/${key}`, {
         signal: controller.signal,
       })
       .then((res) => {

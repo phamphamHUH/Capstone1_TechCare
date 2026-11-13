@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 import { Upload, User, UserPlus } from "lucide-react";
 import api from "../../../lib/axios";
 import calculateAge from "../../../utils/calculateAge";
+import { usePsgcAddress } from "#hooks/usePsgcAddress";
+
+// Same rule as the backend (utils/password.ts).
+const MIN_PASSWORD_LENGTH = 8;
 import UniversalModal from "../../../components/UniversalModal";
 
 type PatientRegistrationProps = {
@@ -55,7 +59,8 @@ const initialForm = {
 };
 type FormState = typeof initialForm;
 
-const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+// "N/A" when the patient does not know their blood type.
+const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", "N/A"];
 const SEX_OPTIONS = ["Male", "Female"];
 const CIVIL_STATUS_OPTIONS = ["Single", "Married", "Widowed", "Separated"];
 const SMOKING_OPTIONS = ["Yes", "No", "Former"];
@@ -129,11 +134,15 @@ function SelectField({
   value,
   onChange,
   options,
+  placeholder = "Select",
+  disabled = false,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   options: string[];
+  placeholder?: string;
+  disabled?: boolean;
 }) {
   return (
     <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-black-700">
@@ -141,9 +150,10 @@ function SelectField({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={inputCls}
+        disabled={disabled}
+        className={`${inputCls} disabled:bg-slate-100 disabled:text-slate-400`}
       >
-        <option value="">Select</option>
+        <option value="">{placeholder}</option>
         {options.map((o) => (
           <option key={o} value={o}>
             {o}
@@ -278,6 +288,19 @@ function PatientRegistration({ loadData }: PatientRegistrationProps) {
   const [notice, setNotice] = useState<Notice | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
 
+  // Patient login password:
+  //   "frontdesk": set here now (emailed to the patient if they have an email)
+  //   "link":      the patient creates it from an emailed link (needs an email)
+  const [passwordMode, setPasswordMode] = useState<"frontdesk" | "link">(
+    "frontdesk",
+  );
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const hasEmail = form.email.trim() !== "";
+  // Without an email there is nothing to send a link to.
+  const effectiveMode = hasEmail ? passwordMode : "frontdesk";
+
   const closeNotice = () => {
     const after = notice?.after;
     setNotice(null);
@@ -286,6 +309,14 @@ function PatientRegistration({ loadData }: PatientRegistrationProps) {
 
   const set = (key: keyof FormState) => (v: string) =>
     setForm((f) => ({ ...f, [key]: v }));
+
+  // Address dropdowns: a new province clears the city and barangay,
+  // a new city clears the barangay.
+  const address = usePsgcAddress(form.province, form.city, form.barangay);
+  const setProvince = (v: string) =>
+    setForm((f) => ({ ...f, province: v, city: "", barangay: "" }));
+  const setCity = (v: string) =>
+    setForm((f) => ({ ...f, city: v, barangay: "" }));
 
   const toggle =
     (list: string[], setList: (v: string[]) => void) => (item: string) =>
@@ -349,6 +380,10 @@ function PatientRegistration({ loadData }: PatientRegistrationProps) {
     setOtherAllergies("");
     setConditionChecks([]);
     setOtherConditions("");
+    setPasswordMode("frontdesk");
+    setPassword("");
+    setConfirmPassword("");
+    setShowPassword(false);
     removePhoto();
   }
 
@@ -361,7 +396,6 @@ function PatientRegistration({ loadData }: PatientRegistrationProps) {
       last_name,
       sex,
       birthdate,
-      email,
       contact_number,
       street,
       barangay,
@@ -374,7 +408,6 @@ function PatientRegistration({ loadData }: PatientRegistrationProps) {
       !last_name ||
       !sex ||
       !birthdate ||
-      !email ||
       !contact_number ||
       !street ||
       !barangay ||
@@ -384,6 +417,20 @@ function PatientRegistration({ loadData }: PatientRegistrationProps) {
     ) {
       setFormError("Please fill out all required fields.");
       return;
+    }
+
+    // Same rule as the backend (utils/password.ts).
+    if (effectiveMode === "frontdesk") {
+      if (password.length < MIN_PASSWORD_LENGTH) {
+        setFormError(
+          `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`,
+        );
+        return;
+      }
+      if (password !== confirmPassword) {
+        setFormError("The passwords don't match.");
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -401,6 +448,8 @@ function PatientRegistration({ loadData }: PatientRegistrationProps) {
       // FormData only carries strings, so send an explicit "true"/"false".
       // Appended outside the loop above so "false" is never skipped.
       formData.append("is_pwd", isPwd ? "true" : "false");
+      formData.append("password_mode", effectiveMode);
+      if (effectiveMode === "frontdesk") formData.append("password", password);
       if (image) formData.append("image", image);
 
       const response = await api.post("/api/fdstaff/patients", formData);
@@ -567,33 +616,155 @@ function PatientRegistration({ loadData }: PatientRegistrationProps) {
                 onChange={set("contact_number")}
               />
               <Field
-                label="Email Address *"
+                label="Email Address (optional)"
                 type="email"
                 value={form.email}
                 onChange={set("email")}
               />
             </div>
 
-            <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr_0.6fr]">
+            {/* Patient login password */}
+            <fieldset className="space-y-2">
+              <legend className="mb-2 text-sm font-medium text-black-700">
+                Patient Login Password *
+              </legend>
+              <label className="flex cursor-pointer items-start gap-2 text-sm text-slate-700">
+                <input
+                  type="radio"
+                  name="patient-password-mode"
+                  checked={effectiveMode === "frontdesk"}
+                  onChange={() => setPasswordMode("frontdesk")}
+                  className="mt-0.5 accent-sky-500"
+                />
+                <span>
+                  Set the password now
+                  <span className="block text-xs text-slate-500">
+                    {hasEmail
+                      ? "The patient can log in right away. The password is also emailed to them."
+                      : "The patient can log in right away. Give them the password."}
+                  </span>
+                </span>
+              </label>
+              <label
+                className={`flex items-start gap-2 text-sm ${
+                  hasEmail
+                    ? "cursor-pointer text-slate-700"
+                    : "cursor-not-allowed text-slate-400"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="patient-password-mode"
+                  checked={effectiveMode === "link"}
+                  onChange={() => setPasswordMode("link")}
+                  disabled={!hasEmail}
+                  className="mt-0.5 accent-sky-500"
+                />
+                <span>
+                  Email a link so the patient creates their own password
+                  <span className="block text-xs text-slate-500">
+                    {hasEmail
+                      ? "They can log in once they've set it. The link works once and expires in 7 days."
+                      : "Needs an email address."}
+                  </span>
+                </span>
+              </label>
+            </fieldset>
+
+            {effectiveMode === "frontdesk" && (
+              <div className="grid grid-cols-1 gap-x-5 gap-y-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
+                <Field
+                  label="Password *"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={setPassword}
+                />
+                <Field
+                  label="Confirm Password *"
+                  type={showPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={setConfirmPassword}
+                />
+                <label className="flex h-11 cursor-pointer items-center gap-2 text-sm text-slate-600">
+                  <input
+                    type="checkbox"
+                    checked={showPassword}
+                    onChange={(e) => setShowPassword(e.target.checked)}
+                    className="accent-sky-500"
+                  />
+                  Show
+                </label>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
+              {address.failed ? (
+                // Address list unavailable: type it in instead.
+                <>
+                  <Field
+                    label="Province *"
+                    value={form.province}
+                    onChange={set("province")}
+                  />
+                  <Field
+                    label="City/Municipality *"
+                    value={form.city}
+                    onChange={set("city")}
+                  />
+                  <Field
+                    label="Barangay *"
+                    value={form.barangay}
+                    onChange={set("barangay")}
+                  />
+                </>
+              ) : (
+                <>
+                  <SelectField
+                    label="Province *"
+                    value={form.province}
+                    onChange={setProvince}
+                    options={address.provinces}
+                    placeholder={
+                      address.loadingProvinces ? "Loading..." : "Select province"
+                    }
+                    disabled={address.loadingProvinces}
+                  />
+                  <SelectField
+                    label="City/Municipality *"
+                    value={form.city}
+                    onChange={setCity}
+                    options={address.cities}
+                    placeholder={
+                      !form.province
+                        ? "Select a province first"
+                        : address.loadingCities
+                          ? "Loading..."
+                          : "Select city/municipality"
+                    }
+                    disabled={!form.province || address.loadingCities}
+                  />
+                  <SelectField
+                    label="Barangay *"
+                    value={form.barangay}
+                    onChange={set("barangay")}
+                    options={address.barangays}
+                    placeholder={
+                      !form.city
+                        ? "Select a city first"
+                        : address.loadingBarangays
+                          ? "Loading..."
+                          : "Select barangay"
+                    }
+                    disabled={!form.city || address.loadingBarangays}
+                  />
+                </>
+              )}
+            </div>
+            <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-[3fr_1fr]">
               <Field
-                label="Street *"
+                label="House No. / Street *"
                 value={form.street}
                 onChange={set("street")}
-              />
-              <Field
-                label="Barangay *"
-                value={form.barangay}
-                onChange={set("barangay")}
-              />
-              <Field
-                label="City/Municipality *"
-                value={form.city}
-                onChange={set("city")}
-              />
-              <Field
-                label="Province *"
-                value={form.province}
-                onChange={set("province")}
               />
               <Field
                 label="ZIP Code *"

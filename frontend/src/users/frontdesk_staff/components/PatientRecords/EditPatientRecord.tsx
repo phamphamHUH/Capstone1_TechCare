@@ -6,6 +6,7 @@ import type { Patient } from "../../../../interface/Patient";
 import { X, Mail, Phone, MapPin, Save, ArrowLeft, Camera } from "lucide-react";
 import api from "../../../../lib/axios";
 import calculateAge from "../../../../utils/calculateAge";
+import { usePsgcAddress } from "#hooks/usePsgcAddress";
 
 type Props = {
   selectedPatient: Patient | null;
@@ -20,7 +21,8 @@ type Notice = {
   after?: () => void;
 };
 
-const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+// "N/A" when the patient does not know their blood type.
+const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", "N/A"];
 const SEX_OPTIONS = ["Male", "Female"];
 const CIVIL_STATUS_OPTIONS = ["Single", "Married", "Widowed", "Separated"];
 const SMOKING_OPTIONS = ["Yes", "No", "Former"];
@@ -101,12 +103,14 @@ function SelectInput({
   onChange,
   options,
   placeholder,
+  disabled = false,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   options: string[];
   placeholder: string;
+  disabled?: boolean;
 }) {
   return (
     <div>
@@ -114,7 +118,8 @@ function SelectInput({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={inputClass}
+        disabled={disabled}
+        className={`${inputClass} disabled:bg-gray-100 disabled:text-gray-400`}
       >
         <option value="">{placeholder}</option>
         {options.map((o) => (
@@ -160,12 +165,21 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Address dropdown lists (PSGC).
+  const address = usePsgcAddress(form.province, form.city, form.barangay);
+
   // Guard: nothing to edit if no patient was selected
   if (!selectedPatient) return null;
   const patient = selectedPatient;
 
   const set = (key: keyof FormState) => (v: string) =>
     setForm((f) => ({ ...f, [key]: v }));
+
+  // A new province clears the city and barangay; a new city clears the barangay.
+  const setProvince = (v: string) =>
+    setForm((f) => ({ ...f, province: v, city: "", barangay: "" }));
+  const setCity = (v: string) =>
+    setForm((f) => ({ ...f, city: v, barangay: "" }));
 
   const fullName = [
     form.first_name,
@@ -451,34 +465,75 @@ function EditPatientRecord({ selectedPatient, onClose, loadData }: Props) {
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-gray-100">
                     <MapPin size={18} className="text-gray-600" />
                   </div>
-                  <div className="flex-1">
-                    <label className={labelClass}> Address</label>
-                    <textarea
+                  <div className="flex-1 space-y-3">
+                    {address.failed ? (
+                      // Address list unavailable: type it in instead.
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <TextInput
+                          label="Province"
+                          value={form.province}
+                          onChange={set("province")}
+                        />
+                        <TextInput
+                          label="City/Municipality"
+                          value={form.city}
+                          onChange={set("city")}
+                        />
+                        <TextInput
+                          label="Barangay"
+                          value={form.barangay}
+                          onChange={set("barangay")}
+                        />
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <SelectInput
+                          label="Province"
+                          value={form.province}
+                          onChange={setProvince}
+                          options={address.provinces}
+                          placeholder={
+                            address.loadingProvinces
+                              ? "Loading..."
+                              : "Select province"
+                          }
+                          disabled={address.loadingProvinces}
+                        />
+                        <SelectInput
+                          label="City/Municipality"
+                          value={form.city}
+                          onChange={setCity}
+                          options={address.cities}
+                          placeholder={
+                            !form.province
+                              ? "Select a province first"
+                              : address.loadingCities
+                                ? "Loading..."
+                                : "Select city/municipality"
+                          }
+                          disabled={!form.province || address.loadingCities}
+                        />
+                        <SelectInput
+                          label="Barangay"
+                          value={form.barangay}
+                          onChange={set("barangay")}
+                          options={address.barangays}
+                          placeholder={
+                            !form.city
+                              ? "Select a city first"
+                              : address.loadingBarangays
+                                ? "Loading..."
+                                : "Select barangay"
+                          }
+                          disabled={!form.city || address.loadingBarangays}
+                        />
+                      </div>
+                    )}
+                    <TextInput
+                      label="House No. / Street"
                       value={form.street}
-                      onChange={(e) => set("street")(e.target.value)}
-                      rows={3}
-                      placeholder="Street"
-                      className={`${inputClass} resize-none`}
+                      onChange={set("street")}
                     />
-                    <textarea
-                      value={form.barangay}
-                      onChange={(e) => set("barangay")(e.target.value)}
-                      rows={2}
-                      placeholder="Barangay"
-                      className={`${inputClass} resize-none`}
-                    />
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <TextInput
-                        label="City"
-                        value={form.city}
-                        onChange={set("city")}
-                      />
-                      <TextInput
-                        label="Province"
-                        value={form.province}
-                        onChange={set("province")}
-                      />
-                    </div>
                     <TextInput
                       label="ZIP Code"
                       value={form.zip_code}
