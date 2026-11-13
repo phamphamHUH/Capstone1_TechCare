@@ -238,6 +238,8 @@ export async function getQueueRequests(
         WHERE tr.status = 'Paid'
           AND tri.status = 'Requested'
           AND tri.queue_id IS NULL
+          AND tr.requested_at >= CURRENT_DATE
+          AND tr.requested_at <  CURRENT_DATE + INTERVAL '1 day'
 
         UNION ALL
 
@@ -282,7 +284,7 @@ export async function getBills(
 ) {
   // GET /api/fdstaff/billings
   try {
-    const rows = await selectBills(null);
+    const rows = await selectBills(null, 3);
     const bills = rows.map(
       ({ items, ...bill }) => bill,
     ) as unknown as getBills.bill[];
@@ -440,6 +442,7 @@ export async function getBillDetails(
     });
   }
 }
+
 export async function getMedicalHistory(
   req: Request,
   res: Response<getMedicalHistory.response | getMedicalHistory.error>,
