@@ -1,7 +1,3 @@
-import EmptyState from "../../../../components/EmptyState";
-import ErrorMessage from "../../../../components/ErrorMessage";
-import LoadingScreen from "../../../../components/LoadingScreen";
-import LoadingRegion from "../../../../components/LoadingRegion";
 import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import api from "../../../../lib/axios";
 import QueueTabs, { type MainFilter } from "./LaboratoryQueuePanel/QueueTabs";
@@ -96,8 +92,6 @@ function LaboratoryQueuePanel({
     };
   }, [openQueueAccordion]);
 
-  // Which tab a queue entry belongs to. "All" and "Priority" leave out
-  // completed entries; the other tabs match the status.
   const matchesTab = (queue: QueueEntry, tab: MainFilter) => {
     const status = queue.status?.toLowerCase();
     if (tab === "all") return status !== "completed";
@@ -116,7 +110,6 @@ function LaboratoryQueuePanel({
     .filter((c): c is string => Boolean(c))
     .sort();
 
-  // If the selected service isn't available on this tab, treat it as "no filter"
   const activeServiceFilter = serviceOptions.includes(serviceFilter)
     ? serviceFilter
     : "";
@@ -136,7 +129,8 @@ function LaboratoryQueuePanel({
       const matchesSearch =
         !searchLower ||
         queue.queue_id?.toLowerCase().includes(searchLower) ||
-        queue.patient_id?.toLowerCase().includes(searchLower);
+        queue.patient_id?.toLowerCase().includes(searchLower) ||
+        queue.patient_name?.toLowerCase().includes(searchLower);
 
       const matchesPriority =
         priorityFilter === "all" ||
@@ -187,10 +181,8 @@ function LaboratoryQueuePanel({
     },
   );
 
-  const loadingLabel = activeMainTab === "all" ? "" : `${activeMainTab} `;
-
   return (
-    <div className="w-full min-w-0 min-h-20 border rounded-md border-gray-300 flex flex-col gap-5 justify-around">
+    <div className="w-full min-w-0 min-h-20 border rounded-md border-gray-300 flex flex-col justify-around">
       {/* MAIN FILTERS */}
       <QueueTabs
         mainFilterValues={mainFilterValues}
@@ -211,40 +203,22 @@ function LaboratoryQueuePanel({
         setPriority={setPriorityFilter}
       />
 
-      {error && <ErrorMessage className="mx-4">{error}</ErrorMessage>}
-      <LoadingRegion
-        loading={loading && queues.length > 0}
-        message="Refreshing laboratory queues..."
-      >
-        {loading && queues.length === 0 ? (
-          <LoadingScreen
-            message={`Loading ${loadingLabel}laboratory queues...`}
-          />
-        ) : filterQueues.length === 0 ? (
-          <EmptyState
-            message={
-              loadFailed
-                ? "Laboratory requests are unavailable."
-                : "No laboratory requests found."
-            }
-          />
-        ) : (
-          <div className="w-full">
-            <QueueTable
-              filterQueues={filterQueues}
-              laboratoryItems={laboratoryItems}
-              accordionError={accordionError}
-              accordionLoading={accordionLoading}
-              setOpenQueueAccordion={setOpenQueueAccordion}
-              openQueueAccordion={openQueueAccordion}
-              setOpenInformationCard={setOpenInformationCard}
-              setQueueIdCard={setQueueIdCard}
-              room={room}
-              loadData={loadData}
-            />
-          </div>
-        )}
-      </LoadingRegion>
+      {/* QUEUE TABLE */}
+      <QueueTable
+        filterQueues={filterQueues}
+        laboratoryItems={laboratoryItems}
+        accordionError={accordionError}
+        accordionLoading={accordionLoading}
+        setOpenQueueAccordion={setOpenQueueAccordion}
+        openQueueAccordion={openQueueAccordion}
+        setOpenInformationCard={setOpenInformationCard}
+        setQueueIdCard={setQueueIdCard}
+        room={room}
+        loadData={loadData}
+        loading={loading}
+        error={error}
+        loadFailed={loadFailed}
+      />
     </div>
   );
 }

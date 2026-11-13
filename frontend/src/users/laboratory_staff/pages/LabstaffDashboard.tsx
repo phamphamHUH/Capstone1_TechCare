@@ -49,13 +49,6 @@ function LabstaffDashboard({
 
   return (
     <main className="flex-1 min-w-0 border-gray-300">
-      <Header
-        page="Dashboard"
-        loading={loading}
-        open={open}
-        setOpen={setOpen}
-        loadData={loadData}
-      />
       <QueueDashboard
         roomLabel={room}
         queueLabel="laboratory request"

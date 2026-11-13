@@ -28,6 +28,7 @@ import type {
 import StatTile from "../components/StatTile";
 import RevenueChart from "../components/Reports/RevenueChart";
 import SalesBreakdown from "../components/Reports/SalesBreakdown";
+import DrugTestsReport from "../components/Reports/DrugTestsReport";
 import TopServicesTable from "../components/Reports/TopServicesTable";
 import ServiceCatalogTable from "../components/Reports/ServiceCatalogTable";
 import DetailModal, {
@@ -288,6 +289,9 @@ function Reports({
             )}
           </div>
         </LoadingRegion>
+
+        {/* Billed but never queued; loads on its own for the selected range. */}
+        <DrugTestsReport range={range} periodLabel={periodLabel} />
       </div>
       {/* Tile detail modal */}
       {openDetail && (

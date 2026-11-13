@@ -34,7 +34,7 @@ import {
   type VitalKey,
 } from "../../../../interface/Overview";
 import api from "#lib/axios";
-import { usePersistentState } from "../../../../utils/persistentState";
+import { usePersistentState } from "./utils/persistentState";
 
 type OverviewProps = {
   selectedQueue: QueueEntry | null;
@@ -92,10 +92,16 @@ function Overview({
       bloodPressure: "",
       heartRate: "",
       respiratoryRate: "",
-      temperature: "",
+      // Taken at the front desk; the doctor can correct it.
+      temperature: selectedQueue?.vital_signs?.temperature ?? "",
       bloodOxygen: "",
     },
   );
+  // Measured at the front desk (read-only here).
+  const height = Number(selectedQueue?.vital_signs?.height);
+  const weight = Number(selectedQueue?.vital_signs?.weight);
+  const bmi =
+    height > 0 && weight > 0 ? weight / (height / 100) ** 2 : null;
   const [notes, setNotes] = usePersistentState<Record<NoteKey, string>>(
     k("notes"),
     {
@@ -158,9 +164,8 @@ function Overview({
             chief_complaint: notes.chiefComplaint.trim(),
             hpi: notes.hpi.trim(),
           },
-          diagnosis: diagnoses.map(({ name, icd10, type }) => ({
+          diagnosis: diagnoses.map(({ name, type }) => ({
             diagnosis: name,
-            icd10,
             type,
           })),
           physical_examination: {
@@ -396,9 +401,15 @@ function Overview({
                   </div>
                 </div>
               ))}
-              {/* BMI (computed later from height and weight) */}
+              {/* Height and weight come from the front desk */}
+              <Tile label="Height" className="bg-gray-50">
+                {height > 0 ? `${height} cm` : "Not Recorded"}
+              </Tile>
+              <Tile label="Weight" className="bg-gray-50">
+                {weight > 0 ? `${weight} kg` : "Not Recorded"}
+              </Tile>
               <Tile label="BMI" className="bg-gray-50">
-                Not Recorded
+                {bmi ? bmi.toFixed(1) : "Not Recorded"}
               </Tile>
             </div>
           </Section>

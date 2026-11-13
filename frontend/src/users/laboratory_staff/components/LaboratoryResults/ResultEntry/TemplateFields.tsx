@@ -13,6 +13,8 @@ type TemplateFieldsProps = {
   onChange: (key: string, value: unknown) => void;
   onBlur: (key: string) => void;
   disabled?: boolean;
+  /** "document" hides the lab-only reference range and unit columns. */
+  variant?: "result" | "document";
 };
 
 const limit = (value: string | number | undefined) =>
@@ -27,6 +29,7 @@ type FieldInputProps = {
   onChange: (value: unknown) => void;
   onBlur: () => void;
   disabled?: boolean;
+  placeholder?: string;
 };
 
 function FieldInput({
@@ -36,6 +39,7 @@ function FieldInput({
   onChange,
   onBlur,
   disabled,
+  placeholder = "Enter result",
 }: FieldInputProps) {
   const { fieldKey: key, settings, validation: rules } = component;
 
@@ -62,7 +66,7 @@ function FieldInput({
         required={Boolean(settings.required || rules.required)}
         minLength={limit(rules.minLength)}
         maxLength={limit(rules.maxLength)}
-        placeholder={settings.placeholder || "Enter result"}
+        placeholder={settings.placeholder || placeholder}
         aria-invalid={Boolean(error)}
         aria-describedby={error ? `${id}-error` : undefined}
         onBlur={onBlur}
@@ -91,7 +95,7 @@ function FieldInput({
       }
       minLength={limit(rules.minLength)}
       maxLength={limit(rules.maxLength)}
-      placeholder={settings.placeholder || "Enter result"}
+      placeholder={settings.placeholder || placeholder}
       aria-invalid={Boolean(error)}
       aria-describedby={error ? `${id}-error` : undefined}
       onBlur={onBlur}
@@ -248,7 +252,9 @@ export default function TemplateFields({
   onChange,
   onBlur,
   disabled,
+  variant = "result",
 }: TemplateFieldsProps) {
+  const isDocument = variant === "document";
   const groups: {
     title: string;
     key: string;
@@ -265,7 +271,7 @@ export default function TemplateFields({
     } else {
       if (!groups.length) {
         groups.push({
-          title: "Results",
+          title: isDocument ? "Details" : "Results",
           key: "results",
           components: [],
         });
@@ -280,6 +286,15 @@ export default function TemplateFields({
       {groups.map((group) => (
         <section key={group.key} className="mb-5" aria-label={group.title}>
           <h3 className="mb-3 text-base font-semibold">{group.title}</h3>
+          {isDocument ? (
+            <div
+              className="hidden grid-cols-[1fr_2fr] gap-3 rounded-md bg-gray-50 px-2 py-2 text-xs font-medium text-gray-600 sm:grid"
+              aria-hidden="true"
+            >
+              <span>Field</span>
+              <span>Details</span>
+            </div>
+          ) : (
           <div
             className="hidden grid-cols-[1.15fr_1.6fr_1.1fr_.42fr] gap-3 rounded-md bg-gray-50 px-2 py-2 text-xs font-medium text-gray-600 sm:grid"
             aria-hidden="true"
@@ -289,6 +304,7 @@ export default function TemplateFields({
             <span>Reference Range</span>
             <span>Unit</span>
           </div>
+          )}
           {group.components.map((component) => {
             const { fieldKey: key, settings, validation: rules } = component;
 
@@ -319,16 +335,9 @@ export default function TemplateFields({
               );
             }
 
-            if (component.type === "image") {
-              return settings.imageUrl ? (
-                <img
-                  className="max-h-40 max-w-full object-contain p-2"
-                  key={component.id}
-                  src={settings.imageUrl}
-                  alt={settings.imageAlt || component.label}
-                />
-              ) : null;
-            }
+            // Results no longer carry images (the clinic doesn't use them);
+            // an old template's image component is simply skipped here.
+            if (component.type === "image") return null;
 
             if (!inputTypes.has(component.type)) {
               return (
@@ -430,7 +439,7 @@ export default function TemplateFields({
 
             return (
               <div
-                className="grid grid-cols-1 items-center gap-x-3 gap-y-2 border-b border-gray-200 px-2 py-3 text-sm sm:grid-cols-[1.15fr_1.6fr_1.1fr_.42fr]"
+                className={`grid grid-cols-1 items-center gap-x-3 gap-y-2 border-b border-gray-200 px-2 py-3 text-sm ${isDocument ? "sm:grid-cols-[1fr_2fr]" : "sm:grid-cols-[1.15fr_1.6fr_1.1fr_.42fr]"}`}
                 key={component.id}
               >
                 <label htmlFor={`result-${key}`}>
@@ -447,6 +456,7 @@ export default function TemplateFields({
                     onChange={(value) => onChange(key, value)}
                     onBlur={() => onBlur(key)}
                     disabled={disabled}
+                    placeholder={isDocument ? "Enter details" : undefined}
                   />
                   {error && (
                     <FieldError id={`result-${key}-error`}>{error}</FieldError>
@@ -459,13 +469,17 @@ export default function TemplateFields({
                     </span>
                   )}
                 </div>
-                <span className="text-xs text-gray-500">
-                  <span className="sm:hidden">{"Reference: "}</span>
-                  {reference}
-                </span>
-                <span className="text-xs text-gray-500">
-                  {settings.unit || "—"}
-                </span>
+                {!isDocument && (
+                  <>
+                    <span className="text-xs text-gray-500">
+                      <span className="sm:hidden">{"Reference: "}</span>
+                      {reference}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {settings.unit || "—"}
+                    </span>
+                  </>
+                )}
               </div>
             );
           })}

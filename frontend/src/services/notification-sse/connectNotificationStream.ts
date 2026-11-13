@@ -1,5 +1,5 @@
 import { fetchEventSource } from "@microsoft/fetch-event-source";
-import api, { refreshAccessToken } from "../../lib/axios";
+import api, { endSession, refreshAccessToken } from "../../lib/axios";
 import type { NotificationStreamStatus } from "../../interface/Notification";
 
 class StopRetryingError extends Error {}
@@ -53,6 +53,10 @@ export function connectNotificationStream({
           throw new ReconnectError("Token refreshed");
         }
 
+        // The session can't be renewed: log out, like any other request.
+        if (response.status === 401 && sessionStorage.getItem("token")) {
+          endSession();
+        }
         if (response.status === 401 || response.status === 403) {
           onStatusChange?.("unauthorized");
           throw new StopRetryingError("Not authorized");

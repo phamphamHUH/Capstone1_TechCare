@@ -48,6 +48,8 @@ const TABLES: TableDefinition[] = [
       last_login: "TIMESTAMPTZ",
       account_status: "BOOLEAN NOT NULL DEFAULT TRUE",
       profile_photo: "TEXT",
+      // UI theme chosen in Account settings: light | dark | system.
+      theme: "VARCHAR(20) NOT NULL DEFAULT 'light'",
       active: "BOOLEAN NOT NULL DEFAULT FALSE",
       // One-time "set your password" link from the account-created email
       // (SHA-256 of the token, never the token itself).
@@ -109,6 +111,8 @@ const TABLES: TableDefinition[] = [
       last_login: "TIMESTAMPTZ",
       account_status: "BOOLEAN NOT NULL DEFAULT TRUE",
       profile_photo: "TEXT",
+      // UI theme chosen in Account settings: light | dark | system.
+      theme: "VARCHAR(20) NOT NULL DEFAULT 'light'",
       active: "BOOLEAN NOT NULL DEFAULT FALSE",
       // One-time "set your password" link from the account-created email
       // (SHA-256 of the token, never the token itself).
@@ -305,10 +309,13 @@ const TABLES: TableDefinition[] = [
     columns: {
       id: "SERIAL PRIMARY KEY",
       form_id: "VARCHAR(255) UNIQUE NOT NULL",
+      template_key: "VARCHAR(255) NOT NULL", // NEW
       form_name: "VARCHAR(255) NOT NULL",
       form_description: "TEXT",
+      paper_size: "VARCHAR(20) CHECK (paper_size IN ('half_long_bond', 'a4'))",
       service_id: "VARCHAR(255) NOT NULL REFERENCES services(service_id)",
-      status: "VARCHAR(50) NOT NULL DEFAULT 'Published'",
+      status:
+        "VARCHAR(50) NOT NULL DEFAULT 'Published' CONSTRAINT form_templates_status_chk CHECK (status IN ('Draft', 'Published', 'Archived'))", // CHANGED
       created_by: "VARCHAR(255) NOT NULL REFERENCES users(user_id)",
       version: "INTEGER NOT NULL DEFAULT 1",
       created_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
@@ -397,6 +404,32 @@ const TABLES: TableDefinition[] = [
   },
 
   {
+    // Medical certificates and clearances a doctor fills out from a published
+    // form template and releases to the patient. The template is copied at
+    // release time so later template edits never change an issued document.
+    table: "medical_documents",
+    columns: {
+      id: "SERIAL PRIMARY KEY",
+      document_id: "VARCHAR(255) UNIQUE NOT NULL",
+      document_type:
+        "VARCHAR(30) NOT NULL CHECK (document_type IN ('medical_certificate', 'medical_clearance'))",
+      patient_id: "VARCHAR(255) NOT NULL REFERENCES patients(patient_id)",
+      form_id: "VARCHAR(255) NOT NULL REFERENCES form_templates(form_id)",
+      template_snapshot: "JSONB NOT NULL",
+      field_values: "JSONB NOT NULL DEFAULT '{}'::jsonb",
+      remarks: "TEXT",
+      issued_by: "VARCHAR(255) NOT NULL REFERENCES users(user_id)",
+      // Signature block as printed on the document when it was released.
+      physician_name: "VARCHAR(255) NOT NULL",
+      physician_license: "VARCHAR(50)",
+      status: "VARCHAR(20) NOT NULL DEFAULT 'Released'",
+      issued_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      created_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
+      updated_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
+    },
+  },
+
+  {
     table: "sse_test",
     columns: {
       message_id: "SERIAL PRIMARY KEY",
@@ -469,10 +502,34 @@ async function createTables(): Promise<void> {
     );
 
     // await ensureLaboratoryResultStatus();
+    // Existing installations also need this additive template setting.
+    await sql`
+      ALTER TABLE form_templates
+      ADD COLUMN IF NOT EXISTS paper_size VARCHAR(20)
+      CHECK (paper_size IN ('half_long_bond', 'a4'))
+    `;
     // await sql`
     //   ALTER TABLE consultation_records
     //   ADD COLUMN IF NOT EXISTS cancellation_reason VARCHAR(255)
     // `;
+    // An early version of medical_documents named this column "values"
+    // (a reserved word). Rename it where that version was created.
+    await sql`
+      DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_schema = 'public' AND table_name = 'medical_documents'
+            AND column_name = 'values'
+        ) AND NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_schema = 'public' AND table_name = 'medical_documents'
+            AND column_name = 'field_values'
+        ) THEN
+          ALTER TABLE medical_documents RENAME COLUMN "values" TO field_values;
+        END IF;
+      END $$
+    `;
 
     console.log("Database initialized successfully");
   } catch (error) {

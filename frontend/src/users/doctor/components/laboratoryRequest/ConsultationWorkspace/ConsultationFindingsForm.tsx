@@ -152,9 +152,8 @@ export default function ConsultationFindingsForm({
             </div>
 
             <div className="border border-gray-200 rounded-md overflow-hidden">
-              <div className="grid grid-cols-[minmax(0,1fr)_88px_96px_36px] gap-2 bg-gray-50 px-3 py-2 text-[11px] font-semibold text-gray-600">
+              <div className="grid grid-cols-[minmax(0,1fr)_96px_36px] gap-2 bg-gray-50 px-3 py-2 text-[11px] font-semibold text-gray-600">
                 <span>Diagnosis</span>
-                <span>ICD-10</span>
                 <span>Type</span>
                 <span className="text-center">Actions</span>
               </div>
@@ -168,11 +167,10 @@ export default function ConsultationFindingsForm({
               ) : (
                 value.diagnosis.map((row, i) => {
                   const nameKey = `diagnosis.${i}.diagnosis`;
-                  const codeKey = `diagnosis.${i}.icd10`;
                   return (
                     <div
                       key={row.key}
-                      className="grid grid-cols-[minmax(0,1fr)_88px_96px_36px] gap-2 px-3 py-2 border-t border-gray-100 items-start"
+                      className="grid grid-cols-[minmax(0,1fr)_96px_36px] gap-2 px-3 py-2 border-t border-gray-100 items-start"
                     >
                       <div>
                         <input
@@ -191,29 +189,6 @@ export default function ConsultationFindingsForm({
                         {show(nameKey) && (
                           <FieldError className="mt-0.5">
                             {show(nameKey)}
-                          </FieldError>
-                        )}
-                      </div>
-                      <div>
-                        <input
-                          type="text"
-                          value={row.icd10}
-                          disabled={locked}
-                          onChange={(e) =>
-                            setRow(row.key, {
-                              icd10: e.target.value.toUpperCase(),
-                            })
-                          }
-                          onBlur={() => touch(codeKey)}
-                          placeholder="J06.9"
-                          maxLength={8}
-                          aria-label={`ICD-10 code ${i + 1}`}
-                          aria-invalid={!!show(codeKey)}
-                          className={`${inputBase} font-mono ${show(codeKey) ? errBorder : okBorder}`}
-                        />
-                        {show(codeKey) && (
-                          <FieldError className="mt-0.5">
-                            {show(codeKey)}
                           </FieldError>
                         )}
                       </div>

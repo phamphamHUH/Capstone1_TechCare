@@ -15,6 +15,7 @@ import {
   getBills,
   getBillDetails,
   getPatientMedicalHistory,
+  getPatientPaymentHistory,
 } from "../controllers/fdstaff/getRequests.controller.js";
 import {
   addBills,
@@ -50,7 +51,7 @@ router.get("/queues", getAllQueueEntries);
 router.get("/patients/:patient_id/print", getPrintablePatientRecord);
 router.get("/patients/:patient_id/medical-history", getPatientMedicalHistory);
 router.get("/queue-requests", getQueueRequests);
-
+router.get("/patients/:patient_id/payment-history", getPatientPaymentHistory);
 router.get("/patients/medical-history/:patient_id", getMedicalHistory);
 router.get(
   "/patients/medical-history/details/:record_type/:record_id",

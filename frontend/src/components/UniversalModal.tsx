@@ -180,7 +180,7 @@ export default function UniversalModal({
                 {description && (
                   <Dialog.Description
                     render={<div />}
-                    className="mt-1.5 text-xs leading-relaxed text-[#5c7b9f]"
+                    className="whitespace-pre-line mt-1.5 text-xs leading-relaxed text-[#5c7b9f]"
                   >
                     {description}
                   </Dialog.Description>

@@ -8,6 +8,10 @@ import api from "../../../../lib/axios";
 import type { Service } from "../../../../interface/Service";
 import { peso } from "../../../../utils/formats";
 
+// Drug tests are billed but never queued, so they have no real room.
+const DRUG_TEST = "drug test";
+const DRUG_TEST_ROOM = "Drug Test";
+
 type Props = {
   service: Service;
   services: Service[];
@@ -104,7 +108,7 @@ function EditService({ service, services, onClose, loadData }: Props) {
         price === "" ||
         !serviceType ||
         !serviceCategory.trim() ||
-        !room
+        (serviceType !== DRUG_TEST && !room)
       ) {
         setFormError("Please fill out all fields.");
         return;
@@ -129,7 +133,7 @@ function EditService({ service, services, onClose, loadData }: Props) {
             service_type: serviceType,
             service_category: serviceCategory.trim(),
             price: Number(price),
-            room,
+            room: serviceType === DRUG_TEST ? DRUG_TEST_ROOM : room,
             active: isActive,
           };
 
@@ -228,6 +232,7 @@ function EditService({ service, services, onClose, loadData }: Props) {
                   <option value="consultation">Consultation</option>
                   <option value="laboratory">Laboratory</option>
                   <option value="imaging">Imaging</option>
+                  <option value="drug test">Drug Test</option>
                 </select>
               </div>
               <div>
@@ -243,6 +248,12 @@ function EditService({ service, services, onClose, loadData }: Props) {
               </div>
             </div>
 
+            {serviceType === DRUG_TEST ? (
+              <p className="mb-3 rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-600">
+                Drug tests aren't done in a room or queue: they're billed at the
+                front desk and counted in Reports → Drug Tests.
+              </p>
+            ) : (
             <div className="w-full mb-3">
               <label className="text-xs font-semibold">Room *</label>
               <select
@@ -258,6 +269,7 @@ function EditService({ service, services, onClose, loadData }: Props) {
                 ))}
               </select>
             </div>
+            )}
           </div>
         )}
 

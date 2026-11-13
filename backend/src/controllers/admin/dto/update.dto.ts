@@ -97,6 +97,7 @@ export namespace updateFormTemplate {
   export interface body {
     form_name: string;
     form_description?: string | null;
+    paper_size?: "half_long_bond" | "a4" | null;
     service_id?: string;
     status?: string;
     form_components: component[];
@@ -106,6 +107,7 @@ export namespace updateFormTemplate {
     form_id: string;
     form_name: string;
     form_description: string | null;
+    paper_size: "half_long_bond" | "a4" | null;
     service_id: string;
     status: string;
     version: number;

@@ -60,7 +60,7 @@ const CONTENT = {
   forwarded: {
     title: "Request Forwarded",
     description:
-      "The payment has been recorded and the request forwarded to the laboratory.",
+      "The payment has been recorded and the request forwarded to the laboratory or imaging queue.",
     action: "OK",
     icon: Info,
   },
@@ -83,9 +83,13 @@ type BillingModalProps = {
   onClose: () => void;
   onConfirm: () => void | Promise<void>;
   onViewInvoice: () => void;
+  queues?: {
+    queue_id: string;
+    queue_number: number;
+  }[];
 };
 
-/** Billing labels and actions; all dialog presentation and interaction live in UniversalModal. */
+/** Billing labels and actions; presentation lives in UniversalModal. */
 export default function BillingModal({
   kind,
   busy,
@@ -96,20 +100,26 @@ export default function BillingModal({
   onClose,
   onConfirm,
   onViewInvoice,
+  queues = [],
 }: BillingModalProps) {
   const content = CONTENT[kind ?? "print"];
   const Icon = content.icon;
+
   const success = kind === "received" || kind === "generated";
   const result = success || kind === "forwarded" || kind === "failed";
+
   const actions: ModalAction[] = [];
-  if (!result)
+
+  if (!result) {
     actions.push({
       id: "cancel",
       label: "Cancel",
       variant: "secondary",
       onClick: onClose,
     });
-  if (kind === "generated")
+  }
+
+  if (kind === "generated") {
     actions.push({
       id: "view",
       label: "View Invoice",
@@ -117,12 +127,24 @@ export default function BillingModal({
       variant: "secondary",
       onClick: onViewInvoice,
     });
+  }
+
   actions.push({
     id: "confirm",
     label: content.action,
     icon: !result && <Icon size={15} className="shrink-0" />,
     onClick: onConfirm,
   });
+
+  const queueDetails =
+    (kind === "received" || kind === "forwarded") && queues.length > 0
+      ? "\n" + queues.map((queue) => `Queue ID: ${queue.queue_id}`).join("\n")
+      : "";
+
+  const description =
+    (kind === "received" && alreadyPaid
+      ? "The transaction is already marked as Paid. No new charge was recorded."
+      : content.description) + queueDetails;
 
   return (
     <UniversalModal
@@ -133,11 +155,7 @@ export default function BillingModal({
           ? "Payment Already Recorded"
           : content.title
       }
-      description={
-        kind === "received" && alreadyPaid
-          ? "The transaction is already marked as Paid. No new charge was recorded."
-          : content.description
-      }
+      description={description}
       type={kind === "failed" ? "danger" : success ? "success" : "info"}
       closeOnOverlayClick
       icon={

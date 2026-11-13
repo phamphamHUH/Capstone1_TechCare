@@ -175,181 +175,181 @@ function QueueTable({
         message="Refreshing consultation queues..."
       >
         <div className="overflow-x-auto">
-        <table className="w-full min-w-[760px] table-fixed">
-          <colgroup>
-            <col className="w-4/40" />
-            <col className="w-6/40" />
-            <col className="w-7/40" />
-            <col className="w-5/40" />
-            <col className="w-5/40" />
-            <col className="w-5/40" />
-            <col className="w-8/40" />
-          </colgroup>
+          <table className="w-full min-w-190 table-fixed">
+            <colgroup>
+              <col className="w-4/40" />
+              <col className="w-6/40" />
+              <col className="w-7/40" />
+              <col className="w-5/40" />
+              <col className="w-5/40" />
+              <col className="w-5/40" />
+              <col className="w-8/40" />
+            </colgroup>
 
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="px-1 py-2">Queue ID</th>
-              <th className="px-1 py-2">Patient ID</th>
-              <th className="px-1 py-2">Patient Name</th>
-              <th className="px-1 py-2">Priority</th>
-              <th className="px-1 py-2">Requested At</th>
-              <th className="px-1 py-2">Status</th>
-              <th className="px-1 py-2">Action</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {/* ERROR MESSAGE */}
-            {(error || acceptError) && (
+            <thead className="bg-gray-100">
               <tr>
-                <td colSpan={7} className="px-4 py-3">
-                  <ErrorMessage>{acceptError || error}</ErrorMessage>
-                </td>
+                <th className="px-1 py-2">Queue ID</th>
+                <th className="px-1 py-2">Patient ID</th>
+                <th className="px-1 py-2">Patient Name</th>
+                <th className="px-1 py-2">Priority</th>
+                <th className="px-1 py-2">Requested At</th>
+                <th className="px-1 py-2">Status</th>
+                <th className="px-1 py-2">Actions</th>
               </tr>
-            )}
+            </thead>
 
-            {/* INITIAL LOADING */}
-            {loading && filterQueues.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="py-10 text-center">
-                  <LoadingScreen message="Loading consultation queues..." />
-                </td>
-              </tr>
-            ) : filterQueues.length === 0 ? (
-              /* EMPTY STATE */
-              <tr>
-                <td colSpan={7} className="pb-10 text-center">
-                  <EmptyState
-                    message={
-                      loadFailed
-                        ? "Consultation requests are unavailable."
-                        : "No consultation requests found."
-                    }
-                  />
-                </td>
-              </tr>
-            ) : (
-              /* QUEUE ROWS */
-              pageQueues.map((queue) => {
-                const status = queue.status?.toLowerCase();
-                const busy = acceptingId === queue.queue_id;
+            <tbody>
+              {/* ERROR MESSAGE */}
+              {(error || acceptError) && (
+                <tr>
+                  <td colSpan={7} className="px-4 py-3">
+                    <ErrorMessage>{acceptError || error}</ErrorMessage>
+                  </td>
+                </tr>
+              )}
 
-                const skipsUsed = queue.skip_count ?? 0;
-                const skipsExhausted = skipsUsed >= MAX_SKIPS;
+              {/* INITIAL LOADING */}
+              {loading && filterQueues.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-10 text-center">
+                    <LoadingScreen message="Loading consultation queues..." />
+                  </td>
+                </tr>
+              ) : filterQueues.length === 0 ? (
+                /* EMPTY STATE */
+                <tr>
+                  <td colSpan={7} className="pb-10 text-center">
+                    <EmptyState
+                      message={
+                        loadFailed
+                          ? "Consultation requests are unavailable."
+                          : "No consultation requests found."
+                      }
+                    />
+                  </td>
+                </tr>
+              ) : (
+                /* QUEUE ROWS */
+                pageQueues.map((queue) => {
+                  const status = queue.status?.toLowerCase();
+                  const busy = acceptingId === queue.queue_id;
 
-                const canAct =
-                  status === "waiting" ||
-                  status === "skipped" ||
-                  status === "serving";
+                  const skipsUsed = queue.skip_count ?? 0;
+                  const skipsExhausted = skipsUsed >= MAX_SKIPS;
 
-                return (
-                  <React.Fragment key={queue.id}>
-                    <tr
-                      className={`border-b border-gray-300 ${
-                        status === "serving" ? "bg-green-50" : ""
-                      }`}
-                    >
-                      <td className="px-1 py-3 text-center text-sm">
-                        {queue.queue_id}
-                      </td>
+                  const canAct =
+                    status === "waiting" ||
+                    status === "skipped" ||
+                    status === "serving";
 
-                      <td className="px-1 py-3 text-center text-sm">
-                        {queue.patient_id}
-                      </td>
+                  return (
+                    <React.Fragment key={queue.id}>
+                      <tr
+                        className={`border-b border-gray-300 ${
+                          status === "serving" ? "bg-green-50" : ""
+                        }`}
+                      >
+                        <td className="px-1 py-3 text-center text-sm">
+                          {queue.queue_id}
+                        </td>
 
-                      <td className="wrap-break px-1 py-3 text-center text-sm">
-                        {queue.patient_name || "Unknown"}
-                      </td>
+                        <td className="px-1 py-3 text-center text-sm">
+                          {queue.patient_id}
+                        </td>
 
-                      <td className="px-1 py-3 text-center text-sm">
-                        {queue.is_priority ? "Priority" : "Non-priority"}
-                      </td>
+                        <td className="wrap-break px-1 py-3 text-center text-sm">
+                          {queue.patient_name || "Unknown"}
+                        </td>
 
-                      <td className="px-1 py-3 text-center text-sm">
-                        {(() => {
-                          const date = new Date(queue.created_at);
-                          const h24 = date.getHours();
-                          const m = date
-                            .getMinutes()
-                            .toString()
-                            .padStart(2, "0");
+                        <td className="px-1 py-3 text-center text-sm">
+                          {queue.is_priority ? "Priority" : "Non-priority"}
+                        </td>
 
-                          const suffix = h24 >= 12 ? "PM" : "AM";
-                          const h12 = h24 % 12 || 12;
+                        <td className="px-1 py-3 text-center text-sm">
+                          {(() => {
+                            const date = new Date(queue.created_at);
+                            const h24 = date.getHours();
+                            const m = date
+                              .getMinutes()
+                              .toString()
+                              .padStart(2, "0");
 
-                          return `${h12}:${m} ${suffix}`;
-                        })()}
-                      </td>
+                            const suffix = h24 >= 12 ? "PM" : "AM";
+                            const h12 = h24 % 12 || 12;
 
-                      <td className="px-1 py-3 text-center text-sm">
-                        {queue.status}
-                        {skipsUsed > 0 && (
-                          <span className="ml-1 text-xs text-gray-400">
-                            ({skipsUsed}/{MAX_SKIPS})
-                          </span>
-                        )}
-                      </td>
+                            return `${h12}:${m} ${suffix}`;
+                          })()}
+                        </td>
 
-                      <td className="px-1 py-3">
-                        <div className="flex items-center justify-center gap-3">
-                          <button
-                            type="button"
-                            className="cursor-pointer rounded-sm border-2 border-blue-500 px-4 py-2 text-xs text-blue-500 transition-all duration-300 hover:scale-105 hover:bg-blue-100"
-                            onClick={() => handleView(queue.queue_id)}
-                          >
-                            View
-                          </button>
+                        <td className="px-1 py-3 text-center text-sm">
+                          {queue.status}
+                          {skipsUsed > 0 && (
+                            <span className="ml-1 text-xs text-gray-400">
+                              ({skipsUsed}/{MAX_SKIPS})
+                            </span>
+                          )}
+                        </td>
 
-                          {(status === "waiting" || status === "skipped") && (
+                        <td className="px-1 py-3">
+                          <div className="flex items-center justify-center gap-3">
                             <button
                               type="button"
-                              disabled={acceptingId !== null}
-                              onClick={() => handleAccept(queue)}
-                              className="cursor-pointer rounded-sm border-2 border-green-500 px-4 py-2 text-xs text-green-500 transition-all duration-300 hover:scale-105 hover:bg-green-100 disabled:cursor-not-allowed disabled:opacity-50"
+                              className="border text-xs border-sky-600 px-3 py-2 rounded-sm transition text-sky-600 cursor-pointer hover:bg-sky-600 hover:text-white"
+                              onClick={() => handleView(queue.queue_id)}
                             >
-                              {busy && pendingAction === "accept"
-                                ? "Accepting..."
-                                : "Accept"}
+                              View
                             </button>
-                          )}
 
-                          {(status === "waiting" ||
-                            status === "serving" ||
-                            status === "skipped") &&
-                            !skipsExhausted && (
+                            {(status === "waiting" || status === "skipped") && (
                               <button
                                 type="button"
                                 disabled={acceptingId !== null}
-                                onClick={() => handleSkip(queue.queue_id)}
-                                className="cursor-pointer rounded-sm border-2 border-yellow-500 px-4 py-2 text-xs text-yellow-500 transition-all duration-300 hover:scale-105 hover:bg-yellow-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                onClick={() => handleAccept(queue)}
+                                className="border text-xs border-green-600 px-3 py-2 rounded-sm transition text-green-600 cursor-pointer hover:bg-green-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-50s"
                               >
-                                {busy && pendingAction === "skip"
-                                  ? "Skipping..."
-                                  : "Skip"}
+                                {busy && pendingAction === "accept"
+                                  ? "Accepting..."
+                                  : "Accept"}
                               </button>
                             )}
 
-                          {skipsExhausted && canAct && (
-                            <button
-                              type="button"
-                              disabled={acceptingId !== null}
-                              onClick={() => handleCancel(queue)}
-                              className="cursor-pointer rounded-sm border-2 border-red-500 px-4 py-2 text-xs text-red-500 transition-all duration-300 hover:scale-105 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              {busy && pendingAction === "cancel"
-                                ? "Cancelling..."
-                                : "Cancel"}
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  </React.Fragment>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+                            {(status === "waiting" ||
+                              status === "serving" ||
+                              status === "skipped") &&
+                              !skipsExhausted && (
+                                <button
+                                  type="button"
+                                  disabled={acceptingId !== null}
+                                  onClick={() => handleSkip(queue.queue_id)}
+                                  className="border text-xs border-amber-600 px-3 py-2 rounded-sm transition text-amber-600 cursor-pointer hover:bg-amber-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  {busy && pendingAction === "skip"
+                                    ? "Skipping..."
+                                    : "Skip"}
+                                </button>
+                              )}
+
+                            {skipsExhausted && canAct && (
+                              <button
+                                type="button"
+                                disabled={acceptingId !== null}
+                                onClick={() => handleCancel(queue)}
+                                className="border text-xs border-red-600 px-3 py-2 rounded-sm transition text-red-600 cursor-pointer hover:bg-red-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                {busy && pendingAction === "cancel"
+                                  ? "Cancelling..."
+                                  : "Cancel"}
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    </React.Fragment>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
       </LoadingRegion>
 

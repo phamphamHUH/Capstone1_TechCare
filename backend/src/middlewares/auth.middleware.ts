@@ -30,8 +30,8 @@ async function authMiddleware(req: Request, res: Response, next: NextFunction) {
 
     next();
   } catch (error) {
-    console.error("AUTH MIDDLEWARE ERROR:", error);
-
+    // An expired or bad token is normal (the client refreshes or logs out),
+    // so it is answered with 401 and not logged.
     if (
       error instanceof jwt.TokenExpiredError ||
       error instanceof jwt.JsonWebTokenError
@@ -39,6 +39,7 @@ async function authMiddleware(req: Request, res: Response, next: NextFunction) {
       return res.status(401).json({ message: "Invalid or expired token" });
     }
 
+    console.error("AUTH MIDDLEWARE ERROR:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 }

@@ -33,6 +33,8 @@ export namespace login {
     account_status?: boolean;
     active?: boolean;
     profile_photo?: string | null;
+    image_url?: string | null;
+    theme?: "light" | "dark" | "system";
     civil_status?: string | null;
     blood_type?: string | null;
     created_at?: string;

@@ -8,7 +8,7 @@ import { Search } from "lucide-react";
 
 import api from "../../../lib/axios";
 import ResetPasswordModal from "../../../components/ResetPasswordModal";
-// import { buildPatientRecordPrintHtml } from "../../../utils/patientRecordPrintTemplate";
+// import { buildPatientRecordPrintHtml } from "../components/PatientRecords/utils/patientRecordPrintTemplate";
 // import PatientCardSquare from "../components/PatientRecords/PatientCardSquare";
 import EditPatientRecord from "../components/PatientRecords/EditPatientRecord";
 import PatientTable from "../components/PatientRecords/PatientTable";

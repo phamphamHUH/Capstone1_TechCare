@@ -204,6 +204,8 @@ export async function getPortalPrescriptions(req: Request, res: Response) {
       ? await sql`
       SELECT prescription_id, patient_id, consultation_record_id, prescription_items, notes, valid_until, status, prescribed_at
       FROM prescription_records WHERE patient_id = ${patientId} AND consultation_record_id = ${consultationId}
+        -- Patients only see prescriptions they can still use.
+        AND status = 'Active' AND (valid_until IS NULL OR valid_until >= CURRENT_DATE)
       ORDER BY prescribed_at DESC
     `
       : await sql`

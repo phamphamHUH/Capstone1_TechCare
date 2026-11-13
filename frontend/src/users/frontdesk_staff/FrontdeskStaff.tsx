@@ -21,7 +21,7 @@ import Queues from "./pages/Queues";
 import type { QueueEntry, QueueRequests } from "../../interface/Queue";
 import type { Bill } from "../../interface/Billing";
 import type { Service } from "../../interface/Service";
-import MedicalHistory from "./pages/MedicalHistory";
+import MedicalHistory from "./components/PatientRecords/MedicalHistory";
 import type { Patient } from "../../interface/Patient";
 
 function FrontdeskStaff() {
@@ -183,7 +183,13 @@ function FrontdeskStaff() {
   return (
     <SidebarNavContext.Provider value={{ navItems, page, setPage }}>
       <div className="flex min-h-screen">
-        <SideBar open={open} setOpen={setOpen} page={page} setPage={setPage} navItems={navItems} />
+        <SideBar
+          open={open}
+          setOpen={setOpen}
+          page={page}
+          setPage={setPage}
+          navItems={navItems}
+        />
         <div className="flex-1 min-w-0">
           <Header
             page={currentPage}
@@ -267,7 +273,9 @@ function FrontdeskStaff() {
 
             {page === "patient-medical-history" && (
               <MedicalHistory
-                error={patientError ? "Patient details could not be loaded." : ""}
+                error={
+                  patientError ? "Patient details could not be loaded." : ""
+                }
                 open={open}
                 patients={patients}
                 selectedPatient={patientIdParam}

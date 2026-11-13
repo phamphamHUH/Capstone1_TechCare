@@ -9,6 +9,7 @@ import type {
   getSalesAnalytics as SalesAnalyticsDTO,
   getServiceAnalytics as ServiceAnalyticsDTO,
   getAnalyticsBills as AnalyticsBillsDTO,
+  getDrugTestAnalytics as DrugTestAnalyticsDTO,
   getAllServices,
 } from "./dto/get.dto.js";
 import {
@@ -642,5 +643,75 @@ export async function getServiceAnalytics(
     return res.status(500).json({
       message: "Error while fetching service analytics",
     });
+  }
+}
+
+// GET DRUG TEST ANALYTICS
+// Drug tests are billed but never queued. The owner wants to know how many
+// people took one per week, and who.
+export async function getDrugTestAnalytics(
+  req: Request,
+  res: Response<DrugTestAnalyticsDTO.response | DrugTestAnalyticsDTO.error>,
+) {
+  try {
+    const { range: rawRange, tz } = req.query as DrugTestAnalyticsDTO.query;
+    const period = readAnalyticsRange(rawRange, tz);
+
+    if (!period) {
+      return res.status(400).json({
+        message: `Invalid range or time zone. Use range ${ANALYTICS_RANGES.join(", ")} and an IANA tz such as Asia/Manila.`,
+      });
+    }
+
+    const { start, end, time_zone } = period;
+
+    const rows = await sql`
+      SELECT
+        tri.item_id,
+        b.bill_id,
+        b.patient_id,
+        NULLIF(CONCAT_WS(' ', p.first_name, p.last_name), '') AS patient_name,
+        s.service_name,
+        to_char(b.paid_at AT TIME ZONE ${time_zone}, 'YYYY-MM-DD"T"HH24:MI:SS') AS paid_at,
+        to_char(date_trunc('week', b.paid_at AT TIME ZONE ${time_zone}), 'YYYY-MM-DD') AS week_start
+      FROM test_request_items tri
+      JOIN services s ON s.service_id = tri.service_id
+      JOIN bills b ON b.bill_id = tri.bill_id
+      LEFT JOIN patients p ON p.patient_id = b.patient_id
+      WHERE LOWER(TRIM(s.service_type)) = 'drug test'
+        AND LOWER(TRIM(b.status)) = 'paid'
+        AND b.paid_at IS NOT NULL
+        AND LOWER(TRIM(tri.status)) NOT IN ('cancelled', 'canceled', 'rejected')
+        AND (b.paid_at AT TIME ZONE ${time_zone}) >= ${start}::timestamp
+        AND (b.paid_at AT TIME ZONE ${time_zone}) < ${end}::timestamp
+      ORDER BY b.paid_at DESC
+    `;
+
+    const weeks = new Map<string, number>();
+    for (const row of rows) {
+      weeks.set(String(row.week_start), (weeks.get(String(row.week_start)) ?? 0) + 1);
+    }
+
+    return res.status(200).json({
+      message: "Drug test analytics fetched successfully",
+      range: period.range,
+      start,
+      end,
+      total: rows.length,
+      weeks: [...weeks.entries()]
+        .sort(([a], [b]) => b.localeCompare(a))
+        .map(([week_start, count]) => ({ week_start, count })),
+      drug_tests: rows.map((row) => ({
+        item_id: String(row.item_id),
+        bill_id: String(row.bill_id),
+        patient_id: String(row.patient_id),
+        patient_name: row.patient_name ?? null,
+        service_name: String(row.service_name),
+        paid_at: String(row.paid_at),
+      })),
+    });
+  } catch (error) {
+    console.error("GET DRUG TEST ANALYTICS ERROR:", error);
+    return res.status(500).json({ message: "Error while fetching drug tests" });
   }
 }

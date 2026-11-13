@@ -72,41 +72,69 @@ export function refreshAccessToken(): Promise<string | null> {
   return pendingRefresh;
 }
 
+// =========================
+// END SESSION (LOGOUT)
+// =========================
 // Clears only the auth keys (keeps e.g. a doctor's unsaved drafts) and goes to /login.
 export function endSession() {
   AUTH_KEYS.forEach((key) => sessionStorage.removeItem(key));
   if (window.location.pathname !== "/login") window.location.assign("/login");
 }
 
+// =========================
+// SESSION EXPIRED
+// =========================
+// Logs out and stops the request. The returned promise never finishes, so the
+// page's own catch block never runs: no console error and no red error
+// message while the browser is already going to /login.
+function sessionExpired() {
+  endSession();
+  return new Promise<never>(() => {});
+}
+
 type RetriableConfig = InternalAxiosRequestConfig & { _retried?: boolean };
 
+// =========================
+// RESPONSE INTERCEPTOR
+// =========================
+// Runs on every failed request:
+//   1. Not a session problem       -> give the error to the page as usual
+//   2. Already retried, still 401  -> session expired (e.g. account deactivated)
+//   3. First 401                   -> get a new token and retry once
+//   4. New token not possible      -> session expired (refresh token expired too)
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const config = error?.config as RetriableConfig | undefined;
-    // A 401 from login/refresh means bad credentials, not an expired token.
+    const status = error?.response?.status;
     const url = config?.url ?? "";
+
+    // 1. NOT A SESSION PROBLEM
+    // A 401 from login/refresh means a wrong password, not an expired token.
+    // No token means nobody is logged in (e.g. dev without login).
     const isAuthCall =
       url.includes("/api/auth/login") || url.includes("/api/auth/refresh");
+    const isLoggedIn = Boolean(sessionStorage.getItem("token"));
 
-    if (
-      error?.response?.status !== 401 ||
-      !config ||
-      config._retried ||
-      isAuthCall ||
-      !sessionStorage.getItem("token") // never logged in (e.g. dev without login)
-    ) {
+    if (status !== 401 || !config || isAuthCall || !isLoggedIn) {
       return Promise.reject(error);
     }
 
-    config._retried = true;
+    // 2. ALREADY RETRIED, STILL 401
+    if (config._retried) {
+      return sessionExpired();
+    }
+
+    // 3. FIRST 401: GET A NEW TOKEN
     const token = await refreshAccessToken();
+
+    // 4. NEW TOKEN NOT POSSIBLE
     if (!token) {
-      endSession();
-      return Promise.reject(error);
+      return sessionExpired();
     }
 
-    // The request interceptor attaches the new token from sessionStorage.
+    // Retry once. The request interceptor attaches the new token.
+    config._retried = true;
     return api(config);
   },
 );

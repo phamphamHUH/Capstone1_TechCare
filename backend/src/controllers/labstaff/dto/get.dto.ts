@@ -219,6 +219,7 @@ export namespace getAvailableFormTemplates {
     form_id: string;
     form_name: string;
     form_description: string | null;
+    paper_size: "half_long_bond" | "a4" | null;
     service_id: string;
     status: string;
     service_name: string;

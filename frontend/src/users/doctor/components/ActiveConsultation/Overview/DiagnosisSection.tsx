@@ -12,15 +12,9 @@ const cellInputClass =
 const skyBtnClass =
   "bg-sky-500 text-xs font-medium text-white hover:bg-sky-600";
 
-const ICD10_PATTERN = /^[A-TV-Z][0-9][0-9AB](\.[0-9A-TV-Z]{1,4})?$/;
-
-const normalizeIcd10 = (value: string) => {
-  const v = value.replace(/[\s.]/g, "").toUpperCase();
-  return v.length > 3 ? `${v.slice(0, 3)}.${v.slice(3)}` : v;
-};
-
-type Draft = { name: string; icd: string; type: DiagnosisType };
-const EMPTY_DRAFT: Draft = { name: "", icd: "", type: "Primary" };
+// A diagnosis is a name + Primary/Secondary (the clinic doesn't use ICD-10).
+type Draft = { name: string; type: DiagnosisType };
+const EMPTY_DRAFT: Draft = { name: "", type: "Primary" };
 
 type DiagnosisSectionProps = {
   diagnoses: Diagnosis[];
@@ -41,9 +35,7 @@ function DiagnosisSection({
   const [editingId, setEditingId] = useState<number | "new" | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
 
-  const normalizedIcd = normalizeIcd10(draft.icd);
-  const icdInvalid = !!draft.icd && !ICD10_PATTERN.test(normalizedIcd);
-  const canSave = !!draft.name.trim() && !!draft.icd.trim() && !icdInvalid;
+  const canSave = !!draft.name.trim();
 
   const startAdd = () => {
     setDraft(EMPTY_DRAFT);
@@ -51,7 +43,7 @@ function DiagnosisSection({
   };
 
   const startEdit = (d: Diagnosis) => {
-    setDraft({ name: d.name, icd: d.icd10, type: d.type });
+    setDraft({ name: d.name, type: d.type });
     setEditingId(d.id);
   };
 
@@ -61,7 +53,6 @@ function DiagnosisSection({
     if (!canSave) return;
     const dx: NewDiagnosis = {
       name: draft.name.trim(),
-      icd10: normalizedIcd,
       type: draft.type,
     };
     if (editingId === "new") onAdd(dx);
@@ -94,21 +85,6 @@ function DiagnosisSection({
           placeholder="Diagnosis"
           className={cellInputClass}
         />
-      </td>
-      <td className="p-2">
-        <input
-          type="text"
-          value={draft.icd}
-          onChange={(e) => setDraft((p) => ({ ...p, icd: e.target.value }))}
-          onKeyDown={onKeyDown}
-          placeholder="e.g. J06.9"
-          className={`${cellInputClass} uppercase`}
-        />
-        {icdInvalid && (
-          <p className="mt-1 text-[10px] text-red-500">
-            Use a valid ICD-10 code, e.g. J06.9.
-          </p>
-        )}
       </td>
       <td className="p-2">
         <select
@@ -163,7 +139,7 @@ function DiagnosisSection({
         <table className="w-full text-left text-xs">
           <thead className="bg-gray-50 text-gray-500">
             <tr>
-              {["Diagnosis", "ICD-10", "Type"].map((h) => (
+              {["Diagnosis", "Type"].map((h) => (
                 <th key={h} className="p-2">
                   {h}
                 </th>
@@ -191,10 +167,6 @@ function DiagnosisSection({
                   <td className="p-2">
                     {d.name}
                     {errorText(errors[`diagnosis.${i}.diagnosis`])}
-                  </td>
-                  <td className="p-2">
-                    {d.icd10 || "-"}
-                    {errorText(errors[`diagnosis.${i}.icd10`])}
                   </td>
                   <td className="p-2">
                     <span
@@ -234,7 +206,7 @@ function DiagnosisSection({
 
             {diagnoses.length === 0 && editingId !== "new" && (
               <tr>
-                <td colSpan={4} className="p-4 text-center text-gray-400">
+                <td colSpan={3} className="p-4 text-center text-gray-400">
                   No diagnosis added.
                 </td>
               </tr>

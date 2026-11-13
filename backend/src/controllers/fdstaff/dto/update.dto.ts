@@ -117,6 +117,10 @@ export namespace confirmPayment {
     already_paid: boolean;
     queued: boolean; // false: payment is safe, forwarding can be retried
     has_laboratory_items: boolean;
+    queues: {
+      queue_id: string;
+      queue_number: number;
+    }[];
   }
 
   export interface error {

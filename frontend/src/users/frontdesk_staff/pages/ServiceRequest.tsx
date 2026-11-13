@@ -13,6 +13,7 @@ import {
   BoneFracture,
   Package,
   TriangleAlert,
+  FlaskRound,
 } from "lucide-react";
 import ConfirmDialog from "#components/ConfirmDialog";
 
@@ -148,6 +149,14 @@ function ServiceRequest({
       icon: BoneFracture,
     },
     {
+      // Billed only: drug tests never join a queue (the clinic runs them on
+      // its own system); the admin counts them in Reports.
+      service_type: "drug test",
+      mainHeading: "Drug Test",
+      subHeading: "Bill a drug test (not added to any queue)",
+      icon: FlaskRound,
+    },
+    {
       service_type: "consultation",
       mainHeading: "Consultation Services",
       subHeading: "Request Consultation or Specialist Service",
@@ -169,14 +178,19 @@ function ServiceRequest({
   return (
     <main className="flex-1 min-w-0 pb-5">
       <h1 className="text-2xl font-bold px-4 sm:px-6">Select Service Type</h1>
-      {error && <ErrorMessage className="mx-4 sm:mx-6 mt-5">{error}</ErrorMessage>}
+      {error && (
+        <ErrorMessage className="mx-4 sm:mx-6 mt-5">{error}</ErrorMessage>
+      )}
       <PatientSelectionHeader
         patient={patient}
         onSelectPatient={setPatient}
         onRegister={() => setPage("patient-registration")}
       />
       {/* SERVICE TABS */}
-      <section className="grid grid-cols-1 gap-3 mt-6 px-4 sm:grid-cols-2 sm:px-8 xl:grid-cols-4" aria-label="Service types">
+      <section
+        className="grid grid-cols-1 gap-3 mt-6 px-4 sm:grid-cols-2 sm:px-8 xl:grid-cols-4"
+        aria-label="Service types"
+      >
         {cards.map((card, index) => {
           const Icon = card.icon;
           return (
@@ -227,6 +241,7 @@ function ServiceRequest({
               services={services}
               selectedServices={selectedServices}
               patientId={patient?.patient_id ?? null}
+              patientMeasurements={patient}
               onToggleService={toggleService}
               onClearAll={clearServices}
               onSubmitted={async () => {

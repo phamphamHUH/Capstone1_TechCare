@@ -1,18 +1,24 @@
-import { ChevronUp, LogOut, UserRound } from "lucide-react";
+import { ChevronUp, LogOut, Settings, UserRound } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import api from "../../lib/axios";
+import AccountSettingsModal from "./SidebarUserMenu/AccountSettingsModal";
+import type { AccountUser } from "./SidebarUserMenu/AccountSettingsModal/utils/accountFields";
 
 // Profile card shown at the bottom of the sidebar.
-// Clicking it opens a small menu with the Logout button.
+// Clicking it opens a small menu with Settings and Logout.
 function SidebarUserMenu() {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [logoutStatus, setLogoutStatus] = useState("Logout");
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const storedUser = sessionStorage.getItem("user");
-  const user = storedUser ? JSON.parse(storedUser) : null;
+  // State (not a plain read) so a new photo shows here right away.
+  const [user, setUser] = useState<AccountUser | null>(() => {
+    const storedUser = sessionStorage.getItem("user");
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
 
   // Close the menu when clicking anywhere outside of it.
   useEffect(() => {
@@ -66,6 +72,17 @@ function SidebarUserMenu() {
         <div className="absolute bottom-full left-0 right-0 mb-2 overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg">
           <button
             type="button"
+            onClick={() => {
+              setMenuOpen(false);
+              setSettingsOpen(true);
+            }}
+            className="flex w-full items-center gap-2 border-b border-gray-200 px-4 py-2.5 text-sm text-gray-700 cursor-pointer transition-colors hover:bg-gray-100"
+          >
+            <Settings size={18} strokeWidth={1.5} />
+            <span>Settings</span>
+          </button>
+          <button
+            type="button"
             onClick={handleLogout}
             className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-red-700 cursor-pointer transition-colors hover:bg-red-50"
           >
@@ -87,7 +104,7 @@ function SidebarUserMenu() {
       >
         {user.profile_photo || user.image_url ? (
           <img
-            src={user.profile_photo || user.image_url}
+            src={(user.profile_photo || user.image_url) ?? undefined}
             alt="profile"
             className="w-10 h-10 shrink-0 rounded-full border object-cover"
           />
@@ -113,6 +130,13 @@ function SidebarUserMenu() {
           }`}
         />
       </button>
+
+      <AccountSettingsModal
+        isOpen={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        user={user}
+        onUserChange={setUser}
+      />
     </div>
   );
 }

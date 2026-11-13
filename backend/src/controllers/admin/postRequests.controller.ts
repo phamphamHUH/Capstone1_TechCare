@@ -287,8 +287,14 @@ export async function addService(
 ) {
   // POST /api/admin/services
   try {
-    const { service_name, price, service_type, service_category, room } =
-      req.body;
+    const { service_name, price, service_type, service_category } = req.body;
+    // Drug tests run on the clinic's own system, not in a room.
+    const room =
+      String(service_type ?? "")
+        .trim()
+        .toLowerCase() === "drug test"
+        ? req.body.room || "Drug Test"
+        : req.body.room;
 
     if (
       !service_name ||
@@ -461,115 +467,89 @@ export async function addAction(
 // =========================
 // ADD FORM TEMPLATES
 // =========================
-export async function addFormTemplates(
-  req: Request,
-  res: Response<addFormTemplates.response | addFormTemplates.error>,
-) {
+export async function addFormTemplates(req: Request, res: Response) {
   const {
     form_name,
     form_description,
+    paper_size,
     status,
     service_id,
     created_by,
     form_components,
   } = req.body;
+  const targetStatus = status ?? "Published";
 
+  if (paper_size != null && !["half_long_bond", "a4"].includes(paper_size))
+    return res.status(400).json({ message: "Invalid paper size." });
+  if (!["Draft", "Published"].includes(targetStatus))
+    return res
+      .status(400)
+      .json({ message: "Status must be Draft or Published." });
   if (
     !form_name ||
     !service_id ||
     !created_by ||
     !Array.isArray(form_components) ||
     form_components.length === 0
-  ) {
-    return res.status(400).json({
-      message: "Required fields missing.",
-    } as addFormTemplates.error);
-  }
+  )
+    return res.status(400).json({ message: "Required fields missing." });
+
+  const keys = form_components.map((c: any) => c.field_key);
+  if (new Set(keys).size !== keys.length)
+    return res
+      .status(400)
+      .json({ message: "Field keys must be unique within a template." });
 
   try {
-    const [checkExisting] = await sql`
-      SELECT form_id
-      FROM form_templates
-      WHERE service_id = ${service_id}
-        AND status = 'Published'
-    `;
-
-    if (status === "Published" && checkExisting) {
-      return res.status(400).json({
-        message: "An active form template already exist for the service.",
-      } as addFormTemplates.error);
+    if (targetStatus === "Published") {
+      const [existing] = await sql`
+        SELECT form_id FROM form_templates WHERE service_id = ${service_id} AND status = 'Published'`;
+      if (existing)
+        return res.status(400).json({
+          message: "An active form template already exists for this service.",
+        });
     }
-
-    // NOTE: For Neon HTTP queries, separate BEGIN/COMMIT calls may not share
-    // the same connection. Use a transaction-capable client for atomic writes.
-    await registerFormComponentTypes();
 
     const form_id = `F-${Date.now()}`;
 
-    const [formCreated] = await sql`
-      INSERT INTO form_templates (
-        form_id,
-        form_name,
-        form_description,
-        service_id,
-        status,
-        created_by
-      )
-      VALUES (
-        ${form_id},
-        ${form_name},
-        ${form_description ?? null},
-        ${service_id},
-        ${status ?? "Published"},
-        ${created_by}
-      )
-      RETURNING *
-    `;
-
-    const componentsCreated: addFormTemplates.component[] = [];
-
-    for (let index = 0; index < form_components.length; index++) {
-      const component = form_components[index];
-      const form_component_id = `FC-${form_id}-${index}`;
-
-      const [createdComponent] = await sql`
+    const results = await sql.transaction([
+      registerFormComponentTypes(),
+      sql`
+        INSERT INTO form_templates (
+          form_id, template_key, form_name, form_description, paper_size,
+          service_id, status, created_by, version
+        ) VALUES (
+          ${form_id}, ${form_id}, ${form_name}, ${form_description ?? null},
+          ${paper_size ?? null}, ${service_id}, ${targetStatus}, ${created_by}, 1
+        ) RETURNING *`,
+      ...form_components.map(
+        (c: any, index: number) => sql`
         INSERT INTO form_components (
-          form_component_id,
-          form_id,
-          type_id,
-          label,
-          field_key,
-          display_order,
-          settings,
-          validation
-        )
-        VALUES (
-          ${form_component_id},
-          ${form_id},
-          ${component.type_id},
-          ${component.label},
-          ${component.field_key},
-          ${component.display_order},
-          ${JSON.stringify(component.settings ?? null)}::jsonb,
-          ${JSON.stringify(component.validation ?? null)}::jsonb
-        )
-        RETURNING *
-      `;
+          form_component_id, form_id, type_id, label, field_key,
+          display_order, settings, validation
+        ) VALUES (
+          ${`FC-${form_id}-${index}`}, ${form_id}, ${c.type_id}, ${c.label}, ${c.field_key},
+          ${c.display_order},
+          ${JSON.stringify(c.settings ?? null)}::jsonb,
+          ${JSON.stringify(c.validation ?? null)}::jsonb
+        ) RETURNING *`,
+      ),
+    ]);
 
-      componentsCreated.push(createdComponent as addFormTemplates.component);
-    }
-
+    const [formCreated] = results[1];
+    const componentsCreated = results.slice(2).flat();
     return res.status(201).json({
       message: "Form successfully created",
       formCreated,
       componentsCreated,
-    } as addFormTemplates.response);
-  } catch (error) {
+    });
+  } catch (error: any) {
+    if (error?.code === "23505")
+      return res.status(409).json({
+        message: "An active form template already exists for this service.",
+      });
     console.error("ADD FORM TEMPLATES ERROR:", error);
-
-    return res.status(500).json({
-      message: "Internal Server Error",
-    } as addFormTemplates.error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 }
 

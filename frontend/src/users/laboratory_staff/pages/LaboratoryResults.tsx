@@ -149,13 +149,6 @@ function LaboratoryResults({
 
   return (
     <main className="min-w-0 flex-1 bg-white">
-      <Header
-        page="Laboratory Results"
-        loading={loading}
-        open={open}
-        setOpen={setOpen}
-        loadData={reloadRequests}
-      />
       <div className="px-4 pb-9 sm:px-6">
         <div hidden={Boolean(selectedRequest || printRequest)}>
           {resultError && (
