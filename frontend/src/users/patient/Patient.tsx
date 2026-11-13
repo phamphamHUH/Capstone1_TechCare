@@ -1,7 +1,6 @@
 import ErrorMessage from "../../components/ErrorMessage";
 import { useEffect, useMemo, useState } from "react";
 import {
-  FileCheck2,
   FileClock,
   FlaskConical,
   LayoutGrid,
@@ -82,11 +81,6 @@ function Patient() {
       icon: <FileClock size={20} />,
     },
     { page: "prescriptions", label: "Prescriptions", icon: <Pill size={20} /> },
-    {
-      page: "medical-documents",
-      label: "Medical Documents",
-      icon: <FileCheck2 size={20} />,
-    },
   ];
 
   function setPage(page: string) {

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Upload, User, UserPlus } from "lucide-react";
 import api from "../../../lib/axios";
 import calculateAge from "../../../utils/calculateAge";
+import { usePsgcAddress } from "#hooks/usePsgcAddress";
 import UniversalModal from "../../../components/UniversalModal";
 
 type PatientRegistrationProps = {
@@ -55,7 +56,8 @@ const initialForm = {
 };
 type FormState = typeof initialForm;
 
-const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+// "N/A" when the patient does not know their blood type.
+const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", "N/A"];
 const SEX_OPTIONS = ["Male", "Female"];
 const CIVIL_STATUS_OPTIONS = ["Single", "Married", "Widowed", "Separated"];
 const SMOKING_OPTIONS = ["Yes", "No", "Former"];
@@ -129,11 +131,15 @@ function SelectField({
   value,
   onChange,
   options,
+  placeholder = "Select",
+  disabled = false,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   options: string[];
+  placeholder?: string;
+  disabled?: boolean;
 }) {
   return (
     <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-black-700">
@@ -141,9 +147,10 @@ function SelectField({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={inputCls}
+        disabled={disabled}
+        className={`${inputCls} disabled:bg-slate-100 disabled:text-slate-400`}
       >
-        <option value="">Select</option>
+        <option value="">{placeholder}</option>
         {options.map((o) => (
           <option key={o} value={o}>
             {o}
@@ -286,6 +293,14 @@ function PatientRegistration({ loadData }: PatientRegistrationProps) {
 
   const set = (key: keyof FormState) => (v: string) =>
     setForm((f) => ({ ...f, [key]: v }));
+
+  // Address dropdowns: a new province clears the city and barangay,
+  // a new city clears the barangay.
+  const address = usePsgcAddress(form.province, form.city, form.barangay);
+  const setProvince = (v: string) =>
+    setForm((f) => ({ ...f, province: v, city: "", barangay: "" }));
+  const setCity = (v: string) =>
+    setForm((f) => ({ ...f, city: v, barangay: "" }));
 
   const toggle =
     (list: string[], setList: (v: string[]) => void) => (item: string) =>
@@ -574,26 +589,74 @@ function PatientRegistration({ loadData }: PatientRegistrationProps) {
               />
             </div>
 
-            <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr_0.6fr]">
+            <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
+              {address.failed ? (
+                // Address list unavailable: type it in instead.
+                <>
+                  <Field
+                    label="Province *"
+                    value={form.province}
+                    onChange={set("province")}
+                  />
+                  <Field
+                    label="City/Municipality *"
+                    value={form.city}
+                    onChange={set("city")}
+                  />
+                  <Field
+                    label="Barangay *"
+                    value={form.barangay}
+                    onChange={set("barangay")}
+                  />
+                </>
+              ) : (
+                <>
+                  <SelectField
+                    label="Province *"
+                    value={form.province}
+                    onChange={setProvince}
+                    options={address.provinces}
+                    placeholder={
+                      address.loadingProvinces ? "Loading..." : "Select province"
+                    }
+                    disabled={address.loadingProvinces}
+                  />
+                  <SelectField
+                    label="City/Municipality *"
+                    value={form.city}
+                    onChange={setCity}
+                    options={address.cities}
+                    placeholder={
+                      !form.province
+                        ? "Select a province first"
+                        : address.loadingCities
+                          ? "Loading..."
+                          : "Select city/municipality"
+                    }
+                    disabled={!form.province || address.loadingCities}
+                  />
+                  <SelectField
+                    label="Barangay *"
+                    value={form.barangay}
+                    onChange={set("barangay")}
+                    options={address.barangays}
+                    placeholder={
+                      !form.city
+                        ? "Select a city first"
+                        : address.loadingBarangays
+                          ? "Loading..."
+                          : "Select barangay"
+                    }
+                    disabled={!form.city || address.loadingBarangays}
+                  />
+                </>
+              )}
+            </div>
+            <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-[3fr_1fr]">
               <Field
-                label="Street *"
+                label="House No. / Street *"
                 value={form.street}
                 onChange={set("street")}
-              />
-              <Field
-                label="Barangay *"
-                value={form.barangay}
-                onChange={set("barangay")}
-              />
-              <Field
-                label="City/Municipality *"
-                value={form.city}
-                onChange={set("city")}
-              />
-              <Field
-                label="Province *"
-                value={form.province}
-                onChange={set("province")}
               />
               <Field
                 label="ZIP Code *"
