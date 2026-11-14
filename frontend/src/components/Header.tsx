@@ -25,7 +25,8 @@ function Header({ page, loading, open, setOpen, loadData }: HeaderProps) {
   }
 
   const role =
-    rawRole === "laboratory-staff" && department.toLowerCase() === "imaging"
+    rawRole === "laboratory-staff" &&
+    ["imaging", "imaging room"].includes(department.toLowerCase())
       ? "imaging staff"
       : rawRole === "laboratory-staff" || rawRole === "frontdesk-staff"
         ? rawRole.replace("-", " ")

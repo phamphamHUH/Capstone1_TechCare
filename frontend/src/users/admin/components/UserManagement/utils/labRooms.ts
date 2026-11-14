@@ -5,6 +5,7 @@ export const LAB_STAFF_ROLE = "laboratory-staff";
 export const LAB_ROOMS = [
   { value: "Laboratory Room 1", label: "Room 1" },
   { value: "Laboratory Room 2", label: "Room 2" },
+  { value: "Imaging Room", label: "Imaging" },
 ];
 
 export const isLabRoom = (department: string) =>
