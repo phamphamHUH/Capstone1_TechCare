@@ -23,6 +23,7 @@ const ROOM_OPTIONS = [
   "Consultation Room",
   "Laboratory Room 1",
   "Laboratory Room 2",
+  "Imaging Room",
 ];
 
 function EditService({ service, services, onClose, loadData }: Props) {

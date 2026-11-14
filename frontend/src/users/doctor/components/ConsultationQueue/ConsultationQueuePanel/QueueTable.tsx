@@ -262,7 +262,16 @@ function QueueTable({
                         </td>
 
                         <td className="px-1 py-3 text-center text-sm">
-                          {queue.is_priority ? "Priority" : "Non-priority"}
+                          {/* Same badge as the front desk queue table. */}
+                          {queue.is_priority ? (
+                            <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-600">
+                              Priority
+                            </span>
+                          ) : (
+                            <span className="text-xs text-gray-400">
+                              Non-priority
+                            </span>
+                          )}
                         </td>
 
                         <td className="px-1 py-3 text-center text-sm">

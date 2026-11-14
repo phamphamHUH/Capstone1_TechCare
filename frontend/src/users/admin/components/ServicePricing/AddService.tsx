@@ -21,6 +21,7 @@ const ROOM_OPTIONS = [
   "Consultation Room",
   "Laboratory Room 1",
   "Laboratory Room 2",
+  "Imaging Room",
 ];
 
 function AddService({ loadData, onClose, services }: Props) {
